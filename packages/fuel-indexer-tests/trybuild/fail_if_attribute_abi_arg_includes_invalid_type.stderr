@@ -14,7 +14,7 @@ error[E0433]: failed to resolve: use of undeclared crate or module `fuel`
   |
 help: there is a crate or module with a similar name
    |
-32 |         header: fuels::Header {
+33 |         header: fuels::Header {
    |                 ~~~~~
 
 error[E0433]: failed to resolve: use of undeclared crate or module `fuel`
@@ -25,7 +25,7 @@ error[E0433]: failed to resolve: use of undeclared crate or module `fuel`
   |
 help: there is a crate or module with a similar name
    |
-44 |         transactions: vec![fuels::TransactionData {
+45 |         transactions: vec![fuels::TransactionData {
    |                            ~~~~~
 
 error[E0433]: failed to resolve: use of undeclared crate or module `fuel`
@@ -36,7 +36,7 @@ error[E0433]: failed to resolve: use of undeclared crate or module `fuel`
   |
 help: there is a crate or module with a similar name
    |
-48 |                 fuels::Receipt::Call {
+49 |                 fuels::Receipt::Call {
    |                 ~~~~~
 
 error[E0433]: failed to resolve: use of undeclared crate or module `fuel`
@@ -47,7 +47,7 @@ error[E0433]: failed to resolve: use of undeclared crate or module `fuel`
   |
 help: there is a crate or module with a similar name
    |
-59 |                 fuels::Receipt::ReturnData {
+60 |                 fuels::Receipt::ReturnData {
    |                 ~~~~~
 
 error[E0422]: cannot find struct, variant or union type `SomeEvent` in this scope
@@ -64,6 +64,8 @@ error[E0412]: cannot find type `BlockData` in this scope
   |
 help: consider importing one of these items
    |
+2  + use fuel_indexer_plugin::prelude::BlockData;
+   |
 2  + use fuel_indexer_types::fuel::BlockData;
    |
 2  + use fuel_indexer_utils::plugin::prelude::BlockData;
@@ -76,6 +78,8 @@ error[E0422]: cannot find struct, variant or union type `BlockData` in this scop
   |                                     ^^^^^^^^^ not found in this scope
   |
 help: consider importing one of these items
+   |
+2  + use fuel_indexer_plugin::prelude::BlockData;
    |
 2  + use fuel_indexer_types::fuel::BlockData;
    |
@@ -90,9 +94,11 @@ error[E0433]: failed to resolve: use of undeclared crate or module `fuel`
   |
 help: there is a crate or module with a similar name
    |
-45 |             status: fuels::TransactionStatus::default(),
+46 |             status: fuels::TransactionStatus::default(),
    |                     ~~~~~
 help: consider importing one of these items
+   |
+2  + use fuel_indexer_plugin::prelude::fuel::TransactionStatus;
    |
 2  + use fuel_indexer_types::fuel::TransactionStatus;
    |
@@ -100,8 +106,8 @@ help: consider importing one of these items
    |
 help: if you import `TransactionStatus`, refer to it directly
    |
-45 -             status: fuel::TransactionStatus::default(),
-45 +             status: TransactionStatus::default(),
+46 -             status: fuel::TransactionStatus::default(),
+46 +             status: TransactionStatus::default(),
    |
 
 error[E0433]: failed to resolve: use of undeclared type `Transaction`
@@ -112,14 +118,15 @@ error[E0433]: failed to resolve: use of undeclared type `Transaction`
   |
 help: consider importing one of these items
    |
+2  + use fuel_indexer_plugin::prelude::fuel::Transaction;
+   |
 2  + use fuel_indexer_types::fuel::Transaction;
    |
 2  + use fuel_indexer_utils::plugin::prelude::fuel::Transaction;
    |
 2  + use fuels::prelude::Transaction;
    |
-2  + use fuels_types::transaction::Transaction;
-   |
+     and 2 other candidates
 
 error[E0425]: cannot find function `serialize` in this scope
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
@@ -131,6 +138,8 @@ help: consider importing one of these items
    |
 2  + use fuel_indexer_lib::utils::serialize;
    |
+2  + use fuel_indexer_plugin::serialize;
+   |
 2  + use fuel_indexer_utils::plugin::serialize;
    |
 
@@ -140,10 +149,10 @@ error[E0425]: cannot find function `handle_events` in this scope
   |     handle_events(ptr, len);
   |     ^^^^^^^^^^^^^ not found in this scope
 
-error: unused import: `traits::Tokenizable`
+error: unused import: `fuels::types::traits::Tokenizable`
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
   |
-  |     use fuels::core::{codec::ABIEncoder, traits::Tokenizable};
-  |                                          ^^^^^^^^^^^^^^^^^^^
+  |     use fuels::types::traits::Tokenizable;
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   |
   = note: `-D unused-imports` implied by `-D warnings`

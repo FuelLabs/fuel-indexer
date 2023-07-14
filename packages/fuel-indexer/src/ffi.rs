@@ -5,7 +5,7 @@ use fuel_indexer_types::ffi::{
 use thiserror::Error;
 use tracing::{debug, error, info, trace, warn};
 use wasmer::{
-    ExportError, Exports, Function, HostEnvInitError, Instance, Memory, RuntimeError,
+    ExportError, Exports, Function, FunctionEnvMut, Instance, MemoryView, RuntimeError,
     Store, WasmPtr,
 };
 use wasmer_middlewares::metering::{
@@ -21,91 +21,36 @@ pub enum FFIError {
     MemoryBound,
     #[error("Error calling into wasm function {0:?}")]
     Runtime(#[from] RuntimeError),
-    #[error("Error initializing host environment {0:?}")]
-    HostEnvInit(#[from] HostEnvInitError),
     #[error("Invalid export {0:?}")]
     Export(#[from] ExportError),
     #[error("Expected result from call {0:?}")]
     None(String),
 }
 
-macro_rules! declare_export {
-    ($name:ident, $ffi_env:ident, $store:ident, $env:ident) => {
-        let f = Function::new_native_with_env($store, $env.clone(), $name);
-        $ffi_env.insert(format!("ff_{}", stringify!($name)), f);
-    };
-}
-
-pub(crate) fn get_namespace(instance: &Instance) -> Result<String, FFIError> {
-    let exports = &instance.exports;
-    let memory = exports.get_memory("memory")?;
-
-    let ptr = exports.get_function("get_namespace_ptr")?.call(&[])?[0]
-        .i32()
-        .ok_or_else(|| FFIError::None("get_namespace".to_string()))? as u32;
-
-    let len = exports.get_function("get_namespace_len")?.call(&[])?[0]
-        .i32()
-        .ok_or_else(|| FFIError::None("get_namespace".to_string()))? as u32;
-
-    let namespace = get_string(memory, ptr, len)?;
-
-    Ok(namespace)
-}
-
-pub(crate) fn get_identifier(instance: &Instance) -> Result<String, FFIError> {
-    let exports = &instance.exports;
-    let memory = exports.get_memory("memory")?;
-
-    let ptr = exports.get_function("get_identifier_ptr")?.call(&[])?[0]
-        .i32()
-        .ok_or_else(|| FFIError::None("get_identifier".to_string()))?
-        as u32;
-
-    let len = exports.get_function("get_identifier_len")?.call(&[])?[0]
-        .i32()
-        .ok_or_else(|| FFIError::None("get_identifier".to_string()))?
-        as u32;
-
-    let identifier = get_string(memory, ptr, len)?;
-
-    Ok(identifier)
-}
-
-pub(crate) fn get_version(instance: &Instance) -> Result<String, FFIError> {
-    let exports = &instance.exports;
-    let memory = exports.get_memory("memory")?;
-
-    let ptr = exports.get_function("get_version_ptr")?.call(&[])?[0]
-        .i32()
-        .ok_or_else(|| FFIError::None("get_version".to_string()))? as u32;
-
-    let len = exports.get_function("get_version_len")?.call(&[])?[0]
-        .i32()
-        .ok_or_else(|| FFIError::None("get_version".to_string()))? as u32;
-
-    let version = get_string(memory, ptr, len)?;
-
-    Ok(version)
-}
-
-fn get_string(mem: &Memory, ptr: u32, len: u32) -> Result<String, FFIError> {
-    let result = WasmPtr::<u8, wasmer::Array>::new(ptr)
-        .get_utf8_string(mem, len)
-        .ok_or(FFIError::MemoryBound)?;
+fn get_string(mem: &MemoryView, ptr: u32, len: u32) -> Result<String, FFIError> {
+    let result = WasmPtr::<u8>::new(ptr)
+        .read_utf8_string(mem, len)
+        .or(Err(FFIError::MemoryBound))?;
     Ok(result)
 }
 
-fn get_object_id(mem: &Memory, ptr: u32) -> u64 {
+fn get_object_id(mem: &MemoryView, ptr: u32) -> u64 {
     WasmPtr::<u64>::new(ptr)
         .deref(mem)
-        .expect("Failed to deref WasmPtrs.")
-        .get()
+        .read()
+        .expect("Could not read object ID")
 }
 
-fn log_data(env: &IndexEnv, ptr: u32, len: u32, log_level: u32) {
-    let mem = env.memory_ref().expect("Memory uninitialized.");
-    let log_string = get_string(mem, ptr, len).expect("Log string could not be fetched.");
+fn log_data(mut env: FunctionEnvMut<IndexEnv>, ptr: u32, len: u32, log_level: u32) {
+    let (idx_env, store) = env.data_and_store_mut();
+    let mem = idx_env
+        .memory
+        .as_mut()
+        .expect("Memory unitialized.")
+        .view(&store);
+
+    let log_string =
+        get_string(&mem, ptr, len).expect("Log string could not be fetched.");
 
     match log_level {
         LOG_LEVEL_ERROR => error!("{log_string}",),
@@ -117,25 +62,43 @@ fn log_data(env: &IndexEnv, ptr: u32, len: u32, log_level: u32) {
     }
 }
 
-fn get_object(env: &IndexEnv, type_id: i64, ptr: u32, len_ptr: u32) -> u32 {
-    let mem = env.memory_ref().expect("Memory uninitialized.");
+fn get_object(
+    mut env: FunctionEnvMut<IndexEnv>,
+    type_id: i64,
+    ptr: u32,
+    len_ptr: u32,
+) -> u32 {
+    let (idx_env, mut store) = env.data_and_store_mut();
 
-    let id = get_object_id(mem, ptr);
+    let id = {
+        let mem = idx_env
+            .memory
+            .as_mut()
+            .expect("Memory unitialized.")
+            .view(&store);
+        get_object_id(&mem, ptr)
+    };
 
     let rt = tokio::runtime::Handle::current();
-    let bytes = rt.block_on(async { env.db.lock().await.get_object(type_id, id).await });
+    let bytes =
+        rt.block_on(async { idx_env.db.lock().await.get_object(type_id, id).await });
 
     if let Some(bytes) = bytes {
-        let alloc_fn = env.alloc_ref().expect("Alloc export is missing.");
+        let alloc_fn = idx_env.alloc.as_mut().expect("Alloc export is missing.");
 
         let size = bytes.len() as u32;
-        let result = alloc_fn.call(size).expect("Alloc failed.");
+        let result = alloc_fn.call(&mut store, size).expect("Alloc failed.");
         let range = result as usize..result as usize + size as usize;
 
+        let mem = idx_env
+            .memory
+            .as_mut()
+            .expect("Memory unitialized.")
+            .view(&store);
         WasmPtr::<u32>::new(len_ptr)
-            .deref(mem)
-            .expect("Failed to deref WasmPtr.")
-            .set(size);
+            .deref(&mem)
+            .write(size)
+            .unwrap();
 
         unsafe {
             mem.data_unchecked_mut()[range].copy_from_slice(&bytes);
@@ -147,8 +110,13 @@ fn get_object(env: &IndexEnv, type_id: i64, ptr: u32, len_ptr: u32) -> u32 {
     }
 }
 
-fn put_object(env: &IndexEnv, type_id: i64, ptr: u32, len: u32) {
-    let mem = env.memory_ref().expect("Memory uninitialized.");
+fn put_object(mut env: FunctionEnvMut<IndexEnv>, type_id: i64, ptr: u32, len: u32) {
+    let (idx_env, store) = env.data_and_store_mut();
+    let mem = idx_env
+        .memory
+        .as_mut()
+        .expect("Memory unitialized")
+        .view(&store);
 
     let mut bytes = Vec::with_capacity(len as usize);
     let range = ptr as usize..ptr as usize + len as usize;
@@ -170,7 +138,8 @@ fn put_object(env: &IndexEnv, type_id: i64, ptr: u32, len: u32) {
 
     let rt = tokio::runtime::Handle::current();
     rt.block_on(async {
-        env.db
+        idx_env
+            .db
             .lock()
             .await
             .put_object(type_id, columns, bytes)
@@ -178,11 +147,16 @@ fn put_object(env: &IndexEnv, type_id: i64, ptr: u32, len: u32) {
     });
 }
 
-pub fn get_exports(env: &IndexEnv, store: &Store) -> Exports {
+pub fn get_exports(store: &mut Store, env: &wasmer::FunctionEnv<IndexEnv>) -> Exports {
     let mut exports = Exports::new();
-    declare_export!(get_object, exports, store, env);
-    declare_export!(put_object, exports, store, env);
-    declare_export!(log_data, exports, store, env);
+
+    let f_get_obj = Function::new_typed_with_env(store, env, get_object);
+    let f_put_obj = Function::new_typed_with_env(store, env, put_object);
+    let f_log_data = Function::new_typed_with_env(store, env, log_data);
+    exports.insert("ff_get_object".to_string(), f_get_obj);
+    exports.insert("ff_put_object".to_string(), f_put_obj);
+    exports.insert("ff_log_data".to_string(), f_log_data);
+
     exports
 }
 
@@ -198,19 +172,20 @@ pub(crate) struct WasmArg<'a> {
 impl<'a> WasmArg<'a> {
     #[allow(clippy::result_large_err)]
     pub fn new(
-        instance: &Instance,
+        store: &mut Store,
+        instance: &'a Instance,
         bytes: Vec<u8>,
         metering_enabled: bool,
-    ) -> IndexerResult<WasmArg> {
+    ) -> IndexerResult<WasmArg<'a>> {
         let alloc_fn = instance
             .exports
-            .get_native_function::<u32, u32>("alloc_fn")?;
-        let memory = instance.exports.get_memory("memory")?;
+            .get_typed_function::<u32, u32>(store, "alloc_fn")?;
 
         let len = bytes.len() as u32;
-        let ptr = alloc_fn.call(len)?;
+        let ptr = alloc_fn.call(store, len)?;
         let range = ptr as usize..(ptr + len) as usize;
 
+        let memory = instance.exports.get_memory("memory")?.view(store);
         unsafe {
             memory.data_unchecked_mut()[range].copy_from_slice(&bytes);
         }
@@ -230,26 +205,24 @@ impl<'a> WasmArg<'a> {
     pub fn get_len(&self) -> u32 {
         self.len
     }
-}
 
-impl<'a> Drop for WasmArg<'a> {
-    fn drop(&mut self) {
+    pub fn drop(&mut self, store: &mut Store) {
         let dealloc_fn = self
             .instance
             .exports
-            .get_native_function::<(u32, u32), ()>("dealloc_fn")
+            .get_typed_function::<(u32, u32), ()>(store, "dealloc_fn")
             .expect("No dealloc fn");
         // Need to track whether metering is enabled or otherwise getting or setting points will panic
         if self.metering_enabled {
-            let pts = match get_remaining_points(self.instance) {
+            let pts = match get_remaining_points(store, self.instance) {
                 MeteringPoints::Exhausted => 0,
                 MeteringPoints::Remaining(pts) => pts,
             };
-            set_remaining_points(self.instance, 1_000_000);
-            dealloc_fn.call(self.ptr, self.len).expect("Dealloc failed");
-            set_remaining_points(self.instance, pts);
+            set_remaining_points(store, self.instance, 1_000_000);
+            dealloc_fn.call(store, self.ptr, self.len).expect("Dealloc failed");
+            set_remaining_points(store, self.instance, pts);
         } else {
-            dealloc_fn.call(self.ptr, self.len).expect("Dealloc failed");
+            dealloc_fn.call(store, self.ptr, self.len).expect("Dealloc failed");
         }
     }
 }

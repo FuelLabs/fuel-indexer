@@ -37,16 +37,10 @@ use tokio::{
 };
 use tracing::{debug, error, info, warn};
 use wasmer::{
-    imports, CompilerConfig, Instance, LazyInit, Memory, Module, NativeFunc,
-    RuntimeError, Store, WasmerEnv,
+    imports, CompilerConfig, Cranelift, FunctionEnv, Instance, Memory, Module,
+    RuntimeError, Store, TypedFunction,
 };
-use wasmer_compiler_cranelift::Cranelift;
-use wasmer_engine_universal::Universal;
 use wasmer_middlewares::metering::MeteringPoints;
-
-fn compiler() -> Cranelift {
-    Cranelift::default()
-}
 
 #[derive(Debug, Clone)]
 pub enum ExecutorSource {
@@ -108,10 +102,13 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
         None
     };
 
-    info!("Subscribing to Fuel node at {fuel_node_addr}");
+    let indexer_uid = manifest.uid();
 
-    let client = FuelClient::from_str(&fuel_node_addr)
-        .unwrap_or_else(|e| panic!("Node connection failed: {e}."));
+    info!("Indexer({indexer_uid}) subscribing to Fuel node at {fuel_node_addr}");
+
+    let client = FuelClient::from_str(&fuel_node_addr).unwrap_or_else(|e| {
+        panic!("Indexer({indexer_uid}) client node connection failed: {e}.")
+    });
 
     async move {
         let mut retry_count = 0;
@@ -127,7 +124,9 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
         let mut num_empty_block_reqs = 0;
 
         loop {
-            debug!("Fetching paginated results from {next_cursor:?}");
+            debug!(
+                "Indexer({indexer_uid}) fetching paginated results from {next_cursor:?}"
+            );
 
             let PaginatedResult {
                 cursor, results, ..
@@ -139,7 +138,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                 })
                 .await
                 .unwrap_or_else(|e| {
-                    error!("Failed to retrieve blocks: {e}");
+                    error!("Indexer({indexer_uid}) ailed to retrieve blocks: {e}");
                     PaginatedResult {
                         cursor: None,
                         results: vec![],
@@ -152,7 +151,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
             for block in results.into_iter() {
                 if let Some(end_block) = end_block {
                     if block.header.height.0 > end_block {
-                        info!("Stopping indexer at the specified end_block: {end_block}");
+                        info!("Stopping Indexer({indexer_uid}) at the specified end_block: {end_block}");
                         break;
                     }
                 }
@@ -265,12 +264,8 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                                 .storage_slots()
                                 .iter()
                                 .map(|x| StorageSlot {
-                                    key: <[u8; 32]>::try_from(*x.key())
-                                        .expect("Could not convert key to bytes")
-                                        .into(),
-                                    value: <[u8; 32]>::try_from(*x.value())
-                                        .expect("Could not convert key to bytes")
-                                        .into(),
+                                    key: <[u8; 32]>::from(*x.key()).into(),
+                                    value: <[u8; 32]>::from(*x.value()).into(),
                                 })
                                 .collect(),
                             inputs: tx
@@ -284,9 +279,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                                 .map(|o| o.to_owned().into())
                                 .collect(),
                             witnesses: tx.witnesses().to_vec(),
-                            salt: <[u8; 32]>::try_from(*tx.salt())
-                                .expect("Could not convert key to bytes")
-                                .into(),
+                            salt: <[u8; 32]>::from(*tx.salt()).into(),
                             metadata: None,
                         }),
                         _ => Transaction::default(),
@@ -400,10 +393,12 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                 }
 
                 if retry_count < INDEXER_FAILED_CALLS {
-                    warn!("Retrying handler after {retry_count} failed attempts.");
+                    warn!("Indexer({indexer_uid}) retrying handler after {retry_count} failed attempts.");
                     continue;
                 } else {
-                    error!("Indexer failed after retries, giving up. <('.')>");
+                    error!(
+                        "Indexer({indexer_uid}) failed after retries, giving up. <('.')>"
+                    );
                     break;
                 }
             }
@@ -415,7 +410,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                 num_empty_block_reqs += 1;
 
                 if num_empty_block_reqs == max_empty_block_reqs {
-                    error!("No blocks being produced, giving up. <('.')>");
+                    error!("No blocks being produced, Indexer({indexer_uid}) giving up. <('.')>");
                     break;
                 }
             } else {
@@ -424,6 +419,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
             }
 
             if kill_switch.load(Ordering::SeqCst) {
+                info!("Kill switch flipped, stopping Indexer({indexer_uid}). <('.')>");
                 break;
             }
 
@@ -446,25 +442,25 @@ pub enum TxError {
     WasmRuntimeError(#[from] RuntimeError),
 }
 
-#[derive(WasmerEnv, Clone)]
+#[derive(Clone)]
 pub struct IndexEnv {
-    #[wasmer(export)]
-    memory: LazyInit<Memory>,
-    #[wasmer(export(name = "alloc_fn"))]
-    alloc: LazyInit<NativeFunc<u32, u32>>,
-    #[wasmer(export(name = "dealloc_fn"))]
-    dealloc: LazyInit<NativeFunc<(u32, u32), ()>>,
+    pub memory: Option<Memory>,
+    pub alloc: Option<TypedFunction<u32, u32>>,
+    pub dealloc: Option<TypedFunction<(u32, u32), ()>>,
     pub db: Arc<Mutex<Database>>,
 }
 
 impl IndexEnv {
-    pub async fn new(pool: IndexerConnectionPool) -> IndexerResult<IndexEnv> {
-        let db = Arc::new(Mutex::new(Database::new(pool).await?));
+    pub async fn new(
+        pool: IndexerConnectionPool,
+        manifest: &Manifest,
+    ) -> IndexerResult<IndexEnv> {
+        let db = Database::new(pool, manifest).await?;
         Ok(IndexEnv {
-            memory: Default::default(),
-            alloc: Default::default(),
-            dealloc: Default::default(),
-            db,
+            memory: None,
+            alloc: None,
+            dealloc: None,
+            db: Arc::new(Mutex::new(db)),
         })
     }
 }
@@ -498,10 +494,9 @@ where
         pool: IndexerConnectionPool,
         handle_events_fn: fn(Vec<BlockData>, Arc<Mutex<Database>>) -> F,
     ) -> IndexerResult<Self> {
-        let db = Arc::new(Mutex::new(Database::new(pool).await?));
-        db.lock().await.load_schema(manifest, None).await?;
+        let db = Database::new(pool, manifest).await?;
         Ok(Self {
-            db,
+            db: Arc::new(Mutex::new(db)),
             manifest: manifest.to_owned(),
             handle_events_fn,
         })
@@ -549,7 +544,7 @@ where
 pub struct WasmIndexExecutor {
     instance: Instance,
     _module: Module,
-    _store: Store,
+    store: Arc<Mutex<Store>>,
     db: Arc<Mutex<Database>>,
     metering_points: Option<u64>,
 }
@@ -561,7 +556,7 @@ impl WasmIndexExecutor {
         wasm_bytes: impl AsRef<[u8]>,
         pool: IndexerConnectionPool,
     ) -> IndexerResult<Self> {
-        let mut compiler_config = compiler();
+        let mut compiler_config = Cranelift::new();
 
         if let Some(metering_points) = config.indexer_handler_metering_points {
             // `Metering` needs to be configured with a limit and a cost
@@ -573,23 +568,20 @@ impl WasmIndexExecutor {
             compiler_config.push_middleware(metering);
         }
 
-        let store = Store::new(&Universal::new(compiler_config).engine());
+        let idx_env = IndexEnv::new(pool, manifest).await?;
+        let db: Arc<Mutex<Database>> = idx_env.db.clone();
+
+        let mut store = Store::new(compiler_config);
+
         let module = Module::new(&store, &wasm_bytes)?;
 
-        let mut import_object = imports! {};
+        let env = FunctionEnv::new(&mut store, idx_env);
+        let mut imports = imports! {};
+        for (export_name, export) in ffi::get_exports(&mut store, &env) {
+            imports.define("env", &export_name, export.clone());
+        }
 
-        let mut env = IndexEnv::new(pool).await?;
-        let exports = ffi::get_exports(&env, &store);
-
-        import_object.register("env", exports);
-
-        let instance = Instance::new(&module, &import_object)?;
-        env.init_with_instance(&instance)?;
-        env.db
-            .lock()
-            .await
-            .load_schema(manifest, Some(&instance))
-            .await?;
+        let instance = Instance::new(&mut store, &module, &imports)?;
 
         if !instance
             .exports
@@ -598,11 +590,30 @@ impl WasmIndexExecutor {
             return Err(IndexerError::MissingHandler);
         }
 
+        // FunctionEnvMut and SotreMut must be scoped because they can't be used
+        // across await
+        {
+            let mut env_mut = env.clone().into_mut(&mut store);
+            let (data_mut, store_mut) = env_mut.data_and_store_mut();
+
+            data_mut.memory = Some(instance.exports.get_memory("memory")?.clone());
+            data_mut.alloc = Some(
+                instance
+                    .exports
+                    .get_typed_function(&store_mut, "alloc_fn")?,
+            );
+            data_mut.dealloc = Some(
+                instance
+                    .exports
+                    .get_typed_function(&store_mut, "dealloc_fn")?,
+            );
+        };
+
         Ok(WasmIndexExecutor {
             instance,
             _module: module,
-            _store: store,
-            db: env.db.clone(),
+            store: Arc::new(Mutex::new(store)),
+            db: db.clone(),
             metering_points: config.indexer_handler_metering_points,
         })
     }
@@ -612,7 +623,7 @@ impl WasmIndexExecutor {
         p: impl AsRef<Path>,
         config: Option<IndexerConfig>,
         pool: IndexerConnectionPool,
-    ) -> IndexerResult<Self> {
+    ) -> IndexerResult<WasmIndexExecutor> {
         let config = config.unwrap_or_default();
         let manifest = Manifest::from_file(p)?;
         let bytes = manifest.module_bytes()?;
@@ -665,14 +676,20 @@ impl WasmIndexExecutor {
         }
     }
 
-    pub fn get_instance_metering_points(
+    pub async fn get_instance_metering_points(
         &self,
     ) -> wasmer_middlewares::metering::MeteringPoints {
-        wasmer_middlewares::metering::get_remaining_points(&self.instance)
+        let mut store_guard = self.store.lock().await;
+        wasmer_middlewares::metering::get_remaining_points(
+            &mut store_guard,
+            &self.instance,
+        )
     }
 
-    pub fn set_instance_metering_points(&self, metering_points: u64) {
+    pub async fn set_instance_metering_points(&self, metering_points: u64) {
+        let mut store_guard = self.store.lock().await;
         wasmer_middlewares::metering::set_remaining_points(
+            &mut store_guard,
             &self.instance,
             metering_points,
         )
@@ -684,41 +701,59 @@ impl Executor for WasmIndexExecutor {
     /// Trigger a WASM event handler, passing in a serialized event struct.
     async fn handle_events(&mut self, blocks: Vec<BlockData>) -> IndexerResult<()> {
         if let Some(metering_points) = self.metering_points {
-            self.set_instance_metering_points(metering_points)
+            self.set_instance_metering_points(metering_points).await
         }
         let bytes = serialize(&blocks);
-        let arg =
-            ffi::WasmArg::new(&self.instance, bytes, self.metering_points.is_some())?;
 
-        let fun = self
-            .instance
-            .exports
-            .get_native_function::<(u32, u32), ()>(ffi::MODULE_ENTRYPOINT)?;
+        let mut arg = {
+            let mut store_guard = self.store.lock().await;
+            ffi::WasmArg::new(&mut store_guard, &self.instance, bytes, self.metering_points.is_some())?
+        };
+
+        let fun = {
+            let store_guard = self.store.lock().await;
+            self.instance.exports.get_typed_function::<(u32, u32), ()>(
+                &store_guard,
+                ffi::MODULE_ENTRYPOINT,
+            )?
+        };
 
         let _ = self.db.lock().await.start_transaction().await?;
 
         let ptr = arg.get_ptr();
         let len = arg.get_len();
 
-        let res = spawn_blocking(move || fun.call(ptr, len)).await?;
+        let res = spawn_blocking({
+            let store = self.store.clone();
+            move || {
+                let mut store_guard =
+                    tokio::runtime::Handle::current().block_on(store.lock());
+                fun.call(&mut store_guard, ptr, len)
+            }
+        })
+        .await?;
 
         if let Err(e) = res {
             // get_instance_metering_points panics if metering is not enabled.
             if self.metering_points.is_some()
                 && e.clone().to_trap()
                     == Some(wasmer_types::TrapCode::UnreachableCodeReached)
-                && self.get_instance_metering_points() == MeteringPoints::Exhausted
+                && self.get_instance_metering_points().await == MeteringPoints::Exhausted
             {
                 self.db.lock().await.revert_transaction().await?;
                 return Err(IndexerError::RunTimeLimitExceededError);
             } else {
-                error!("WasmIndexExecutor handle_events failed: {e:?}.");
+                error!("WasmIndexExecutor WASM execution failed: {e:?}.");
                 self.db.lock().await.revert_transaction().await?;
                 return Err(IndexerError::from(e));
             }
         } else {
             let _ = self.db.lock().await.commit_transaction().await?;
         }
+
+        let mut store_guard = self.store.lock().await;
+        arg.drop(&mut store_guard);
+
         Ok(())
     }
 }

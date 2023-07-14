@@ -77,14 +77,14 @@ async fn test_wasm_executor_can_meter_execution() {
                         assert_eq!(e, wasmer_types::TrapCode::UnreachableCodeReached);
                         assert_eq!(
                             wasmer_middlewares::metering::MeteringPoints::Exhausted,
-                            executor.get_instance_metering_points()
+                            executor.get_instance_metering_points().await
                         );
                         println!("Metering points exhausted.");
                     } else {
                         panic!("Expected exhausted metering points");
                     }
                 } else {
-                    match executor.get_instance_metering_points() {
+                    match executor.get_instance_metering_points().await {
                         wasmer_middlewares::metering::MeteringPoints::Remaining(pts) => {
                             assert!(pts > 0)
                         }

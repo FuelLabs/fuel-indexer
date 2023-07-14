@@ -17,7 +17,7 @@ pub use fuel_indexer_lib::{
 pub use fuel_indexer_schema::{db::IndexerSchemaDbError, FtColumn};
 pub use service::IndexerService;
 use thiserror::Error;
-use wasmer::{ExportError, HostEnvInitError, InstantiationError, RuntimeError};
+use wasmer::{ExportError, InstantiationError, RuntimeError};
 
 // required for vendored openssl
 use openssl as _;
@@ -49,8 +49,6 @@ pub enum IndexerError {
     RuntimeError(#[from] RuntimeError),
     #[error("Run time limit exceeded error")]
     RunTimeLimitExceededError,
-    #[error("Could not initialize host environment: {0:#?}")]
-    HostEnvInitError(#[from] HostEnvInitError),
     #[error("IO Error: {0:#?}")]
     IoError(#[from] std::io::Error),
     #[error("FFI Error {0:?}")]
