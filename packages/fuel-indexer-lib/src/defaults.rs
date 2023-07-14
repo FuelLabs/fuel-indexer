@@ -113,7 +113,7 @@ pub const RATE_LIMIT_WINDOW_SIZE: u64 = 5;
 pub const LOG_LEVEL: &str = "info";
 
 /// The number of WASM opcodes after which the indexer's `handle_events` function will stop execution.
-pub const INDEXER_HANDLER_METERING_POINTS: Option<u64> = None;
+pub const INDEXER_HANDLER_METERING_POINTS: u64 = 30_000_000_000;
 
 /// Whether to allow replacing an indexer.
 ///

@@ -175,7 +175,7 @@ impl From<IndexerArgs> for IndexerConfig {
         };
 
         let mut config = IndexerConfig {
-            indexer_handler_metering_points: args.indexer_handler_metering_points,
+            indexer_handler_metering_points: Some(args.indexer_handler_metering_points),
             log_level: args.log_level,
             verbose: args.verbose,
             local_fuel_node: args.local_fuel_node,
@@ -260,7 +260,7 @@ impl From<ApiServerArgs> for IndexerConfig {
         };
 
         let mut config = IndexerConfig {
-            indexer_handler_metering_points: defaults::INDEXER_HANDLER_METERING_POINTS,
+            indexer_handler_metering_points: Some(defaults::INDEXER_HANDLER_METERING_POINTS),
             log_level: args.log_level,
             verbose: args.verbose,
             local_fuel_node: defaults::LOCAL_FUEL_NODE,
