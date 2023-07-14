@@ -119,3 +119,6 @@ pub const METERING_POINTS: u64 = 30_000_000_000;
 ///
 /// If this is disabled, then an HTTP 409 Conflict will be returned if an indexer with the same name already exists.
 pub const REPLACE_INDEXER: bool = false;
+
+/// Allow the web API to accept raw SQL queries.
+pub const ACCEPT_SQL: bool = true;

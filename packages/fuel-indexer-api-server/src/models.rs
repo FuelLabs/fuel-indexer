@@ -73,3 +73,10 @@ impl Claims {
         self.exp == 1 && self.iat == 1
     }
 }
+
+/// A SQL query posted to the web API.
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct SqlQuery {
+    /// The literal raw SQL query.
+    pub query: String,
+}

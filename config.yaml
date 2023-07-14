@@ -35,6 +35,9 @@
 # The number of WASM opcodes after which the indexer will stop execution.
 # metering_points: 30000000000
 
+# # Allow the web API to accept raw SQL queries.
+# accept_sql_queries: true
+
 # # ***********************
 # # Fuel Node configuration
 # # ************************

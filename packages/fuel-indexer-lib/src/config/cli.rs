@@ -176,6 +176,10 @@ pub struct IndexerArgs {
         help = "Whether to allow replacing an existing indexer. If not specified, an attempt to deploy over an existing indexer results in an error."
     )]
     pub replace_indexer: bool,
+
+    /// Allow the web API to accept raw SQL queries.
+    #[clap(long, help = "Allow the web API to accept raw SQL queries.")]
+    pub accept_sql_queries: bool,
 }
 
 #[derive(Debug, Parser, Clone)]
@@ -297,4 +301,8 @@ pub struct ApiServerArgs {
     /// Number of seconds over which to allow --rate-limit-rps.
     #[clap(long, help = "Number of seconds over which to allow --rate-limit-rps.")]
     pub rate_limit_window_size: Option<u64>,
+
+    /// Allow the web API to accept raw SQL queries.
+    #[clap(long, help = "Allow the web API to accept raw SQL queries.")]
+    pub accept_sql_queries: bool,
 }

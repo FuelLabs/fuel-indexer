@@ -104,6 +104,7 @@ impl Default for IndexerArgs {
             rate_limit_request_count: Some(defaults::RATE_LIMIT_REQUEST_COUNT),
             rate_limit_window_size: Some(defaults::RATE_LIMIT_WINDOW_SIZE),
             replace_indexer: defaults::REPLACE_INDEXER,
+            accept_sql_queries: defaults::ACCEPT_SQL,
         }
     }
 }
@@ -131,6 +132,7 @@ pub struct IndexerConfig {
     pub authentication: AuthenticationConfig,
     pub rate_limit: RateLimitConfig,
     pub replace_indexer: bool,
+    pub accept_sql_queries: bool,
 }
 
 impl From<IndexerArgs> for IndexerConfig {
@@ -208,6 +210,7 @@ impl From<IndexerArgs> for IndexerConfig {
                 window_size: args.rate_limit_window_size,
             },
             replace_indexer: args.replace_indexer,
+            accept_sql_queries: args.accept_sql_queries,
         };
 
         config
@@ -293,6 +296,7 @@ impl From<ApiServerArgs> for IndexerConfig {
                 window_size: args.rate_limit_window_size,
             },
             replace_indexer: defaults::REPLACE_INDEXER,
+            accept_sql_queries: args.accept_sql_queries,
         };
 
         config
@@ -325,6 +329,12 @@ impl IndexerConfig {
         let local_fuel_node_key = serde_yaml::Value::String("local_fuel_node".into());
         let indexer_net_config_key =
             serde_yaml::Value::String("indexer_net_config".into());
+
+        let accept_sql_config_key = serde_yaml::Value::String("accept_sql_queries".into());
+
+        if let Some(accept_sql_queries) = content.get(accept_sql_config_key) {
+            config.accept_sql_queries = accept_sql_queries.as_bool().unwrap();
+        }
 
         if let Some(replace_indexer) = content.get(replace_indexer_key) {
             config.replace_indexer = replace_indexer.as_bool().unwrap();

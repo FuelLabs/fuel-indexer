@@ -1,8 +1,8 @@
 use crate::{
     middleware::AuthenticationMiddleware,
     uses::{
-        get_nonce, gql_playground, health_check, indexer_status, query_graph,
-        register_indexer_assets, remove_indexer, verify_signature,
+        get_nonce, graphql_playground, health_check, indexer_status, query_graph,
+        register_indexer_assets, remove_indexer, sql_query, verify_signature,
     },
 };
 
@@ -172,9 +172,9 @@ impl IntoResponse for ApiError {
 }
 
 /// GraphQL API server.
-pub struct GraphQlApi;
+pub struct WebApi;
 
-impl GraphQlApi {
+impl WebApi {
     /// Build an `axum` application with all routes.
     pub async fn build(
         config: IndexerConfig,
@@ -192,6 +192,15 @@ impl GraphQlApi {
             .layer(Extension(schema_manager.clone()))
             .layer(Extension(pool.clone()))
             .layer(RequestBodyLimitLayer::new(max_body_size));
+
+        let mut sql_routes = Router::new();
+
+        if config.accept_sql_queries {
+            sql_routes = Router::new()
+                .route("/:namespace/:identifier", post(sql_query))
+                .layer(Extension(pool.clone()))
+                .layer(RequestBodyLimitLayer::new(max_body_size));
+        }
 
         if config.rate_limit.enabled {
             graph_routes = graph_routes.layer(
@@ -261,7 +270,7 @@ impl GraphQlApi {
         let auth_routes = auth_routes.layer(MetricsMiddleware::default());
 
         let playground_route = Router::new()
-            .route("/:namespace/:identifier", get(gql_playground))
+            .route("/:namespace/:identifier", get(graphql_playground))
             .layer(Extension(schema_manager))
             .layer(Extension(pool))
             .layer(RequestBodyLimitLayer::new(max_body_size));
@@ -274,6 +283,7 @@ impl GraphQlApi {
             .nest("/playground", playground_route)
             .nest("/index", indexer_routes)
             .nest("/graph", graph_routes)
+            .nest("/sql", sql_routes)
             .nest("/auth", auth_routes);
 
         let app = Router::new()
@@ -317,7 +327,7 @@ impl GraphQlApi {
         tx: Sender<ServiceRequest>,
     ) -> ApiResult<()> {
         let listen_on: SocketAddr = config.graphql_api.clone().into();
-        let app = GraphQlApi::build(config, pool, tx).await?;
+        let app = WebApi::build(config, pool, tx).await?;
 
         axum::Server::bind(&listen_on)
             .serve(app.into_make_service())

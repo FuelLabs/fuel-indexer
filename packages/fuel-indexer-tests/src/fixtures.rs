@@ -1,6 +1,6 @@
 use axum::routing::Router;
 use fuel_indexer::IndexerService;
-use fuel_indexer_api_server::api::GraphQlApi;
+use fuel_indexer_api_server::api::WebApi;
 use fuel_indexer_database::IndexerConnectionPool;
 use fuel_indexer_lib::{
     config::{
@@ -297,6 +297,7 @@ pub async fn api_server_app_postgres(
         authentication: AuthenticationConfig::default(),
         rate_limit: RateLimitConfig::default(),
         replace_indexer: config_defaults::REPLACE_INDEXER,
+        accept_sql_queries: config_defaults::ACCEPT_SQL,
     };
 
     let pool = IndexerConnectionPool::connect(&config.database.to_string())
@@ -305,7 +306,7 @@ pub async fn api_server_app_postgres(
 
     let (tx, rx) = channel::<ServiceRequest>(SERVICE_REQUEST_CHANNEL_SIZE);
 
-    let router = GraphQlApi::build(config, pool, tx).await.unwrap();
+    let router = WebApi::build(config, pool, tx).await.unwrap();
 
     // NOTE: Keep Receiver in scope to prevent the channel from being closed
     (router, rx)
@@ -338,6 +339,7 @@ pub async fn authenticated_api_server_app_postgres(database_url: Option<&str>) -
         },
         rate_limit: RateLimitConfig::default(),
         replace_indexer: config_defaults::REPLACE_INDEXER,
+        accept_sql_queries: config_defaults::ACCEPT_SQL,
     };
 
     let (tx, _rx) = channel::<ServiceRequest>(SERVICE_REQUEST_CHANNEL_SIZE);
@@ -346,7 +348,7 @@ pub async fn authenticated_api_server_app_postgres(database_url: Option<&str>) -
         .await
         .expect("Failed to create connection pool");
 
-    GraphQlApi::build(config, pool, tx).await.unwrap()
+    WebApi::build(config, pool, tx).await.unwrap()
 }
 
 pub async fn indexer_service_postgres(
@@ -373,6 +375,7 @@ pub async fn indexer_service_postgres(
         authentication: AuthenticationConfig::default(),
         rate_limit: RateLimitConfig::default(),
         replace_indexer: config_defaults::REPLACE_INDEXER,
+        accept_sql_queries: config_defaults::ACCEPT_SQL,
     };
 
     modify_config.map(|f| f(&mut config));
