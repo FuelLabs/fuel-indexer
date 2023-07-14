@@ -10,10 +10,7 @@ A "Hello World" type of program for the Fuel Indexer service.
 
 Spin up containers for the Postgres database server and the indexer service.
 
-> NOTE: Ensure that any local Postgres instance on port 5432 is stopped.
->
-> IMPORTANT: If you're on a Mac M1/M2 please update the `image` for the `fuel-indexer` service in your
-> `docker-compose.yaml` to [`ra0x3/fuel-indexer:latest`](https://hub.docker.com/repository/docker/ra0x3/fuel-indexer/general) until [#1099](https://github.com/FuelLabs/fuel-indexer/issues/1099) is resolved.
+> IMPORTANT: Ensure that any local Postgres instance on port 5432 is stopped.
 
 ```bash
 docker compose up --build
