@@ -219,10 +219,14 @@ impl<'a> WasmArg<'a> {
                 MeteringPoints::Remaining(pts) => pts,
             };
             set_remaining_points(store, self.instance, 1_000_000);
-            dealloc_fn.call(store, self.ptr, self.len).expect("Dealloc failed");
+            dealloc_fn
+                .call(store, self.ptr, self.len)
+                .expect("Dealloc failed");
             set_remaining_points(store, self.instance, pts);
         } else {
-            dealloc_fn.call(store, self.ptr, self.len).expect("Dealloc failed");
+            dealloc_fn
+                .call(store, self.ptr, self.len)
+                .expect("Dealloc failed");
         }
     }
 }

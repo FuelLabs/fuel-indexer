@@ -283,7 +283,9 @@ pub async fn api_server_app_postgres(
         });
 
     let config = IndexerConfig {
-        indexer_handler_metering_points: Some(config_defaults::INDEXER_HANDLER_METERING_POINTS),
+        indexer_handler_metering_points: Some(
+            config_defaults::INDEXER_HANDLER_METERING_POINTS,
+        ),
         log_level: "info".to_string(),
         verbose: true,
         local_fuel_node: false,
@@ -359,7 +361,9 @@ pub async fn indexer_service_postgres(
         });
 
     let mut config = IndexerConfig {
-        indexer_handler_metering_points: Some(config_defaults::INDEXER_HANDLER_METERING_POINTS),
+        indexer_handler_metering_points: Some(
+            config_defaults::INDEXER_HANDLER_METERING_POINTS,
+        ),
         log_level: "info".to_string(),
         verbose: true,
         local_fuel_node: false,

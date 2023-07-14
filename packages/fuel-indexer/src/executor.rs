@@ -707,7 +707,12 @@ impl Executor for WasmIndexExecutor {
 
         let mut arg = {
             let mut store_guard = self.store.lock().await;
-            ffi::WasmArg::new(&mut store_guard, &self.instance, bytes, self.metering_points.is_some())?
+            ffi::WasmArg::new(
+                &mut store_guard,
+                &self.instance,
+                bytes,
+                self.metering_points.is_some(),
+            )?
         };
 
         let fun = {
