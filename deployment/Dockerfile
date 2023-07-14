@@ -48,7 +48,7 @@ RUN xx-cargo build --release -p fuel-indexer -p fuel-indexer-api-server --featur
     && mv ./target/$(xx-cargo --print-target-triple)/release/fuel-indexer-api-server.d ./target/release/fuel-indexer-api-server.d
 
 # Stage 3: Run
-FROM --platform=$BUILDPLATFORM ubuntu:22.04 AS run
+FROM ubuntu:22.04 AS run
 
 WORKDIR /root/
 
