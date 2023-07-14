@@ -1,5 +1,6 @@
 use crate::{IndexerResult, Manifest};
 use fuel_indexer_database::{queries, IndexerConnection, IndexerConnectionPool};
+use fuel_indexer_lib::graphql::GraphQLSchema;
 use fuel_indexer_lib::{fully_qualified_namespace, graphql::types::IdCol};
 use fuel_indexer_schema::FtColumn;
 use std::collections::HashMap;
@@ -31,12 +32,15 @@ impl Database {
         pool: IndexerConnectionPool,
         manifest: &Manifest,
     ) -> IndexerResult<Database> {
+        let version = GraphQLSchema::new(manifest.graphql_schema()?)
+            .version()
+            .to_string();
         let mut db = Database {
             pool,
             stashed: None,
             namespace: manifest.namespace.clone(),
             identifier: manifest.identifier.clone(),
-            version: Default::default(),
+            version,
             schema: Default::default(),
             tables: Default::default(),
         };
@@ -187,10 +191,6 @@ Do your WASM modules need to be rebuilt?
     /// Load the schema for this indexer from the database, and build a mapping of `TypeId`s to
     /// tables.
     async fn load_schema(&mut self) -> IndexerResult<()> {
-        let mut conn = self.pool.acquire().await?;
-        self.version =
-            queries::type_id_latest(&mut conn, &self.namespace, &self.identifier).await?;
-
         info!(
             "Loading schema for Indexer({}.{}) with Version({}).",
             self.namespace, self.identifier, self.version
