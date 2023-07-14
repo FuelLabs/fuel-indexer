@@ -31,6 +31,7 @@ members = [
    "plugins/forc-index",
    "plugins/forc-postgres",
 ]
+
 default-members = [
    "packages/fuel-indexer",
    "packages/fuel-indexer-api-server",
@@ -60,7 +61,7 @@ edition = "2021"
 homepage = "https://fuel.network/"
 license = "Apache-2.0"
 repository = "https://github.com/FuelLabs/fuel-indexer"
-rust-version = "1.69.0"
+rust-version = "1.71.1"
 version = "0.19.4"
 
 [workspace.dependencies]
