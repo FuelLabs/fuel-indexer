@@ -104,7 +104,8 @@ jobs:
     needs:
       - cargo-toml-fmt-check
       - set-env-vars
-    if: needs.set-env-vars.outputs.IS_RELEASE != 'true'
+      - check-is-semver-branch
+    if: ${{ (needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER != 'true') && (needs.check-is-semver-branch.outputs.is_semver_branch != 'true' ) }}
     strategy:
       matrix:
         command:
@@ -154,10 +155,11 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: '${{ secrets.SLACK_WEBHOOK_NOTIFY_BUILD }}'
   cargo-clippy:
-    if: needs.set-env-vars.outputs.IS_RELEASE != 'true'
+    if: ${{ (needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER != 'true') && (needs.check-is-semver-branch.outputs.is_semver_branch != 'true' ) }}
     needs:
       - cargo-toml-fmt-check
       - set-env-vars
+      - check-is-semver-branch
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -182,10 +184,11 @@ jobs:
       - name: cargo fmt --all --verbose -- --check
         run: cargo fmt --all --verbose -- --check
   cargo-test-unit-tests:
-    if: needs.set-env-vars.outputs.IS_RELEASE != 'true'
+    if: ${{ (needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER != 'true') && (needs.check-is-semver-branch.outputs.is_semver_branch != 'true' ) }}
     needs:
       - cargo-toml-fmt-check
       - set-env-vars
+      - check-is-semver-branch
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -213,10 +216,11 @@ jobs:
           cargo test --locked --all-targets --workspace --exclude
           fuel-indexer-tests --exclude plugin-tests
   cargo-test-e2e-and-integration-tests:
-    if: needs.set-env-vars.outputs.IS_RELEASE != 'true'
+    if: ${{ (needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER != 'true') && (needs.check-is-semver-branch.outputs.is_semver_branch != 'true' ) }}
     needs:
       - cargo-toml-fmt-check
       - set-env-vars
+      - check-is-semver-branch
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -363,7 +367,7 @@ jobs:
   publish-docker-image:
     needs:
       - set-env-vars
-    if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER == 'true'
+    if: needs.set-env-vars.outputs.IS_RELEASE == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -681,7 +685,6 @@ jobs:
       - name: Publish crates
         uses: katyo/publish-crates@v2
         with:
-          publish-delay: 30000
           registry-token: '${{ secrets.CARGO_REGISTRY_TOKEN }}'
       - name: Notify Slack On Failure
         uses: ravsamhq/notify-slack-action@v2
