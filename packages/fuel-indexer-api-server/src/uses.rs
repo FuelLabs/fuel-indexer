@@ -423,6 +423,6 @@ pub async fn sql_query(
     let SqlQuery { query } = query;
     SqlQueryValidator::validate_sql_query(&query)?;
     let mut conn = pool.acquire().await?;
-    let result = queries::execute_query(&mut conn, query).await?;
+    let result = queries::run_query(&mut conn, query).await?;
     Ok(Json(json!({ "data": result })))
 }
