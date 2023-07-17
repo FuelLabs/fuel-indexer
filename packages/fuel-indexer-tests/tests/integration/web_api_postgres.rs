@@ -317,7 +317,7 @@ async fn test_querying_sql_endpoint_when_sql_is_enabled_returns_actual_query_res
         .post("http://127.0.0.1:29987/api/sql/fuel_indexer_test/index1")
         .header(CONTENT_TYPE, "application/json".to_owned())
         .body(
-            r#"{ "query": "SELECT COUNT(*) FROM fuel_indexer_test_index1.pingentity" }"#,
+            r#"{ "query": "SELECT json_agg(t) FROM (SELECT COUNT(*) FROM fuel_indexer_test_index1.pingentity) t" }"#,
         )
         .send()
         .await
@@ -329,5 +329,5 @@ async fn test_querying_sql_endpoint_when_sql_is_enabled_returns_actual_query_res
     let body = resp.text().await.unwrap();
 
     let v: Value = serde_json::from_str(&body).unwrap();
-    assert_eq!(v["data"], 1);
+    assert_eq!(v["data"][0][0]["count"], 1);
 }
