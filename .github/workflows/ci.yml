@@ -50,6 +50,7 @@ jobs:
       IS_MASTER: '${{ steps.set-env.outputs.IS_MASTER }}'
       IS_RELEASE: '${{ steps.set-env.outputs.IS_RELEASE }}'
       IS_RELEASE_OR_MASTER: '${{ steps.set-env.outputs.IS_RELEASE_OR_MASTER }}'
+      IS_RELEASE_OR_MASTER_OR_SEMVER: '${{ steps.set-env.outputs.IS_RELEASE_OR_MASTER_OR_SEMVER }}'
     steps:
       - name: Set env vars
         id: set-env
@@ -60,6 +61,8 @@ jobs:
 
           echo "IS_RELEASE_OR_MASTER=${{ env.IS_RELEASE_OR_MASTER }}" >>
           $GITHUB_OUTPUT
+
+          echo "IS_RELEASE_OR_MASTER_OR_SEMVER=[[ ${{ env.BRANCH_NAME }} =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]" >> $GITHUB_OUTPUT
   check-is-semver-branch:
     if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER != 'true'
     needs:
@@ -104,8 +107,7 @@ jobs:
     needs:
       - cargo-toml-fmt-check
       - set-env-vars
-      - check-is-semver-branch
-    if: ${{ (needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER != 'true') && (needs.check-is-semver-branch.outputs.is_semver_branch != 'true' ) }}
+    if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_SEMVER != 'true'
     strategy:
       matrix:
         command:
@@ -155,11 +157,10 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: '${{ secrets.SLACK_WEBHOOK_NOTIFY_BUILD }}'
   cargo-clippy:
-    if: ${{ (needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER != 'true') && (needs.check-is-semver-branch.outputs.is_semver_branch != 'true' ) }}
+    if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_SEMVER != 'true'
     needs:
       - cargo-toml-fmt-check
       - set-env-vars
-      - check-is-semver-branch
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -184,11 +185,10 @@ jobs:
       - name: cargo fmt --all --verbose -- --check
         run: cargo fmt --all --verbose -- --check
   cargo-test-unit-tests:
-    if: ${{ (needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER != 'true') && (needs.check-is-semver-branch.outputs.is_semver_branch != 'true' ) }}
+    if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_SEMVER != 'true'
     needs:
       - cargo-toml-fmt-check
       - set-env-vars
-      - check-is-semver-branch
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -216,11 +216,10 @@ jobs:
           cargo test --locked --all-targets --workspace --exclude
           fuel-indexer-tests --exclude plugin-tests
   cargo-test-e2e-and-integration-tests:
-    if: ${{ (needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER != 'true') && (needs.check-is-semver-branch.outputs.is_semver_branch != 'true' ) }}
+    if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_SEMVER != 'true'
     needs:
       - cargo-toml-fmt-check
       - set-env-vars
-      - check-is-semver-branch
     runs-on: ubuntu-latest
     services:
       postgres:
