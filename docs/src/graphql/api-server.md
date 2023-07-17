@@ -40,10 +40,10 @@ OPTIONS:
         --fuel-node-port <FUEL_NODE_PORT>
             Listening port of the running Fuel node. [default: 4000]
 
-        --graphql-api-host <WEB_API_HOST>
+        --web-api-host <WEB_API_HOST>
             GraphQL API host. [default: localhost]
 
-        --graphql-api-port <WEB_API_PORT>
+        --web-api-port <WEB_API_PORT>
             GraphQL API port. [default: 29987]
 
     -h, --help
