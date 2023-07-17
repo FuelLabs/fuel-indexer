@@ -91,7 +91,7 @@ async fn test_wasm_executor_can_meter_execution() {
                 }
             }
         }
-        _ => panic!("Unexpected!"),
+        _ => panic!("Expected a WASM module in the manifest but got a Native module instead."),
     }
 }
 
