@@ -27,7 +27,9 @@ fn criterion_benchmark(c: &mut Criterion) {
             file.read_to_end(&mut bytes).unwrap();
             bytes
         }
-        _ => panic!("unexpected"),
+        fuel_indexer_lib::manifest::Module::Native => panic!(
+            "Expected a WASM module in the manifest but got a Native module instead."
+        ),
     };
 
     let mut group: criterion::BenchmarkGroup<'_, criterion::measurement::WallTime> =

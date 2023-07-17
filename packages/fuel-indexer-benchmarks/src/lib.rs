@@ -69,7 +69,10 @@ mod tests {
 
     #[bench]
     fn executor_with_metering(b: &mut Bencher) {
-        make_executor_metering_benchmark(b, Some(9_000_000_000_000));
+        make_executor_metering_benchmark(
+            b,
+            Some(fuel_indexer_lib::defaults::INDEXER_HANDLER_METERING_POINTS),
+        );
     }
 
     #[bench]
