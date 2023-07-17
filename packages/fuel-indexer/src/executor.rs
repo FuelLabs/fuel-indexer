@@ -456,7 +456,7 @@ impl IndexEnv {
         pool: IndexerConnectionPool,
         manifest: &Manifest,
     ) -> IndexerResult<IndexEnv> {
-        let db = Database::new(pool, manifest).await?;
+        let db = Database::new(pool, manifest).await;
         Ok(IndexEnv {
             memory: None,
             alloc: None,
@@ -495,7 +495,7 @@ where
         pool: IndexerConnectionPool,
         handle_events_fn: fn(Vec<BlockData>, Arc<Mutex<Database>>) -> F,
     ) -> IndexerResult<Self> {
-        let db = Database::new(pool, manifest).await?;
+        let db = Database::new(pool, manifest).await;
         Ok(Self {
             db: Arc::new(Mutex::new(db)),
             manifest: manifest.to_owned(),
@@ -593,9 +593,9 @@ impl WasmIndexExecutor {
 
         // FunctionEnvMut and SotreMut must be scoped because they can't be used
         // across await
-        {
+        let version = {
             let mut env_mut = env.clone().into_mut(&mut store);
-            let (data_mut, store_mut) = env_mut.data_and_store_mut();
+            let (data_mut, mut store_mut) = env_mut.data_and_store_mut();
 
             data_mut.memory = Some(instance.exports.get_memory("memory")?.clone());
             data_mut.alloc = Some(
@@ -608,7 +608,11 @@ impl WasmIndexExecutor {
                     .exports
                     .get_typed_function(&store_mut, "dealloc_fn")?,
             );
+
+            ffi::get_version(&mut store_mut, &instance)?
         };
+
+        db.lock().await.load_schema(version).await?;
 
         Ok(WasmIndexExecutor {
             instance,

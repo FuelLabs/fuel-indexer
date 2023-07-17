@@ -120,9 +120,7 @@ async fn generate_schema_then_load_schema_from_wasm_module(database_url: &str) {
         .await
         .expect("Error creating WASM module");
 
-    let mut db = Database::new(pool.clone(), &manifest)
-        .await
-        .expect("Failed to create database object.");
+    let mut db = Database::new(pool.clone(), &manifest).await;
 
     assert_eq!(db.namespace, "test_namespace");
     assert_eq!(db.version, version);
