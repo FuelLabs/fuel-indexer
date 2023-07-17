@@ -54,6 +54,16 @@ async fn load_wasm_module(
 
 #[tokio::test]
 async fn test_schema_manager_generates_and_loads_schema_postgres() {
+    if let Ok(mut current_dir) = std::env::current_dir() {
+        if current_dir.ends_with("fuel-indexer-tests") {
+            current_dir.pop();
+            current_dir.pop();
+        }
+
+        if let Err(e) = std::env::set_current_dir(current_dir) {
+            eprintln!("Failed to change directory: {}", e);
+        }
+    }
     let database_url = "postgres://postgres:my-secret@localhost:5432";
     generate_schema_then_load_schema_from_wasm_module(database_url).await;
 }
