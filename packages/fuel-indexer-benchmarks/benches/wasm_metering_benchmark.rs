@@ -39,8 +39,11 @@ fn criterion_benchmark(c: &mut Criterion) {
 
         let mut executor = rt.block_on(async {
             let mut config = IndexerConfig::default();
-            config.indexer_handler_metering_points =
-                if t { Some(9_000_000_000_000) } else { None };
+            config.metering_points = if t {
+                Some(fuel_indexer_lib::defaults::METERING_POINTS)
+            } else {
+                None
+            };
 
             let manifest = manifest.clone();
             let wasm_bytes = wasm_bytes.clone();

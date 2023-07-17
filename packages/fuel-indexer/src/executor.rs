@@ -558,7 +558,7 @@ impl WasmIndexExecutor {
     ) -> IndexerResult<Self> {
         let mut compiler_config = Cranelift::new();
 
-        if let Some(metering_points) = config.indexer_handler_metering_points {
+        if let Some(metering_points) = config.metering_points {
             // `Metering` needs to be configured with a limit and a cost
             // function. For each `Operator`, the metering middleware will call
             // the cost function and subtract the cost from the remaining
@@ -614,7 +614,7 @@ impl WasmIndexExecutor {
             _module: module,
             store: Arc::new(Mutex::new(store)),
             db: db.clone(),
-            metering_points: config.indexer_handler_metering_points,
+            metering_points: config.metering_points,
         })
     }
 

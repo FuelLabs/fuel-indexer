@@ -166,9 +166,9 @@ pub struct IndexerArgs {
     #[clap(
         long,
         help = "The number of WASM opcodes after which the indexer's event handler will stop execution.",
-        default_value_t = defaults::INDEXER_HANDLER_METERING_POINTS
+        default_value_t = defaults::METERING_POINTS
     )]
-    pub indexer_handler_metering_points: u64,
+    pub metering_points: u64,
 
     /// Whether to allow replacing an existing indexer. If not specified, an attempt to deploy over an existing indexer results in an error.
     #[clap(

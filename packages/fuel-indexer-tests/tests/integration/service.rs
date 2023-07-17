@@ -62,7 +62,8 @@ async fn test_wasm_executor_can_meter_execution() {
             );
             let mut config = IndexerConfig::default();
             config.database = DatabaseConfig::from_str(&test_db.url).unwrap();
-            config.indexer_handler_metering_points = Some(100u64);
+            // not enough points to finish execution
+            config.metering_points = Some(100u64);
 
             let mut executor =
                 WasmIndexExecutor::new(&config, &manifest, bytes.clone(), pool)
