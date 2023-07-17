@@ -99,8 +99,8 @@ pub enum ApiError {
     HexError(#[from] hex::FromHexError),
     #[error("BoxError: {0:?}")]
     BoxError(#[from] axum::BoxError),
-    #[error("SqlParser error: {0:?}")]
-    SqlParser(#[from] sqlparser::parser::ParserError),
+    #[error("Sql validator error: {0:?}")]
+    SqlValidator(#[from] crate::sql::SqlValidatorError),
 }
 
 impl Default for ApiError {
@@ -154,6 +154,10 @@ impl IntoResponse for ApiError {
             ApiError::BoxError(e) => {
                 error!("Generic BoxError: {e:?}");
                 (StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {e}"))
+            }
+            ApiError::SqlValidator(e) => {
+                error!("SqlValidatorError: {e:?}");
+                (StatusCode::BAD_REQUEST, format!("Error: {e}"))
             }
             _ => (StatusCode::INTERNAL_SERVER_ERROR, generic_details),
         };

@@ -414,12 +414,15 @@ pub async fn get_metrics(_req: Request<Body>) -> impl IntoResponse {
     encode_metrics_response()
 }
 
+/// Return the results from a validated, arbitrary SQL query.
 pub async fn sql_query(
-    Path((namespace, identifier)): Path<(String, String)>,
+    Path((_namespace, _identifier)): Path<(String, String)>,
     Extension(pool): Extension<IndexerConnectionPool>,
     Json(query): Json<SqlQuery>,
 ) -> ApiResult<axum::Json<Value>> {
     let SqlQuery { query } = query;
-    SqlQueryValidator.verify_is_select_only(&query)?;
-    Ok(Json(json!({ "foo": "bar" })))
+    SqlQueryValidator::validate_sql_query(&query)?;
+    let mut conn = pool.acquire().await?;
+    let result = queries::execute_query(&mut conn, query).await?;
+    Ok(Json(json!({ "data": result })))
 }

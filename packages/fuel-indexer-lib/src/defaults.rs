@@ -121,4 +121,4 @@ pub const METERING_POINTS: u64 = 30_000_000_000;
 pub const REPLACE_INDEXER: bool = false;
 
 /// Allow the web API to accept raw SQL queries.
-pub const ACCEPT_SQL: bool = true;
+pub const ACCEPT_SQL: bool = false;

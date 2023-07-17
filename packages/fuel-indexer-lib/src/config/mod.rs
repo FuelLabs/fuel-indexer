@@ -330,7 +330,8 @@ impl IndexerConfig {
         let indexer_net_config_key =
             serde_yaml::Value::String("indexer_net_config".into());
 
-        let accept_sql_config_key = serde_yaml::Value::String("accept_sql_queries".into());
+        let accept_sql_config_key =
+            serde_yaml::Value::String("accept_sql_queries".into());
 
         if let Some(accept_sql_queries) = content.get(accept_sql_config_key) {
             config.accept_sql_queries = accept_sql_queries.as_bool().unwrap();
