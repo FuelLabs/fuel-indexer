@@ -1,27 +1,33 @@
 use axum::Router;
 use fuel_indexer::IndexerService;
-use fuel_indexer_lib::config::WebApiConfig;
-use fuel_indexer_lib::manifest::Manifest;
+use fuel_indexer_lib::{
+    config::{
+        auth::AuthenticationStrategy, defaults as config_defaults, AuthenticationConfig,
+        WebApiConfig,
+    },
+    manifest::Manifest,
+};
 use fuel_indexer_postgres as postgres;
 use fuel_indexer_tests::assets::{
     SIMPLE_WASM_MANIFEST, SIMPLE_WASM_SCHEMA, SIMPLE_WASM_WASM,
 };
 use fuel_indexer_tests::{
-    assets,
+    assets, defaults,
     fixtures::{
-        api_server_app_postgres, authenticated_api_server_app_postgres, http_client,
-        indexer_service_postgres, setup_example_test_fuel_node, TestPostgresDb,
+        api_server_app_postgres, http_client, indexer_service_postgres,
+        setup_example_test_fuel_node, TestPostgresDb,
     },
     utils::update_test_manifest_asset_paths,
 };
 use hyper::header::CONTENT_TYPE;
 use reqwest::multipart;
 use serde::{Deserialize, Serialize};
-use serde_json::{Number, Value};
-use std::collections::HashMap;
+use serde_json::Value;
 use std::time::{SystemTime, UNIX_EPOCH};
-use tokio::task::JoinHandle;
-use tokio::time::{sleep, Duration};
+use tokio::{
+    task::JoinHandle,
+    time::{sleep, Duration},
+};
 
 const SIGNATURE: &str = "cb19384361af5dd7fec2a0052ca49d289f997238ea90590baf47f16ff0a33fb20170a43bd20208ce16daf443bad06dd66c1d1bf73f48b5ae53de682a5731d7d9";
 const NONCE: &str = "ea35be0c98764e7ca06d02067982e3b4";
@@ -35,7 +41,7 @@ async fn setup_test_components() -> (
     let node_handle = tokio::spawn(setup_example_test_fuel_node());
     let test_db = TestPostgresDb::new().await.unwrap();
     let srvc = indexer_service_postgres(Some(&test_db.url), None).await;
-    let (api_app, _rx) = api_server_app_postgres(Some(&test_db.url)).await;
+    let (api_app, _rx) = api_server_app_postgres(Some(&test_db.url), None).await;
 
     (node_handle, test_db, srvc, api_app)
 }
@@ -44,7 +50,7 @@ async fn setup_test_components() -> (
 async fn test_metrics_endpoint_returns_proper_count_of_metrics_postgres() {
     let test_db = TestPostgresDb::new().await.unwrap();
     let _srvc = indexer_service_postgres(Some(&test_db.url), None).await;
-    let (app, _rx) = api_server_app_postgres(Some(&test_db.url)).await;
+    let (app, _rx) = api_server_app_postgres(Some(&test_db.url), None).await;
 
     let server = axum::Server::bind(&WebApiConfig::default().into())
         .serve(app.into_make_service());
@@ -76,7 +82,7 @@ async fn test_database_postgres_metrics_properly_increments_counts_when_queries_
 {
     let test_db = TestPostgresDb::new().await.unwrap();
     let _ = indexer_service_postgres(Some(&test_db.url), None).await;
-    let (app, _rx) = api_server_app_postgres(Some(&test_db.url)).await;
+    let (app, _rx) = api_server_app_postgres(Some(&test_db.url), None).await;
 
     let server = axum::Server::bind(&WebApiConfig::default().into())
         .serve(app.into_make_service());
@@ -117,7 +123,7 @@ async fn test_database_postgres_metrics_properly_increments_counts_when_queries_
 #[tokio::test]
 async fn test_asset_upload_endpoint_properly_adds_assets_to_database_postgres() {
     let test_db = TestPostgresDb::new().await.unwrap();
-    let (app, _rx) = api_server_app_postgres(Some(&test_db.url)).await;
+    let (app, _rx) = api_server_app_postgres(Some(&test_db.url), None).await;
 
     let server = axum::Server::bind(&WebApiConfig::default().into())
         .serve(app.into_make_service());
@@ -178,7 +184,20 @@ struct SignatureResponse {
 #[tokio::test]
 async fn test_signature_route_validates_signature_expires_nonce_and_creates_jwt() {
     let test_db = TestPostgresDb::new().await.unwrap();
-    let app = authenticated_api_server_app_postgres(Some(&test_db.url)).await;
+    let app = {
+        let modify_config = Box::new(|config: &mut fuel_indexer::IndexerConfig| {
+            config.authentication = AuthenticationConfig{
+                enabled: true,
+                strategy: Some(AuthenticationStrategy::JWT),
+                jwt_secret: Some("6906573247652854078288872150120717701634680141358560585446649749925714230966".to_string()),
+                jwt_issuer: Some("FuelLabs".to_string()),
+                jwt_expiry: Some(config_defaults::JWT_EXPIRY_SECS)
+            };
+        });
+        api_server_app_postgres(Some(&test_db.url), Some(modify_config))
+            .await
+            .0
+    };
 
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -225,8 +244,8 @@ async fn test_signature_route_validates_signature_expires_nonce_and_creates_jwt(
 }
 
 #[actix_web::test]
-async fn test_querying_sql_endpoint_when_sql_not_enabled_returns_empty_body() {
-    let (node_handle, _test_db, mut srvc, api_app) = setup_test_components().await;
+async fn test_querying_sql_endpoint_when_sql_not_enabled_returns_404() {
+    let (_node_handle, _test_db, mut srvc, api_app) = setup_test_components().await;
     let server = axum::Server::bind(&WebApiConfig::default().into())
         .serve(api_app.into_make_service());
 
@@ -247,13 +266,24 @@ async fn test_querying_sql_endpoint_when_sql_not_enabled_returns_empty_body() {
 
     srv.abort();
 
-    assert_eq!(resp.status(), 200);
-    assert_eq!(resp.text().await.unwrap(), "");
+    assert_eq!(resp.status(), 404);
 }
 
 #[actix_web::test]
 async fn test_querying_sql_endpoint_when_sql_is_enabled_returns_actual_query_response() {
-    let (node_handle, test_db, mut srvc, api_app) = setup_test_components().await;
+    let (_node_handle, test_db, _srvc, _api_app) = setup_test_components().await;
+
+    let api_app = {
+        let modify_config = Box::new(|config: &mut fuel_indexer::IndexerConfig| {
+            config.accept_sql_queries = true;
+        });
+        api_server_app_postgres(Some(&test_db.url), Some(modify_config))
+            .await
+            .0
+    };
+
+    let server = axum::Server::bind(&WebApiConfig::default().into())
+        .serve(api_app.into_make_service());
 
     // overwrite the service with an updated config
     let mut srvc = {
@@ -262,22 +292,25 @@ async fn test_querying_sql_endpoint_when_sql_is_enabled_returns_actual_query_res
         });
         indexer_service_postgres(Some(&test_db.url), Some(modify_config)).await
     };
-
-    let server = axum::Server::bind(&WebApiConfig::default().into())
-        .serve(api_app.into_make_service());
-
     let srv = tokio::spawn(server);
     let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
     update_test_manifest_asset_paths(&mut manifest);
 
     srvc.register_indexer_from_manifest(manifest).await.unwrap();
 
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+
     let mut conn = test_db.pool.acquire().await.unwrap();
-    let _ =
-        sqlx::query("INSERT INTO fuel_indexer_test_index1.pingentity (id, value, message) VALUES ((1111, 1111, 'message 1111'), (2222, 2222, 'message 2222'), (3333, 3333, 'message 3333'))")
-            .execute(&mut conn)
-            .await
-            .unwrap();
+
+    let _ = sqlx::QueryBuilder::new("INSERT INTO fuel_indexer_test_index1.pingentity  (id, value, message, object) VALUES ($1, $2, $3, $4::bytea)")
+        .build()
+        .bind(123456789)
+        .bind(987654321)
+        .bind("My message")
+        .bind("fake object")
+        .execute(&mut conn)
+        .await
+        .unwrap();
 
     let client = http_client();
     let resp = client
@@ -296,5 +329,5 @@ async fn test_querying_sql_endpoint_when_sql_is_enabled_returns_actual_query_res
     let body = resp.text().await.unwrap();
 
     let v: Value = serde_json::from_str(&body).unwrap();
-    assert_eq!(v["data"], 3);
+    assert_eq!(v["data"], 1);
 }

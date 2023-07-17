@@ -4,8 +4,8 @@ use fuel_indexer_api_server::api::WebApi;
 use fuel_indexer_database::IndexerConnectionPool;
 use fuel_indexer_lib::{
     config::{
-        auth::AuthenticationStrategy, defaults as config_defaults, AuthenticationConfig,
-        DatabaseConfig, FuelClientConfig, IndexerConfig, RateLimitConfig, WebApiConfig,
+        defaults as config_defaults, AuthenticationConfig, DatabaseConfig,
+        FuelClientConfig, IndexerConfig, RateLimitConfig, WebApiConfig,
     },
     defaults::SERVICE_REQUEST_CHANNEL_SIZE,
     utils::{derive_socket_addr, ServiceRequest},
@@ -276,13 +276,14 @@ pub fn get_test_contract_id() -> Bech32ContractId {
 
 pub async fn api_server_app_postgres(
     database_url: Option<&str>,
+    modify_config: Option<Box<dyn Fn(&mut IndexerConfig)>>,
 ) -> (Router, Receiver<ServiceRequest>) {
     let database: DatabaseConfig = database_url
         .map_or(DatabaseConfig::default(), |url| {
             DatabaseConfig::from_str(url).unwrap()
         });
 
-    let config = IndexerConfig {
+    let mut config = IndexerConfig {
         metering_points: Some(config_defaults::METERING_POINTS),
         log_level: "info".to_string(),
         verbose: true,
@@ -300,6 +301,8 @@ pub async fn api_server_app_postgres(
         accept_sql_queries: config_defaults::ACCEPT_SQL,
     };
 
+    modify_config.map(|f| f(&mut config));
+
     let pool = IndexerConnectionPool::connect(&config.database.to_string())
         .await
         .expect("Failed to create connection pool");
@@ -310,45 +313,6 @@ pub async fn api_server_app_postgres(
 
     // NOTE: Keep Receiver in scope to prevent the channel from being closed
     (router, rx)
-}
-
-pub async fn authenticated_api_server_app_postgres(database_url: Option<&str>) -> Router {
-    let database: DatabaseConfig = database_url
-        .map_or(DatabaseConfig::default(), |url| {
-            DatabaseConfig::from_str(url).unwrap()
-        });
-
-    let config = IndexerConfig {
-        metering_points: Some(config_defaults::METERING_POINTS),
-        log_level: "info".to_string(),
-        verbose: true,
-        local_fuel_node: false,
-        indexer_net_config: false,
-        fuel_node: FuelClientConfig::default(),
-        database,
-        web_api: WebApiConfig::default(),
-        metrics: false,
-        stop_idle_indexers: true,
-        run_migrations: false,
-        authentication: AuthenticationConfig{
-            enabled: true,
-            strategy: Some(AuthenticationStrategy::JWT),
-            jwt_secret: Some("6906573247652854078288872150120717701634680141358560585446649749925714230966".to_string()),
-            jwt_issuer: Some("FuelLabs".to_string()),
-            jwt_expiry: Some(config_defaults::JWT_EXPIRY_SECS)
-        },
-        rate_limit: RateLimitConfig::default(),
-        replace_indexer: config_defaults::REPLACE_INDEXER,
-        accept_sql_queries: config_defaults::ACCEPT_SQL,
-    };
-
-    let (tx, _rx) = channel::<ServiceRequest>(SERVICE_REQUEST_CHANNEL_SIZE);
-
-    let pool = IndexerConnectionPool::connect(&config.database.to_string())
-        .await
-        .expect("Failed to create connection pool");
-
-    WebApi::build(config, pool, tx).await.unwrap()
 }
 
 pub async fn indexer_service_postgres(
