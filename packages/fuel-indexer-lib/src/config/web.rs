@@ -18,7 +18,7 @@ pub struct WebApiConfig {
     #[serde(default)]
     pub port: String,
 
-    /// Max body size for Web API requests.
+    /// Max body size for web API requests.
     #[serde(default)]
     pub max_body_size: usize,
 }
@@ -33,7 +33,7 @@ impl From<WebApiConfig> for Uri {
     fn from(c: WebApiConfig) -> Self {
         let uri = derive_http_url(&c.host, &c.port);
         uri.parse().unwrap_or_else(|e| {
-            panic!("Cannot parse HTTP URI from Web config: {c:?}: {e}")
+            panic!("Cannot parse HTTP URI from web config: {c:?}: {e}")
         })
     }
 }

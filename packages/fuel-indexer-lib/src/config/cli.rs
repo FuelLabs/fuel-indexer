@@ -63,8 +63,8 @@ pub struct IndexerArgs {
     #[clap(long, help = "Database type.", default_value = defaults::DATABASE, value_parser(["postgres"]))]
     pub database: String,
 
-    /// Max body size for Web API requests.
-    #[clap(long, help = "Max body size for Web API requests.", default_value_t = defaults::MAX_BODY_SIZE )]
+    /// Max body size for web API requests.
+    #[clap(long, help = "Max body size for web API requests.", default_value_t = defaults::MAX_BODY_SIZE )]
     pub max_body_size: usize,
 
     /// Postgres username.
@@ -185,7 +185,7 @@ pub struct IndexerArgs {
 #[derive(Debug, Parser, Clone)]
 #[clap(
     name = "Fuel Indexer API Server",
-    about = "Fuel indexer Web API",
+    about = "Fuel indexer web API",
     version
 )]
 pub struct ApiServerArgs {
@@ -225,8 +225,8 @@ pub struct ApiServerArgs {
     #[clap(long, help = "Database type.", default_value = defaults::DATABASE, value_parser(["postgres"]))]
     pub database: String,
 
-    /// Max body size for Web API requests.
-    #[clap(long, help = "Max body size for Web API requests.", default_value_t = defaults::MAX_BODY_SIZE )]
+    /// Max body size for web API requests.
+    #[clap(long, help = "Max body size for web requests.", default_value_t = defaults::MAX_BODY_SIZE )]
     pub max_body_size: usize,
 
     /// Run database migrations before starting service.

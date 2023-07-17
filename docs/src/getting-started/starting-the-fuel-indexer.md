@@ -59,7 +59,7 @@ OPTIONS:
             Indexer config file.
 
         --max-body-size <MAX_BODY_SIZE>
-            Max body size for Web API requests. [default: 5242880]
+            Max body size for web API requests. [default: 5242880]
 
         --metering-points <METERING_POINTS>
             The number of WASM opcodes after which the indexer's event handler will stop execution.
