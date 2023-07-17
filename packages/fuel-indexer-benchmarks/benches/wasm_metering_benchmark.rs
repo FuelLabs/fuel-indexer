@@ -75,10 +75,5 @@ fn criterion_benchmark(c: &mut Criterion) {
     group.finish();
 }
 
-criterion_group! {
-    name = benches;
-    // This can be any expression that returns a `Criterion` object.
-    config = Criterion::default().sample_size(50).measurement_time(std::time::Duration::from_secs(20));
-    targets = criterion_benchmark
-}
+criterion_group!(benches, criterion_benchmark);
 criterion_main!(benches);

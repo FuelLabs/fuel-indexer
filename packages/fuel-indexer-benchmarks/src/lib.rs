@@ -43,7 +43,7 @@ mod tests {
 
         let mut executor = rt.block_on(async {
             let mut config = IndexerConfig::default();
-            config.indexer_handler_metering_points = metering_points;
+            config.metering_points = metering_points;
 
             let manifest = manifest.clone();
             let wasm_bytes = wasm_bytes.clone();
@@ -71,7 +71,7 @@ mod tests {
     fn executor_with_metering(b: &mut Bencher) {
         make_executor_metering_benchmark(
             b,
-            Some(fuel_indexer_lib::defaults::INDEXER_HANDLER_METERING_POINTS),
+            Some(fuel_indexer_lib::defaults::METERING_POINTS),
         );
     }
 
