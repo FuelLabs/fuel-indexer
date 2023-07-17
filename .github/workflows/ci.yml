@@ -56,13 +56,14 @@ jobs:
         id: set-env
         run: >
           echo "IS_MASTER=${{ env.IS_MASTER }}" >> $GITHUB_OUTPUT
-
           echo "IS_RELEASE=${{ env.IS_RELEASE }}" >> $GITHUB_OUTPUT
+          echo "IS_RELEASE_OR_MASTER=${{ env.IS_RELEASE_OR_MASTER }}" >> $GITHUB_OUTPUT
 
-          echo "IS_RELEASE_OR_MASTER=${{ env.IS_RELEASE_OR_MASTER }}" >>
-          $GITHUB_OUTPUT
-
-          echo "IS_RELEASE_OR_MASTER_OR_SEMVER=[[ ${{ env.BRANCH_NAME }} =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]" >> $GITHUB_OUTPUT
+          if [[ ${{ env.BRANCH_NAME }} =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "IS_RELEASE_OR_MASTER_OR_SEMVER=true" >> $GITHUB_OUTPUT
+          else
+            echo "IS_RELEASE_OR_MASTER_OR_SEMVER=${{ env.IS_RELEASE_OR_MASTER }}" >> $GITHUB_OUTPUT
+          fi
   check-is-semver-branch:
     if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER != 'true'
     needs:
