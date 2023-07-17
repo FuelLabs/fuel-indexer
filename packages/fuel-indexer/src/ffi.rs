@@ -27,7 +27,7 @@ pub enum FFIError {
     None(String),
 }
 
-pub(crate) fn get_version(
+pub fn get_version(
     store: &mut StoreMut,
     instance: &Instance,
 ) -> Result<String, FFIError> {
