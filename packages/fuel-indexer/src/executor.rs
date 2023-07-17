@@ -41,6 +41,7 @@ use wasmer::{
     RuntimeError, Store, TypedFunction,
 };
 use wasmer_middlewares::metering::MeteringPoints;
+use wasmer_types::TrapCode;
 
 #[derive(Debug, Clone)]
 pub enum ExecutorSource {
@@ -676,23 +677,52 @@ impl WasmIndexExecutor {
         }
     }
 
-    pub async fn get_instance_metering_points(
-        &self,
-    ) -> wasmer_middlewares::metering::MeteringPoints {
-        let mut store_guard = self.store.lock().await;
-        wasmer_middlewares::metering::get_remaining_points(
-            &mut store_guard,
-            &self.instance,
-        )
+    /// Returns true if metering is enabled.
+    pub fn metering_enabled(&self) -> bool {
+        self.metering_points.is_some()
     }
 
-    pub async fn set_instance_metering_points(&self, metering_points: u64) {
-        let mut store_guard = self.store.lock().await;
-        wasmer_middlewares::metering::set_remaining_points(
-            &mut store_guard,
-            &self.instance,
-            metering_points,
-        )
+    /// Returns true if metering is enabled metering points are exhausted.
+    /// Otherwise returns false.
+    pub async fn metering_points_exhausted(&self) -> bool {
+        if self.metering_enabled() {
+            self.get_remaining_metering_points().await.unwrap()
+                == MeteringPoints::Exhausted
+        } else {
+            false
+        }
+    }
+
+    // Returns remaining metering points if metering is enabled. Otherwise,
+    // returns None.
+    pub async fn get_remaining_metering_points(&self) -> Option<MeteringPoints> {
+        if self.metering_enabled() {
+            let mut store_guard = self.store.lock().await;
+            let result = wasmer_middlewares::metering::get_remaining_points(
+                &mut store_guard,
+                &self.instance,
+            );
+            Some(result)
+        } else {
+            None
+        }
+    }
+
+    pub async fn set_metering_points(&self, metering_points: u64) -> IndexerResult<()> {
+        if self.metering_enabled() {
+            let mut store_guard = self.store.lock().await;
+            wasmer_middlewares::metering::set_remaining_points(
+                &mut store_guard,
+                &self.instance,
+                metering_points,
+            );
+            Ok(())
+        } else {
+            Err(IndexerError::Unknown(
+                "Attempting to set metering points when metering is not enables"
+                    .to_string(),
+            ))
+        }
     }
 }
 
@@ -701,7 +731,7 @@ impl Executor for WasmIndexExecutor {
     /// Trigger a WASM event handler, passing in a serialized event struct.
     async fn handle_events(&mut self, blocks: Vec<BlockData>) -> IndexerResult<()> {
         if let Some(metering_points) = self.metering_points {
-            self.set_instance_metering_points(metering_points).await
+            self.set_metering_points(metering_points).await?
         }
         let bytes = serialize(&blocks);
 
@@ -739,11 +769,8 @@ impl Executor for WasmIndexExecutor {
         .await?;
 
         if let Err(e) = res {
-            // get_instance_metering_points panics if metering is not enabled.
-            if self.metering_points.is_some()
-                && e.clone().to_trap()
-                    == Some(wasmer_types::TrapCode::UnreachableCodeReached)
-                && self.get_instance_metering_points().await == MeteringPoints::Exhausted
+            if e.clone().to_trap() == Some(TrapCode::UnreachableCodeReached)
+                && self.metering_points_exhausted().await
             {
                 self.db.lock().await.revert_transaction().await?;
                 return Err(IndexerError::RunTimeLimitExceededError);
