@@ -495,7 +495,15 @@ where
         pool: IndexerConnectionPool,
         handle_events_fn: fn(Vec<BlockData>, Arc<Mutex<Database>>) -> F,
     ) -> IndexerResult<Self> {
-        let db = Database::new(pool, manifest).await;
+        let mut db = Database::new(pool.clone(), manifest).await;
+        let mut conn = pool.acquire().await?;
+        let version = fuel_indexer_database::queries::type_id_latest(
+            &mut conn,
+            &manifest.namespace,
+            &manifest.identifier,
+        )
+        .await?;
+        db.load_schema(version).await?;
         Ok(Self {
             db: Arc::new(Mutex::new(db)),
             manifest: manifest.to_owned(),

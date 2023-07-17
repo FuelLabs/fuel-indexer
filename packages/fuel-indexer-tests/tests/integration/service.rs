@@ -31,16 +31,13 @@ abigen!(Contract(
 async fn test_wasm_executor_can_meter_execution() {
     use async_std::{fs::File, io::ReadExt};
 
-    if let Ok(current_dir) = std::env::current_dir() {
-        println!("Current directory: {}", current_dir.display());
-    }
+    if let Ok(mut current_dir) = std::env::current_dir() {
+        if current_dir.ends_with("fuel-indexer-tests") {
+            current_dir.pop();
+            current_dir.pop();
+        }
 
-    use std::env;
-
-    if let Ok(mut current_dir) = env::current_dir() {
-        current_dir.pop();
-        current_dir.pop();
-        if let Err(e) = env::set_current_dir(current_dir) {
+        if let Err(e) = std::env::set_current_dir(current_dir) {
             eprintln!("Failed to change directory: {}", e);
         }
     }
