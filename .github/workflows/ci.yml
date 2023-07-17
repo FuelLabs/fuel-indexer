@@ -56,8 +56,12 @@ jobs:
         id: set-env
         run: >
           echo "IS_MASTER=${{ env.IS_MASTER }}" >> $GITHUB_OUTPUT
+
           echo "IS_RELEASE=${{ env.IS_RELEASE }}" >> $GITHUB_OUTPUT
-          echo "IS_RELEASE_OR_MASTER=${{ env.IS_RELEASE_OR_MASTER }}" >> $GITHUB_OUTPUT
+
+          echo "IS_RELEASE_OR_MASTER=${{ env.IS_RELEASE_OR_MASTER }}" >>
+          $GITHUB_OUTPUT
+
 
           if [[ ${{ env.BRANCH_NAME }} =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
               echo "IS_RELEASE_OR_MASTER_OR_SEMVER=true" >> $GITHUB_OUTPUT
@@ -344,9 +348,8 @@ jobs:
           echo $PATH
           which forc-index
           which fuel-indexer
-          
-          bash ./ci/build-and-deploy-examples.bash
 
+          bash ./ci/build-and-deploy-examples.bash
   cargo-test-forc-index-plugins:
     if: needs.check-is-semver-branch.outputs.is_semver_branch != 'true'
     needs:
@@ -367,7 +370,7 @@ jobs:
   publish-docker-image:
     needs:
       - set-env-vars
-    if: needs.set-env-vars.outputs.IS_RELEASE == 'true'
+    if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -406,7 +409,7 @@ jobs:
         with:
           context: .
           file: deployment/Dockerfile
-          platforms: linux/amd64,linux/arm64
+          platforms: 'linux/amd64,linux/arm64'
           push: true
           tags: '${{ steps.meta.outputs.tags }}'
           labels: '${{ steps.meta.outputs.labels }}'
