@@ -83,7 +83,9 @@ async fn test_wasm_executor_can_meter_execution() {
                     }
                 } else {
                     match executor.get_remaining_metering_points().await {
-                        Some(wasmer_middlewares::metering::MeteringPoints::Remaining(pts)) => {
+                        Some(
+                            wasmer_middlewares::metering::MeteringPoints::Remaining(pts),
+                        ) => {
                             assert!(pts > 0)
                         }
                         _ => panic!("Expected remaining points > 0"),
@@ -91,7 +93,9 @@ async fn test_wasm_executor_can_meter_execution() {
                 }
             }
         }
-        _ => panic!("Expected a WASM module in the manifest but got a Native module instead."),
+        _ => panic!(
+            "Expected a WASM module in the manifest but got a Native module instead."
+        ),
     }
 }
 
