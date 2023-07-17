@@ -187,7 +187,7 @@ impl WebApi {
     ) -> ApiResult<Router> {
         let sm = SchemaManager::new(pool.clone());
         let schema_manager = Arc::new(RwLock::new(sm));
-        let max_body_size = config.graphql_api.max_body_size;
+        let max_body_size = config.web_api.max_body_size;
         let start_time = Arc::new(Instant::now());
         let log_level = Level::from_str(config.log_level.as_ref()).unwrap();
 
@@ -313,7 +313,7 @@ impl WebApi {
 
     /// Start the GraphQL API server.
     pub async fn run(config: IndexerConfig, app: Router) -> ApiResult<()> {
-        let listen_on: SocketAddr = config.graphql_api.into();
+        let listen_on: SocketAddr = config.web_api.into();
 
         axum::Server::bind(&listen_on)
             .serve(app.into_make_service())
@@ -330,7 +330,7 @@ impl WebApi {
         pool: IndexerConnectionPool,
         tx: Sender<ServiceRequest>,
     ) -> ApiResult<()> {
-        let listen_on: SocketAddr = config.graphql_api.clone().into();
+        let listen_on: SocketAddr = config.web_api.clone().into();
         let app = WebApi::build(config, pool, tx).await?;
 
         axum::Server::bind(&listen_on)

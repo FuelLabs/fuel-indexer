@@ -5,10 +5,10 @@ pub const FUEL_NODE_HOST: &str = "localhost";
 pub const FUEL_NODE_PORT: &str = "4000";
 
 /// GraphQL API host.
-pub const GRAPHQL_API_HOST: &str = "localhost";
+pub const WEB_API_HOST: &str = "localhost";
 
 /// GraphQL API port.
-pub const GRAPHQL_API_PORT: &str = "29987";
+pub const WEB_API_PORT: &str = "29987";
 
 /// Database type.
 pub const DATABASE: &str = "postgres";

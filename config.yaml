@@ -54,7 +54,7 @@
 # # GraphQL API configuration
 # # *************************
 
-# graphql_api:
+# web_api:
 #   # GraphQL API host.
 #   host: localhost
 

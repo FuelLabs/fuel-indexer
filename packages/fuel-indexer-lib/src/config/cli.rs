@@ -3,8 +3,8 @@ pub use crate::{
         auth::{AuthenticationConfig, AuthenticationStrategy},
         client::FuelClientConfig,
         database::DatabaseConfig,
-        graphql::GraphQLConfig,
         limit::RateLimitConfig,
+        web::WebApiConfig,
     },
     defaults,
 };
@@ -51,20 +51,20 @@ pub struct IndexerArgs {
     )]
     pub fuel_node_port: String,
 
-    /// GraphQL API host.
-    #[clap(long, help = "GraphQL API host.", default_value = defaults::GRAPHQL_API_HOST)]
-    pub graphql_api_host: String,
+    /// Web API host.
+    #[clap(long, help = "Web API host.", default_value = defaults::WEB_API_HOST)]
+    pub web_api_host: String,
 
-    /// GraphQL API port.
-    #[clap(long, help = "GraphQL API port.", default_value = defaults::GRAPHQL_API_PORT)]
-    pub graphql_api_port: String,
+    /// Web API port.
+    #[clap(long, help = "Web API port.", default_value = defaults::WEB_API_PORT)]
+    pub web_api_port: String,
 
     /// Database type.
     #[clap(long, help = "Database type.", default_value = defaults::DATABASE, value_parser(["postgres"]))]
     pub database: String,
 
-    /// Max body size for GraphQL API requests.
-    #[clap(long, help = "Max body size for GraphQL API requests.", default_value_t = defaults::MAX_BODY_SIZE )]
+    /// Max body size for Web API requests.
+    #[clap(long, help = "Max body size for Web API requests.", default_value_t = defaults::MAX_BODY_SIZE )]
     pub max_body_size: usize,
 
     /// Postgres username.
@@ -185,7 +185,7 @@ pub struct IndexerArgs {
 #[derive(Debug, Parser, Clone)]
 #[clap(
     name = "Fuel Indexer API Server",
-    about = "Fuel indexer GraphQL API",
+    about = "Fuel indexer Web API",
     version
 )]
 pub struct ApiServerArgs {
@@ -213,20 +213,20 @@ pub struct ApiServerArgs {
     )]
     pub fuel_node_port: String,
 
-    /// GraphQL API host.
-    #[clap(long, help = "GraphQL API host.", default_value = defaults::GRAPHQL_API_HOST)]
-    pub graphql_api_host: String,
+    /// Web API host.
+    #[clap(long, help = "Web API host.", default_value = defaults::WEB_API_HOST)]
+    pub web_api_host: String,
 
-    /// GraphQL API port.
-    #[clap(long, help = "GraphQL API port.", default_value = defaults::GRAPHQL_API_PORT)]
-    pub graphql_api_port: String,
+    /// Web API port.
+    #[clap(long, help = "Web API port.", default_value = defaults::WEB_API_PORT)]
+    pub web_api_port: String,
 
     /// Database type.
     #[clap(long, help = "Database type.", default_value = defaults::DATABASE, value_parser(["postgres"]))]
     pub database: String,
 
-    /// Max body size for GraphQL API requests.
-    #[clap(long, help = "Max body size for GraphQL API requests.", default_value_t = defaults::MAX_BODY_SIZE )]
+    /// Max body size for Web API requests.
+    #[clap(long, help = "Max body size for Web API requests.", default_value_t = defaults::MAX_BODY_SIZE )]
     pub max_body_size: usize,
 
     /// Run database migrations before starting service.
