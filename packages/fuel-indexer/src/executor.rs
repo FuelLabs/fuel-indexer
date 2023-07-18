@@ -780,8 +780,7 @@ impl Executor for WasmIndexExecutor {
         .await?;
 
         if let Err(e) = res {
-            if self.metering_points_exhausted().await
-            {
+            if self.metering_points_exhausted().await {
                 self.db.lock().await.revert_transaction().await?;
                 return Err(IndexerError::RunTimeLimitExceededError);
             } else {
