@@ -60,11 +60,10 @@ mod tests {
         });
 
         let blocks: Vec<fuel_indexer_types::fuel::BlockData> = vec![];
-        for _ in 0..16 {
-            b.iter(|| {
-                rt.block_on(executor.handle_events(blocks.clone())).unwrap();
-            })
-        }
+
+        b.iter(|| {
+            rt.block_on(executor.handle_events(blocks.clone())).unwrap();
+        })
     }
 
     #[bench]
