@@ -206,8 +206,10 @@ pub fn create_indexer(command: InitCommand) -> anyhow::Result<()> {
     }
     Ok(())
 }
-pub fn init(command: InitCommand) -> anyhow::Result<()> {
+pub fn init(command: InitCommand, print_welcome: bool) -> anyhow::Result<()> {
     create_indexer(command)?;
-    print_welcome_message();
+    if print_welcome {
+        print_welcome_message();
+    }
     Ok(())
 }

@@ -13,7 +13,7 @@ pub struct Command {
     pub verbose: bool,
 }
 
-pub async fn exec(command: Command) -> Result<()> {
-    forc_index_welcome::init(command).await?;
+pub async fn exec() -> Result<()> {
+    forc_index_welcome::init().await?;
     Ok(())
 }

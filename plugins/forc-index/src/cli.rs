@@ -36,6 +36,7 @@ pub enum ForcIndex {
     PullAbi(PullAbiCommand),
     Kill(KillCommand),
     Status(StatusCommand),
+    Welcome,
 }
 
 pub async fn run_cli() -> Result<(), anyhow::Error> {
@@ -54,7 +55,7 @@ pub async fn run_cli() -> Result<(), anyhow::Error> {
         ForcIndex::Remove(command) => crate::commands::remove::exec(command),
         ForcIndex::Build(command) => crate::commands::build::exec(command),
         ForcIndex::PullAbi(command) => crate::commands::pull_abi::exec(command).await,
-        //ForcIndex::Welcome(command) => crate::commands::welcome::exec(command).await,
+        ForcIndex::Welcome => crate::commands::welcome::exec().await,
         ForcIndex::Auth(command) => crate::commands::auth::exec(command),
         ForcIndex::Postgres(opt) => match opt.command {
             ForcPostgres::Create(command) => pg_commands::create::exec(command).await,

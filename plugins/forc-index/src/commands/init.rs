@@ -37,6 +37,6 @@ pub struct Command {
 }
 
 pub fn exec(command: Command) -> Result<()> {
-    forc_index_init::init(command)?;
+    forc_index_init::init(command, true)?;
     Ok(())
 }

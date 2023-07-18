@@ -1,230 +1,191 @@
-use crate::ops::{
-    forc_index_build::init as build, forc_index_deploy::init as deploy,
-    forc_index_init::create_indexer as create, forc_index_start::init as start,
-};
-use crate::{
-    cli::{BuildCommand, DeployCommand, InitCommand, StartCommand, WelcomeCommand},
-    defaults,
-};
+use crate::defaults;
+use crate::utils::{default_manifest_filename, default_schema_filename};
 use forc_util::{kebab_to_snake_case, validate_name};
-use owo_colors::OwoColorize;
-use rand::Rng;
+use fuel_indexer_lib::manifest::{ContractIds, Manifest};
+use inquire::{required, Confirm, Select, Text};
+use lazy_static::lazy_static;
+use std::collections::HashMap;
 use std::fs;
-use std::{
-    io::{self, Write},
-    process::Command,
-    thread, time,
-};
+use std::path::{Path, PathBuf};
+use std::str::FromStr;
 
-const TITLE: &str = "
+lazy_static! {
+    pub static ref AVAILABLE_NETWORKS: HashMap<&'static str, &'static str> =
+        HashMap::from([
+            ("Local Node", "127.0.0.1:4000"),
+            ("Beta-3", "beta-3.fuel.network:80"),
+        ]);
+}
 
-███████╗██╗░░░██╗███████╗██╗░░░░░  ██╗███╗░░██╗██████╗░███████╗██╗░░██╗███████╗██████╗░
-██╔════╝██║░░░██║██╔════╝██║░░░░░  ██║████╗░██║██╔══██╗██╔════╝╚██╗██╔╝██╔════╝██╔══██╗
-█████╗░░██║░░░██║█████╗░░██║░░░░░  ██║██╔██╗██║██║░░██║█████╗░░░╚███╔╝░█████╗░░██████╔╝
-██╔══╝░░██║░░░██║██╔══╝░░██║░░░░░  ██║██║╚████║██║░░██║██╔══╝░░░██╔██╗░██╔══╝░░██╔══██╗
-██║░░░░░╚██████╔╝███████╗███████╗  ██║██║░╚███║██████╔╝███████╗██╔╝╚██╗███████╗██║░░██║
-╚═╝░░░░░░╚═════╝░╚══════╝╚══════╝  ╚═╝╚═╝░░╚══╝╚═════╝░╚══════╝╚═╝░░╚═╝╚══════╝╚═╝░░╚═╝
-";
+pub async fn init() -> anyhow::Result<()> {
+    println!("Let's create an indexer! First, please fill in the following fields.\n");
+    let namespace = Text::new("Namespace:")
+        .with_validator(required!())
+        .with_help_message("The topmost organizational level of your indexer")
+        .prompt()?;
+    let identifier = Text::new("Identifier:")
+        .with_validator(required!())
+        .with_help_message("A unique identifer for your indexer")
+        .prompt()?;
 
-const WELCOME_MANIFEST_PATH: &str = "welcome.manifest.yaml";
-const PROJECT_INITIALIZED: &str =
-    "\n Indexer project initialized. Manifest file created. ✅";
-const DEPLOY_QUESTION: &str = "\n Start the indexer and deploy the index? (Y/n) \n > ";
+    let project_name = kebab_to_snake_case(&identifier);
+    validate_name(&project_name, "Project name")?;
 
-pub async fn init(command: WelcomeCommand) -> anyhow::Result<()> {
-    TITLE.lines().for_each(|line| {
-        println!("{}", line.trim().bright_cyan());
-        thread::sleep(time::Duration::from_millis(50));
-    });
+    let parent_folder =
+        if Confirm::new("Do you want to save your indexer in the current directory?")
+            .prompt()?
+        {
+            std::env::current_dir()?
+        } else {
+            let path_str = Text::new("Enter the path to an existing directory:")
+                .with_help_message("Your indexer will be saved inside of this directory")
+                .prompt()?;
+            std::fs::canonicalize(PathBuf::from_str(&path_str)?)?
+        };
 
-    let WelcomeCommand { greeter, verbose } = command;
-    if greeter {
-        render_greeter();
+    let project_dir = parent_folder.join(identifier.clone());
+
+    println!("\nThanks! The rest of these fields are optional; feel free to use the default values.\n");
+
+    let abi = Text::new("Path to ABI:").with_default("").prompt()?;
+    let abi = if abi.is_empty() { None } else { Some(abi) };
+
+    let contract_id = Text::new("Enter a contract ID to subscribe to:")
+        .with_default("")
+        .prompt()?;
+
+    let contract_id = if contract_id.is_empty() {
+        ContractIds::Single(None)
+    } else {
+        ContractIds::from_str(&contract_id).unwrap()
+    };
+
+    let fuel_client_key = Select::new(
+        "What network should your indexer connect to?",
+        AVAILABLE_NETWORKS
+            .keys()
+            .map(ToOwned::to_owned)
+            .map(String::from)
+            .collect::<Vec<String>>(),
+    )
+    .with_starting_cursor(0)
+    .prompt()?;
+
+    let fuel_client = AVAILABLE_NETWORKS
+        .get(&fuel_client_key.as_str())
+        .unwrap()
+        .to_string();
+
+    let start_block = Text::new("Enter a start block:")
+        .with_default("")
+        .with_help_message(
+            "The block at which your indexer will start processing information",
+        )
+        .prompt()?;
+
+    let start_block = if start_block.is_empty() {
+        None
+    } else {
+        Some(start_block.parse::<u64>()?)
+    };
+
+    let end_block = Text::new("Enter a end block:")
+        .with_default("")
+        .with_help_message(
+            "The block at which your indexer will stop processing information",
+        )
+        .prompt()?;
+
+    let end_block = if end_block.is_empty() {
+        None
+    } else {
+        Some(end_block.parse::<u64>()?)
+    };
+
+    let native = !Confirm::new("Would you like to compile your indexer to WebAssembly?")
+        .with_default(true)
+        .with_help_message("WebAssembly is the recommended execution mode for indexers")
+        .prompt()?;
+
+    let resumable = Confirm::new("Would you like your indexer to be resumable?")
+        .with_default(false)
+        .with_help_message("Specifies whether an indexer will automatically sync with the chain upon starting the indexer service")
+        .prompt()?;
+
+    let metrics = Confirm::new("Would you like to enable metrics for your indexer?")
+        .with_default(false)
+        .with_help_message(
+            "Enables metrics collection; endpoint will be available at `/api/metrics`",
+        )
+        .prompt()?;
+
+    let manifest = Manifest {
+        namespace,
+        identifier,
+        graphql_schema: default_schema_filename(&project_name),
+        contract_id,
+        abi,
+        fuel_client: Some(fuel_client),
+        module: fuel_indexer_lib::manifest::Module::Wasm("".to_string()),
+        metrics: Some(metrics),
+        start_block,
+        end_block,
+        resumable: Some(resumable),
+    };
+
+    fs::create_dir_all(Path::new(&project_dir).join("src"))?;
+
+    let default_toml = defaults::default_indexer_cargo_toml(&project_name);
+
+    fs::write(
+        Path::new(&project_dir).join(defaults::CARGO_MANIFEST_FILE_NAME),
+        default_toml,
+    )
+    .expect("Failed to write Cargo manifest");
+
+    let manifest_filename = default_manifest_filename(&project_name);
+    let schema_filename = default_schema_filename(&project_name);
+
+    manifest.write(&project_dir.join(manifest_filename.clone()))?;
+
+    fs::create_dir_all(Path::new(&project_dir).join("schema"))?;
+    fs::write(
+        Path::new(&project_dir).join("schema").join(schema_filename),
+        defaults::default_indexer_schema(),
+    )
+    .expect("Failed to write GraphQL schema");
+
+    let (filename, content) = if native {
+        (
+            defaults::INDEXER_BINARY_FILENAME,
+            defaults::default_indexer_binary(&project_name, &manifest_filename, None),
+        )
+    } else {
+        (
+            defaults::INDEXER_LIB_FILENAME,
+            defaults::default_indexer_lib(&project_name, &manifest_filename, None),
+        )
+    };
+
+    fs::write(Path::new(&project_dir).join("src").join(filename), content)
+        .expect("Failed to write indexer source file");
+
+    if !native {
+        fs::create_dir_all(
+            Path::new(&project_dir).join(defaults::CARGO_CONFIG_DIR_NAME),
+        )?;
+        let _ = fs::write(
+            Path::new(&project_dir)
+                .join(defaults::CARGO_CONFIG_DIR_NAME)
+                .join(defaults::CARGO_CONFIG_FILENAME),
+            defaults::default_cargo_config(),
+        );
     }
 
-    humanize_message(
-        "\n Would you like to create the default index? (Y/n) \n > ".to_string(),
+    println!(
+        "\nYour indexer has been created at {}",
+        project_dir.display()
     );
 
-    let mut input = String::new();
-
-    input = process_std(input);
-    match input.trim().to_lowercase().as_str() {
-        "y" | "yes" => {
-            humanize_message("\n Creating the default index... ⚙️".to_string());
-            create(InitCommand {
-                name: Some("welcome".to_string()),
-                path: Some(std::path::PathBuf::from(".")),
-                namespace: "default".to_string(),
-                native: false,
-                absolute_paths: true,
-                verbose: true,
-            })?;
-            humanize_message(PROJECT_INITIALIZED.to_string());
-            if verbose {
-                let output = Command::new("tree")
-                    .output()
-                    .expect("failed to execute tree command");
-
-                if output.status.success() {
-                    let tree = String::from_utf8(output.stdout).unwrap();
-                    humanize_message(tree);
-                } else {
-                    let error = String::from_utf8(output.stderr).unwrap();
-                    humanize_message(error);
-                }
-            }
-            humanize_message(DEPLOY_QUESTION.to_string());
-
-            input = process_std(input);
-            deploy_to_network(input, WELCOME_MANIFEST_PATH.to_string()).await?;
-        }
-        "n" | "no" => {
-            humanize_message(
-                "\n Ok! Let's create a namespace for your custom index.".to_string(),
-            );
-            humanize_message(
-                "\n Enter a namespace for your index below \n > ".to_string(),
-            );
-            input = process_std(input);
-            let namespace = input.trim().to_lowercase();
-            humanize_message(
-                "\n Great, now create an identifier for your custom index. \n > "
-                    .to_string(),
-            );
-
-            input = process_std(input);
-            let mut identifier = input.trim().to_lowercase();
-            identifier = kebab_to_snake_case(&identifier);
-            validate_name(&identifier, "index")?;
-
-            let identifer_copy = identifier.clone();
-
-            humanize_message(
-                "\n Ok, creating a new index with the values you've set... ⚙️".to_string(),
-            );
-            create(InitCommand {
-                name: Some(identifier),
-                path: Some(std::path::PathBuf::from(".")),
-                namespace,
-                native: false,
-                absolute_paths: true,
-                verbose: true,
-            })?;
-            humanize_message(PROJECT_INITIALIZED.to_string());
-            humanize_message("\n Here is the manifest file we created: \n\n".to_string());
-
-            let manifest_name = format!("{}.manifest.yaml", identifer_copy);
-            let manifest_path = format!("./{}", manifest_name);
-            let manifest_content = fs::read_to_string(&manifest_path)?;
-
-            for line in manifest_content.lines() {
-                println!("{}", line.trim().bright_green());
-                thread::sleep(time::Duration::from_millis(22));
-            }
-
-            humanize_message(DEPLOY_QUESTION.to_string());
-
-            input = process_std(input);
-            deploy_to_network(input, manifest_path).await?;
-        }
-        _ => {
-            println!("Invalid input. Please enter Y or n");
-        }
-    }
     Ok(())
-}
-
-fn render_greeter() {
-    humanize_message("\n Welcome to the Fuel Indexer CLI 🚀".to_string());
-    thread::sleep(time::Duration::from_millis(500));
-    humanize_message(
-        "\n This tool will help you understand how to create and deploy an index on the Fuel blockchain."
-        .to_string()
-    );
-    thread::sleep(time::Duration::from_millis(500));
-    humanize_message("\n Let's get started!".to_string());
-    thread::sleep(time::Duration::from_millis(500));
-    humanize_message("\n First, we'll create a new index.".to_string());
-    thread::sleep(time::Duration::from_millis(500));
-}
-
-async fn deploy_to_network(mut input: String, manifest: String) -> anyhow::Result<()> {
-    match input.trim().to_lowercase().as_str() {
-        "y" | "yes" => {
-            humanize_message(
-                "\n Connect to which network? 🤔 \n1. Local node\n2. Testnet \n > "
-                    .to_string(),
-            );
-
-            let build_command = BuildCommand {
-                manifest: Some(manifest.to_owned()),
-                ..Default::default()
-            };
-            let deploy_command = DeployCommand {
-                manifest: Some(manifest.to_owned()),
-                ..Default::default()
-            };
-
-            input = process_std(input);
-            match input.trim().to_lowercase().as_str() {
-                "1" => {
-                    // init for local node
-                    let start_command = StartCommand {
-                        fuel_node_host: "http://127.0.0.1:29987".to_string(),
-                        fuel_node_port: "29987".to_string(),
-                        web_api_host: defaults::WEB_API_HOST.to_string(),
-                        web_api_port: defaults::WEB_API_PORT.to_string(),
-                        ..Default::default()
-                    };
-                    start(start_command).await?;
-                    build(build_command)?;
-                    deploy(deploy_command)?;
-                }
-                "2" => {
-                    // init for testnet
-                    let start_command = StartCommand {
-                        fuel_node_host: "https://node-beta-2.fuel.network/graphql"
-                            .to_string(),
-                        fuel_node_port: "4000".to_string(),
-                        web_api_host: "node-beta-2.fuel.network".to_string(),
-                        web_api_port: "80".to_string(),
-                        ..Default::default()
-                    };
-                    start(start_command).await?;
-                    build(build_command)?;
-                    deploy(deploy_command)?;
-                }
-                _ => {
-                    println!("Invalid input. Please enter 1 or 2");
-                }
-            }
-        }
-        "n" | "no" => {
-            println!("Skipping indexer deployment...");
-            std::process::exit(0);
-        }
-        _ => {
-            println!("Invalid input. Please enter Y or n");
-        }
-    }
-    Ok(())
-}
-
-fn humanize_message(output: String) {
-    output.chars().for_each(|c| {
-        print!("{}", c.to_string().bright_yellow());
-        io::stdout().flush().expect("failed to flush stdout");
-        let sleep_time = rand::thread_rng().gen_range(20..92);
-        thread::sleep(time::Duration::from_millis(sleep_time));
-    })
-}
-
-fn process_std(mut input: String) -> String {
-    input.clear();
-    io::stdout().flush().expect("failed to flush stdout");
-    io::stdin()
-        .read_line(&mut input)
-        .expect("failed to read from stdin");
-    input
 }
