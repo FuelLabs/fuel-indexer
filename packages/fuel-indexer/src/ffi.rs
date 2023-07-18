@@ -1,3 +1,4 @@
+use fuel_indexer_lib::defaults;
 use fuel_indexer_schema::FtColumn;
 use fuel_indexer_types::ffi::{
     LOG_LEVEL_DEBUG, LOG_LEVEL_ERROR, LOG_LEVEL_INFO, LOG_LEVEL_TRACE, LOG_LEVEL_WARN,
@@ -238,7 +239,7 @@ impl<'a> WasmArg<'a> {
                 MeteringPoints::Exhausted => 0,
                 MeteringPoints::Remaining(pts) => pts,
             };
-            set_remaining_points(store, self.instance, 1_000_000);
+            set_remaining_points(store, self.instance, defaults::METERING_POINTS);
             dealloc_fn
                 .call(store, self.ptr, self.len)
                 .expect("Dealloc failed");
