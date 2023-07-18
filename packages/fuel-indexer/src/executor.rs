@@ -41,7 +41,6 @@ use wasmer::{
     RuntimeError, Store, TypedFunction,
 };
 use wasmer_middlewares::metering::MeteringPoints;
-use wasmer_types::TrapCode;
 
 #[derive(Debug, Clone)]
 pub enum ExecutorSource {
@@ -781,8 +780,7 @@ impl Executor for WasmIndexExecutor {
         .await?;
 
         if let Err(e) = res {
-            if e.clone().to_trap() == Some(TrapCode::UnreachableCodeReached)
-                && self.metering_points_exhausted().await
+            if self.metering_points_exhausted().await
             {
                 self.db.lock().await.revert_transaction().await?;
                 return Err(IndexerError::RunTimeLimitExceededError);

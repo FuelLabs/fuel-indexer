@@ -40,7 +40,6 @@ tokio-util = { workspace = true }
 tracing = { workspace = true }
 wasmer = "4"
 wasmer-middlewares = "4"
-wasmer-types = "4"
 
 [dependencies.openssl]
 version = "0.10.52"
