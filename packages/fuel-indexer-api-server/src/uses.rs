@@ -390,8 +390,10 @@ pub(crate) async fn verify_signature(
     unreachable!();
 }
 
-/// Given a `GraphQLRequest` for a given indexer's namespace and identifier, return the results
-/// of the GraphQL query.
+/// Endpoint for the GraphQL playground.
+///
+/// This is route just produces/creates the GraphQL playground, the actual queries
+/// submitted from the playground are still handled by `uses::query_graph`.
 pub async fn graphql_playground(
     Path((namespace, identifier)): Path<(String, String)>,
 ) -> ApiResult<impl IntoResponse> {

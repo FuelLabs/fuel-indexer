@@ -331,3 +331,66 @@ async fn test_querying_sql_endpoint_when_sql_is_enabled_returns_actual_query_res
     let v: Value = serde_json::from_str(&body).unwrap();
     assert_eq!(v["data"][0][0]["count"], 1);
 }
+
+#[actix_web::test]
+async fn test_querying_sql_endpoint_when_sql_is_enabled_returns_error_for_non_supported_queries(
+) {
+    let (_node_handle, test_db, _srvc, _api_app) = setup_test_components().await;
+
+    let api_app = {
+        let modify_config = Box::new(|config: &mut fuel_indexer::IndexerConfig| {
+            config.accept_sql_queries = true;
+        });
+        api_server_app_postgres(Some(&test_db.url), Some(modify_config))
+            .await
+            .0
+    };
+
+    let server = axum::Server::bind(&WebApiConfig::default().into())
+        .serve(api_app.into_make_service());
+
+    // overwrite the service with an updated config
+    let mut srvc = {
+        let modify_config = Box::new(|config: &mut fuel_indexer::IndexerConfig| {
+            config.accept_sql_queries = true;
+        });
+        indexer_service_postgres(Some(&test_db.url), Some(modify_config)).await
+    };
+    let srv = tokio::spawn(server);
+    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
+    update_test_manifest_asset_paths(&mut manifest);
+
+    srvc.register_indexer_from_manifest(manifest).await.unwrap();
+
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+
+    let mut conn = test_db.pool.acquire().await.unwrap();
+
+    let _ = sqlx::QueryBuilder::new("INSERT INTO fuel_indexer_test_index1.pingentity  (id, value, message, object) VALUES ($1, $2, $3, $4::bytea)")
+        .build()
+        .bind(123456789)
+        .bind(987654321)
+        .bind("My message")
+        .bind("fake object")
+        .execute(&mut conn)
+        .await
+        .unwrap();
+
+    let client = http_client();
+    let resp = client
+        .post("http://127.0.0.1:29987/api/sql/fuel_indexer_test/index1")
+        .header(CONTENT_TYPE, "application/json".to_owned())
+        .body(r#"{ "query": "DROP SCHEMA fuel_indexer_test" }"#)
+        .send()
+        .await
+        .unwrap();
+
+    srv.abort();
+
+    assert_eq!(resp.status(), 400);
+    let body = resp.text().await.unwrap();
+
+    let v: Value = serde_json::from_str(&body).unwrap();
+    assert_eq!(v["success"], "false");
+    assert_eq!(v["details"], "Error: Operation is not supported.");
+}
