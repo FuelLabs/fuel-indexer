@@ -1,14 +1,31 @@
-type Transaction {
-    hash: Bytes32! @virtual
+type TransactionFragment {
+  hash: Bytes32! @virtual
 }
 
 type Account {
-    id: ID!
-    pubkey: Bytes32!
-    nonce: UInt8!
-    balance: UInt16!
-    address: Address!
-    metadata: Json!
-    signature: Signature!
-    transactions: [Transaction]!
+  id: ID!
+  index: UInt1!
+  name: String
+  nonce: Nonce!
+  balance: UInt8!
+  address: Address!
+  metadata: Json!
+  transactions: [TransactionFragment]!
+  avatar_url: Charfield
+  updated_at: Timestamp!
+  created_at: Timestamp!
+}
+
+type Wallet {
+  id: ID!
+  pubkey: Bytes32!
+  block_height: BlockHeight!
+  balance: UInt16!
+  locked: Boolean!
+  accounts: [Account!]!
+  signature: Signature!
+  metadata: Json!
+  blob: Blob
+  updated_at: Timestamp!
+  created_at: Timestamp!
 }
