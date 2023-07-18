@@ -8,6 +8,7 @@ members = [
    "examples/hello-world/hello-indexer",
    "examples/hello-world/hello-world-data",
    "examples/hello-world/hello-world-node",
+   "examples/scalar-types/scalar-types",
    "packages/fuel-indexer",
    "packages/fuel-indexer-api-server",
    "packages/fuel-indexer-database",

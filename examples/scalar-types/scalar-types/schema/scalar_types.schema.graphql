@@ -1,0 +1,14 @@
+type Transaction {
+    hash: Bytes32! @virtual
+}
+
+type Account {
+    id: ID!
+    pubkey: Bytes32!
+    nonce: UInt8!
+    balance: UInt16!
+    address: Address!
+    metadata: Json!
+    signature: Signature!
+    transactions: [Transaction]!
+}
