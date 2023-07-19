@@ -5,11 +5,9 @@
 #![deny(unused_crate_dependencies)]
 pub mod config;
 pub mod defaults;
+pub mod graphql;
 pub mod manifest;
 pub mod utils;
-
-#[cfg(feature = "graphql")]
-pub mod graphql;
 
 use proc_macro2::TokenStream;
 use quote::quote;
