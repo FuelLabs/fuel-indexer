@@ -58,6 +58,7 @@ spec:
             - "10"
             - "--verbose"
             - "--replace-indexer"
+            - "--accept-sql-queries"
           env:
           - name: POSTGRES_PASSWORD
             valueFrom:
