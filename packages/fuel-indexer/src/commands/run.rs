@@ -8,12 +8,56 @@ use fuel_indexer_lib::{
 };
 use tokio::signal::unix::{signal, Signal, SignalKind};
 use tokio::sync::mpsc::channel;
+use tokio_util::sync::CancellationToken;
 use tracing::info;
 
 #[cfg(feature = "api-server")]
 use fuel_indexer_api_server::api::GraphQlApi;
 
+// Returns a CancellationToken which will be notified when a shutdown signal
+// have been reveived.
+async fn shutdown_signal_handler() -> anyhow::Result<CancellationToken> {
+    let cancel_token = tokio_util::sync::CancellationToken::new();
+
+    let mut sighup: Signal = signal(SignalKind::hangup())?;
+    let mut sigterm: Signal = signal(SignalKind::terminate())?;
+    let mut sigint: Signal = signal(SignalKind::interrupt())?;
+
+    tokio::spawn({
+        let cancel_token = cancel_token.clone();
+
+        async move {
+            #[cfg(unix)]
+            {
+                tokio::select! {
+                    _ = sighup.recv() => {
+                        info!("Received SIGHUP. Stopping services.");
+                    }
+                    _ = sigterm.recv() => {
+                        info!("Received SIGTERM. Stopping services.");
+                    }
+                    _ = sigint.recv() => {
+                        info!("Received SIGINT. Stopping services.");
+                    }
+                }
+                cancel_token.cancel();
+            }
+
+            #[cfg(not(unix))]
+            {
+                signal::ctrl_c().await?;
+                info!("Received CTRL+C. Stopping services.");
+            }
+        }
+    });
+
+    Ok(cancel_token)
+}
+
 pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
+    // for graceful shutdown
+    let cancel_token = shutdown_signal_handler().await?;
+
     let IndexerArgs {
         manifest,
         embedded_database,
@@ -93,9 +137,6 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
 
     let service_handle = tokio::spawn(service.run());
 
-    // for graceful shutdown
-    let cancel_token = tokio_util::sync::CancellationToken::new();
-
     #[cfg(feature = "api-server")]
     let gql_handle = tokio::spawn(GraphQlApi::build_and_run(config.clone(), pool, tx));
 
@@ -133,33 +174,7 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
         }
     });
 
-    let mut sighup: Signal = signal(SignalKind::hangup())?;
-    let mut sigterm: Signal = signal(SignalKind::terminate())?;
-    let mut sigint: Signal = signal(SignalKind::interrupt())?;
-
-    #[cfg(unix)]
-    {
-        tokio::select! {
-            _ = sighup.recv() => {
-                info!("Received SIGHUP. Stopping services.");
-            }
-            _ = sigterm.recv() => {
-                info!("Received SIGTERM. Stopping services.");
-            }
-            _ = sigint.recv() => {
-                info!("Received SIGINT. Stopping services.");
-            }
-            _ = cancel_token.cancelled() => {
-                info!("Received cancellation. Stopping services.");
-            }
-        }
-    }
-
-    #[cfg(not(unix))]
-    {
-        signal::ctrl_c().await?;
-        info!("Received CTRL+C. Stopping services.");
-    }
+    cancel_token.cancelled().await;
 
     if embedded_database {
         let name = postgres_database.unwrap_or(defaults::POSTGRES_DATABASE.to_string());
