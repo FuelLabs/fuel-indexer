@@ -982,7 +982,7 @@ async fn test_can_trigger_and_index_nonindexable_events() {
 async fn test_deploying_twice_returns_an_error() {
     let test_db = TestPostgresDb::new().await.unwrap();
 
-    let mut indexer = {
+    let mut srvc = {
         let modify_config = Box::new(|config: &mut fuel_indexer::IndexerConfig| {
             config.replace_indexer = false;
         });
@@ -992,12 +992,11 @@ async fn test_deploying_twice_returns_an_error() {
     let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
     update_test_manifest_asset_paths(&mut manifest);
 
-    indexer
-        .register_indexer_from_manifest(manifest.clone())
+    srvc.register_indexer_from_manifest(manifest.clone())
         .await
         .unwrap();
 
-    let result = indexer.register_indexer_from_manifest(manifest).await;
+    let result = srvc.register_indexer_from_manifest(manifest).await;
 
     assert!(result.is_err());
 
@@ -1016,7 +1015,7 @@ async fn test_can_replace_indexer() {
     let node_handle = tokio::spawn(setup_example_test_fuel_node());
     let test_db = TestPostgresDb::new().await.unwrap();
 
-    let mut indexer = {
+    let mut srvc = {
         let modify_config = Box::new(|config: &mut fuel_indexer::IndexerConfig| {
             config.replace_indexer = true;
         });
@@ -1026,15 +1025,11 @@ async fn test_can_replace_indexer() {
     let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
     update_test_manifest_asset_paths(&mut manifest);
 
-    indexer
-        .register_indexer_from_manifest(manifest.clone())
+    srvc.register_indexer_from_manifest(manifest.clone())
         .await
         .unwrap();
 
-    indexer
-        .register_indexer_from_manifest(manifest)
-        .await
-        .unwrap();
+    srvc.register_indexer_from_manifest(manifest).await.unwrap();
 
     let contract = connect_to_deployed_contract().await.unwrap();
     let app = test::init_service(app(contract)).await;

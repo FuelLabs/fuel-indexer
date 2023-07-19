@@ -9,6 +9,9 @@ USAGE:
     fuel-indexer run [OPTIONS]
 
 OPTIONS:
+        --accept-sql-queries
+            Allow the web API to accept raw SQL queries.
+
         --auth-enabled
             Require users to authenticate for some operations.
 
@@ -29,12 +32,6 @@ OPTIONS:
 
         --fuel-node-port <FUEL_NODE_PORT>
             Listening port of the running Fuel node. [default: 4000]
-
-        --graphql-api-host <GRAPHQL_API_HOST>
-            GraphQL API host. [default: localhost]
-
-        --graphql-api-port <GRAPHQL_API_PORT>
-            GraphQL API port. [default: 29987]
 
     -h, --help
             Print help information
@@ -62,7 +59,7 @@ OPTIONS:
             Indexer config file.
 
         --max-body-size <MAX_BODY_SIZE>
-            Max body size for GraphQL API requests. [default: 5242880]
+            Max body size for web API requests. [default: 5242880]
 
         --metering-points <METERING_POINTS>
             The number of WASM opcodes after which the indexer's event handler will stop execution.
@@ -110,6 +107,13 @@ OPTIONS:
 
     -V, --version
             Print version information
+
+        --web-api-host <WEB_API_HOST>
+            Web API host. [default: localhost]
+
+        --web-api-port <WEB_API_PORT>
+            Web API port. [default: 29987]
+
 ```
 
 ## Using a configuration file

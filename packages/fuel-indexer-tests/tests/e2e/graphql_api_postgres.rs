@@ -2,7 +2,7 @@ use actix_service::Service;
 use actix_web::test;
 use axum::Router;
 use fuel_indexer::IndexerService;
-use fuel_indexer_lib::config::GraphQLConfig;
+use fuel_indexer_lib::config::WebApiConfig;
 use fuel_indexer_lib::manifest::Manifest;
 use fuel_indexer_tests::{
     assets, defaults,
@@ -28,17 +28,16 @@ async fn setup_test_components() -> (
     let node_handle = tokio::spawn(setup_example_test_fuel_node());
     let test_db = TestPostgresDb::new().await.unwrap();
     let srvc = indexer_service_postgres(Some(&test_db.url), None).await;
-    let (api_app, _rx) = api_server_app_postgres(Some(&test_db.url)).await;
+    let (api_app, _rx) = api_server_app_postgres(Some(&test_db.url), None).await;
 
     (node_handle, test_db, srvc, api_app)
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_return_query_response_with_all_fields_required_postgres() {
     let (node_handle, _test_db, mut srvc, api_app) = setup_test_components().await;
 
-    let server = axum::Server::bind(&GraphQLConfig::default().into())
+    let server = axum::Server::bind(&WebApiConfig::default().into())
         .serve(api_app.into_make_service());
 
     let srv = tokio::spawn(server);
@@ -75,11 +74,10 @@ async fn test_can_return_query_response_with_all_fields_required_postgres() {
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_return_query_response_with_nullable_fields_postgres() {
     let (node_handle, _test_db, mut srvc, api_app) = setup_test_components().await;
 
-    let server = axum::Server::bind(&GraphQLConfig::default().into())
+    let server = axum::Server::bind(&WebApiConfig::default().into())
         .serve(api_app.into_make_service());
 
     let srv = tokio::spawn(server);
@@ -117,11 +115,10 @@ async fn test_can_return_query_response_with_nullable_fields_postgres() {
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_return_nested_query_response_with_implicit_foreign_keys_postgres() {
     let (node_handle, _test_db, mut srvc, api_app) = setup_test_components().await;
 
-    let server = axum::Server::bind(&GraphQLConfig::default().into())
+    let server = axum::Server::bind(&WebApiConfig::default().into())
         .serve(api_app.into_make_service());
 
     let srv = tokio::spawn(server);
@@ -164,11 +161,10 @@ async fn test_can_return_nested_query_response_with_implicit_foreign_keys_postgr
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_return_query_response_with_deeply_nested_query_postgres() {
     let (node_handle, _test_db, mut srvc, api_app) = setup_test_components().await;
 
-    let server = axum::Server::bind(&GraphQLConfig::default().into())
+    let server = axum::Server::bind(&WebApiConfig::default().into())
         .serve(api_app.into_make_service());
 
     let srv = tokio::spawn(server);
@@ -311,11 +307,10 @@ async fn test_can_return_query_response_with_deeply_nested_query_postgres() {
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_return_nested_query_response_with_explicit_foreign_keys_postgres() {
     let (node_handle, _test_db, mut srvc, api_app) = setup_test_components().await;
 
-    let server = axum::Server::bind(&GraphQLConfig::default().into())
+    let server = axum::Server::bind(&WebApiConfig::default().into())
         .serve(api_app.into_make_service());
 
     let srv = tokio::spawn(server);
@@ -359,11 +354,10 @@ async fn test_can_return_nested_query_response_with_explicit_foreign_keys_postgr
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_return_query_response_with_filter_id_selection_postgres() {
     let (fuel_node_handle, _test_db, mut srvc, api_app) = setup_test_components().await;
 
-    let server = axum::Server::bind(&GraphQLConfig::default().into())
+    let server = axum::Server::bind(&WebApiConfig::default().into())
         .serve(api_app.into_make_service());
 
     let server_handle = tokio::spawn(server);
@@ -406,11 +400,10 @@ async fn test_can_return_query_response_with_filter_id_selection_postgres() {
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_return_query_response_with_filter_membership_postgres() {
     let (fuel_node_handle, _test_db, mut srvc, api_app) = setup_test_components().await;
 
-    let server = axum::Server::bind(&GraphQLConfig::default().into())
+    let server = axum::Server::bind(&WebApiConfig::default().into())
         .serve(api_app.into_make_service());
 
     let server_handle = tokio::spawn(server);
@@ -459,11 +452,10 @@ async fn test_can_return_query_response_with_filter_membership_postgres() {
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_return_query_response_with_filter_non_null_postgres() {
     let (fuel_node_handle, _test_db, mut srvc, api_app) = setup_test_components().await;
 
-    let server = axum::Server::bind(&GraphQLConfig::default().into())
+    let server = axum::Server::bind(&WebApiConfig::default().into())
         .serve(api_app.into_make_service());
 
     let server_handle = tokio::spawn(server);
@@ -512,11 +504,10 @@ async fn test_can_return_query_response_with_filter_non_null_postgres() {
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_return_query_response_with_filter_complex_comparison_postgres() {
     let (fuel_node_handle, _test_db, mut srvc, api_app) = setup_test_components().await;
 
-    let server = axum::Server::bind(&GraphQLConfig::default().into())
+    let server = axum::Server::bind(&WebApiConfig::default().into())
         .serve(api_app.into_make_service());
 
     let server_handle = tokio::spawn(server);
@@ -565,11 +556,10 @@ async fn test_can_return_query_response_with_filter_complex_comparison_postgres(
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_return_query_response_with_filter_simple_comparison_postgres() {
     let (fuel_node_handle, _test_db, mut srvc, api_app) = setup_test_components().await;
 
-    let server = axum::Server::bind(&GraphQLConfig::default().into())
+    let server = axum::Server::bind(&WebApiConfig::default().into())
         .serve(api_app.into_make_service());
 
     let server_handle = tokio::spawn(server);
@@ -616,11 +606,10 @@ async fn test_can_return_query_response_with_filter_simple_comparison_postgres()
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_return_query_response_with_filter_nested_postgres() {
     let (fuel_node_handle, _test_db, mut srvc, api_app) = setup_test_components().await;
 
-    let server = axum::Server::bind(&GraphQLConfig::default().into())
+    let server = axum::Server::bind(&WebApiConfig::default().into())
         .serve(api_app.into_make_service());
 
     let server_handle = tokio::spawn(server);
@@ -669,11 +658,10 @@ async fn test_can_return_query_response_with_filter_nested_postgres() {
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_return_query_response_with_filter_multiple_on_single_entity_postgres() {
     let (fuel_node_handle, _test_db, mut srvc, api_app) = setup_test_components().await;
 
-    let server = axum::Server::bind(&GraphQLConfig::default().into())
+    let server = axum::Server::bind(&WebApiConfig::default().into())
         .serve(api_app.into_make_service());
 
     let server_handle = tokio::spawn(server);
@@ -718,11 +706,10 @@ async fn test_can_return_query_response_with_filter_multiple_on_single_entity_po
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_return_query_response_with_filter_negation_postgres() {
     let (fuel_node_handle, _test_db, mut srvc, api_app) = setup_test_components().await;
 
-    let server = axum::Server::bind(&GraphQLConfig::default().into())
+    let server = axum::Server::bind(&WebApiConfig::default().into())
         .serve(api_app.into_make_service());
 
     let server_handle = tokio::spawn(server);
@@ -767,11 +754,10 @@ async fn test_can_return_query_response_with_filter_negation_postgres() {
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_return_query_response_with_sorted_results_postgres() {
     let (fuel_node_handle, _test_db, mut srvc, api_app) = setup_test_components().await;
 
-    let server = axum::Server::bind(&GraphQLConfig::default().into())
+    let server = axum::Server::bind(&WebApiConfig::default().into())
         .serve(api_app.into_make_service());
 
     let server_handle = tokio::spawn(server);
@@ -818,12 +804,11 @@ async fn test_can_return_query_response_with_sorted_results_postgres() {
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_return_query_response_with_alias_and_ascending_offset_and_limited_results_postgres(
 ) {
     let (fuel_node_handle, _test_db, mut srvc, api_app) = setup_test_components().await;
 
-    let server = axum::Server::bind(&GraphQLConfig::default().into())
+    let server = axum::Server::bind(&WebApiConfig::default().into())
         .serve(api_app.into_make_service());
 
     let server_handle = tokio::spawn(server);

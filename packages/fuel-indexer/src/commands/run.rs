@@ -12,7 +12,7 @@ use tokio_util::sync::CancellationToken;
 use tracing::info;
 
 #[cfg(feature = "api-server")]
-use fuel_indexer_api_server::api::GraphQlApi;
+use fuel_indexer_api_server::api::WebApi;
 
 // Returns a CancellationToken which will be notified when a shutdown signal
 // have been reveived.
@@ -138,10 +138,10 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
     let service_handle = tokio::spawn(service.run());
 
     #[cfg(feature = "api-server")]
-    let gql_handle = tokio::spawn(GraphQlApi::build_and_run(config.clone(), pool, tx));
+    let web_handle = tokio::spawn(WebApi::build_and_run(config.clone(), pool, tx));
 
     #[cfg(not(feature = "api-server"))]
-    let gql_handle = tokio::spawn(futures::future::ready(()));
+    let web_handle = tokio::spawn(futures::future::ready(()));
 
     #[cfg(feature = "fuel-core-lib")]
     let node_handle = {
@@ -169,7 +169,7 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
     tokio::spawn({
         let cancel_token = cancel_token.clone();
         async move {
-            let _ = tokio::join!(service_handle, node_handle, gql_handle);
+            let _ = tokio::join!(service_handle, node_handle, web_handle);
             cancel_token.cancel();
         }
     });

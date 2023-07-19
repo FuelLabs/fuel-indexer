@@ -36,7 +36,6 @@ pub enum ForcIndex {
     PullAbi(PullAbiCommand),
     Kill(KillCommand),
     Status(StatusCommand),
-    //Welcome(WelcomeCommand),
 }
 
 pub async fn run_cli() -> Result<(), anyhow::Error> {

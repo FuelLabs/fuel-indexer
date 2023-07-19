@@ -1,8 +1,8 @@
 use crate::{
     middleware::AuthenticationMiddleware,
     uses::{
-        get_nonce, gql_playground, health_check, indexer_status, query_graph,
-        register_indexer_assets, remove_indexer, verify_signature,
+        get_nonce, graphql_playground, health_check, indexer_status, query_graph,
+        register_indexer_assets, remove_indexer, sql_query, verify_signature,
     },
 };
 
@@ -99,6 +99,8 @@ pub enum ApiError {
     HexError(#[from] hex::FromHexError),
     #[error("BoxError: {0:?}")]
     BoxError(#[from] axum::BoxError),
+    #[error("Sql validator error: {0:?}")]
+    SqlValidator(#[from] crate::sql::SqlValidatorError),
 }
 
 impl Default for ApiError {
@@ -153,6 +155,10 @@ impl IntoResponse for ApiError {
                 error!("Generic BoxError: {e:?}");
                 (StatusCode::INTERNAL_SERVER_ERROR, format!("Error: {e}"))
             }
+            ApiError::SqlValidator(e) => {
+                error!("SqlValidatorError: {e:?}");
+                (StatusCode::BAD_REQUEST, format!("Error: {e}"))
+            }
             _ => (StatusCode::INTERNAL_SERVER_ERROR, generic_details),
         };
 
@@ -170,9 +176,9 @@ impl IntoResponse for ApiError {
 }
 
 /// GraphQL API server.
-pub struct GraphQlApi;
+pub struct WebApi;
 
-impl GraphQlApi {
+impl WebApi {
     /// Build an `axum` application with all routes.
     pub async fn build(
         config: IndexerConfig,
@@ -181,7 +187,7 @@ impl GraphQlApi {
     ) -> ApiResult<Router> {
         let sm = SchemaManager::new(pool.clone());
         let schema_manager = Arc::new(RwLock::new(sm));
-        let max_body_size = config.graphql_api.max_body_size;
+        let max_body_size = config.web_api.max_body_size;
         let start_time = Arc::new(Instant::now());
         let log_level = Level::from_str(config.log_level.as_ref()).unwrap();
 
@@ -190,6 +196,15 @@ impl GraphQlApi {
             .layer(Extension(schema_manager.clone()))
             .layer(Extension(pool.clone()))
             .layer(RequestBodyLimitLayer::new(max_body_size));
+
+        let mut sql_routes = Router::new();
+
+        if config.accept_sql_queries {
+            sql_routes = Router::new()
+                .route("/:namespace/:identifier", post(sql_query))
+                .layer(Extension(pool.clone()))
+                .layer(RequestBodyLimitLayer::new(max_body_size));
+        }
 
         if config.rate_limit.enabled {
             graph_routes = graph_routes.layer(
@@ -259,7 +274,7 @@ impl GraphQlApi {
         let auth_routes = auth_routes.layer(MetricsMiddleware::default());
 
         let playground_route = Router::new()
-            .route("/:namespace/:identifier", get(gql_playground))
+            .route("/:namespace/:identifier", get(graphql_playground))
             .layer(Extension(schema_manager))
             .layer(Extension(pool))
             .layer(RequestBodyLimitLayer::new(max_body_size));
@@ -272,6 +287,7 @@ impl GraphQlApi {
             .nest("/playground", playground_route)
             .nest("/index", indexer_routes)
             .nest("/graph", graph_routes)
+            .nest("/sql", sql_routes)
             .nest("/auth", auth_routes);
 
         let app = Router::new()
@@ -297,7 +313,7 @@ impl GraphQlApi {
 
     /// Start the GraphQL API server.
     pub async fn run(config: IndexerConfig, app: Router) -> ApiResult<()> {
-        let listen_on: SocketAddr = config.graphql_api.into();
+        let listen_on: SocketAddr = config.web_api.into();
 
         axum::Server::bind(&listen_on)
             .serve(app.into_make_service())
@@ -314,8 +330,8 @@ impl GraphQlApi {
         pool: IndexerConnectionPool,
         tx: Sender<ServiceRequest>,
     ) -> ApiResult<()> {
-        let listen_on: SocketAddr = config.graphql_api.clone().into();
-        let app = GraphQlApi::build(config, pool, tx).await?;
+        let listen_on: SocketAddr = config.web_api.clone().into();
+        let app = WebApi::build(config, pool, tx).await?;
 
         axum::Server::bind(&listen_on)
             .serve(app.into_make_service())

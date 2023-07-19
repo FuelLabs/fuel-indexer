@@ -745,9 +745,9 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
                     service.register_native_indexer(manifest, handle_events).await?;
 
                     let service_handle = tokio::spawn(service.run());
-                    let gql_handle = tokio::spawn(GraphQlApi::build_and_run(config.clone(), pool, tx));
+                    let web_handle = tokio::spawn(WebApi::build_and_run(config.clone(), pool, tx));
 
-                    let _ = tokio::join!(service_handle, gql_handle);
+                    let _ = tokio::join!(service_handle, web_handle);
 
                     Ok(())
                 }

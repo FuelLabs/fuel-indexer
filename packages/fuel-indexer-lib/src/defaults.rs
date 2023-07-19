@@ -5,10 +5,10 @@ pub const FUEL_NODE_HOST: &str = "localhost";
 pub const FUEL_NODE_PORT: &str = "4000";
 
 /// GraphQL API host.
-pub const GRAPHQL_API_HOST: &str = "localhost";
+pub const WEB_API_HOST: &str = "localhost";
 
 /// GraphQL API port.
-pub const GRAPHQL_API_PORT: &str = "29987";
+pub const WEB_API_PORT: &str = "29987";
 
 /// Database type.
 pub const DATABASE: &str = "postgres";
@@ -119,3 +119,6 @@ pub const METERING_POINTS: u64 = 30_000_000_000;
 ///
 /// If this is disabled, then an HTTP 409 Conflict will be returned if an indexer with the same name already exists.
 pub const REPLACE_INDEXER: bool = false;
+
+/// Allow the web API to accept raw SQL queries.
+pub const ACCEPT_SQL: bool = false;

@@ -35,6 +35,9 @@
 # The number of WASM opcodes after which the indexer will stop execution.
 # metering_points: 30000000000
 
+# # Allow the web API to accept raw SQL queries.
+# accept_sql_queries: true
+
 # # ***********************
 # # Fuel Node configuration
 # # ************************
@@ -48,17 +51,17 @@
 #   port: 4000
 
 # # *************************
-# # GraphQL API configuration
+# # Web API configuration
 # # *************************
 
-# graphql_api:
-#   # GraphQL API host.
+# web_api:
+#   # Web API host.
 #   host: localhost
 
-#   # GraphQL API port.
+#   # Web API port.
 #   port: 29987
 
-#   # Max body size for GraphQL API requests.
+#   # Max body size for web API requests.
 #   max_body_size: "5242880"
 
 # # ******************************

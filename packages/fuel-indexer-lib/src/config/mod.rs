@@ -2,9 +2,9 @@ pub mod auth;
 pub mod cli;
 pub mod client;
 pub mod database;
-pub mod graphql;
 pub mod limit;
 pub mod utils;
+pub mod web;
 
 pub use crate::{
     config::{
@@ -12,8 +12,8 @@ pub use crate::{
         cli::{ApiServerArgs, IndexerArgs},
         client::FuelClientConfig,
         database::DatabaseConfig,
-        graphql::GraphQLConfig,
         limit::RateLimitConfig,
+        web::WebApiConfig,
     },
     defaults,
     utils::*,
@@ -79,8 +79,8 @@ impl Default for IndexerArgs {
             manifest: None,
             fuel_node_host: defaults::FUEL_NODE_HOST.to_string(),
             fuel_node_port: defaults::FUEL_NODE_PORT.to_string(),
-            graphql_api_host: defaults::GRAPHQL_API_HOST.to_string(),
-            graphql_api_port: defaults::GRAPHQL_API_PORT.to_string(),
+            web_api_host: defaults::WEB_API_HOST.to_string(),
+            web_api_port: defaults::WEB_API_PORT.to_string(),
             database: defaults::DATABASE.to_string(),
             max_body_size: defaults::MAX_BODY_SIZE,
             postgres_user: Some(defaults::POSTGRES_USER.to_string()),
@@ -104,6 +104,7 @@ impl Default for IndexerArgs {
             rate_limit_request_count: Some(defaults::RATE_LIMIT_REQUEST_COUNT),
             rate_limit_window_size: Some(defaults::RATE_LIMIT_WINDOW_SIZE),
             replace_indexer: defaults::REPLACE_INDEXER,
+            accept_sql_queries: defaults::ACCEPT_SQL,
         }
     }
 }
@@ -122,7 +123,7 @@ pub struct IndexerConfig {
     #[serde(default)]
     pub fuel_node: FuelClientConfig,
     #[serde(default)]
-    pub graphql_api: GraphQLConfig,
+    pub web_api: WebApiConfig,
     #[serde(default)]
     pub database: DatabaseConfig,
     pub metrics: bool,
@@ -131,6 +132,7 @@ pub struct IndexerConfig {
     pub authentication: AuthenticationConfig,
     pub rate_limit: RateLimitConfig,
     pub replace_indexer: bool,
+    pub accept_sql_queries: bool,
 }
 
 impl From<IndexerArgs> for IndexerConfig {
@@ -185,9 +187,9 @@ impl From<IndexerArgs> for IndexerConfig {
                 host: args.fuel_node_host,
                 port: args.fuel_node_port,
             },
-            graphql_api: GraphQLConfig {
-                host: args.graphql_api_host,
-                port: args.graphql_api_port,
+            web_api: WebApiConfig {
+                host: args.web_api_host,
+                port: args.web_api_port,
                 max_body_size: args.max_body_size,
             },
             metrics: args.metrics,
@@ -208,6 +210,7 @@ impl From<IndexerArgs> for IndexerConfig {
                 window_size: args.rate_limit_window_size,
             },
             replace_indexer: args.replace_indexer,
+            accept_sql_queries: args.accept_sql_queries,
         };
 
         config
@@ -270,9 +273,9 @@ impl From<ApiServerArgs> for IndexerConfig {
                 host: args.fuel_node_host,
                 port: args.fuel_node_port,
             },
-            graphql_api: GraphQLConfig {
-                host: args.graphql_api_host,
-                port: args.graphql_api_port,
+            web_api: WebApiConfig {
+                host: args.web_api_host,
+                port: args.web_api_port,
                 max_body_size: args.max_body_size,
             },
             metrics: args.metrics,
@@ -293,6 +296,7 @@ impl From<ApiServerArgs> for IndexerConfig {
                 window_size: args.rate_limit_window_size,
             },
             replace_indexer: defaults::REPLACE_INDEXER,
+            accept_sql_queries: args.accept_sql_queries,
         };
 
         config
@@ -325,6 +329,13 @@ impl IndexerConfig {
         let local_fuel_node_key = serde_yaml::Value::String("local_fuel_node".into());
         let indexer_net_config_key =
             serde_yaml::Value::String("indexer_net_config".into());
+
+        let accept_sql_config_key =
+            serde_yaml::Value::String("accept_sql_queries".into());
+
+        if let Some(accept_sql_queries) = content.get(accept_sql_config_key) {
+            config.accept_sql_queries = accept_sql_queries.as_bool().unwrap();
+        }
 
         if let Some(replace_indexer) = content.get(replace_indexer_key) {
             config.replace_indexer = replace_indexer.as_bool().unwrap();
@@ -363,7 +374,7 @@ impl IndexerConfig {
         }
 
         let fuel_config_key = serde_yaml::Value::String("fuel_node".into());
-        let graphql_config_key = serde_yaml::Value::String("graphql_api".into());
+        let web_config_key = serde_yaml::Value::String("web_api".into());
         let database_config_key = serde_yaml::Value::String("database".into());
         let auth_config_key = serde_yaml::Value::String("authentication".into());
         let rate_limit_config_key = serde_yaml::Value::String("rate_limit".into());
@@ -381,23 +392,22 @@ impl IndexerConfig {
             }
         }
 
-        if let Some(section) = content.get(graphql_config_key) {
-            let graphql_api_host = section.get(&serde_yaml::Value::String("host".into()));
-            if let Some(graphql_api_host) = graphql_api_host {
-                config.graphql_api.host = graphql_api_host.as_str().unwrap().to_string();
+        if let Some(section) = content.get(web_config_key) {
+            let web_api_host = section.get(&serde_yaml::Value::String("host".into()));
+            if let Some(web_api_host) = web_api_host {
+                config.web_api.host = web_api_host.as_str().unwrap().to_string();
             }
 
-            let graphql_api_port = section.get(&serde_yaml::Value::String("port".into()));
-            if let Some(graphql_api_port) = graphql_api_port {
-                config.graphql_api.port = graphql_api_port.as_u64().unwrap().to_string();
+            let web_api_port = section.get(&serde_yaml::Value::String("port".into()));
+            if let Some(web_api_port) = web_api_port {
+                config.web_api.port = web_api_port.as_u64().unwrap().to_string();
             }
 
             let max_body_size =
                 section.get(&serde_yaml::Value::String("max_body_size".into()));
 
             if let Some(max_body_size) = max_body_size {
-                config.graphql_api.max_body_size =
-                    max_body_size.as_u64().unwrap() as usize;
+                config.web_api.max_body_size = max_body_size.as_u64().unwrap() as usize;
             }
         }
 
@@ -507,7 +517,7 @@ impl IndexerConfig {
     pub fn inject_opt_env_vars(&mut self) -> IndexerConfigResult<()> {
         self.fuel_node.inject_opt_env_vars()?;
         self.database.inject_opt_env_vars()?;
-        self.graphql_api.inject_opt_env_vars()?;
+        self.web_api.inject_opt_env_vars()?;
 
         Ok(())
     }
@@ -562,7 +572,7 @@ mod tests {
 
         assert_eq!(config.fuel_node.host, "1.1.1.1".to_string());
         assert_eq!(config.fuel_node.port, "9999".to_string());
-        assert_eq!(config.graphql_api.host, "localhost".to_string());
+        assert_eq!(config.web_api.host, "localhost".to_string());
 
         fs::remove_file(file_path).unwrap();
     }
@@ -586,7 +596,7 @@ mod tests {
 
         assert_eq!(config.fuel_node.host, "localhost".to_string());
         assert_eq!(config.fuel_node.port, "4000".to_string());
-        assert_eq!(config.graphql_api.host, "localhost".to_string());
+        assert_eq!(config.web_api.host, "localhost".to_string());
 
         match config.database {
             DatabaseConfig::Postgres {

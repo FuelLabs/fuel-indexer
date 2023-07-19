@@ -1,4 +1,4 @@
-use crate::api::GraphQlApi;
+use crate::api::WebApi;
 use fuel_indexer_database::{queries, IndexerConnectionPool};
 use fuel_indexer_lib::{
     config::{ApiServerArgs, IndexerConfig},
@@ -27,7 +27,7 @@ pub async fn exec(args: ApiServerArgs) -> anyhow::Result<()> {
 
     init_logging(&config).await?;
 
-    let _ = GraphQlApi::build_and_run(config.clone(), pool, tx).await;
+    let _ = WebApi::build_and_run(config.clone(), pool, tx).await;
 
     Ok(())
 }

@@ -1,6 +1,6 @@
 # Queries
 
-Once data has been persisted into your storage backend, you can retrieve it by querying the [GraphQL API server](../graphql/api-server.md). By default, the API server can be reached at `http://localhost:29987/api/graph/:namespace/:identifier`, where `:namespace` and `:identifier` are the values for the respective fields in your indexer's manifest. If you've changed the `GRAPHQL_API_HOST` or `GRAPHQL_API_PORT` values of your configuration, then you'll need to adjust the URL accordingly.
+Once data has been persisted into your storage backend, you can retrieve it by querying the [GraphQL API server](../graphql/api-server.md). By default, the API server can be reached at `http://localhost:29987/api/graph/:namespace/:identifier`, where `:namespace` and `:identifier` are the values for the respective fields in your indexer's manifest. If you've changed the `WEB_API_HOST` or `WEB_API_PORT` values of your configuration, then you'll need to adjust the URL accordingly.
 
 ## Basic Query
 

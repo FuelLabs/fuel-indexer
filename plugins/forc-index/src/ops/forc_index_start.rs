@@ -8,8 +8,8 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
         config,
         fuel_node_host,
         fuel_node_port,
-        graphql_api_host,
-        graphql_api_port,
+        web_api_host,
+        web_api_port,
         database,
         postgres_user,
         postgres_password,
@@ -43,8 +43,8 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
         // Options that have default values
         cmd.arg("--fuel-node-host").arg(&fuel_node_host);
         cmd.arg("--fuel-node-port").arg(&fuel_node_port);
-        cmd.arg("--graphql-api-host").arg(&graphql_api_host);
-        cmd.arg("--graphql-api-port").arg(&graphql_api_port);
+        cmd.arg("--web-api-host").arg(&web_api_host);
+        cmd.arg("--web-api-port").arg(&web_api_port);
         cmd.arg("--log-level").arg(&log_level);
 
         // Bool options

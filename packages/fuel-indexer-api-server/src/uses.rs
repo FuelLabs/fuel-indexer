@@ -1,6 +1,7 @@
 use crate::{
     api::{ApiError, ApiResult, HttpError},
-    models::{Claims, VerifySignatureRequest},
+    models::{Claims, SqlQuery, VerifySignatureRequest},
+    sql::SqlQueryValidator,
 };
 use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
 use async_graphql_axum::GraphQLRequest;
@@ -42,6 +43,8 @@ use fuel_indexer_metrics::encode_metrics_response;
 #[cfg(feature = "metrics")]
 use http::Request;
 
+/// Given an indexer namespace and identifier, return the results for the given
+/// `GraphQLRequest`.
 pub(crate) async fn query_graph(
     Path((namespace, identifier)): Path<(String, String)>,
     Extension(pool): Extension<IndexerConnectionPool>,
@@ -69,6 +72,7 @@ pub(crate) async fn query_graph(
     }
 }
 
+/// Return the `ServiceStatus` for the Fuel client.
 pub(crate) async fn get_fuel_status(config: &IndexerConfig) -> ServiceStatus {
     let https = HttpsConnectorBuilder::new()
         .with_native_roots()
@@ -99,6 +103,8 @@ pub(crate) async fn get_fuel_status(config: &IndexerConfig) -> ServiceStatus {
     }
 }
 
+/// Return a JSON payload with the health status of various components, including
+/// the fuel client, the database, and the uptime of the service.
 pub(crate) async fn health_check(
     Extension(config): Extension<IndexerConfig>,
     Extension(pool): Extension<IndexerConnectionPool>,
@@ -115,6 +121,7 @@ pub(crate) async fn health_check(
     })))
 }
 
+/// Return a JSON payload containing the status of a given indexer, or set of indexers.
 pub(crate) async fn indexer_status(
     Extension(pool): Extension<IndexerConnectionPool>,
     Extension(claims): Extension<Claims>,
@@ -142,6 +149,8 @@ pub(crate) async fn indexer_status(
     Ok(Json(json!(json)))
 }
 
+/// Given an indexer namespace and identifier, remove the indexer from the database
+/// and send a `ServiceRequest::Stop` to the service for this indexer.
 pub(crate) async fn remove_indexer(
     Path((namespace, identifier)): Path<(String, String)>,
     Extension(tx): Extension<Sender<ServiceRequest>>,
@@ -182,6 +191,8 @@ pub(crate) async fn remove_indexer(
     })))
 }
 
+/// Given an indexer namespace and identifier, register the indexer in the database, and
+/// send a `ServiceRequest::Reload` to the service for this indexer.
 pub(crate) async fn register_indexer_assets(
     Path((namespace, identifier)): Path<(String, String)>,
     Extension(tx): Extension<Sender<ServiceRequest>>,
@@ -308,6 +319,7 @@ pub(crate) async fn register_indexer_assets(
     Err(ApiError::default())
 }
 
+/// Return a `Nonce` to be used for authentication.
 pub(crate) async fn get_nonce(
     Extension(pool): Extension<IndexerConnectionPool>,
 ) -> ApiResult<axum::Json<Value>> {
@@ -316,6 +328,7 @@ pub(crate) async fn get_nonce(
     Ok(Json(json!(nonce)))
 }
 
+/// Given a message and signature, verify the signature and return a JWT token for authentication.
 pub(crate) async fn verify_signature(
     Extension(config): Extension<IndexerConfig>,
     Extension(pool): Extension<IndexerConnectionPool>,
@@ -377,7 +390,11 @@ pub(crate) async fn verify_signature(
     unreachable!();
 }
 
-pub async fn gql_playground(
+/// Endpoint for the GraphQL playground.
+///
+/// This is route just produces/creates the GraphQL playground, the actual queries
+/// submitted from the playground are still handled by `uses::query_graph`.
+pub async fn graphql_playground(
     Path((namespace, identifier)): Path<(String, String)>,
 ) -> ApiResult<impl IntoResponse> {
     let html = playground_source(
@@ -393,7 +410,21 @@ pub async fn gql_playground(
     Ok(response)
 }
 
+/// Return a response containing various Prometheus metrics for the service.
 #[cfg(feature = "metrics")]
 pub async fn get_metrics(_req: Request<Body>) -> impl IntoResponse {
     encode_metrics_response()
+}
+
+/// Return the results from a validated, arbitrary SQL query.
+pub async fn sql_query(
+    Path((_namespace, _identifier)): Path<(String, String)>,
+    Extension(pool): Extension<IndexerConnectionPool>,
+    Json(query): Json<SqlQuery>,
+) -> ApiResult<axum::Json<Value>> {
+    let SqlQuery { query } = query;
+    SqlQueryValidator::validate_sql_query(&query)?;
+    let mut conn = pool.acquire().await?;
+    let result = queries::run_query(&mut conn, query).await?;
+    Ok(Json(json!({ "data": result })))
 }
