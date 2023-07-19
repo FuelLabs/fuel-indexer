@@ -8,10 +8,7 @@ use fuel_indexer::IndexerService;
 use fuel_indexer_api_server::api::WebApi;
 use fuel_indexer_database::IndexerConnectionPool;
 use fuel_indexer_lib::{
-    config::{
-        defaults as config_defaults, AuthenticationConfig, DatabaseConfig,
-        FuelClientConfig, IndexerConfig, RateLimitConfig, WebApiConfig,
-    },
+    config::{DatabaseConfig, IndexerConfig, WebApiConfig},
     defaults::SERVICE_REQUEST_CHANNEL_SIZE,
     manifest::Manifest,
     utils::{derive_socket_addr, ServiceRequest},
@@ -81,11 +78,11 @@ pub async fn mock_request(path: &str) {
 }
 
 pub async fn setup_indexing_test_components(
-    modify_config: Option<Box<dyn Fn(&mut IndexerConfig)>>,
+    config: Option<IndexerConfig>,
 ) -> IndexingTestComponents {
     let node = tokio::spawn(setup_example_test_fuel_node());
     let db = TestPostgresDb::new().await.unwrap();
-    let mut service = indexer_service_postgres(Some(&db.url), modify_config).await;
+    let mut service = indexer_service_postgres(Some(&db.url), config).await;
 
     let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
     update_test_manifest_asset_paths(&mut manifest);
@@ -104,11 +101,11 @@ pub async fn setup_indexing_test_components(
 }
 
 pub async fn setup_web_test_components(
-    modify_config: Option<Box<dyn Fn(&mut IndexerConfig)>>,
+    config: Option<IndexerConfig>,
 ) -> WebTestComponents {
     let node = tokio::spawn(setup_example_test_fuel_node());
     let db = TestPostgresDb::new().await.unwrap();
-    let mut service = indexer_service_postgres(Some(&db.url), modify_config).await;
+    let mut service = indexer_service_postgres(Some(&db.url), config.clone()).await;
 
     let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
     update_test_manifest_asset_paths(&mut manifest);
@@ -118,8 +115,7 @@ pub async fn setup_web_test_components(
         .await
         .unwrap();
 
-    // FIXME
-    let (app, rx) = api_server_app_postgres(Some(&db.url), None).await;
+    let (app, rx) = api_server_app_postgres(Some(&db.url), config).await;
 
     let server = axum::Server::bind(&WebApiConfig::default().into())
         .serve(app.clone().into_make_service());
@@ -268,9 +264,7 @@ pub async fn setup_test_fuel_node(
     host_str: Option<String>,
 ) -> Result<(), ()> {
     let filter = match std::env::var_os("RUST_LOG") {
-        Some(_) => {
-            EnvFilter::try_from_default_env().expect("Invalid `RUST_LOG` provided")
-        }
+        Some(_) => EnvFilter::try_from_default_env().unwrap(),
         None => EnvFilter::new("error"),
     };
 
@@ -324,7 +318,7 @@ pub async fn setup_test_fuel_node(
         let contract_id = loaded_contract
             .deploy(&wallet, TxParameters::default())
             .await
-            .expect("Failed to deploy contract");
+            .unwrap();
 
         let contract_id = contract_id.to_string();
 
@@ -359,7 +353,7 @@ pub fn get_test_contract_id() -> Bech32ContractId {
         contract_bin_path.as_os_str().to_str().unwrap(),
         LoadConfiguration::default(),
     )
-    .expect("Failed to load compiled contract");
+    .unwrap();
     let id = loaded_contract.contract_id();
 
     Bech32ContractId::from(fuels::tx::ContractId::from(
@@ -369,36 +363,16 @@ pub fn get_test_contract_id() -> Bech32ContractId {
 
 pub async fn api_server_app_postgres(
     database_url: Option<&str>,
-    modified_config: Option<Box<dyn Fn(&mut IndexerConfig)>>,
+    config: Option<IndexerConfig>,
 ) -> (Router, Receiver<ServiceRequest>) {
-    let database: DatabaseConfig = database_url
-        .map_or(DatabaseConfig::default(), |url| {
-            DatabaseConfig::from_str(url).unwrap()
-        });
-
-    let mut config = IndexerConfig {
-        metering_points: Some(config_defaults::METERING_POINTS),
-        log_level: "info".to_string(),
-        verbose: true,
-        local_fuel_node: false,
-        indexer_net_config: false,
-        fuel_node: FuelClientConfig::default(),
-        database,
-        web_api: WebApiConfig::default(),
-        metrics: false,
-        stop_idle_indexers: true,
-        run_migrations: false,
-        authentication: AuthenticationConfig::default(),
-        rate_limit: RateLimitConfig::default(),
-        replace_indexer: config_defaults::REPLACE_INDEXER,
-        accept_sql_queries: config_defaults::ACCEPT_SQL,
-    };
-
-    modified_config.map(|f| f(&mut config));
+    let mut config = config.unwrap_or_default();
+    if let Some(url) = database_url {
+        config.database = DatabaseConfig::from_str(url).unwrap();
+    }
 
     let pool = IndexerConnectionPool::connect(&config.database.to_string())
         .await
-        .expect("Failed to create connection pool");
+        .unwrap();
 
     let (tx, rx) = channel::<ServiceRequest>(SERVICE_REQUEST_CHANNEL_SIZE);
 
@@ -410,32 +384,12 @@ pub async fn api_server_app_postgres(
 
 pub async fn indexer_service_postgres(
     database_url: Option<&str>,
-    modified_config: Option<Box<dyn Fn(&mut IndexerConfig)>>,
+    config: Option<IndexerConfig>,
 ) -> IndexerService {
-    let database: DatabaseConfig = database_url
-        .map_or(DatabaseConfig::default(), |url| {
-            DatabaseConfig::from_str(url).unwrap()
-        });
-
-    let mut config = IndexerConfig {
-        metering_points: Some(config_defaults::METERING_POINTS),
-        log_level: "info".to_string(),
-        verbose: true,
-        local_fuel_node: false,
-        indexer_net_config: false,
-        fuel_node: FuelClientConfig::default(),
-        database,
-        web_api: WebApiConfig::default(),
-        metrics: false,
-        stop_idle_indexers: true,
-        run_migrations: false,
-        authentication: AuthenticationConfig::default(),
-        rate_limit: RateLimitConfig::default(),
-        replace_indexer: config_defaults::REPLACE_INDEXER,
-        accept_sql_queries: config_defaults::ACCEPT_SQL,
-    };
-
-    modified_config.map(|f| f(&mut config));
+    let mut config = config.unwrap_or_default();
+    if let Some(url) = database_url {
+        config.database = DatabaseConfig::from_str(url).unwrap();
+    }
 
     let (_tx, rx) = channel::<ServiceRequest>(SERVICE_REQUEST_CHANNEL_SIZE);
 

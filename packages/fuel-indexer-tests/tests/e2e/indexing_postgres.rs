@@ -1,6 +1,5 @@
-use actix_service::Service;
-use actix_web::test;
 use bigdecimal::ToPrimitive;
+use fuel_indexer::IndexerConfig;
 use fuel_indexer_tests::fixtures::{
     mock_request, setup_indexing_test_components, IndexingTestComponents,
 };
@@ -121,7 +120,7 @@ async fn test_can_trigger_and_index_blocks_and_transactions_postgres() {
     .await
     .unwrap();
 
-    let id = row.get::<BigDecimal, usize>(0).to_u64().unwrap();
+    let _id = row.get::<BigDecimal, usize>(0).to_u64().unwrap();
     let timestamp = row.get::<i64, usize>(2);
 
     assert!(row.get::<BigDecimal, usize>(1).to_u64().unwrap() > 1);
@@ -537,17 +536,17 @@ async fn test_can_trigger_and_index_nonindexable_events() {
 #[actix_web::test]
 async fn test_redeploying_an_already_active_indexer_returns_error_when_replace_indexer_is_false(
 ) {
+    let config = IndexerConfig {
+        replace_indexer: false,
+        ..IndexerConfig::default()
+    };
+
     let IndexingTestComponents {
         node,
-        db,
         mut service,
         manifest,
-    } = setup_indexing_test_components(Some(Box::new(
-        |config: &mut fuel_indexer::IndexerConfig| {
-            config.replace_indexer = false;
-        },
-    )))
-    .await;
+        ..
+    } = setup_indexing_test_components(Some(config)).await;
 
     node.abort();
 
@@ -569,17 +568,18 @@ async fn test_redeploying_an_already_active_indexer_returns_error_when_replace_i
 // FIXME: This is not an indexing test...
 #[actix_web::test]
 async fn test_redeploying_an_already_active_indexer_works_when_replace_indexer_is_true() {
+    let config = IndexerConfig {
+        replace_indexer: true,
+        ..IndexerConfig::default()
+    };
+
     let IndexingTestComponents {
         node,
-        db,
         mut service,
+        db,
         manifest,
-    } = setup_indexing_test_components(Some(Box::new(
-        |config: &mut fuel_indexer::IndexerConfig| {
-            config.replace_indexer = true;
-        },
-    )))
-    .await;
+        ..
+    } = setup_indexing_test_components(Some(config)).await;
 
     // Re-register the indexer
     service

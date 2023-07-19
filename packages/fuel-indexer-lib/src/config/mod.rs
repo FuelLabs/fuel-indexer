@@ -110,7 +110,7 @@ impl Default for IndexerArgs {
 }
 
 /// Fuel indexer service configuration.
-#[derive(Clone, Deserialize, Default, Debug)]
+#[derive(Clone, Deserialize, Debug)]
 pub struct IndexerConfig {
     pub metering_points: Option<u64>,
     pub log_level: String,
@@ -133,6 +133,28 @@ pub struct IndexerConfig {
     pub rate_limit: RateLimitConfig,
     pub replace_indexer: bool,
     pub accept_sql_queries: bool,
+}
+
+impl Default for IndexerConfig {
+    fn default() -> Self {
+        Self {
+            metering_points: Some(defaults::METERING_POINTS),
+            log_level: defaults::LOG_LEVEL.to_string(),
+            verbose: defaults::VERBOSE_LOGGING,
+            local_fuel_node: defaults::LOCAL_FUEL_NODE,
+            indexer_net_config: defaults::INDEXER_NET_CONFIG,
+            fuel_node: FuelClientConfig::default(),
+            web_api: WebApiConfig::default(),
+            database: DatabaseConfig::default(),
+            metrics: defaults::USE_METRICS,
+            stop_idle_indexers: defaults::STOP_IDLE_INDEXERS,
+            run_migrations: defaults::RUN_MIGRATIONS,
+            authentication: AuthenticationConfig::default(),
+            rate_limit: RateLimitConfig::default(),
+            replace_indexer: defaults::REPLACE_INDEXER,
+            accept_sql_queries: defaults::ACCEPT_SQL,
+        }
+    }
 }
 
 impl From<IndexerArgs> for IndexerConfig {
