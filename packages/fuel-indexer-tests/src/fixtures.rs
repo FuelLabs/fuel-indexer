@@ -1,3 +1,8 @@
+use crate::{
+    assets, defaults, utils::update_test_manifest_asset_paths, TestError, WORKSPACE_ROOT,
+};
+use actix_service::Service;
+use actix_web::test;
 use axum::routing::Router;
 use fuel_indexer::IndexerService;
 use fuel_indexer_api_server::api::WebApi;
@@ -8,6 +13,7 @@ use fuel_indexer_lib::{
         FuelClientConfig, IndexerConfig, RateLimitConfig, WebApiConfig,
     },
     defaults::SERVICE_REQUEST_CHANNEL_SIZE,
+    manifest::Manifest,
     utils::{derive_socket_addr, ServiceRequest},
 };
 use fuel_indexer_postgres;
@@ -19,17 +25,19 @@ use fuels::{
     },
     test_helpers::Config,
 };
-use rand::distributions::Alphanumeric;
-use rand::{thread_rng, Rng};
-use sqlx::{pool::Pool, PgConnection, Postgres};
-use sqlx::{Connection, Executor};
-use std::net::SocketAddr;
-use std::path::{Path, PathBuf};
-use std::str::FromStr;
-use tokio::sync::mpsc::{channel, Receiver};
+use rand::{distributions::Alphanumeric, thread_rng, Rng};
+use sqlx::{pool::Pool, Connection, Executor, PgConnection, Postgres};
+use std::{
+    net::SocketAddr,
+    path::{Path, PathBuf},
+    str::FromStr,
+};
+use tokio::{
+    sync::mpsc::{channel, Receiver},
+    task::JoinHandle,
+    time::{sleep, Duration},
+};
 use tracing_subscriber::filter::EnvFilter;
-
-use crate::{defaults, TestError, WORKSPACE_ROOT};
 
 abigen!(Contract(
     name = "FuelIndexerTest",
@@ -41,6 +49,80 @@ pub struct TestPostgresDb {
     pub url: String,
     pub pool: Pool<Postgres>,
     server_connection_str: String,
+}
+
+pub struct IndexingTestComponents {
+    pub node: JoinHandle<Result<(), ()>>,
+    pub db: TestPostgresDb,
+    pub service: IndexerService,
+    pub manifest: Manifest,
+}
+
+pub struct WebTestComponents {
+    pub node: JoinHandle<Result<(), ()>>,
+    pub db: TestPostgresDb,
+    pub service: IndexerService,
+    pub manifest: Manifest,
+    pub app: Router,
+}
+
+pub async fn mock_request(path: &str) {
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(test_web::app(contract)).await;
+    let req = test::TestRequest::post().uri(path).to_request();
+    let _ = app.call(req).await;
+
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+}
+
+pub async fn setup_indexing_test_components(
+    modify_config: Option<Box<dyn Fn(&mut IndexerConfig)>>,
+) -> IndexingTestComponents {
+    let node = tokio::spawn(setup_example_test_fuel_node());
+    let db = TestPostgresDb::new().await.unwrap();
+    let mut service = indexer_service_postgres(Some(&db.url), modify_config).await;
+
+    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
+    update_test_manifest_asset_paths(&mut manifest);
+
+    service
+        .register_indexer_from_manifest(manifest.clone())
+        .await
+        .unwrap();
+
+    IndexingTestComponents {
+        node,
+        db,
+        service,
+        manifest,
+    }
+}
+
+pub async fn setup_web_test_components(
+    modify_config: Option<Box<dyn Fn(&mut IndexerConfig)>>,
+) -> WebTestComponents {
+    let node = tokio::spawn(setup_example_test_fuel_node());
+    let db = TestPostgresDb::new().await.unwrap();
+    let mut service = indexer_service_postgres(Some(&db.url), modify_config).await;
+
+    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
+    update_test_manifest_asset_paths(&mut manifest);
+
+    service
+        .register_indexer_from_manifest(manifest.clone())
+        .await
+        .unwrap();
+
+    let (app, _rx) = api_server_app_postgres(Some(&db.url), modify_config).await;
+    let manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
+
+    WebTestComponents {
+        node,
+        db,
+        service,
+        manifest,
+        app,
+    }
 }
 
 impl TestPostgresDb {
@@ -317,7 +399,7 @@ pub async fn api_server_app_postgres(
 
 pub async fn indexer_service_postgres(
     database_url: Option<&str>,
-    modify_config: Option<Box<dyn Fn(&mut IndexerConfig)>>,
+    modified_config: Option<Box<dyn Fn(&mut IndexerConfig)>>,
 ) -> IndexerService {
     let database: DatabaseConfig = database_url
         .map_or(DatabaseConfig::default(), |url| {
@@ -342,13 +424,13 @@ pub async fn indexer_service_postgres(
         accept_sql_queries: config_defaults::ACCEPT_SQL,
     };
 
-    modify_config.map(|f| f(&mut config));
+    modified_config.map(|f| f(&mut config));
 
     let (_tx, rx) = channel::<ServiceRequest>(SERVICE_REQUEST_CHANNEL_SIZE);
 
     let pool = IndexerConnectionPool::connect(&config.database.to_string())
         .await
-        .expect("Failed to create connection pool");
+        .unwrap();
 
     IndexerService::new(config, pool, rx).await.unwrap()
 }

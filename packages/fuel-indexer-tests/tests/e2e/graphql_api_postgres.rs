@@ -8,8 +8,8 @@ use fuel_indexer_tests::{
     assets, defaults,
     fixtures::{
         api_server_app_postgres, connect_to_deployed_contract, http_client,
-        indexer_service_postgres, setup_example_test_fuel_node, test_web::app,
-        TestPostgresDb,
+        indexer_service_postgres, mock_request, setup_example_test_fuel_node,
+        setup_web_test_components, test_web::app, TestPostgresDb, WebTestComponents,
     },
     utils::update_test_manifest_asset_paths,
 };
@@ -35,24 +35,17 @@ async fn setup_test_components() -> (
 
 #[actix_web::test]
 async fn test_can_return_query_response_with_all_fields_required_postgres() {
-    let (node_handle, _test_db, mut srvc, api_app) = setup_test_components().await;
+    let WebTestComponents {
+        node,
+        db,
+        mut service,
+        ..
+    } = setup_web_test_components(None).await;
 
     let server = axum::Server::bind(&WebApiConfig::default().into())
         .serve(api_app.into_make_service());
 
-    let srv = tokio::spawn(server);
-    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
-    update_test_manifest_asset_paths(&mut manifest);
-
-    srvc.register_indexer_from_manifest(manifest).await.unwrap();
-
-    let contract = connect_to_deployed_contract().await.unwrap();
-    let app = test::init_service(app(contract)).await;
-    let req = test::TestRequest::post().uri("/block").to_request();
-    let _ = app.call(req).await;
-
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-    node_handle.abort();
+    node.abort();
 
     let client = http_client();
     let resp = client
@@ -62,8 +55,6 @@ async fn test_can_return_query_response_with_all_fields_required_postgres() {
         .send()
         .await
         .unwrap();
-
-    srv.abort();
 
     let body = resp.text().await.unwrap();
     let v: Value = serde_json::from_str(&body).unwrap();

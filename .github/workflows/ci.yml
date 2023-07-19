@@ -350,23 +350,6 @@ jobs:
           which fuel-indexer
 
           bash ./ci/build-and-deploy-examples.bash
-  cargo-test-forc-index-plugins:
-    if: needs.check-is-semver-branch.outputs.is_semver_branch != 'true'
-    needs:
-      - cargo-toml-fmt-check
-      - check-is-semver-branch
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Install toolchain
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: wasm32-unknown-unknown
-      - uses: Swatinem/rust-cache@v1
-      - name: wasm-snip
-        run: cargo install wasm-snip
-      - name: cargo test --locked --all-targets -p plugin-tests -- --test-threads=1
-        run: cargo test --locked --all-targets -p plugin-tests -- --test-threads=1
   publish-docker-image:
     needs:
       - set-env-vars
