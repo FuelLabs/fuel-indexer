@@ -3417,7 +3417,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "fuel-indexer-benches"
+name = "fuel-indexer-benchmarks"
 version = "0.0.0"
 dependencies = [
  "criterion",
@@ -3429,19 +3429,6 @@ dependencies = [
  "fuel-indexer-schema",
  "fuel-indexer-tests",
  "futures",
- "tokio 1.29.1",
-]
-
-[[package]]
-name = "fuel-indexer-benchmarks"
-version = "0.0.0"
-dependencies = [
- "criterion",
- "fuel-indexer",
- "fuel-indexer-database",
- "fuel-indexer-lib",
- "fuel-indexer-types",
- "sqlx",
  "tokio 1.29.1",
 ]
 

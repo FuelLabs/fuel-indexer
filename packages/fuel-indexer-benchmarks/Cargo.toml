@@ -1,18 +1,33 @@
 [package]
 name = "fuel-indexer-benchmarks"
-version = "0.0.0"
-edition = "2021"
-license = "BUSL-1.1"
+edition = { workspace = true }
+license = { workspace = true }
 publish = false
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+version = "0.0.0"
+
+[[bench]]
+harness = false
+name = "graphql"
+
+[[bench]]
+harness = false
+name = "wasm"
+
+[lib]
+name = "fuel_indexer_benchmarks"
+crate-type = ["cdylib", "rlib"]
 
 [dependencies]
+criterion = { version = "0.5.1", features = ["html_reports", "async_tokio"] }
+fuel-core-client = "0.17.2"
 fuel-indexer = { workspace = true }
 fuel-indexer-database = { workspace = true }
+fuel-indexer-graphql = { workspace = true }
 fuel-indexer-lib = { workspace = true }
-fuel-indexer-types = { workspace = true }
-sqlx = { version = "0.6", features = ["bigdecimal"] }
-tokio = { version = "1", features = ["full"] }
+fuel-indexer-schema = { workspace = true }
+fuel-indexer-tests = { path = "../fuel-indexer-tests" }
+futures = "0.3"
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports", "async_tokio"] }
@@ -20,6 +35,3 @@ criterion = { version = "0.5", features = ["html_reports", "async_tokio"] }
 [features]
 benchmarks = []
 
-[[bench]]
-name = "wasm_metering_benchmark"
-harness = false
