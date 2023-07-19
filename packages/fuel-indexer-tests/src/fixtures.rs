@@ -121,7 +121,7 @@ pub async fn setup_web_test_components(
     // FIXME
     let (app, rx) = api_server_app_postgres(Some(&db.url), None).await;
 
-    let server = axum::Server::bind(&GraphQLConfig::default().into())
+    let server = axum::Server::bind(&WebApiConfig::default().into())
         .serve(app.clone().into_make_service());
     let server = tokio::spawn(server);
 
@@ -394,7 +394,7 @@ pub async fn api_server_app_postgres(
         accept_sql_queries: config_defaults::ACCEPT_SQL,
     };
 
-    modify_config.map(|f| f(&mut config));
+    modified_config.map(|f| f(&mut config));
 
     let pool = IndexerConnectionPool::connect(&config.database.to_string())
         .await

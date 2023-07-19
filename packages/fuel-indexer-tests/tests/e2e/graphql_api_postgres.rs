@@ -5,11 +5,7 @@ use fuel_indexer_lib::config::WebApiConfig;
 use fuel_indexer_lib::manifest::Manifest;
 use fuel_indexer_tests::{
     assets, defaults,
-    fixtures::{
-        http_client,
-        mock_request,
-        setup_web_test_components, WebTestComponents,
-    },
+    fixtures::{http_client, mock_request, setup_web_test_components, WebTestComponents},
 };
 use hyper::header::CONTENT_TYPE;
 use serde_json::{Number, Value};
@@ -60,27 +56,6 @@ async fn test_can_return_query_response_with_all_fields_required_postgres() {
 }
 
 #[actix_web::test]
-<<<<<<< HEAD
-async fn test_can_return_query_response_with_nullable_fields_postgres() {
-    let (node_handle, _test_db, mut srvc, api_app) = setup_test_components().await;
-
-    let server = axum::Server::bind(&WebApiConfig::default().into())
-        .serve(api_app.into_make_service());
-
-    let srv = tokio::spawn(server);
-    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
-    update_test_manifest_asset_paths(&mut manifest);
-
-    srvc.register_indexer_from_manifest(manifest).await.unwrap();
-
-    let contract = connect_to_deployed_contract().await.unwrap();
-    let app = test::init_service(app(contract)).await;
-    let req = test::TestRequest::post().uri("/optionals").to_request();
-    let _ = app.call(req).await;
-
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-    node_handle.abort();
-=======
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_return_query_response_with_nullable_fields_postgres() {
     let WebTestComponents {
@@ -90,7 +65,6 @@ async fn test_can_return_query_response_with_nullable_fields_postgres() {
     mock_request("/optionals").await;
 
     node.abort();
->>>>>>> 80599abb (refactor gql tests)
 
     let client = http_client();
     let resp = client
@@ -101,11 +75,6 @@ async fn test_can_return_query_response_with_nullable_fields_postgres() {
         .await
         .unwrap();
 
-<<<<<<< HEAD
-    srv.abort();
-
-=======
->>>>>>> 80599abb (refactor gql tests)
     let body = resp.text().await.unwrap();
     let v: Value = serde_json::from_str(&body).unwrap();
     let data = v["data"].as_array().expect("data is not an array");
@@ -113,30 +82,6 @@ async fn test_can_return_query_response_with_nullable_fields_postgres() {
     assert_eq!(data[0]["int_required"], Value::from(Number::from(100)));
     assert_eq!(data[0]["int_optional_some"], Value::from(Number::from(999)));
     assert_eq!(data[0]["addr_optional_none"], Value::from(None::<&str>));
-<<<<<<< HEAD
-}
-
-#[actix_web::test]
-async fn test_can_return_nested_query_response_with_implicit_foreign_keys_postgres() {
-    let (node_handle, _test_db, mut srvc, api_app) = setup_test_components().await;
-
-    let server = axum::Server::bind(&WebApiConfig::default().into())
-        .serve(api_app.into_make_service());
-
-    let srv = tokio::spawn(server);
-    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
-    update_test_manifest_asset_paths(&mut manifest);
-
-    srvc.register_indexer_from_manifest(manifest).await.unwrap();
-
-    let contract = connect_to_deployed_contract().await.unwrap();
-    let app = test::init_service(app(contract)).await;
-    let req = test::TestRequest::post().uri("/block").to_request();
-    let _ = app.call(req).await;
-
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-    node_handle.abort();
-=======
 
     server.abort();
 }
@@ -151,7 +96,6 @@ async fn test_can_return_nested_query_response_with_implicit_foreign_keys_postgr
     mock_request("/block").await;
 
     node.abort();
->>>>>>> 80599abb (refactor gql tests)
 
     let client = http_client();
     let resp = client
@@ -162,11 +106,6 @@ async fn test_can_return_nested_query_response_with_implicit_foreign_keys_postgr
         .await
         .unwrap();
 
-<<<<<<< HEAD
-    srv.abort();
-
-=======
->>>>>>> 80599abb (refactor gql tests)
     let body = resp.text().await.unwrap();
     let v: Value = serde_json::from_str(&body).unwrap();
     let data = v["data"].as_array().expect("data is not an array");
@@ -179,89 +118,6 @@ async fn test_can_return_nested_query_response_with_implicit_foreign_keys_postgr
     assert!(data[0]["block"]["id"].as_i64().unwrap() > 0);
     assert!(data[0]["block"]["height"].as_i64().is_some());
     assert!(data[0]["block"]["height"].as_i64().unwrap() > 0);
-<<<<<<< HEAD
-}
-
-#[actix_web::test]
-async fn test_can_return_query_response_with_deeply_nested_query_postgres() {
-    let (node_handle, _test_db, mut srvc, api_app) = setup_test_components().await;
-
-    let server = axum::Server::bind(&WebApiConfig::default().into())
-        .serve(api_app.into_make_service());
-
-    let srv = tokio::spawn(server);
-    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
-    update_test_manifest_asset_paths(&mut manifest);
-
-    srvc.register_indexer_from_manifest(manifest).await.unwrap();
-
-    let contract = connect_to_deployed_contract().await.unwrap();
-    let app = test::init_service(app(contract)).await;
-    let req = test::TestRequest::post().uri("/deeply_nested").to_request();
-    let _ = app.call(req).await;
-
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-    node_handle.abort();
-
-    let deeply_nested_query = HashMap::from([(
-        "query",
-        "query { 
-                bookclub { 
-                    id
-                    book { 
-                        id 
-                        name 
-                        author { 
-                            name 
-                            genre { 
-                                id 
-                                name 
-                            } 
-                        } 
-                        library { 
-                            id 
-                            name 
-                            city { 
-                                id 
-                                name 
-                                region { 
-                                    id 
-                                    name 
-                                    country { 
-                                        id 
-                                        name 
-                                        continent { 
-                                            id 
-                                            name 
-                                            planet { 
-                                                id 
-                                                name 
-                                            } 
-                                        } 
-                                    } 
-                                } 
-                            } 
-                        } 
-                        genre { 
-                            id 
-                            name 
-                        } 
-                    } 
-                    member { 
-                        name 
-                        id 
-                    } 
-                    corporate_sponsor { 
-                        id 
-                        name 
-                        amount 
-                        representative { 
-                            id 
-                            name 
-                        } 
-                    } 
-                } 
-=======
 
     server.abort();
 }
@@ -335,7 +191,6 @@ async fn test_can_return_query_response_with_deeply_nested_query_postgres() {
                         }
                     }
                 }
->>>>>>> 80599abb (refactor gql tests)
             }",
     )]);
 
@@ -348,11 +203,6 @@ async fn test_can_return_query_response_with_deeply_nested_query_postgres() {
         .await
         .unwrap();
 
-<<<<<<< HEAD
-    srv.abort();
-
-=======
->>>>>>> 80599abb (refactor gql tests)
     let body = resp.text().await.unwrap();
     let v: Value = serde_json::from_str(&body).unwrap();
     let data = v["data"].as_array().expect("data is not an array");
@@ -404,30 +254,6 @@ async fn test_can_return_query_response_with_deeply_nested_query_postgres() {
         data[0]["corporate_sponsor"]["representative"]["name"].as_str(),
         Some("Ava")
     );
-<<<<<<< HEAD
-}
-
-#[actix_web::test]
-async fn test_can_return_nested_query_response_with_explicit_foreign_keys_postgres() {
-    let (node_handle, _test_db, mut srvc, api_app) = setup_test_components().await;
-
-    let server = axum::Server::bind(&WebApiConfig::default().into())
-        .serve(api_app.into_make_service());
-
-    let srv = tokio::spawn(server);
-    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
-    update_test_manifest_asset_paths(&mut manifest);
-
-    srvc.register_indexer_from_manifest(manifest).await.unwrap();
-
-    let contract = connect_to_deployed_contract().await.unwrap();
-    let app = test::init_service(app(contract)).await;
-    let req = test::TestRequest::post().uri("/explicit").to_request();
-    let _ = app.call(req).await;
-
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-    node_handle.abort();
-=======
 
     server.abort();
 }
@@ -442,7 +268,6 @@ async fn test_can_return_nested_query_response_with_explicit_foreign_keys_postgr
     mock_request("/explicit").await;
 
     node.abort();
->>>>>>> 80599abb (refactor gql tests)
 
     let client = http_client();
     let resp = client
@@ -455,11 +280,6 @@ async fn test_can_return_nested_query_response_with_explicit_foreign_keys_postgr
         .await
         .unwrap();
 
-<<<<<<< HEAD
-    srv.abort();
-
-=======
->>>>>>> 80599abb (refactor gql tests)
     let body = resp.text().await.unwrap();
     let v: Value = serde_json::from_str(&body).unwrap();
     let data = v["data"].as_array().expect("data is not an array");
@@ -471,34 +291,6 @@ async fn test_can_return_nested_query_response_with_explicit_foreign_keys_postgr
         data[0]["municipality"]["name"].as_str(),
         Some("Republic of Indexia")
     );
-<<<<<<< HEAD
-}
-
-#[actix_web::test]
-async fn test_can_return_query_response_with_filter_id_selection_postgres() {
-    let (fuel_node_handle, _test_db, mut srvc, api_app) = setup_test_components().await;
-
-    let server = axum::Server::bind(&WebApiConfig::default().into())
-        .serve(api_app.into_make_service());
-
-    let server_handle = tokio::spawn(server);
-    let mut manifest: Manifest =
-        serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
-
-    update_test_manifest_asset_paths(&mut manifest);
-
-    srvc.register_indexer_from_manifest(manifest)
-        .await
-        .expect("Failed to initialize indexer.");
-
-    let contract = connect_to_deployed_contract().await.unwrap();
-    let app = test::init_service(app(contract)).await;
-    let req = test::TestRequest::post().uri("/ping").to_request();
-    let _ = app.call(req).await;
-
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-    fuel_node_handle.abort();
-=======
 
     server.abort();
 }
@@ -513,7 +305,6 @@ async fn test_can_return_query_response_with_filter_id_selection_postgres() {
     mock_request("/ping").await;
 
     node.abort();
->>>>>>> 80599abb (refactor gql tests)
 
     let client = http_client();
     let resp = client
@@ -524,11 +315,6 @@ async fn test_can_return_query_response_with_filter_id_selection_postgres() {
         .await
         .unwrap();
 
-<<<<<<< HEAD
-    server_handle.abort();
-
-=======
->>>>>>> 80599abb (refactor gql tests)
     let body = resp.text().await.unwrap();
     let v: Value = serde_json::from_str(&body).unwrap();
     let data = v["data"].as_array().expect("data is not an array");
@@ -537,34 +323,6 @@ async fn test_can_return_query_response_with_filter_id_selection_postgres() {
     assert_eq!(data[0]["foola"].as_str(), Some("beep"));
     assert_eq!(data[0]["maybe_null_bar"].as_i64(), Some(123));
     assert_eq!(data[0]["bazoo"].as_i64(), Some(1));
-<<<<<<< HEAD
-}
-
-#[actix_web::test]
-async fn test_can_return_query_response_with_filter_membership_postgres() {
-    let (fuel_node_handle, _test_db, mut srvc, api_app) = setup_test_components().await;
-
-    let server = axum::Server::bind(&WebApiConfig::default().into())
-        .serve(api_app.into_make_service());
-
-    let server_handle = tokio::spawn(server);
-    let mut manifest: Manifest =
-        serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
-
-    update_test_manifest_asset_paths(&mut manifest);
-
-    srvc.register_indexer_from_manifest(manifest)
-        .await
-        .expect("Failed to initialize indexer.");
-
-    let contract = connect_to_deployed_contract().await.unwrap();
-    let app = test::init_service(app(contract)).await;
-    let req = test::TestRequest::post().uri("/ping").to_request();
-    let _ = app.call(req).await;
-
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-    fuel_node_handle.abort();
-=======
 
     server.abort();
 }
@@ -579,7 +337,6 @@ async fn test_can_return_query_response_with_filter_membership_postgres() {
     mock_request("/ping").await;
 
     node.abort();
->>>>>>> 80599abb (refactor gql tests)
 
     let client = http_client();
     let resp = client
@@ -592,11 +349,6 @@ async fn test_can_return_query_response_with_filter_membership_postgres() {
         .await
         .unwrap();
 
-<<<<<<< HEAD
-    server_handle.abort();
-
-=======
->>>>>>> 80599abb (refactor gql tests)
     let body = resp.text().await.unwrap();
     let v: Value = serde_json::from_str(&body).unwrap();
     let data = v["data"].as_array().expect("data is not an array");
@@ -609,34 +361,6 @@ async fn test_can_return_query_response_with_filter_membership_postgres() {
     assert_eq!(data[1]["foola"].as_str(), Some("boop"));
     assert_eq!(data[1]["maybe_null_bar"].as_i64(), None);
     assert_eq!(data[1]["bazoo"].as_i64(), Some(5));
-<<<<<<< HEAD
-}
-
-#[actix_web::test]
-async fn test_can_return_query_response_with_filter_non_null_postgres() {
-    let (fuel_node_handle, _test_db, mut srvc, api_app) = setup_test_components().await;
-
-    let server = axum::Server::bind(&WebApiConfig::default().into())
-        .serve(api_app.into_make_service());
-
-    let server_handle = tokio::spawn(server);
-    let mut manifest: Manifest =
-        serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
-
-    update_test_manifest_asset_paths(&mut manifest);
-
-    srvc.register_indexer_from_manifest(manifest)
-        .await
-        .expect("Failed to initialize indexer.");
-
-    let contract = connect_to_deployed_contract().await.unwrap();
-    let app = test::init_service(app(contract)).await;
-    let req = test::TestRequest::post().uri("/ping").to_request();
-    let _ = app.call(req).await;
-
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-    fuel_node_handle.abort();
-=======
 
     server.abort();
 }
@@ -651,7 +375,6 @@ async fn test_can_return_query_response_with_filter_non_null_postgres() {
     mock_request("/ping").await;
 
     node.abort();
->>>>>>> 80599abb (refactor gql tests)
 
     let client = http_client();
     let resp = client
@@ -664,11 +387,6 @@ async fn test_can_return_query_response_with_filter_non_null_postgres() {
         .await
         .unwrap();
 
-<<<<<<< HEAD
-    server_handle.abort();
-
-=======
->>>>>>> 80599abb (refactor gql tests)
     let body = resp.text().await.unwrap();
     let v: Value = serde_json::from_str(&body).unwrap();
     let data = v["data"].as_array().expect("data is not an array");
@@ -681,34 +399,6 @@ async fn test_can_return_query_response_with_filter_non_null_postgres() {
     assert_eq!(data[1]["foola"].as_str(), Some("blorp"));
     assert_eq!(data[1]["maybe_null_bar"].as_i64(), Some(456));
     assert_eq!(data[1]["bazoo"].as_i64(), Some(1000));
-<<<<<<< HEAD
-}
-
-#[actix_web::test]
-async fn test_can_return_query_response_with_filter_complex_comparison_postgres() {
-    let (fuel_node_handle, _test_db, mut srvc, api_app) = setup_test_components().await;
-
-    let server = axum::Server::bind(&WebApiConfig::default().into())
-        .serve(api_app.into_make_service());
-
-    let server_handle = tokio::spawn(server);
-    let mut manifest: Manifest =
-        serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
-
-    update_test_manifest_asset_paths(&mut manifest);
-
-    srvc.register_indexer_from_manifest(manifest)
-        .await
-        .expect("Failed to initialize indexer.");
-
-    let contract = connect_to_deployed_contract().await.unwrap();
-    let app = test::init_service(app(contract)).await;
-    let req = test::TestRequest::post().uri("/ping").to_request();
-    let _ = app.call(req).await;
-
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-    fuel_node_handle.abort();
-=======
 
     server.abort();
 }
@@ -723,7 +413,6 @@ async fn test_can_return_query_response_with_filter_complex_comparison_postgres(
     mock_request("/ping").await;
 
     node.abort();
->>>>>>> 80599abb (refactor gql tests)
 
     let client = http_client();
     let resp = client
@@ -736,11 +425,6 @@ async fn test_can_return_query_response_with_filter_complex_comparison_postgres(
         .await
         .unwrap();
 
-<<<<<<< HEAD
-    server_handle.abort();
-
-=======
->>>>>>> 80599abb (refactor gql tests)
     let body = resp.text().await.unwrap();
     let v: Value = serde_json::from_str(&body).unwrap();
     let data = v["data"].as_array().expect("data is not an array");
@@ -753,35 +437,6 @@ async fn test_can_return_query_response_with_filter_complex_comparison_postgres(
     assert_eq!(data[1]["foola"].as_str(), Some("boop"));
     assert_eq!(data[1]["maybe_null_bar"].as_i64(), None);
     assert_eq!(data[1]["bazoo"].as_i64(), Some(5));
-<<<<<<< HEAD
-}
-
-#[actix_web::test]
-async fn test_can_return_query_response_with_filter_simple_comparison_postgres() {
-    let (fuel_node_handle, _test_db, mut srvc, api_app) = setup_test_components().await;
-
-    let server = axum::Server::bind(&WebApiConfig::default().into())
-        .serve(api_app.into_make_service());
-
-    let server_handle = tokio::spawn(server);
-    let mut manifest: Manifest =
-        serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
-
-    update_test_manifest_asset_paths(&mut manifest);
-
-    srvc.register_indexer_from_manifest(manifest)
-        .await
-        .expect("Failed to initialize indexer.");
-
-    let contract = connect_to_deployed_contract().await.unwrap();
-    let app = test::init_service(app(contract)).await;
-    let req = test::TestRequest::post().uri("/ping").to_request();
-    let _ = app.call(req).await;
-
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-    fuel_node_handle.abort();
-
-=======
 
     server.abort();
 }
@@ -796,7 +451,6 @@ async fn test_can_return_query_response_with_filter_simple_comparison_postgres()
     mock_request("/ping").await;
 
     node.abort();
->>>>>>> 80599abb (refactor gql tests)
     let client = http_client();
     let resp = client
         .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
@@ -806,11 +460,6 @@ async fn test_can_return_query_response_with_filter_simple_comparison_postgres()
         .await
         .unwrap();
 
-<<<<<<< HEAD
-    server_handle.abort();
-
-=======
->>>>>>> 80599abb (refactor gql tests)
     let body = resp.text().await.unwrap();
     let v: Value = serde_json::from_str(&body).unwrap();
     let data = v["data"].as_array().expect("data is not an array");
@@ -823,34 +472,6 @@ async fn test_can_return_query_response_with_filter_simple_comparison_postgres()
     assert_eq!(data[1]["foola"].as_str(), Some("boop"));
     assert_eq!(data[1]["maybe_null_bar"].as_i64(), None);
     assert_eq!(data[1]["bazoo"].as_i64(), Some(5));
-<<<<<<< HEAD
-}
-
-#[actix_web::test]
-async fn test_can_return_query_response_with_filter_nested_postgres() {
-    let (fuel_node_handle, _test_db, mut srvc, api_app) = setup_test_components().await;
-
-    let server = axum::Server::bind(&WebApiConfig::default().into())
-        .serve(api_app.into_make_service());
-
-    let server_handle = tokio::spawn(server);
-    let mut manifest: Manifest =
-        serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
-
-    update_test_manifest_asset_paths(&mut manifest);
-
-    srvc.register_indexer_from_manifest(manifest)
-        .await
-        .expect("Failed to initialize indexer.");
-
-    let contract = connect_to_deployed_contract().await.unwrap();
-    let app = test::init_service(app(contract)).await;
-    let req = test::TestRequest::post().uri("/ping").to_request();
-    let _ = app.call(req).await;
-
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-    fuel_node_handle.abort();
-=======
 
     server.abort();
 }
@@ -865,7 +486,6 @@ async fn test_can_return_query_response_with_filter_nested_postgres() {
     mock_request("/ping").await;
 
     node.abort();
->>>>>>> 80599abb (refactor gql tests)
 
     let client = http_client();
     let resp = client
@@ -878,11 +498,6 @@ async fn test_can_return_query_response_with_filter_nested_postgres() {
         .await
         .unwrap();
 
-<<<<<<< HEAD
-    server_handle.abort();
-
-=======
->>>>>>> 80599abb (refactor gql tests)
     let body = resp.text().await.unwrap();
     let v: Value = serde_json::from_str(&body).unwrap();
     let data = v["data"].as_array().expect("data is not an array");
@@ -895,34 +510,6 @@ async fn test_can_return_query_response_with_filter_nested_postgres() {
     assert_eq!(data[0]["inner_entity"]["inner_foo"].as_str(), Some("eggs"));
     assert_eq!(data[0]["inner_entity"]["inner_bar"].as_u64(), Some(500));
     assert_eq!(data[0]["inner_entity"]["inner_baz"].as_u64(), Some(600));
-<<<<<<< HEAD
-}
-
-#[actix_web::test]
-async fn test_can_return_query_response_with_filter_multiple_on_single_entity_postgres() {
-    let (fuel_node_handle, _test_db, mut srvc, api_app) = setup_test_components().await;
-
-    let server = axum::Server::bind(&WebApiConfig::default().into())
-        .serve(api_app.into_make_service());
-
-    let server_handle = tokio::spawn(server);
-    let mut manifest: Manifest =
-        serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
-
-    update_test_manifest_asset_paths(&mut manifest);
-
-    srvc.register_indexer_from_manifest(manifest)
-        .await
-        .expect("Failed to initialize indexer.");
-
-    let contract = connect_to_deployed_contract().await.unwrap();
-    let app = test::init_service(app(contract)).await;
-    let req = test::TestRequest::post().uri("/ping").to_request();
-    let _ = app.call(req).await;
-
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-    fuel_node_handle.abort();
-=======
 
     server.abort();
 }
@@ -937,7 +524,6 @@ async fn test_can_return_query_response_with_filter_multiple_on_single_entity_po
     mock_request("/ping").await;
 
     node.abort();
->>>>>>> 80599abb (refactor gql tests)
 
     let client = http_client();
     let resp = client
@@ -950,11 +536,6 @@ async fn test_can_return_query_response_with_filter_multiple_on_single_entity_po
         .await
         .unwrap();
 
-<<<<<<< HEAD
-    server_handle.abort();
-
-=======
->>>>>>> 80599abb (refactor gql tests)
     let body = resp.text().await.unwrap();
     let v: Value = serde_json::from_str(&body).unwrap();
     let data = v["data"].as_array().expect("data is not an array");
@@ -963,34 +544,6 @@ async fn test_can_return_query_response_with_filter_multiple_on_single_entity_po
     assert_eq!(data[0]["foola"].as_str(), Some("beep"));
     assert_eq!(data[0]["maybe_null_bar"].as_i64(), Some(123));
     assert_eq!(data[0]["bazoo"].as_i64(), Some(1));
-<<<<<<< HEAD
-}
-
-#[actix_web::test]
-async fn test_can_return_query_response_with_filter_negation_postgres() {
-    let (fuel_node_handle, _test_db, mut srvc, api_app) = setup_test_components().await;
-
-    let server = axum::Server::bind(&WebApiConfig::default().into())
-        .serve(api_app.into_make_service());
-
-    let server_handle = tokio::spawn(server);
-    let mut manifest: Manifest =
-        serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
-
-    update_test_manifest_asset_paths(&mut manifest);
-
-    srvc.register_indexer_from_manifest(manifest)
-        .await
-        .expect("Failed to initialize indexer.");
-
-    let contract = connect_to_deployed_contract().await.unwrap();
-    let app = test::init_service(app(contract)).await;
-    let req = test::TestRequest::post().uri("/ping").to_request();
-    let _ = app.call(req).await;
-
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-    fuel_node_handle.abort();
-=======
 
     server.abort();
 }
@@ -1005,7 +558,6 @@ async fn test_can_return_query_response_with_filter_negation_postgres() {
     mock_request("/ping").await;
 
     node.abort();
->>>>>>> 80599abb (refactor gql tests)
 
     let client = http_client();
     let resp = client
@@ -1018,11 +570,6 @@ async fn test_can_return_query_response_with_filter_negation_postgres() {
         .await
         .unwrap();
 
-<<<<<<< HEAD
-    server_handle.abort();
-
-=======
->>>>>>> 80599abb (refactor gql tests)
     let body = resp.text().await.unwrap();
     let v: Value = serde_json::from_str(&body).unwrap();
     let data = v["data"].as_array().expect("data is not an array");
@@ -1031,35 +578,6 @@ async fn test_can_return_query_response_with_filter_negation_postgres() {
     assert_eq!(data[0]["foola"].as_str(), Some("blorp"));
     assert_eq!(data[0]["maybe_null_bar"].as_i64(), Some(456));
     assert_eq!(data[0]["bazoo"].as_i64(), Some(1000));
-<<<<<<< HEAD
-}
-
-#[actix_web::test]
-async fn test_can_return_query_response_with_sorted_results_postgres() {
-    let (fuel_node_handle, _test_db, mut srvc, api_app) = setup_test_components().await;
-
-    let server = axum::Server::bind(&WebApiConfig::default().into())
-        .serve(api_app.into_make_service());
-
-    let server_handle = tokio::spawn(server);
-    let mut manifest: Manifest =
-        serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
-
-    update_test_manifest_asset_paths(&mut manifest);
-
-    srvc.register_indexer_from_manifest(manifest)
-        .await
-        .expect("Failed to initialize indexer.");
-
-    let contract = connect_to_deployed_contract().await.unwrap();
-    let app = test::init_service(app(contract)).await;
-    let req = test::TestRequest::post().uri("/ping").to_request();
-    let _ = app.call(req).await;
-
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-    fuel_node_handle.abort();
-
-=======
 
     server.abort();
 }
@@ -1074,7 +592,6 @@ async fn test_can_return_query_response_with_sorted_results_postgres() {
     mock_request("/ping").await;
 
     node.abort();
->>>>>>> 80599abb (refactor gql tests)
     let client = http_client();
     let resp = client
         .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
@@ -1086,11 +603,6 @@ async fn test_can_return_query_response_with_sorted_results_postgres() {
         .await
         .unwrap();
 
-<<<<<<< HEAD
-    server_handle.abort();
-
-=======
->>>>>>> 80599abb (refactor gql tests)
     let body = resp.text().await.unwrap();
     let v: Value = serde_json::from_str(&body).unwrap();
     let data = v["data"].as_array().expect("data is not an array");
@@ -1101,35 +613,6 @@ async fn test_can_return_query_response_with_sorted_results_postgres() {
     assert_eq!(data[1]["foola"].as_str(), Some("blorp"));
     assert_eq!(data[2]["id"].as_i64(), Some(1));
     assert_eq!(data[2]["foola"].as_str(), Some("beep"));
-<<<<<<< HEAD
-}
-
-#[actix_web::test]
-async fn test_can_return_query_response_with_alias_and_ascending_offset_and_limited_results_postgres(
-) {
-    let (fuel_node_handle, _test_db, mut srvc, api_app) = setup_test_components().await;
-
-    let server = axum::Server::bind(&WebApiConfig::default().into())
-        .serve(api_app.into_make_service());
-
-    let server_handle = tokio::spawn(server);
-    let mut manifest: Manifest =
-        serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
-
-    update_test_manifest_asset_paths(&mut manifest);
-
-    srvc.register_indexer_from_manifest(manifest)
-        .await
-        .expect("Failed to initialize indexer.");
-
-    let contract = connect_to_deployed_contract().await.unwrap();
-    let app = test::init_service(app(contract)).await;
-    let req = test::TestRequest::post().uri("/ping").to_request();
-    let _ = app.call(req).await;
-
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-    fuel_node_handle.abort();
-=======
 
     server.abort();
 }
@@ -1145,7 +628,6 @@ async fn test_can_return_query_response_with_alias_and_ascending_offset_and_limi
     mock_request("/ping").await;
 
     node.abort();
->>>>>>> 80599abb (refactor gql tests)
 
     let client = http_client();
     let resp = client
@@ -1158,11 +640,6 @@ async fn test_can_return_query_response_with_alias_and_ascending_offset_and_limi
         .await
         .unwrap();
 
-<<<<<<< HEAD
-    server_handle.abort();
-
-=======
->>>>>>> 80599abb (refactor gql tests)
     let body = resp.text().await.unwrap();
     let v: Value = serde_json::from_str(&body).unwrap();
     let data = v["data"].as_array().expect("data is not an array");
@@ -1173,9 +650,6 @@ async fn test_can_return_query_response_with_alias_and_ascending_offset_and_limi
         Some("blorp")
     );
     assert_eq!(data[0]["page_info"]["pages"].as_i64(), Some(3));
-<<<<<<< HEAD
-=======
 
     server.abort();
->>>>>>> 80599abb (refactor gql tests)
 }

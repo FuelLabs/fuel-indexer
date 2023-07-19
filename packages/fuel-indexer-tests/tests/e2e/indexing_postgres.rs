@@ -535,11 +535,15 @@ async fn test_can_trigger_and_index_nonindexable_events() {
 
 // FIXME: This is not an indexing test...
 #[actix_web::test]
-async fn test_deploying_twice_returns_an_error() {
-    let test_db = TestPostgresDb::new().await.unwrap();
-
-    let mut srvc = {
-        let modify_config = Box::new(|config: &mut fuel_indexer::IndexerConfig| {
+async fn test_redeploying_an_already_active_indexer_returns_error_when_replace_indexer_is_false(
+) {
+    let IndexingTestComponents {
+        node,
+        db,
+        mut service,
+        manifest,
+    } = setup_indexing_test_components(Some(Box::new(
+        |config: &mut fuel_indexer::IndexerConfig| {
             config.replace_indexer = false;
         },
     )))
@@ -547,11 +551,8 @@ async fn test_deploying_twice_returns_an_error() {
 
     node.abort();
 
-    srvc.register_indexer_from_manifest(manifest.clone())
-        .await
-        .unwrap();
-
-    let result = srvc.register_indexer_from_manifest(manifest).await;
+    // Attempt to re-register the indexer
+    let result = service.register_indexer_from_manifest(manifest).await;
 
     assert!(result.is_err());
 
@@ -567,25 +568,24 @@ async fn test_deploying_twice_returns_an_error() {
 
 // FIXME: This is not an indexing test...
 #[actix_web::test]
-async fn test_can_replace_indexer() {
-    let node_handle = tokio::spawn(setup_example_test_fuel_node());
-    let test_db = TestPostgresDb::new().await.unwrap();
-
-    let mut srvc = {
-        let modify_config = Box::new(|config: &mut fuel_indexer::IndexerConfig| {
+async fn test_redeploying_an_already_active_indexer_works_when_replace_indexer_is_true() {
+    let IndexingTestComponents {
+        node,
+        db,
+        mut service,
+        manifest,
+    } = setup_indexing_test_components(Some(Box::new(
+        |config: &mut fuel_indexer::IndexerConfig| {
             config.replace_indexer = true;
         },
     )))
     .await;
 
-    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
-    update_test_manifest_asset_paths(&mut manifest);
-
-    srvc.register_indexer_from_manifest(manifest.clone())
+    // Re-register the indexer
+    service
+        .register_indexer_from_manifest(manifest)
         .await
         .unwrap();
-
-    srvc.register_indexer_from_manifest(manifest).await.unwrap();
 
     mock_request("/enum").await;
 
