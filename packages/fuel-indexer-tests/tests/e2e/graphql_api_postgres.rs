@@ -1,4 +1,3 @@
-use actix_service::Service;
 use actix_web::test;
 use axum::Router;
 use fuel_indexer::IndexerService;
@@ -7,17 +6,14 @@ use fuel_indexer_lib::manifest::Manifest;
 use fuel_indexer_tests::{
     assets, defaults,
     fixtures::{
-        api_server_app_postgres, connect_to_deployed_contract, http_client,
-        indexer_service_postgres, mock_request, setup_example_test_fuel_node,
-        setup_web_test_components, test_web::app, TestPostgresDb, WebTestComponents,
+        http_client,
+        mock_request,
+        setup_web_test_components, WebTestComponents,
     },
-    utils::update_test_manifest_asset_paths,
 };
 use hyper::header::CONTENT_TYPE;
 use serde_json::{Number, Value};
 use std::collections::HashMap;
-use tokio::task::JoinHandle;
-use tokio::time::{sleep, Duration};
 
 async fn setup_test_components() -> (
     JoinHandle<Result<(), ()>>,
@@ -36,10 +32,7 @@ async fn setup_test_components() -> (
 #[actix_web::test]
 async fn test_can_return_query_response_with_all_fields_required_postgres() {
     let WebTestComponents {
-        node,
-        db,
-        mut service,
-        ..
+        node, db, server, ..
     } = setup_web_test_components(None).await;
 
     let server = axum::Server::bind(&WebApiConfig::default().into())
@@ -62,9 +55,12 @@ async fn test_can_return_query_response_with_all_fields_required_postgres() {
 
     assert!(data[0]["height"].as_u64().unwrap() > 0);
     assert!(data[0]["timestamp"].as_u64().unwrap() > 0);
+
+    server.abort();
 }
 
 #[actix_web::test]
+<<<<<<< HEAD
 async fn test_can_return_query_response_with_nullable_fields_postgres() {
     let (node_handle, _test_db, mut srvc, api_app) = setup_test_components().await;
 
@@ -84,6 +80,17 @@ async fn test_can_return_query_response_with_nullable_fields_postgres() {
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
     node_handle.abort();
+=======
+#[cfg(all(feature = "e2e", feature = "postgres"))]
+async fn test_can_return_query_response_with_nullable_fields_postgres() {
+    let WebTestComponents {
+        node, db, server, ..
+    } = setup_web_test_components(None).await;
+
+    mock_request("/optionals").await;
+
+    node.abort();
+>>>>>>> 80599abb (refactor gql tests)
 
     let client = http_client();
     let resp = client
@@ -94,8 +101,11 @@ async fn test_can_return_query_response_with_nullable_fields_postgres() {
         .await
         .unwrap();
 
+<<<<<<< HEAD
     srv.abort();
 
+=======
+>>>>>>> 80599abb (refactor gql tests)
     let body = resp.text().await.unwrap();
     let v: Value = serde_json::from_str(&body).unwrap();
     let data = v["data"].as_array().expect("data is not an array");
@@ -103,6 +113,7 @@ async fn test_can_return_query_response_with_nullable_fields_postgres() {
     assert_eq!(data[0]["int_required"], Value::from(Number::from(100)));
     assert_eq!(data[0]["int_optional_some"], Value::from(Number::from(999)));
     assert_eq!(data[0]["addr_optional_none"], Value::from(None::<&str>));
+<<<<<<< HEAD
 }
 
 #[actix_web::test]
@@ -125,6 +136,22 @@ async fn test_can_return_nested_query_response_with_implicit_foreign_keys_postgr
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
     node_handle.abort();
+=======
+
+    server.abort();
+}
+
+#[actix_web::test]
+#[cfg(all(feature = "e2e", feature = "postgres"))]
+async fn test_can_return_nested_query_response_with_implicit_foreign_keys_postgres() {
+    let WebTestComponents {
+        node, db, server, ..
+    } = setup_web_test_components(None).await;
+
+    mock_request("/block").await;
+
+    node.abort();
+>>>>>>> 80599abb (refactor gql tests)
 
     let client = http_client();
     let resp = client
@@ -135,8 +162,11 @@ async fn test_can_return_nested_query_response_with_implicit_foreign_keys_postgr
         .await
         .unwrap();
 
+<<<<<<< HEAD
     srv.abort();
 
+=======
+>>>>>>> 80599abb (refactor gql tests)
     let body = resp.text().await.unwrap();
     let v: Value = serde_json::from_str(&body).unwrap();
     let data = v["data"].as_array().expect("data is not an array");
@@ -149,6 +179,7 @@ async fn test_can_return_nested_query_response_with_implicit_foreign_keys_postgr
     assert!(data[0]["block"]["id"].as_i64().unwrap() > 0);
     assert!(data[0]["block"]["height"].as_i64().is_some());
     assert!(data[0]["block"]["height"].as_i64().unwrap() > 0);
+<<<<<<< HEAD
 }
 
 #[actix_web::test]
@@ -230,6 +261,81 @@ async fn test_can_return_query_response_with_deeply_nested_query_postgres() {
                         } 
                     } 
                 } 
+=======
+
+    server.abort();
+}
+
+#[actix_web::test]
+#[cfg(all(feature = "e2e", feature = "postgres"))]
+async fn test_can_return_query_response_with_deeply_nested_query_postgres() {
+    let WebTestComponents {
+        node, db, server, ..
+    } = setup_web_test_components(None).await;
+
+    mock_request("/deeply_nested").await;
+
+    node.abort();
+
+    let deeply_nested_query = HashMap::from([(
+        "query",
+        "query {
+                bookclub {
+                    id
+                    book {
+                        id
+                        name
+                        author {
+                            name
+                            genre {
+                                id
+                                name
+                            }
+                        }
+                        library {
+                            id
+                            name
+                            city {
+                                id
+                                name
+                                region {
+                                    id
+                                    name
+                                    country {
+                                        id
+                                        name
+                                        continent {
+                                            id
+                                            name
+                                            planet {
+                                                id
+                                                name
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        genre {
+                            id
+                            name
+                        }
+                    }
+                    member {
+                        name
+                        id
+                    }
+                    corporate_sponsor {
+                        id
+                        name
+                        amount
+                        representative {
+                            id
+                            name
+                        }
+                    }
+                }
+>>>>>>> 80599abb (refactor gql tests)
             }",
     )]);
 
@@ -242,8 +348,11 @@ async fn test_can_return_query_response_with_deeply_nested_query_postgres() {
         .await
         .unwrap();
 
+<<<<<<< HEAD
     srv.abort();
 
+=======
+>>>>>>> 80599abb (refactor gql tests)
     let body = resp.text().await.unwrap();
     let v: Value = serde_json::from_str(&body).unwrap();
     let data = v["data"].as_array().expect("data is not an array");
@@ -295,6 +404,7 @@ async fn test_can_return_query_response_with_deeply_nested_query_postgres() {
         data[0]["corporate_sponsor"]["representative"]["name"].as_str(),
         Some("Ava")
     );
+<<<<<<< HEAD
 }
 
 #[actix_web::test]
@@ -317,6 +427,22 @@ async fn test_can_return_nested_query_response_with_explicit_foreign_keys_postgr
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
     node_handle.abort();
+=======
+
+    server.abort();
+}
+
+#[actix_web::test]
+#[cfg(all(feature = "e2e", feature = "postgres"))]
+async fn test_can_return_nested_query_response_with_explicit_foreign_keys_postgres() {
+    let WebTestComponents {
+        node, db, server, ..
+    } = setup_web_test_components(None).await;
+
+    mock_request("/explicit").await;
+
+    node.abort();
+>>>>>>> 80599abb (refactor gql tests)
 
     let client = http_client();
     let resp = client
@@ -329,8 +455,11 @@ async fn test_can_return_nested_query_response_with_explicit_foreign_keys_postgr
         .await
         .unwrap();
 
+<<<<<<< HEAD
     srv.abort();
 
+=======
+>>>>>>> 80599abb (refactor gql tests)
     let body = resp.text().await.unwrap();
     let v: Value = serde_json::from_str(&body).unwrap();
     let data = v["data"].as_array().expect("data is not an array");
@@ -342,6 +471,7 @@ async fn test_can_return_nested_query_response_with_explicit_foreign_keys_postgr
         data[0]["municipality"]["name"].as_str(),
         Some("Republic of Indexia")
     );
+<<<<<<< HEAD
 }
 
 #[actix_web::test]
@@ -368,6 +498,22 @@ async fn test_can_return_query_response_with_filter_id_selection_postgres() {
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
     fuel_node_handle.abort();
+=======
+
+    server.abort();
+}
+
+#[actix_web::test]
+#[cfg(all(feature = "e2e", feature = "postgres"))]
+async fn test_can_return_query_response_with_filter_id_selection_postgres() {
+    let WebTestComponents {
+        node, db, server, ..
+    } = setup_web_test_components(None).await;
+
+    mock_request("/ping").await;
+
+    node.abort();
+>>>>>>> 80599abb (refactor gql tests)
 
     let client = http_client();
     let resp = client
@@ -378,8 +524,11 @@ async fn test_can_return_query_response_with_filter_id_selection_postgres() {
         .await
         .unwrap();
 
+<<<<<<< HEAD
     server_handle.abort();
 
+=======
+>>>>>>> 80599abb (refactor gql tests)
     let body = resp.text().await.unwrap();
     let v: Value = serde_json::from_str(&body).unwrap();
     let data = v["data"].as_array().expect("data is not an array");
@@ -388,6 +537,7 @@ async fn test_can_return_query_response_with_filter_id_selection_postgres() {
     assert_eq!(data[0]["foola"].as_str(), Some("beep"));
     assert_eq!(data[0]["maybe_null_bar"].as_i64(), Some(123));
     assert_eq!(data[0]["bazoo"].as_i64(), Some(1));
+<<<<<<< HEAD
 }
 
 #[actix_web::test]
@@ -414,6 +564,22 @@ async fn test_can_return_query_response_with_filter_membership_postgres() {
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
     fuel_node_handle.abort();
+=======
+
+    server.abort();
+}
+
+#[actix_web::test]
+#[cfg(all(feature = "e2e", feature = "postgres"))]
+async fn test_can_return_query_response_with_filter_membership_postgres() {
+    let WebTestComponents {
+        node, db, server, ..
+    } = setup_web_test_components(None).await;
+
+    mock_request("/ping").await;
+
+    node.abort();
+>>>>>>> 80599abb (refactor gql tests)
 
     let client = http_client();
     let resp = client
@@ -426,8 +592,11 @@ async fn test_can_return_query_response_with_filter_membership_postgres() {
         .await
         .unwrap();
 
+<<<<<<< HEAD
     server_handle.abort();
 
+=======
+>>>>>>> 80599abb (refactor gql tests)
     let body = resp.text().await.unwrap();
     let v: Value = serde_json::from_str(&body).unwrap();
     let data = v["data"].as_array().expect("data is not an array");
@@ -440,6 +609,7 @@ async fn test_can_return_query_response_with_filter_membership_postgres() {
     assert_eq!(data[1]["foola"].as_str(), Some("boop"));
     assert_eq!(data[1]["maybe_null_bar"].as_i64(), None);
     assert_eq!(data[1]["bazoo"].as_i64(), Some(5));
+<<<<<<< HEAD
 }
 
 #[actix_web::test]
@@ -466,6 +636,22 @@ async fn test_can_return_query_response_with_filter_non_null_postgres() {
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
     fuel_node_handle.abort();
+=======
+
+    server.abort();
+}
+
+#[actix_web::test]
+#[cfg(all(feature = "e2e", feature = "postgres"))]
+async fn test_can_return_query_response_with_filter_non_null_postgres() {
+    let WebTestComponents {
+        node, db, server, ..
+    } = setup_web_test_components(None).await;
+
+    mock_request("/ping").await;
+
+    node.abort();
+>>>>>>> 80599abb (refactor gql tests)
 
     let client = http_client();
     let resp = client
@@ -478,8 +664,11 @@ async fn test_can_return_query_response_with_filter_non_null_postgres() {
         .await
         .unwrap();
 
+<<<<<<< HEAD
     server_handle.abort();
 
+=======
+>>>>>>> 80599abb (refactor gql tests)
     let body = resp.text().await.unwrap();
     let v: Value = serde_json::from_str(&body).unwrap();
     let data = v["data"].as_array().expect("data is not an array");
@@ -492,6 +681,7 @@ async fn test_can_return_query_response_with_filter_non_null_postgres() {
     assert_eq!(data[1]["foola"].as_str(), Some("blorp"));
     assert_eq!(data[1]["maybe_null_bar"].as_i64(), Some(456));
     assert_eq!(data[1]["bazoo"].as_i64(), Some(1000));
+<<<<<<< HEAD
 }
 
 #[actix_web::test]
@@ -518,6 +708,22 @@ async fn test_can_return_query_response_with_filter_complex_comparison_postgres(
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
     fuel_node_handle.abort();
+=======
+
+    server.abort();
+}
+
+#[actix_web::test]
+#[cfg(all(feature = "e2e", feature = "postgres"))]
+async fn test_can_return_query_response_with_filter_complex_comparison_postgres() {
+    let WebTestComponents {
+        node, db, server, ..
+    } = setup_web_test_components(None).await;
+
+    mock_request("/ping").await;
+
+    node.abort();
+>>>>>>> 80599abb (refactor gql tests)
 
     let client = http_client();
     let resp = client
@@ -530,8 +736,11 @@ async fn test_can_return_query_response_with_filter_complex_comparison_postgres(
         .await
         .unwrap();
 
+<<<<<<< HEAD
     server_handle.abort();
 
+=======
+>>>>>>> 80599abb (refactor gql tests)
     let body = resp.text().await.unwrap();
     let v: Value = serde_json::from_str(&body).unwrap();
     let data = v["data"].as_array().expect("data is not an array");
@@ -544,6 +753,7 @@ async fn test_can_return_query_response_with_filter_complex_comparison_postgres(
     assert_eq!(data[1]["foola"].as_str(), Some("boop"));
     assert_eq!(data[1]["maybe_null_bar"].as_i64(), None);
     assert_eq!(data[1]["bazoo"].as_i64(), Some(5));
+<<<<<<< HEAD
 }
 
 #[actix_web::test]
@@ -571,6 +781,22 @@ async fn test_can_return_query_response_with_filter_simple_comparison_postgres()
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
     fuel_node_handle.abort();
 
+=======
+
+    server.abort();
+}
+
+#[actix_web::test]
+#[cfg(all(feature = "e2e", feature = "postgres"))]
+async fn test_can_return_query_response_with_filter_simple_comparison_postgres() {
+    let WebTestComponents {
+        node, db, server, ..
+    } = setup_web_test_components(None).await;
+
+    mock_request("/ping").await;
+
+    node.abort();
+>>>>>>> 80599abb (refactor gql tests)
     let client = http_client();
     let resp = client
         .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
@@ -580,8 +806,11 @@ async fn test_can_return_query_response_with_filter_simple_comparison_postgres()
         .await
         .unwrap();
 
+<<<<<<< HEAD
     server_handle.abort();
 
+=======
+>>>>>>> 80599abb (refactor gql tests)
     let body = resp.text().await.unwrap();
     let v: Value = serde_json::from_str(&body).unwrap();
     let data = v["data"].as_array().expect("data is not an array");
@@ -594,6 +823,7 @@ async fn test_can_return_query_response_with_filter_simple_comparison_postgres()
     assert_eq!(data[1]["foola"].as_str(), Some("boop"));
     assert_eq!(data[1]["maybe_null_bar"].as_i64(), None);
     assert_eq!(data[1]["bazoo"].as_i64(), Some(5));
+<<<<<<< HEAD
 }
 
 #[actix_web::test]
@@ -620,6 +850,22 @@ async fn test_can_return_query_response_with_filter_nested_postgres() {
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
     fuel_node_handle.abort();
+=======
+
+    server.abort();
+}
+
+#[actix_web::test]
+#[cfg(all(feature = "e2e", feature = "postgres"))]
+async fn test_can_return_query_response_with_filter_nested_postgres() {
+    let WebTestComponents {
+        node, db, server, ..
+    } = setup_web_test_components(None).await;
+
+    mock_request("/ping").await;
+
+    node.abort();
+>>>>>>> 80599abb (refactor gql tests)
 
     let client = http_client();
     let resp = client
@@ -632,8 +878,11 @@ async fn test_can_return_query_response_with_filter_nested_postgres() {
         .await
         .unwrap();
 
+<<<<<<< HEAD
     server_handle.abort();
 
+=======
+>>>>>>> 80599abb (refactor gql tests)
     let body = resp.text().await.unwrap();
     let v: Value = serde_json::from_str(&body).unwrap();
     let data = v["data"].as_array().expect("data is not an array");
@@ -646,6 +895,7 @@ async fn test_can_return_query_response_with_filter_nested_postgres() {
     assert_eq!(data[0]["inner_entity"]["inner_foo"].as_str(), Some("eggs"));
     assert_eq!(data[0]["inner_entity"]["inner_bar"].as_u64(), Some(500));
     assert_eq!(data[0]["inner_entity"]["inner_baz"].as_u64(), Some(600));
+<<<<<<< HEAD
 }
 
 #[actix_web::test]
@@ -672,6 +922,22 @@ async fn test_can_return_query_response_with_filter_multiple_on_single_entity_po
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
     fuel_node_handle.abort();
+=======
+
+    server.abort();
+}
+
+#[actix_web::test]
+#[cfg(all(feature = "e2e", feature = "postgres"))]
+async fn test_can_return_query_response_with_filter_multiple_on_single_entity_postgres() {
+    let WebTestComponents {
+        node, db, server, ..
+    } = setup_web_test_components(None).await;
+
+    mock_request("/ping").await;
+
+    node.abort();
+>>>>>>> 80599abb (refactor gql tests)
 
     let client = http_client();
     let resp = client
@@ -684,8 +950,11 @@ async fn test_can_return_query_response_with_filter_multiple_on_single_entity_po
         .await
         .unwrap();
 
+<<<<<<< HEAD
     server_handle.abort();
 
+=======
+>>>>>>> 80599abb (refactor gql tests)
     let body = resp.text().await.unwrap();
     let v: Value = serde_json::from_str(&body).unwrap();
     let data = v["data"].as_array().expect("data is not an array");
@@ -694,6 +963,7 @@ async fn test_can_return_query_response_with_filter_multiple_on_single_entity_po
     assert_eq!(data[0]["foola"].as_str(), Some("beep"));
     assert_eq!(data[0]["maybe_null_bar"].as_i64(), Some(123));
     assert_eq!(data[0]["bazoo"].as_i64(), Some(1));
+<<<<<<< HEAD
 }
 
 #[actix_web::test]
@@ -720,6 +990,22 @@ async fn test_can_return_query_response_with_filter_negation_postgres() {
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
     fuel_node_handle.abort();
+=======
+
+    server.abort();
+}
+
+#[actix_web::test]
+#[cfg(all(feature = "e2e", feature = "postgres"))]
+async fn test_can_return_query_response_with_filter_negation_postgres() {
+    let WebTestComponents {
+        node, db, server, ..
+    } = setup_web_test_components(None).await;
+
+    mock_request("/ping").await;
+
+    node.abort();
+>>>>>>> 80599abb (refactor gql tests)
 
     let client = http_client();
     let resp = client
@@ -732,8 +1018,11 @@ async fn test_can_return_query_response_with_filter_negation_postgres() {
         .await
         .unwrap();
 
+<<<<<<< HEAD
     server_handle.abort();
 
+=======
+>>>>>>> 80599abb (refactor gql tests)
     let body = resp.text().await.unwrap();
     let v: Value = serde_json::from_str(&body).unwrap();
     let data = v["data"].as_array().expect("data is not an array");
@@ -742,6 +1031,7 @@ async fn test_can_return_query_response_with_filter_negation_postgres() {
     assert_eq!(data[0]["foola"].as_str(), Some("blorp"));
     assert_eq!(data[0]["maybe_null_bar"].as_i64(), Some(456));
     assert_eq!(data[0]["bazoo"].as_i64(), Some(1000));
+<<<<<<< HEAD
 }
 
 #[actix_web::test]
@@ -769,6 +1059,22 @@ async fn test_can_return_query_response_with_sorted_results_postgres() {
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
     fuel_node_handle.abort();
 
+=======
+
+    server.abort();
+}
+
+#[actix_web::test]
+#[cfg(all(feature = "e2e", feature = "postgres"))]
+async fn test_can_return_query_response_with_sorted_results_postgres() {
+    let WebTestComponents {
+        node, db, server, ..
+    } = setup_web_test_components(None).await;
+
+    mock_request("/ping").await;
+
+    node.abort();
+>>>>>>> 80599abb (refactor gql tests)
     let client = http_client();
     let resp = client
         .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
@@ -780,8 +1086,11 @@ async fn test_can_return_query_response_with_sorted_results_postgres() {
         .await
         .unwrap();
 
+<<<<<<< HEAD
     server_handle.abort();
 
+=======
+>>>>>>> 80599abb (refactor gql tests)
     let body = resp.text().await.unwrap();
     let v: Value = serde_json::from_str(&body).unwrap();
     let data = v["data"].as_array().expect("data is not an array");
@@ -792,6 +1101,7 @@ async fn test_can_return_query_response_with_sorted_results_postgres() {
     assert_eq!(data[1]["foola"].as_str(), Some("blorp"));
     assert_eq!(data[2]["id"].as_i64(), Some(1));
     assert_eq!(data[2]["foola"].as_str(), Some("beep"));
+<<<<<<< HEAD
 }
 
 #[actix_web::test]
@@ -819,6 +1129,23 @@ async fn test_can_return_query_response_with_alias_and_ascending_offset_and_limi
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
     fuel_node_handle.abort();
+=======
+
+    server.abort();
+}
+
+#[actix_web::test]
+#[cfg(all(feature = "e2e", feature = "postgres"))]
+async fn test_can_return_query_response_with_alias_and_ascending_offset_and_limited_results_postgres(
+) {
+    let WebTestComponents {
+        node, db, server, ..
+    } = setup_web_test_components(None).await;
+
+    mock_request("/ping").await;
+
+    node.abort();
+>>>>>>> 80599abb (refactor gql tests)
 
     let client = http_client();
     let resp = client
@@ -831,8 +1158,11 @@ async fn test_can_return_query_response_with_alias_and_ascending_offset_and_limi
         .await
         .unwrap();
 
+<<<<<<< HEAD
     server_handle.abort();
 
+=======
+>>>>>>> 80599abb (refactor gql tests)
     let body = resp.text().await.unwrap();
     let v: Value = serde_json::from_str(&body).unwrap();
     let data = v["data"].as_array().expect("data is not an array");
@@ -843,4 +1173,9 @@ async fn test_can_return_query_response_with_alias_and_ascending_offset_and_limi
         Some("blorp")
     );
     assert_eq!(data[0]["page_info"]["pages"].as_i64(), Some(3));
+<<<<<<< HEAD
+=======
+
+    server.abort();
+>>>>>>> 80599abb (refactor gql tests)
 }

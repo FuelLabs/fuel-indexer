@@ -25,6 +25,7 @@ use fuels::{
     },
     test_helpers::Config,
 };
+use hyper::Error;
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use sqlx::{pool::Pool, Connection, Executor, PgConnection, Postgres};
 use std::{
@@ -64,6 +65,9 @@ pub struct WebTestComponents {
     pub service: IndexerService,
     pub manifest: Manifest,
     pub app: Router,
+    #[allow(unused)]
+    pub rx: Receiver<ServiceRequest>,
+    pub server: JoinHandle<Result<(), Error>>,
 }
 
 pub async fn mock_request(path: &str) {
@@ -113,8 +117,12 @@ pub async fn setup_web_test_components(
         .await
         .unwrap();
 
-    let (app, _rx) = api_server_app_postgres(Some(&db.url), modify_config).await;
-    let manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
+    // FIXME
+    let (app, rx) = api_server_app_postgres(Some(&db.url), None).await;
+
+    let server = axum::Server::bind(&GraphQLConfig::default().into())
+        .serve(app.clone().into_make_service());
+    let server = tokio::spawn(server);
 
     WebTestComponents {
         node,
@@ -122,6 +130,8 @@ pub async fn setup_web_test_components(
         service,
         manifest,
         app,
+        rx,
+        server,
     }
 }
 
@@ -358,7 +368,7 @@ pub fn get_test_contract_id() -> Bech32ContractId {
 
 pub async fn api_server_app_postgres(
     database_url: Option<&str>,
-    modify_config: Option<Box<dyn Fn(&mut IndexerConfig)>>,
+    modified_config: Option<Box<dyn Fn(&mut IndexerConfig)>>,
 ) -> (Router, Receiver<ServiceRequest>) {
     let database: DatabaseConfig = database_url
         .map_or(DatabaseConfig::default(), |url| {

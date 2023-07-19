@@ -18,12 +18,8 @@ const TRANSFER_BASE_ASSET_ID: &str =
 #[actix_web::test]
 async fn test_can_trigger_and_index_events_with_multiple_args_in_index_handler_postgres()
 {
-    let IndexingTestComponents {
-        node,
-        db,
-        mut service,
-        ..
-    } = setup_indexing_test_components(None).await;
+    let IndexingTestComponents { node, db, .. } =
+        setup_indexing_test_components(None).await;
 
     mock_request("/multiarg").await;
 
@@ -81,12 +77,8 @@ async fn test_can_trigger_and_index_events_with_multiple_args_in_index_handler_p
 
 #[actix_web::test]
 async fn test_can_trigger_and_index_callreturn_postgres() {
-    let IndexingTestComponents {
-        node,
-        db,
-        mut service,
-        ..
-    } = setup_indexing_test_components(None).await;
+    let IndexingTestComponents { node, db, .. } =
+        setup_indexing_test_components(None).await;
 
     mock_request("/callreturn").await;
 
@@ -113,12 +105,8 @@ async fn test_can_trigger_and_index_callreturn_postgres() {
 
 #[actix_web::test]
 async fn test_can_trigger_and_index_blocks_and_transactions_postgres() {
-    let IndexingTestComponents {
-        node,
-        db,
-        mut service,
-        ..
-    } = setup_indexing_test_components(None).await;
+    let IndexingTestComponents { node, db, .. } =
+        setup_indexing_test_components(None).await;
 
     mock_request("/block").await;
 
@@ -142,12 +130,8 @@ async fn test_can_trigger_and_index_blocks_and_transactions_postgres() {
 
 #[actix_web::test]
 async fn test_can_trigger_and_index_ping_event_postgres() {
-    let IndexingTestComponents {
-        node,
-        db,
-        mut service,
-        ..
-    } = setup_indexing_test_components(None).await;
+    let IndexingTestComponents { node, db, .. } =
+        setup_indexing_test_components(None).await;
 
     mock_request("/ping").await;
 
@@ -182,12 +166,8 @@ async fn test_can_trigger_and_index_ping_event_postgres() {
 
 #[actix_web::test]
 async fn test_can_trigger_and_index_transfer_event_postgres() {
-    let IndexingTestComponents {
-        node,
-        db,
-        mut service,
-        ..
-    } = setup_indexing_test_components(None).await;
+    let IndexingTestComponents { node, db, .. } =
+        setup_indexing_test_components(None).await;
 
     mock_request("/transfer").await;
 
@@ -206,12 +186,8 @@ async fn test_can_trigger_and_index_transfer_event_postgres() {
 
 #[actix_web::test]
 async fn test_can_trigger_and_index_log_event_postgres() {
-    let IndexingTestComponents {
-        node,
-        db,
-        mut service,
-        ..
-    } = setup_indexing_test_components(None).await;
+    let IndexingTestComponents { node, db, .. } =
+        setup_indexing_test_components(None).await;
 
     mock_request("/log").await;
 
@@ -230,12 +206,8 @@ async fn test_can_trigger_and_index_log_event_postgres() {
 
 #[actix_web::test]
 async fn test_can_trigger_and_index_logdata_event_postgres() {
-    let IndexingTestComponents {
-        node,
-        db,
-        mut service,
-        ..
-    } = setup_indexing_test_components(None).await;
+    let IndexingTestComponents { node, db, .. } =
+        setup_indexing_test_components(None).await;
 
     mock_request("/logdata").await;
 
@@ -261,12 +233,8 @@ async fn test_can_trigger_and_index_logdata_event_postgres() {
 
 #[actix_web::test]
 async fn test_can_trigger_and_index_scriptresult_event_postgres() {
-    let IndexingTestComponents {
-        node,
-        db,
-        mut service,
-        ..
-    } = setup_indexing_test_components(None).await;
+    let IndexingTestComponents { node, db, .. } =
+        setup_indexing_test_components(None).await;
 
     mock_request("/scriptresult").await;
 
@@ -294,12 +262,8 @@ async fn test_can_trigger_and_index_scriptresult_event_postgres() {
 #[actix_web::test]
 #[ignore]
 async fn test_can_trigger_and_index_transferout_event_postgres() {
-    let IndexingTestComponents {
-        node,
-        db,
-        mut service,
-        ..
-    } = setup_indexing_test_components(None).await;
+    let IndexingTestComponents { node, db, .. } =
+        setup_indexing_test_components(None).await;
 
     mock_request("/transferout").await;
 
@@ -323,12 +287,8 @@ async fn test_can_trigger_and_index_transferout_event_postgres() {
 #[actix_web::test]
 #[ignore]
 async fn test_can_trigger_and_index_messageout_event_postgres() {
-    let IndexingTestComponents {
-        node,
-        db,
-        mut service,
-        ..
-    } = setup_indexing_test_components(None).await;
+    let IndexingTestComponents { node, db, .. } =
+        setup_indexing_test_components(None).await;
 
     mock_request("/messageout").await;
 
@@ -363,12 +323,8 @@ async fn test_can_trigger_and_index_messageout_event_postgres() {
 
 #[actix_web::test]
 async fn test_can_index_event_with_optional_fields_postgres() {
-    let IndexingTestComponents {
-        node,
-        db,
-        mut service,
-        ..
-    } = setup_indexing_test_components(None).await;
+    let IndexingTestComponents { node, db, .. } =
+        setup_indexing_test_components(None).await;
 
     mock_request("/optionals").await;
 
@@ -395,12 +351,8 @@ async fn test_can_index_event_with_optional_fields_postgres() {
 
 #[actix_web::test]
 async fn test_can_index_metadata_when_indexer_macro_is_called_postgres() {
-    let IndexingTestComponents {
-        node,
-        db,
-        mut service,
-        ..
-    } = setup_indexing_test_components(None).await;
+    let IndexingTestComponents { node, db, .. } =
+        setup_indexing_test_components(None).await;
 
     mock_request("/block").await;
 
@@ -419,12 +371,8 @@ async fn test_can_index_metadata_when_indexer_macro_is_called_postgres() {
 
 #[actix_web::test]
 async fn test_can_trigger_and_index_tuple_events_postgres() {
-    let IndexingTestComponents {
-        node,
-        db,
-        mut service,
-        ..
-    } = setup_indexing_test_components(None).await;
+    let IndexingTestComponents { node, db, .. } =
+        setup_indexing_test_components(None).await;
 
     mock_request("/tuples").await;
 
@@ -443,12 +391,8 @@ async fn test_can_trigger_and_index_tuple_events_postgres() {
 
 #[actix_web::test]
 async fn test_can_trigger_and_index_revert_event_postgres() {
-    let IndexingTestComponents {
-        node,
-        db,
-        mut service,
-        ..
-    } = setup_indexing_test_components(None).await;
+    let IndexingTestComponents { node, db, .. } =
+        setup_indexing_test_components(None).await;
 
     mock_request("/revert").await;
 
@@ -470,12 +414,8 @@ async fn test_can_trigger_and_index_revert_event_postgres() {
 
 #[actix_web::test]
 async fn test_can_trigger_and_index_panic_event_postgres() {
-    let IndexingTestComponents {
-        node,
-        db,
-        mut service,
-        ..
-    } = setup_indexing_test_components(None).await;
+    let IndexingTestComponents { node, db, .. } =
+        setup_indexing_test_components(None).await;
 
     mock_request("/panic").await;
 
@@ -494,12 +434,8 @@ async fn test_can_trigger_and_index_panic_event_postgres() {
 
 #[actix_web::test]
 async fn test_can_trigger_and_index_enum_error_function_postgres() {
-    let IndexingTestComponents {
-        node,
-        db,
-        mut service,
-        ..
-    } = setup_indexing_test_components(None).await;
+    let IndexingTestComponents { node, db, .. } =
+        setup_indexing_test_components(None).await;
 
     mock_request("/enum_error").await;
 
@@ -518,12 +454,8 @@ async fn test_can_trigger_and_index_enum_error_function_postgres() {
 
 #[actix_web::test]
 async fn test_can_trigger_and_index_block_explorer_types_postgres() {
-    let IndexingTestComponents {
-        node,
-        db,
-        mut service,
-        ..
-    } = setup_indexing_test_components(None).await;
+    let IndexingTestComponents { node, db, .. } =
+        setup_indexing_test_components(None).await;
 
     mock_request("/block").await;
 
@@ -551,12 +483,8 @@ async fn test_can_trigger_and_index_block_explorer_types_postgres() {
 
 #[actix_web::test]
 async fn test_can_trigger_and_index_enum_types_postgres() {
-    let IndexingTestComponents {
-        node,
-        db,
-        mut service,
-        ..
-    } = setup_indexing_test_components(None).await;
+    let IndexingTestComponents { node, db, .. } =
+        setup_indexing_test_components(None).await;
 
     mock_request("/enum").await;
 
@@ -581,12 +509,8 @@ struct VirtualEntity {
 
 #[actix_web::test]
 async fn test_can_trigger_and_index_nonindexable_events() {
-    let IndexingTestComponents {
-        node,
-        db,
-        mut service,
-        ..
-    } = setup_indexing_test_components(None).await;
+    let IndexingTestComponents { node, db, .. } =
+        setup_indexing_test_components(None).await;
 
     mock_request("/block").await;
 
@@ -688,12 +612,8 @@ struct UnionEntity {
 
 #[actix_web::test]
 async fn test_can_trigger_and_index_union_types() {
-    let IndexingTestComponents {
-        node,
-        db,
-        mut service,
-        ..
-    } = setup_indexing_test_components(None).await;
+    let IndexingTestComponents { node, db, .. } =
+        setup_indexing_test_components(None).await;
 
     mock_request("/block").await;
 
@@ -738,12 +658,8 @@ struct ListFKType {
 
 #[actix_web::test]
 async fn test_can_trigger_and_index_list_types() {
-    let IndexingTestComponents {
-        node,
-        db,
-        mut service,
-        ..
-    } = setup_indexing_test_components(None).await;
+    let IndexingTestComponents { node, db, .. } =
+        setup_indexing_test_components(None).await;
 
     mock_request("/block").await;
 
