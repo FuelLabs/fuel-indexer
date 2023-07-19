@@ -4,7 +4,7 @@ use fuel_indexer_lib::{
     fully_qualified_namespace, graphql::GraphQLSchema, manifest::Manifest, type_id,
 };
 use fuel_indexer_schema::db::manager::SchemaManager;
-use wasmer::{imports, Cranelift, Instance, Module, Store};
+use wasmer::{imports, AsStoreMut, Cranelift, Instance, Module, Store};
 
 fn compiler() -> Cranelift {
     Cranelift::default()
@@ -54,6 +54,16 @@ async fn load_wasm_module(
 
 #[tokio::test]
 async fn test_schema_manager_generates_and_loads_schema_postgres() {
+    if let Ok(mut current_dir) = std::env::current_dir() {
+        if current_dir.ends_with("fuel-indexer-tests") {
+            current_dir.pop();
+            current_dir.pop();
+        }
+
+        if let Err(e) = std::env::set_current_dir(current_dir) {
+            eprintln!("Failed to change directory: {}", e);
+        }
+    }
     let database_url = "postgres://postgres:my-secret@localhost:5432";
     generate_schema_then_load_schema_from_wasm_module(database_url).await;
 }
@@ -106,13 +116,17 @@ async fn generate_schema_then_load_schema_from_wasm_module(database_url: &str) {
         assert_eq!(result.column_name, TEST_COLUMNS[index].2);
     }
 
-    let (_instance, mut _store) = load_wasm_module(pool.clone(), &manifest)
+    let (instance, mut store) = load_wasm_module(pool.clone(), &manifest)
         .await
         .expect("Error creating WASM module");
 
-    let mut db = Database::new(pool.clone(), &manifest)
+    let version = ffi::get_version(&mut store.as_store_mut(), &instance)
+        .expect("Could not get version");
+
+    let mut db = Database::new(pool.clone(), &manifest).await;
+    db.load_schema(version.clone())
         .await
-        .expect("Failed to create database object.");
+        .expect("Could not load db schema");
 
     assert_eq!(db.namespace, "test_namespace");
     assert_eq!(db.version, version);

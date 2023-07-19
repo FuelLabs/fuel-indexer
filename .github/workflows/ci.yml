@@ -216,10 +216,10 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
       - name: >-
           cargo test --locked --all-targets --workspace --exclude
-          fuel-indexer-tests --exclude plugin-tests
+          fuel-indexer-tests --exclude plugin-tests --exclude fuel-indexer-benchmarks
         run: >-
           cargo test --locked --all-targets --workspace --exclude
-          fuel-indexer-tests --exclude plugin-tests
+          fuel-indexer-tests --exclude plugin-tests --exclude fuel-indexer-benchmarks
   cargo-test-e2e-and-integration-tests:
     if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_SEMVER != 'true'
     needs:

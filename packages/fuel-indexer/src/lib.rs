@@ -47,6 +47,8 @@ pub enum IndexerError {
     ExportError(#[from] ExportError),
     #[error("Error executing function: {0:#?}")]
     RuntimeError(#[from] RuntimeError),
+    #[error("Run time limit exceeded error")]
+    RunTimeLimitExceededError,
     #[error("IO Error: {0:#?}")]
     IoError(#[from] std::io::Error),
     #[error("FFI Error {0:?}")]

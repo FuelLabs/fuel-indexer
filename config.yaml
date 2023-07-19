@@ -32,8 +32,8 @@
 # # Allow network configuration via indexer manifests.
 # indexer_net_config: false
 
-# # Maximum length of time (in seconds) that an indexer's event handler can run before timing out.
-# indexer_handler_timeout: 2
+# The number of WASM opcodes after which the indexer will stop execution.
+# metering_points: 30000000000
 
 # # ***********************
 # # Fuel Node configuration

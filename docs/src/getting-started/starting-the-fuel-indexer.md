@@ -39,9 +39,6 @@ OPTIONS:
     -h, --help
             Print help information
 
-        --indexer-handler-timeout <INDEXER_HANDLER_TIMEOUT>
-            Maximum length of time (in seconds) that an indexer's event handler can run before timing out. [default: 2]
-
         --indexer-net-config
             Allow network configuration via indexer manifests.
 
@@ -67,6 +64,10 @@ OPTIONS:
         --max-body-size <MAX_BODY_SIZE>
             Max body size for GraphQL API requests. [default: 5242880]
 
+        --metering-points <METERING_POINTS>
+            The number of WASM opcodes after which the indexer's event handler will stop execution.
+            [default: 30000000000]
+
         --metrics
             Use Prometheus metrics reporting.
 
@@ -88,11 +89,15 @@ OPTIONS:
         --rate-limit
             Enable rate limiting.
 
-        --rate-limit-rps <RATE_LIMIT_RPS>
-            Maximum number of requests to allow over --rate-limit-window.
+        --rate-limit-request-count <RATE_LIMIT_REQUEST_COUNT>
+            Maximum number of requests to allow over --rate-limit-window..
 
-        --rate-limit-window <RATE_LIMIT_WINDOW_SIZE>
+        --rate-limit-window-size <RATE_LIMIT_WINDOW_SIZE>
             Number of seconds over which to allow --rate-limit-rps.
+
+        --replace-indexer
+            Whether to allow replacing an existing indexer. If not specified, an attempt to deploy
+            over an existing indexer results in an error.
 
         --run-migrations
             Run database migrations before starting service.

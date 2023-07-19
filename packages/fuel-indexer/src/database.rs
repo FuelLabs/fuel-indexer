@@ -27,11 +27,8 @@ fn is_id_only_upsert(columns: &[String]) -> bool {
 
 impl Database {
     /// Create a new `Database`.
-    pub async fn new(
-        pool: IndexerConnectionPool,
-        manifest: &Manifest,
-    ) -> IndexerResult<Database> {
-        let mut db = Database {
+    pub async fn new(pool: IndexerConnectionPool, manifest: &Manifest) -> Database {
+        Database {
             pool,
             stashed: None,
             namespace: manifest.namespace.clone(),
@@ -39,9 +36,7 @@ impl Database {
             version: Default::default(),
             schema: Default::default(),
             tables: Default::default(),
-        };
-        db.load_schema().await?;
-        Ok(db)
+        }
     }
 
     /// Open a database transaction.
@@ -186,10 +181,8 @@ Do your WASM modules need to be rebuilt?
 
     /// Load the schema for this indexer from the database, and build a mapping of `TypeId`s to
     /// tables.
-    async fn load_schema(&mut self) -> IndexerResult<()> {
-        let mut conn = self.pool.acquire().await?;
-        self.version =
-            queries::type_id_latest(&mut conn, &self.namespace, &self.identifier).await?;
+    pub async fn load_schema(&mut self, version: String) -> IndexerResult<()> {
+        self.version = version;
 
         info!(
             "Loading schema for Indexer({}.{}) with Version({}).",

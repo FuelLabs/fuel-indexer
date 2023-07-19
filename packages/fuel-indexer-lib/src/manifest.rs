@@ -86,6 +86,7 @@ pub struct Manifest {
     pub start_block: Option<u64>,
     pub end_block: Option<u64>,
     #[serde(default)]
+    /// When set to true, the indexer will resume from the block height at which it last stopped.
     pub resumable: Option<bool>,
 }
 

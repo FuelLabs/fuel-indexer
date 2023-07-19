@@ -112,8 +112,8 @@ pub const RATE_LIMIT_WINDOW_SIZE: u64 = 5;
 /// Log level.
 pub const LOG_LEVEL: &str = "info";
 
-/// Maximum amount of time (seconds) that an indexer's `handle_events` function can take before being timed out.
-pub const INDEXER_HANDLER_TIMEOUT: u64 = 5;
+/// The number of WASM opcodes after which the indexer's `handle_events` function will stop execution.
+pub const METERING_POINTS: u64 = 30_000_000_000;
 
 /// Whether to allow replacing an indexer.
 ///

@@ -1,0 +1,25 @@
+[package]
+name = "fuel-indexer-benchmarks"
+version = "0.0.0"
+edition = "2021"
+license = "BUSL-1.1"
+publish = false
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+fuel-indexer = { workspace = true }
+fuel-indexer-database = { workspace = true }
+fuel-indexer-lib = { workspace = true }
+fuel-indexer-types = { workspace = true }
+sqlx = { version = "0.6", features = ["bigdecimal"] }
+tokio = { version = "1", features = ["full"] }
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports", "async_tokio"] }
+
+[features]
+benchmarks = []
+
+[[bench]]
+name = "wasm_metering_benchmark"
+harness = false

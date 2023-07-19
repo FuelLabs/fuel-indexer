@@ -1,3 +1,4 @@
+use fuel_indexer_lib::defaults;
 use fuel_indexer_schema::FtColumn;
 use fuel_indexer_types::ffi::{
     LOG_LEVEL_DEBUG, LOG_LEVEL_ERROR, LOG_LEVEL_INFO, LOG_LEVEL_TRACE, LOG_LEVEL_WARN,
@@ -6,7 +7,10 @@ use thiserror::Error;
 use tracing::{debug, error, info, trace, warn};
 use wasmer::{
     ExportError, Exports, Function, FunctionEnvMut, Instance, MemoryView, RuntimeError,
-    Store, WasmPtr,
+    Store, StoreMut, WasmPtr,
+};
+use wasmer_middlewares::metering::{
+    get_remaining_points, set_remaining_points, MeteringPoints,
 };
 
 use crate::{IndexEnv, IndexerResult};
@@ -22,6 +26,26 @@ pub enum FFIError {
     Export(#[from] ExportError),
     #[error("Expected result from call {0:?}")]
     None(String),
+}
+
+pub fn get_version(
+    store: &mut StoreMut,
+    instance: &Instance,
+) -> Result<String, FFIError> {
+    let exports = &instance.exports;
+
+    let ptr = exports.get_function("get_version_ptr")?.call(store, &[])?[0]
+        .i32()
+        .ok_or_else(|| FFIError::None("get_version".to_string()))? as u32;
+
+    let len = exports.get_function("get_version_len")?.call(store, &[])?[0]
+        .i32()
+        .ok_or_else(|| FFIError::None("get_version".to_string()))? as u32;
+
+    let memory = exports.get_memory("memory")?.view(store);
+    let version = get_string(&memory, ptr, len)?;
+
+    Ok(version)
 }
 
 fn get_string(mem: &MemoryView, ptr: u32, len: u32) -> Result<String, FFIError> {
@@ -163,6 +187,7 @@ pub(crate) struct WasmArg<'a> {
     instance: &'a Instance,
     ptr: u32,
     len: u32,
+    metering_enabled: bool,
 }
 
 impl<'a> WasmArg<'a> {
@@ -171,6 +196,7 @@ impl<'a> WasmArg<'a> {
         store: &mut Store,
         instance: &'a Instance,
         bytes: Vec<u8>,
+        metering_enabled: bool,
     ) -> IndexerResult<WasmArg<'a>> {
         let alloc_fn = instance
             .exports
@@ -185,7 +211,12 @@ impl<'a> WasmArg<'a> {
             memory.data_unchecked_mut()[range].copy_from_slice(&bytes);
         }
 
-        Ok(WasmArg { instance, ptr, len })
+        Ok(WasmArg {
+            instance,
+            ptr,
+            len,
+            metering_enabled,
+        })
     }
 
     pub fn get_ptr(&self) -> u32 {
@@ -202,8 +233,21 @@ impl<'a> WasmArg<'a> {
             .exports
             .get_typed_function::<(u32, u32), ()>(store, "dealloc_fn")
             .expect("No dealloc fn");
-        dealloc_fn
-            .call(store, self.ptr, self.len)
-            .expect("Dealloc failed");
+        // Need to track whether metering is enabled or otherwise getting or setting points will panic
+        if self.metering_enabled {
+            let pts = match get_remaining_points(store, self.instance) {
+                MeteringPoints::Exhausted => 0,
+                MeteringPoints::Remaining(pts) => pts,
+            };
+            set_remaining_points(store, self.instance, defaults::METERING_POINTS);
+            dealloc_fn
+                .call(store, self.ptr, self.len)
+                .expect("Dealloc failed");
+            set_remaining_points(store, self.instance, pts);
+        } else {
+            dealloc_fn
+                .call(store, self.ptr, self.len)
+                .expect("Dealloc failed");
+        }
     }
 }
