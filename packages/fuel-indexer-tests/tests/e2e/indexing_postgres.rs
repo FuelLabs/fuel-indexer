@@ -545,6 +545,7 @@ async fn test_redeploying_an_already_active_indexer_returns_error_when_replace_i
         node,
         mut service,
         manifest,
+        db: _db,
         ..
     } = setup_indexing_test_components(Some(config)).await;
 
@@ -557,7 +558,7 @@ async fn test_redeploying_an_already_active_indexer_returns_error_when_replace_i
 
     match result.unwrap_err() {
         fuel_indexer::IndexerError::Unknown(msg) => {
-            assert_eq!(&msg, "Indexer(fuel_indexer_test.index1) already exists")
+            assert_eq!(&msg, "Indexer(fuel_indexer_test.index1) already exists.")
         }
         err => {
             panic!("Expected Unknown but got: {}", err)

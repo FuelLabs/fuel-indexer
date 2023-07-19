@@ -80,7 +80,12 @@ async fn test_database_postgres_metrics_properly_increments_counts_when_queries_
 
 #[tokio::test]
 async fn test_asset_upload_endpoint_properly_adds_assets_to_database_postgres() {
-    let WebTestComponents { server, db, .. } = setup_web_test_components(None).await;
+    let WebTestComponents {
+        server,
+        db,
+        rx: _rx,
+        ..
+    } = setup_web_test_components(None).await;
 
     let mut conn = db.pool.acquire().await.unwrap();
     let is_indexer_registered =
