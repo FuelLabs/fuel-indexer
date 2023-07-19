@@ -697,7 +697,6 @@ jobs:
       - cargo-clippy
       - cargo-fmt-check
       - build-default-indexer
-      - cargo-test-forc-index-plugins
     runs-on: ubuntu-latest
     steps:
       - run: true
