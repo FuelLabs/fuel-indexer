@@ -7,9 +7,9 @@ use std::collections::HashMap;
 
 #[actix_web::test]
 async fn test_can_return_query_response_with_all_fields_required_postgres() {
-    let WebTestComponents { node, server, .. } = setup_web_test_components(None).await;
-
-    node.abort();
+    let WebTestComponents {
+        server, db: _db, ..
+    } = setup_web_test_components(None).await;
 
     let client = http_client();
     let resp = client
@@ -32,11 +32,11 @@ async fn test_can_return_query_response_with_all_fields_required_postgres() {
 
 #[actix_web::test]
 async fn test_can_return_query_response_with_nullable_fields_postgres() {
-    let WebTestComponents { node, server, .. } = setup_web_test_components(None).await;
+    let WebTestComponents {
+        server, db: _db, ..
+    } = setup_web_test_components(None).await;
 
     mock_request("/optionals").await;
-
-    node.abort();
 
     let client = http_client();
     let resp = client
@@ -60,11 +60,11 @@ async fn test_can_return_query_response_with_nullable_fields_postgres() {
 
 #[actix_web::test]
 async fn test_can_return_nested_query_response_with_implicit_foreign_keys_postgres() {
-    let WebTestComponents { node, server, .. } = setup_web_test_components(None).await;
+    let WebTestComponents {
+        server, db: _db, ..
+    } = setup_web_test_components(None).await;
 
     mock_request("/block").await;
-
-    node.abort();
 
     let client = http_client();
     let resp = client
@@ -93,11 +93,11 @@ async fn test_can_return_nested_query_response_with_implicit_foreign_keys_postgr
 
 #[actix_web::test]
 async fn test_can_return_query_response_with_deeply_nested_query_postgres() {
-    let WebTestComponents { node, server, .. } = setup_web_test_components(None).await;
+    let WebTestComponents {
+        server, db: _db, ..
+    } = setup_web_test_components(None).await;
 
     mock_request("/deeply_nested").await;
-
-    node.abort();
 
     let deeply_nested_query = HashMap::from([(
         "query",
@@ -226,11 +226,11 @@ async fn test_can_return_query_response_with_deeply_nested_query_postgres() {
 
 #[actix_web::test]
 async fn test_can_return_nested_query_response_with_explicit_foreign_keys_postgres() {
-    let WebTestComponents { node, server, .. } = setup_web_test_components(None).await;
+    let WebTestComponents {
+        server, db: _db, ..
+    } = setup_web_test_components(None).await;
 
     mock_request("/explicit").await;
-
-    node.abort();
 
     let client = http_client();
     let resp = client
@@ -260,11 +260,11 @@ async fn test_can_return_nested_query_response_with_explicit_foreign_keys_postgr
 
 #[actix_web::test]
 async fn test_can_return_query_response_with_filter_id_selection_postgres() {
-    let WebTestComponents { node, server, .. } = setup_web_test_components(None).await;
+    let WebTestComponents {
+        server, db: _db, ..
+    } = setup_web_test_components(None).await;
 
     mock_request("/ping").await;
-
-    node.abort();
 
     let client = http_client();
     let resp = client
@@ -289,11 +289,11 @@ async fn test_can_return_query_response_with_filter_id_selection_postgres() {
 
 #[actix_web::test]
 async fn test_can_return_query_response_with_filter_membership_postgres() {
-    let WebTestComponents { node, server, .. } = setup_web_test_components(None).await;
+    let WebTestComponents {
+        server, db: _db, ..
+    } = setup_web_test_components(None).await;
 
     mock_request("/ping").await;
-
-    node.abort();
 
     let client = http_client();
     let resp = client
@@ -324,11 +324,11 @@ async fn test_can_return_query_response_with_filter_membership_postgres() {
 
 #[actix_web::test]
 async fn test_can_return_query_response_with_filter_non_null_postgres() {
-    let WebTestComponents { node, server, .. } = setup_web_test_components(None).await;
+    let WebTestComponents {
+        server, db: _db, ..
+    } = setup_web_test_components(None).await;
 
     mock_request("/ping").await;
-
-    node.abort();
 
     let client = http_client();
     let resp = client
@@ -359,11 +359,11 @@ async fn test_can_return_query_response_with_filter_non_null_postgres() {
 
 #[actix_web::test]
 async fn test_can_return_query_response_with_filter_complex_comparison_postgres() {
-    let WebTestComponents { node, server, .. } = setup_web_test_components(None).await;
+    let WebTestComponents {
+        server, db: _db, ..
+    } = setup_web_test_components(None).await;
 
     mock_request("/ping").await;
-
-    node.abort();
 
     let client = http_client();
     let resp = client
@@ -394,11 +394,11 @@ async fn test_can_return_query_response_with_filter_complex_comparison_postgres(
 
 #[actix_web::test]
 async fn test_can_return_query_response_with_filter_simple_comparison_postgres() {
-    let WebTestComponents { node, server, .. } = setup_web_test_components(None).await;
+    let WebTestComponents {
+        server, db: _db, ..
+    } = setup_web_test_components(None).await;
 
     mock_request("/ping").await;
-
-    node.abort();
     let client = http_client();
     let resp = client
         .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
@@ -426,11 +426,11 @@ async fn test_can_return_query_response_with_filter_simple_comparison_postgres()
 
 #[actix_web::test]
 async fn test_can_return_query_response_with_filter_nested_postgres() {
-    let WebTestComponents { node, server, .. } = setup_web_test_components(None).await;
+    let WebTestComponents {
+        server, db: _db, ..
+    } = setup_web_test_components(None).await;
 
     mock_request("/ping").await;
-
-    node.abort();
 
     let client = http_client();
     let resp = client
@@ -461,11 +461,11 @@ async fn test_can_return_query_response_with_filter_nested_postgres() {
 
 #[actix_web::test]
 async fn test_can_return_query_response_with_filter_multiple_on_single_entity_postgres() {
-    let WebTestComponents { node, server, .. } = setup_web_test_components(None).await;
+    let WebTestComponents {
+        server, db: _db, ..
+    } = setup_web_test_components(None).await;
 
     mock_request("/ping").await;
-
-    node.abort();
 
     let client = http_client();
     let resp = client
@@ -492,11 +492,11 @@ async fn test_can_return_query_response_with_filter_multiple_on_single_entity_po
 
 #[actix_web::test]
 async fn test_can_return_query_response_with_filter_negation_postgres() {
-    let WebTestComponents { node, server, .. } = setup_web_test_components(None).await;
+    let WebTestComponents {
+        server, db: _db, ..
+    } = setup_web_test_components(None).await;
 
     mock_request("/ping").await;
-
-    node.abort();
 
     let client = http_client();
     let resp = client
@@ -523,11 +523,11 @@ async fn test_can_return_query_response_with_filter_negation_postgres() {
 
 #[actix_web::test]
 async fn test_can_return_query_response_with_sorted_results_postgres() {
-    let WebTestComponents { node, server, .. } = setup_web_test_components(None).await;
+    let WebTestComponents {
+        server, db: _db, ..
+    } = setup_web_test_components(None).await;
 
     mock_request("/ping").await;
-
-    node.abort();
     let client = http_client();
     let resp = client
         .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
@@ -556,11 +556,11 @@ async fn test_can_return_query_response_with_sorted_results_postgres() {
 #[actix_web::test]
 async fn test_can_return_query_response_with_alias_and_ascending_offset_and_limited_results_postgres(
 ) {
-    let WebTestComponents { node, server, .. } = setup_web_test_components(None).await;
+    let WebTestComponents {
+        server, db: _db, ..
+    } = setup_web_test_components(None).await;
 
     mock_request("/ping").await;
-
-    node.abort();
 
     let client = http_client();
     let resp = client

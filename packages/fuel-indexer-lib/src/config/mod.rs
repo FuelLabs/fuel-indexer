@@ -569,7 +569,7 @@ mod tests {
         let config = IndexerConfig::from_file(file_path).unwrap();
 
         assert!(config.stop_idle_indexers);
-        assert!(!config.run_migrations);
+        assert!(config.run_migrations);
         assert!(!config.verbose);
 
         let DatabaseConfig::Postgres { verbose, .. } = config.database;
