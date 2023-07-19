@@ -70,39 +70,45 @@ pub mod utils {
     // in manifest files relative from 'fuel-indexer')
     pub fn update_test_manifest_asset_paths(manifest: &mut Manifest) {
         let manifest_dir = Path::new(WORKSPACE_ROOT);
-        manifest.graphql_schema = manifest_dir
+        let graphql_schema = manifest_dir
             .parent()
             .unwrap()
             .parent()
             .unwrap()
-            .join(&manifest.graphql_schema)
+            .join(manifest.graphql_schema())
             .into_os_string()
             .to_str()
             .unwrap()
             .to_string();
-        manifest.abi = Some(
+
+        manifest.set_graphql_schema(graphql_schema);
+
+        let abi = manifest_dir
+            .parent()
+            .unwrap()
+            .parent()
+            .unwrap()
+            .join(manifest.abi().clone().unwrap())
+            .into_os_string()
+            .to_str()
+            .unwrap()
+            .to_string();
+
+        manifest.set_abi(abi);
+
+        let module = Module::Wasm(
             manifest_dir
                 .parent()
                 .unwrap()
                 .parent()
                 .unwrap()
-                .join(manifest.abi.clone().unwrap())
+                .join(manifest.module().to_string())
                 .into_os_string()
                 .to_str()
                 .unwrap()
                 .to_string(),
         );
-        manifest.module = Module::Wasm(
-            manifest_dir
-                .parent()
-                .unwrap()
-                .parent()
-                .unwrap()
-                .join(manifest.module.to_string())
-                .into_os_string()
-                .to_str()
-                .unwrap()
-                .to_string(),
-        );
+
+        manifest.set_module(module);
     }
 }

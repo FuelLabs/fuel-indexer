@@ -25,7 +25,8 @@ pub fn init(command: RemoveCommand) -> anyhow::Result<()> {
 
     let target = format!(
         "{url}/api/index/{}/{}",
-        &manifest.namespace, &manifest.identifier
+        manifest.namespace(),
+        manifest.identifier()
     );
 
     let mut headers = HeaderMap::new();
@@ -35,11 +36,12 @@ pub fn init(command: RemoveCommand) -> anyhow::Result<()> {
 
     if verbose {
         info!(
-            "\n🛑 Removing indexer'{}.{}' at {target}",
-            &manifest.namespace, &manifest.identifier
+            "\n🛑 Removing indexer '{}.{}' at {target}",
+            manifest.namespace(),
+            manifest.identifier()
         );
     } else {
-        info!("\n🛑 Removing indexer")
+        info!("\n🛑 Removing indexer.")
     }
 
     let res = Client::new()
@@ -67,11 +69,10 @@ pub fn init(command: RemoveCommand) -> anyhow::Result<()> {
 
     if verbose {
         info!(
-            "\n{}\n✅ Successfully removed indexer '{}.{}' at {} \n",
+            "\n{}\n✅ Successfully removed indexer '{}.{}' at {target} \n",
             to_string_pretty(&res_json)?,
-            &manifest.namespace,
-            &manifest.identifier,
-            &target
+            manifest.namespace(),
+            manifest.identifier()
         );
     } else {
         info!("\n✅ Successfully removed indexer\n");

@@ -6236,15 +6236,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "plugin-tests"
-version = "0.18.4"
-dependencies = [
- "forc-index",
- "fuel-indexer-plugin",
- "tempfile",
-]
-
-[[package]]
 name = "polling"
 version = "2.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

@@ -242,7 +242,7 @@ fn process_fn_items(
 
     let mut handler_fns = Vec::with_capacity(contents.len());
 
-    let start_block = match manifest.start_block {
+    let start_block = match manifest.start_block() {
         Some(start_block) => {
             quote! {
                 if block.height < #start_block {
@@ -253,7 +253,7 @@ fn process_fn_items(
         None => quote! {},
     };
 
-    let subscribed_contract_ids = match &manifest.contract_id {
+    let subscribed_contract_ids = match &manifest.contract_id() {
         ContractIds::Single(_) => quote! {},
         ContractIds::Multiple(contract_ids) => {
             let contract_ids = contract_ids
@@ -272,7 +272,7 @@ fn process_fn_items(
         }
     };
 
-    let check_if_subscribed_to_contract = match &manifest.contract_id {
+    let check_if_subscribed_to_contract = match &manifest.contract_id() {
         ContractIds::Single(contract_id) => match contract_id {
             Some(contract_id) => {
                 quote! {
@@ -592,8 +592,8 @@ fn process_fn_items(
 }
 
 pub fn prefix_abi_and_schema_paths(
-    abi: Option<&String>,
-    schema_string: String,
+    abi: Option<&str>,
+    schema: &str,
 ) -> (Option<String>, String) {
     if let Some(abi) = abi {
         match std::env::var("COMPILE_TEST_PREFIX") {
@@ -604,22 +604,22 @@ pub fn prefix_abi_and_schema_paths(
                     .to_str()
                     .expect("Could not parse prefixed ABI path.")
                     .to_string();
-                let prefixed = std::path::Path::new(&prefix).join(&schema_string);
-                let schema_string = prefixed
+                let prefixed = std::path::Path::new(&prefix).join(schema);
+                let schema = prefixed
                     .into_os_string()
                     .to_str()
                     .expect("Could not parse prefixed GraphQL schema path.")
                     .to_string();
 
-                return (Some(abi_string), schema_string);
+                return (Some(abi_string), schema);
             }
             Err(_) => {
-                return (Some(abi.into()), schema_string);
+                return (Some(abi.into()), schema.to_string());
             }
         };
     }
 
-    (None, schema_string)
+    (None, schema.to_string())
 }
 
 pub fn get_abi_tokens(
@@ -661,30 +661,23 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
 
     let manifest = Manifest::from_file(path).expect("Could not parse manifest.");
 
-    let Manifest {
-        abi,
-        namespace,
-        identifier,
-        graphql_schema,
-        ..
-    } = manifest.clone();
-
     let indexer_module = parse_macro_input!(item as ItemMod);
 
-    let (abi, schema_string) = prefix_abi_and_schema_paths(abi.as_ref(), graphql_schema);
+    let (abi, schema_string) =
+        prefix_abi_and_schema_paths(manifest.abi(), manifest.graphql_schema());
 
     let abi_tokens = match abi {
         Some(ref abi_path) => {
-            get_abi_tokens(&namespace, abi_path, manifest.execution_source())
+            get_abi_tokens(manifest.namespace(), abi_path, manifest.execution_source())
         }
         None => proc_macro2::TokenStream::new(),
     };
 
     // NOTE: https://nickb.dev/blog/cargo-workspace-and-the-feature-unification-pitfall/
     let graphql_tokens = process_graphql_schema(
-        namespace,
-        identifier,
-        schema_string,
+        manifest.namespace(),
+        manifest.identifier(),
+        &schema_string,
         manifest.execution_source(),
     );
 
