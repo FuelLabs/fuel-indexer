@@ -28,10 +28,3 @@ fuel-indexer-schema = { workspace = true }
 fuel-indexer-tests = { path = "../fuel-indexer-tests" }
 futures = "0.3"
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
-
-[dev-dependencies]
-criterion = { version = "0.5", features = ["html_reports", "async_tokio"] }
-
-[features]
-benchmarks = []
-
