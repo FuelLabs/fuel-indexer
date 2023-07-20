@@ -107,6 +107,18 @@ jobs:
         uses: peaceiris/actions-mdbook@v1
         with:
           mdbook-version: latest
+  cargo-release-check:
+    needs:
+      - cargo-toml-fmt-check
+      - set-env-vars
+    runs-on: ubuntu-latest
+    if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_SEMVER == 'true'
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install toolchain
+        uses: dtolnay/rust-toolchain@stable
+      - name: cargo check --locked --all-features --all-targets
+        run: cargo check --locked --all-features --all-targets
   cargo-verifications:
     runs-on: ubuntu-latest
     needs:

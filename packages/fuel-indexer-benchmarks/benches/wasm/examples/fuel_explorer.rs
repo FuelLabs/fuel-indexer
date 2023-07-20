@@ -1,14 +1,24 @@
 use criterion::Criterion;
-use fuel_indexer_benchmarks::{create_wasm_indexer_benchmark, create_wasm_manifest};
+use fuel_indexer_benchmarks::create_wasm_indexer_benchmark;
 use fuel_indexer_lib::{config::IndexerConfig, manifest::Manifest};
 
 fn setup_fuel_explorer_manifest() -> Manifest {
-    create_wasm_manifest(
-        "indexer_benchmarks",
-        "fuel_explorer",
-        "examples/fuel-explorer/fuel-explorer/schema/fuel_explorer.schema.graphql",
-        "target/wasm32-unknown-unknown/release/fuel_explorer.wasm",
-    )
+    let manifest_str = r#"
+namespace: indexer_benchmarks 
+abi: ~
+identifier: fuel_explorer
+fuel_client: ~
+graphql_schema: ../../examples/fuel-explorer/fuel-explorer/schema/fuel_explorer.schema.graphql
+module:
+  wasm: ../../target/wasm32-unknown-unknown/release/fuel_explorer.wasm
+metrics: ~
+contract_id: ~
+start_block: ~
+end_block: ~
+resumable: ~
+    "#;
+
+    Manifest::try_from(manifest_str).unwrap()
 }
 
 // The `criterion_group!` macro requires that target functions have a name.
