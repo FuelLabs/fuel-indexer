@@ -107,12 +107,12 @@ jobs:
         uses: peaceiris/actions-mdbook@v1
         with:
           mdbook-version: latest
-  cargo-check:
+  cargo-release-check:
     needs:
       - cargo-toml-fmt-check
       - set-env-vars
     runs-on: ubuntu-latest
-    if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_SEMVER == 'true'
+    # if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_SEMVER == 'true'
     steps:
       - uses: actions/checkout@v3
       - name: Install toolchain
