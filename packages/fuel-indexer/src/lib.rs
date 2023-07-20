@@ -83,4 +83,6 @@ pub enum IndexerError {
     NativeExecutionRuntimeError,
     #[error("Tokio time error: {0:?}")]
     Elapsed(#[from] tokio::time::error::Elapsed),
+    #[error("Indexer end block has been stopping execution.")]
+    EndBlockMet,
 }
