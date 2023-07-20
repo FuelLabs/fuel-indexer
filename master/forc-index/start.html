@@ -173,10 +173,15 @@
 <p>Start a local Fuel Indexer service.</p>
 <pre><code class="language-bash">forc index start
 </code></pre>
-<pre><code class="language-text">USAGE:
+<pre><code class="language-text">Standalone binary for the fuel indexer service.
+
+USAGE:
     forc-index start [OPTIONS]
 
 OPTIONS:
+        --accept-sql-queries
+            Allow the web API to accept raw SQL queries.
+
         --auth-enabled
             Require users to authenticate for some operations.
 
@@ -198,14 +203,11 @@ OPTIONS:
         --fuel-node-port &lt;FUEL_NODE_PORT&gt;
             Listening port of the running Fuel node. [default: 4000]
 
-        --graphql-api-host &lt;GRAPHQL_API_HOST&gt;
-            GraphQL API host. [default: localhost]
-
-        --graphql-api-port &lt;GRAPHQL_API_PORT&gt;
-            GraphQL API port. [default: 29987]
-
     -h, --help
             Print help information
+
+        --indexer-net-config
+            Allow network configuration via indexer manifests.
 
         --jwt-expiry &lt;JWT_EXPIRY&gt;
             Amount of time (seconds) before expiring token (if JWT scheme is specified).
@@ -216,15 +218,22 @@ OPTIONS:
         --jwt-secret &lt;JWT_SECRET&gt;
             Secret used for JWT scheme (if JWT scheme is specified).
 
+        --local-fuel-node
+            Start a local Fuel node.
+
         --log-level &lt;LOG_LEVEL&gt;
             Log level passed to the Fuel Indexer service. [default: info] [possible values: info,
             debug, error, warn]
 
     -m, --manifest &lt;FILE&gt;
-            Index config file.
+            Indexer config file.
 
         --max-body-size &lt;MAX_BODY_SIZE&gt;
-            Max body size for GraphQL API requests. [default: 5242880]
+            Max body size for web API requests. [default: 5242880]
+
+        --metering-points &lt;METERING_POINTS&gt;
+            The number of WASM opcodes after which the indexer's event handler will stop execution.
+            [default: 30000000000]
 
         --metrics
             Use Prometheus metrics reporting.
@@ -244,17 +253,36 @@ OPTIONS:
         --postgres-user &lt;POSTGRES_USER&gt;
             Postgres username.
 
+        --rate-limit
+            Enable rate limiting.
+
+        --rate-limit-request-count &lt;RATE_LIMIT_REQUEST_COUNT&gt;
+            Maximum number of requests to allow over --rate-limit-window..
+
+        --rate-limit-window-size &lt;RATE_LIMIT_WINDOW_SIZE&gt;
+            Number of seconds over which to allow --rate-limit-rps.
+
+        --replace-indexer
+            Whether to allow replacing an existing indexer. If not specified, an attempt to deploy
+            over an existing indexer results in an error.
+
         --run-migrations
             Run database migrations before starting service.
 
         --stop-idle-indexers
             Prevent indexers from running without handling any blocks.
 
+    -v, --verbose
+            Enable verbose logging.
+
     -V, --version
             Print version information
 
-        --verbose
-            Enable verbose logging.
+        --web-api-host &lt;WEB_API_HOST&gt;
+            Web API host. [default: localhost]
+
+        --web-api-port &lt;WEB_API_PORT&gt;
+            Web API port. [default: 29987]
 </code></pre>
 
                     </main>

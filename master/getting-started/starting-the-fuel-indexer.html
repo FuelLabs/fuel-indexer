@@ -177,6 +177,9 @@ USAGE:
     fuel-indexer run [OPTIONS]
 
 OPTIONS:
+        --accept-sql-queries
+            Allow the web API to accept raw SQL queries.
+
         --auth-enabled
             Require users to authenticate for some operations.
 
@@ -198,17 +201,8 @@ OPTIONS:
         --fuel-node-port &lt;FUEL_NODE_PORT&gt;
             Listening port of the running Fuel node. [default: 4000]
 
-        --graphql-api-host &lt;GRAPHQL_API_HOST&gt;
-            GraphQL API host. [default: localhost]
-
-        --graphql-api-port &lt;GRAPHQL_API_PORT&gt;
-            GraphQL API port. [default: 29987]
-
     -h, --help
             Print help information
-
-        --indexer-handler-timeout &lt;INDEXER_HANDLER_TIMEOUT&gt;
-            Maximum length of time (in seconds) that an indexer's event handler can run before timing out. [default: 2]
 
         --indexer-net-config
             Allow network configuration via indexer manifests.
@@ -233,7 +227,11 @@ OPTIONS:
             Indexer config file.
 
         --max-body-size &lt;MAX_BODY_SIZE&gt;
-            Max body size for GraphQL API requests. [default: 5242880]
+            Max body size for web API requests. [default: 5242880]
+
+        --metering-points &lt;METERING_POINTS&gt;
+            The number of WASM opcodes after which the indexer's event handler will stop execution.
+            [default: 30000000000]
 
         --metrics
             Use Prometheus metrics reporting.
@@ -256,11 +254,15 @@ OPTIONS:
         --rate-limit
             Enable rate limiting.
 
-        --rate-limit-rps &lt;RATE_LIMIT_RPS&gt;
-            Maximum number of requests to allow over --rate-limit-window.
+        --rate-limit-request-count &lt;RATE_LIMIT_REQUEST_COUNT&gt;
+            Maximum number of requests to allow over --rate-limit-window..
 
-        --rate-limit-window &lt;RATE_LIMIT_WINDOW_SIZE&gt;
+        --rate-limit-window-size &lt;RATE_LIMIT_WINDOW_SIZE&gt;
             Number of seconds over which to allow --rate-limit-rps.
+
+        --replace-indexer
+            Whether to allow replacing an existing indexer. If not specified, an attempt to deploy
+            over an existing indexer results in an error.
 
         --run-migrations
             Run database migrations before starting service.
@@ -273,6 +275,13 @@ OPTIONS:
 
     -V, --version
             Print version information
+
+        --web-api-host &lt;WEB_API_HOST&gt;
+            Web API host. [default: localhost]
+
+        --web-api-port &lt;WEB_API_PORT&gt;
+            Web API port. [default: 29987]
+
 </code></pre>
 <h2 id="using-a-configuration-file"><a class="header" href="#using-a-configuration-file">Using a configuration file</a></h2>
 <pre><code class="language-yaml"># # The following is an example Fuel indexer configuration file.
@@ -309,8 +318,11 @@ OPTIONS:
 # # Allow network configuration via indexer manifests.
 # indexer_net_config: false
 
-# # Maximum length of time (in seconds) that an indexer's event handler can run before timing out.
-# indexer_handler_timeout: 2
+# The number of WASM opcodes after which the indexer will stop execution.
+# metering_points: 30000000000
+
+# # Allow the web API to accept raw SQL queries.
+# accept_sql_queries: true
 
 # # ***********************
 # # Fuel Node configuration
@@ -325,17 +337,17 @@ OPTIONS:
 #   port: 4000
 
 # # *************************
-# # GraphQL API configuration
+# # Web API configuration
 # # *************************
 
-# graphql_api:
-#   # GraphQL API host.
+# web_api:
+#   # Web API host.
 #   host: localhost
 
-#   # GraphQL API port.
+#   # Web API port.
 #   port: 29987
 
-#   # Max body size for GraphQL API requests.
+#   # Max body size for web API requests.
 #   max_body_size: &quot;5242880&quot;
 
 # # ******************************
