@@ -85,12 +85,13 @@ async fn generate_schema_then_load_schema_from_wasm_module(database_url: &str) {
 
     let manifest = Manifest::try_from(SIMPLE_WASM_MANIFEST).unwrap();
     let schema = GraphQLSchema::new(SIMPLE_WASM_GRAPHQL_SCHEMA.to_owned());
+    let version = schema.version().to_owned();
 
     let result = manager
         .new_schema(
             "test_namespace",
             "simple_wasm_executor",
-            SIMPLE_WASM_GRAPHQL_SCHEMA,
+            schema,
             manifest.execution_source(),
             &mut conn,
         )
@@ -98,7 +99,6 @@ async fn generate_schema_then_load_schema_from_wasm_module(database_url: &str) {
 
     assert!(result.is_ok());
 
-    let version = schema.version().to_owned();
     let results = queries::columns_get_schema(
         &mut conn,
         "test_namespace",

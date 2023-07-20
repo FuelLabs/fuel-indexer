@@ -29,7 +29,6 @@ members = [
    "packages/fuel-indexer-types",
    "packages/fuel-indexer-utils",
    "plugins/forc-index",
-   "plugins/forc-index-tests",
    "plugins/forc-postgres",
 ]
 default-members = [
@@ -76,7 +75,7 @@ fuel-indexer-api-server = { version = "0.18.4", path = "./packages/fuel-indexer-
 fuel-indexer-database = { version = "0.18.4", path = "./packages/fuel-indexer-database" }
 fuel-indexer-database-types = { version = "0.18.4", path = "./packages/fuel-indexer-database/database-types" }
 fuel-indexer-graphql = { version = "0.18.4", path = "./packages/fuel-indexer-graphql" }
-fuel-indexer-lib = { version = "0.18.4", path = "./packages/fuel-indexer-lib", default-features = false }
+fuel-indexer-lib = { version = "0.18.4", path = "./packages/fuel-indexer-lib" }
 fuel-indexer-macro-utils = { version = "0.18.4", path = "./packages/fuel-indexer-macros/macro-utils" }
 fuel-indexer-macros = { version = "0.18.4", path = "./packages/fuel-indexer-macros", default-features = false }
 fuel-indexer-metrics = { version = "0.18.4", path = "./packages/fuel-indexer-metrics" }

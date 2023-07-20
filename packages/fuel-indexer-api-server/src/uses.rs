@@ -22,6 +22,7 @@ use fuel_indexer_graphql::dynamic::{build_dynamic_schema, execute_query};
 use fuel_indexer_lib::{
     config::{auth::AuthenticationStrategy, IndexerConfig},
     defaults,
+    graphql::GraphQLSchema,
     utils::{
         FuelClientHealthResponse, ReloadRequest, ServiceRequest, ServiceStatus,
         StopRequest,
@@ -270,13 +271,16 @@ pub(crate) async fn register_indexer_assets(
                     .await
                     {
                         Ok(result) => {
+                            let schema = GraphQLSchema::new(
+                                String::from_utf8_lossy(&data).to_string(),
+                            );
                             match schema_manager
                                 .write()
                                 .await
                                 .new_schema(
                                     &namespace,
                                     &identifier,
-                                    &String::from_utf8_lossy(&data),
+                                    schema,
                                     // Only WASM can be sent over the web.
                                     ExecutionSource::Wasm,
                                     &mut conn,

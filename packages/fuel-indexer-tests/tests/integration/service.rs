@@ -47,7 +47,7 @@ async fn test_wasm_executor_can_meter_execution() {
     )
     .unwrap();
 
-    match &manifest.module {
+    match &manifest.module() {
         fuel_indexer_lib::manifest::Module::Wasm(ref module) => {
             let mut bytes = Vec::<u8>::new();
             let mut file = File::open(module).await.unwrap();

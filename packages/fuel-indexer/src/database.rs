@@ -31,8 +31,8 @@ impl Database {
         Database {
             pool,
             stashed: None,
-            namespace: manifest.namespace.clone(),
-            identifier: manifest.identifier.clone(),
+            namespace: manifest.namespace().to_string(),
+            identifier: manifest.identifier().to_string(),
             version: Default::default(),
             schema: Default::default(),
             tables: Default::default(),

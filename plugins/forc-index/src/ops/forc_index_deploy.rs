@@ -50,25 +50,19 @@ pub fn init(command: DeployCommand) -> anyhow::Result<()> {
     let (_root_dir, manifest_path, _index_name) =
         project_dir_info(path.as_ref(), manifest.as_ref())?;
 
-    let manifest = Manifest::from_file(&manifest_path)?;
-
-    let Manifest {
-        mut graphql_schema,
-        namespace,
-        identifier,
-        mut module,
-        ..
-    } = manifest;
+    let mut manifest = Manifest::from_file(&manifest_path)?;
 
     if path.is_some() {
         if let Some(t) = target_dir {
-            graphql_schema = Path::new(&t)
-                .join(graphql_schema)
-                .to_str()
-                .unwrap()
-                .to_string();
+            manifest.set_graphql_schema(
+                Path::new(&t)
+                    .join(manifest.graphql_schema())
+                    .to_str()
+                    .unwrap()
+                    .to_string(),
+            );
 
-            module = Path::new(&t).join(module).into();
+            manifest.set_module(Path::new(&t).join(manifest.module()).into());
         } else {
             anyhow::bail!("--target-dir must be specified when --path is specified.");
         }
@@ -76,16 +70,19 @@ pub fn init(command: DeployCommand) -> anyhow::Result<()> {
 
     let form = Form::new()
         .file("manifest", &manifest_path)?
-        .file("schema", graphql_schema)?
-        .file("wasm", module.to_string())?;
+        .file("schema", manifest.graphql_schema())?
+        .file("wasm", manifest.module().to_string())?;
 
-    let target = format!("{url}/api/index/{namespace}/{identifier}");
+    let target = format!(
+        "{url}/api/index/{}/{}",
+        manifest.namespace(),
+        manifest.identifier()
+    );
 
     if verbose {
         info!(
-            "Deploying indexer at {} to {}.",
-            manifest_path.display(),
-            target
+            "Deploying indexer at {} to {target}.",
+            manifest_path.display()
         );
     } else {
         info!("Deploying indexer...");

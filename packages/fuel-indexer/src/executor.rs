@@ -79,8 +79,10 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
 ) -> impl Future<Output = ()> {
     // TODO: https://github.com/FuelLabs/fuel-indexer/issues/286
 
-    let start_block = manifest.start_block.expect("Failed to detect start_block.");
-    let end_block = manifest.end_block;
+    let start_block = manifest
+        .start_block()
+        .expect("Failed to detect start_block.");
+    let end_block = manifest.end_block();
     if end_block.is_none() {
         warn!("No end_block specified in manifest. Indexer will run forever.");
     }
@@ -88,8 +90,8 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
 
     let fuel_node_addr = if config.indexer_net_config {
         manifest
-            .fuel_client
-            .clone()
+            .fuel_client()
+            .map(|x| x.to_string())
             .unwrap_or(config.fuel_node.to_string())
     } else {
         config.fuel_node.to_string()
@@ -498,8 +500,8 @@ where
         let mut conn = pool.acquire().await?;
         let version = fuel_indexer_database::queries::type_id_latest(
             &mut conn,
-            &manifest.namespace,
-            &manifest.identifier,
+            manifest.namespace(),
+            manifest.identifier(),
         )
         .await?;
         db.load_schema(version).await?;
@@ -651,7 +653,7 @@ impl WasmIndexExecutor {
         let killer = Arc::new(AtomicBool::new(false));
 
         match &exec_source {
-            ExecutorSource::Manifest => match &manifest.module {
+            ExecutorSource::Manifest => match manifest.module() {
                 crate::Module::Wasm(ref module) => {
                     let mut bytes = Vec::<u8>::new();
                     let mut file = File::open(module).await?;
