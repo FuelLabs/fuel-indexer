@@ -16,87 +16,134 @@ fn setup_fuel_explorer_manifest() -> Manifest {
 // order to prevent code duplication.
 
 pub(crate) fn fuel_explorer_10_blocks_start_1(c: &mut Criterion) {
-    let f = create_wasm_indexer_benchmark(1, 10, "fuel_explorer_10_blocks_start_1");
+    let start_block = 1;
+    let num_blocks = 10;
+    let f = create_wasm_indexer_benchmark(
+        start_block,
+        num_blocks,
+        "fuel_explorer_10_blocks_start_1",
+    );
     f(c, setup_fuel_explorer_manifest(), IndexerConfig::default())
 }
 
 pub(crate) fn fuel_explorer_100_blocks_start_1(c: &mut Criterion) {
-    let f = create_wasm_indexer_benchmark(1, 100, "fuel_explorer_100_blocks_start_1");
+    let start_block = 1;
+    let num_blocks = 100;
+    let f = create_wasm_indexer_benchmark(
+        start_block,
+        num_blocks,
+        "fuel_explorer_100_blocks_start_1",
+    );
     f(c, setup_fuel_explorer_manifest(), IndexerConfig::default())
 }
 
 pub(crate) fn fuel_explorer_1000_blocks_start_1(c: &mut Criterion) {
-    let f = create_wasm_indexer_benchmark(1, 1000, "fuel_explorer_1000_blocks_start_1");
+    let start_block = 1;
+    let num_blocks = 1000;
+    let f = create_wasm_indexer_benchmark(
+        start_block,
+        num_blocks,
+        "fuel_explorer_1000_blocks_start_1",
+    );
     f(c, setup_fuel_explorer_manifest(), IndexerConfig::default())
 }
 
 pub(crate) fn fuel_explorer_10_blocks_start_50000(c: &mut Criterion) {
-    let f =
-        create_wasm_indexer_benchmark(50000, 10, "fuel_explorer_10_blocks_start_50000");
+    let start_block = 50000;
+    let num_blocks = 10;
+    let f = create_wasm_indexer_benchmark(
+        start_block,
+        num_blocks,
+        "fuel_explorer_10_blocks_start_50000",
+    );
     f(c, setup_fuel_explorer_manifest(), IndexerConfig::default())
 }
 
 pub(crate) fn fuel_explorer_100_blocks_start_50000(c: &mut Criterion) {
-    let f =
-        create_wasm_indexer_benchmark(50000, 100, "fuel_explorer_100_blocks_start_50000");
+    let start_block = 50000;
+    let num_blocks = 100;
+    let f = create_wasm_indexer_benchmark(
+        start_block,
+        num_blocks,
+        "fuel_explorer_100_blocks_start_50000",
+    );
     f(c, setup_fuel_explorer_manifest(), IndexerConfig::default())
 }
 
 pub(crate) fn fuel_explorer_1000_blocks_start_50000(c: &mut Criterion) {
+    let start_block = 50000;
+    let num_blocks = 1000;
     let f = create_wasm_indexer_benchmark(
-        50000,
-        1000,
+        start_block,
+        num_blocks,
         "fuel_explorer_1000_blocks_start_50000",
     );
     f(c, setup_fuel_explorer_manifest(), IndexerConfig::default())
 }
 
 pub(crate) fn fuel_explorer_10_blocks_start_200000(c: &mut Criterion) {
-    let f =
-        create_wasm_indexer_benchmark(200000, 10, "fuel_explorer_10_blocks_start_200000");
+    let start_block = 200000;
+    let num_blocks = 10;
+    let f = create_wasm_indexer_benchmark(
+        start_block,
+        num_blocks,
+        "fuel_explorer_10_blocks_start_200000",
+    );
     f(c, setup_fuel_explorer_manifest(), IndexerConfig::default())
 }
 
 pub(crate) fn fuel_explorer_100_blocks_start_200000(c: &mut Criterion) {
+    let start_block = 200000;
+    let num_blocks = 100;
     let f = create_wasm_indexer_benchmark(
-        200000,
-        100,
+        start_block,
+        num_blocks,
         "fuel_explorer_100_blocks_start_200000",
     );
     f(c, setup_fuel_explorer_manifest(), IndexerConfig::default())
 }
 
 pub(crate) fn fuel_explorer_1000_blocks_start_200000(c: &mut Criterion) {
+    let start_block = 200000;
+    let num_blocks = 1000;
     let f = create_wasm_indexer_benchmark(
-        200000,
-        1000,
+        start_block,
+        num_blocks,
         "fuel_explorer_1000_blocks_start_200000",
     );
     f(c, setup_fuel_explorer_manifest(), IndexerConfig::default())
 }
 
 pub(crate) fn fuel_explorer_10_blocks_start_1000000(c: &mut Criterion) {
+    let start_block = 1000000;
+    let num_blocks = 10;
     let f = create_wasm_indexer_benchmark(
-        1000000,
-        10,
+        start_block,
+        num_blocks,
         "fuel_explorer_10_blocks_start_1000000",
     );
     f(c, setup_fuel_explorer_manifest(), IndexerConfig::default())
 }
 
 pub(crate) fn fuel_explorer_100_blocks_start_1000000(c: &mut Criterion) {
+    let start_block = 1000000;
+    let num_blocks = 100;
     let f = create_wasm_indexer_benchmark(
-        1000000,
-        100,
+        start_block,
+        num_blocks,
         "fuel_explorer_100_blocks_start_1000000",
     );
     f(c, setup_fuel_explorer_manifest(), IndexerConfig::default())
 }
 
+// Due to the size of blocks at this point in the chain, metering needs to be disabled
+// to process this amount of blocks for benchmarking.
 pub(crate) fn fuel_explorer_1000_blocks_start_1000000(c: &mut Criterion) {
+    let start_block = 1000000;
+    let num_blocks = 1000;
     let f = create_wasm_indexer_benchmark(
-        1000000,
-        1000,
+        start_block,
+        num_blocks,
         "fuel_explorer_1000_blocks_start_1000000",
     );
     f(
@@ -110,27 +157,35 @@ pub(crate) fn fuel_explorer_1000_blocks_start_1000000(c: &mut Criterion) {
 }
 
 pub(crate) fn fuel_explorer_10_blocks_start_1500000(c: &mut Criterion) {
+    let start_block = 1500000;
+    let num_blocks = 10;
     let f = create_wasm_indexer_benchmark(
-        1500000,
-        10,
+        start_block,
+        num_blocks,
         "fuel_explorer_10_blocks_start_1500000",
     );
     f(c, setup_fuel_explorer_manifest(), IndexerConfig::default())
 }
 
 pub(crate) fn fuel_explorer_100_blocks_start_1500000(c: &mut Criterion) {
+    let start_block = 1500000;
+    let num_blocks = 100;
     let f = create_wasm_indexer_benchmark(
-        1500000,
-        100,
+        start_block,
+        num_blocks,
         "fuel_explorer_100_blocks_start_1500000",
     );
     f(c, setup_fuel_explorer_manifest(), IndexerConfig::default())
 }
 
+// Due to the size of blocks at this point in the chain, metering needs to be disabled
+// to process this amount of blocks for benchmarking.
 pub(crate) fn fuel_explorer_1000_blocks_start_1500000(c: &mut Criterion) {
+    let start_block = 1500000;
+    let num_blocks = 1000;
     let f = create_wasm_indexer_benchmark(
-        1500000,
-        1000,
+        start_block,
+        num_blocks,
         "fuel_explorer_1000_blocks_start_1500000",
     );
     f(

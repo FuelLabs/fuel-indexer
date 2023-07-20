@@ -209,6 +209,9 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
     }
 }
 
+/// Retrieve blocks from a client node.
+// This was abstracted out of `run_executor` in order to allow for
+// use in the benchmarking suite to give consistent timings.
 pub async fn retrieve_blocks_from_node(
     client: &FuelClient,
     block_page_size: usize,

@@ -1,5 +1,4 @@
 mod examples;
-mod metering;
 
 use crate::examples::fuel_explorer::*;
 use criterion::{criterion_group, criterion_main};
