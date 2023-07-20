@@ -1,15 +1,12 @@
 use criterion::Criterion;
 use fuel_core_client::client::FuelClient;
-use fuel_indexer::Module;
 use fuel_indexer::{
     executor::retrieve_blocks_from_node, prelude::fuel::BlockData, Executor,
     IndexerConfig, Manifest, WasmIndexExecutor,
 };
 use fuel_indexer_database::IndexerConnectionPool;
 use fuel_indexer_lib::config::DatabaseConfig;
-use fuel_indexer_lib::manifest::ContractIds;
 use fuel_indexer_tests::fixtures::TestPostgresDb;
-use std::path::Path;
 use std::str::FromStr;
 
 /// Location of Fuel node to be used for block retrieval.
@@ -33,48 +30,6 @@ async fn get_blocks(start_cursor: u64, num_blocks: usize) -> Result<Vec<BlockDat
     .expect("Could not retrieve blocks from node");
 
     Ok(blocks)
-}
-
-pub fn create_wasm_manifest(
-    namespace: &str,
-    identifier: &str,
-    schema_path: &str,
-    wasm_module_path: &str,
-) -> Manifest {
-    let schema_path = Path::new(WORKSPACE_ROOT)
-        .parent()
-        .unwrap()
-        .parent()
-        .unwrap()
-        .join(schema_path)
-        .as_path()
-        .to_str()
-        .unwrap()
-        .to_string();
-    let module_path = Path::new(WORKSPACE_ROOT)
-        .parent()
-        .unwrap()
-        .parent()
-        .unwrap()
-        .join(wasm_module_path)
-        .as_path()
-        .to_str()
-        .unwrap()
-        .to_string();
-
-    Manifest {
-        namespace: namespace.to_string(),
-        identifier: identifier.to_string(),
-        graphql_schema: schema_path,
-        module: Module::Wasm(module_path),
-        abi: None,
-        fuel_client: None,
-        metrics: None,
-        contract_id: ContractIds::Single(None),
-        start_block: None,
-        end_block: None,
-        resumable: None,
-    }
 }
 
 /// Create WASM executor for use in a benchmarking function.
