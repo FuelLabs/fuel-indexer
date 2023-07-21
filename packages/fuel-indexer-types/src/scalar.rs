@@ -35,7 +35,7 @@ pub type UInt8 = u64;
 pub type UInt16 = u128;
 
 /// Scalar for 8-byte integers aliased as `Timestamp`s.
-pub type Timestamp = u64;
+pub type Timestamp = i64;
 
 /// Scalar for arbitrarily sized `String`s aliased as `Charfield`s.
 pub type Charfield = String;

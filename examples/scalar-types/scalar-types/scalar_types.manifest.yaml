@@ -30,9 +30,10 @@ graphql_schema: examples/scalar-types/scalar-types/schema/scalar_types.schema.gr
 
 # The module field contains a file path that points to code that will be run as an executor inside
 # of the indexer.
+#
 # Important: At this time, wasm is the preferred method of execution.
 module: 
-    wasm: ~
+    wasm: target/wasm32-unknown-unknown/release/scalar_types.wasm
 
 # The report_metrics field contains boolean whether or not to report Prometheus  metrics to the
 # Fuel backend

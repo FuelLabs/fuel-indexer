@@ -73,7 +73,7 @@ pub enum FtColumn {
     Salt(Option<Salt>),
     Signature(Option<Signature>),
     Tai64Timestamp(Option<Tai64Timestamp>),
-    Timestamp(Option<Int8>),
+    Timestamp(Option<Timestamp>),
     TxId(Option<TxId>),
     UInt1(Option<UInt1>),
     UInt16(Option<UInt16>),

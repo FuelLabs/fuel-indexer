@@ -117,6 +117,7 @@ graphql_schema: {schema_path}
 
 # The module field contains a file path that points to code that will be run as an executor inside
 # of the indexer.
+#
 # Important: At this time, wasm is the preferred method of execution.
 module: {module}
 

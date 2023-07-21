@@ -5,7 +5,7 @@ type TransactionFragment {
 type Account {
   id: ID!
   index: UInt1!
-  name: String
+  name: Charfield
   nonce: Nonce!
   balance: UInt8!
   address: Address!
