@@ -430,7 +430,6 @@ pub async fn sql_query(
     if claims.is_unauthenticated() {
         return Err(ApiError::Http(HttpError::Unauthorized));
     }
-
     let SqlQuery { query } = query;
     SqlQueryValidator::validate_sql_query(&query)?;
     let mut conn = pool.acquire().await?;
