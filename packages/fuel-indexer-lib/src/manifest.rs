@@ -197,6 +197,31 @@ impl Manifest {
         self.graphql_schema = schema;
     }
 
+    /// Set the end block for this indexer.
+    pub fn set_end_block(&mut self, end_block: u64) {
+        self.end_block = Some(end_block);
+    }
+
+    /// Set resumability for this indexer.
+    pub fn set_resumable(&mut self, resumable: bool) {
+        self.resumable = Some(resumable);
+    }
+
+    /// Enable or disable metrics for this indexer.
+    pub fn set_metrics(&mut self, metrics_enabled: bool) {
+        self.metrics = Some(metrics_enabled);
+    }
+
+    /// Set the endpoint for the Fuel network that should be monitored.
+    pub fn set_fuel_client(&mut self, fuel_client: String) {
+        self.fuel_client = Some(fuel_client);
+    }
+
+    /// Set the contract ID for the indexer.
+    pub fn set_contract_id(&mut self, contract_id: ContractIds) {
+        self.contract_id = contract_id;
+    }
+
     /// Set the contract ABI for this indexer.
     pub fn set_abi(&mut self, abi: String) {
         self.abi = Some(abi);
