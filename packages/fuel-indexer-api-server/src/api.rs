@@ -202,6 +202,7 @@ impl WebApi {
         if config.accept_sql_queries {
             sql_routes = Router::new()
                 .route("/:namespace/:identifier", post(sql_query))
+                .layer(AuthenticationMiddleware::from(&config))
                 .layer(Extension(pool.clone()))
                 .layer(RequestBodyLimitLayer::new(max_body_size));
         }

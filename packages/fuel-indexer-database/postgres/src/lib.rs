@@ -67,7 +67,10 @@ pub async fn run_query(
         .fetch_all(conn)
         .await?
         .iter()
-        .map(|r| r.get::<JsonValue, usize>(0))
+        .filter_map(|r| match r.try_get::<JsonValue, usize>(0) {
+            Ok(v) => Some(v),
+            Err(_e) => None,
+        })
         .collect())
 }
 
