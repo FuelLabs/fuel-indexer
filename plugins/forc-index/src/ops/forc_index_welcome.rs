@@ -1,11 +1,11 @@
-use crate::defaults;
-use crate::utils::{default_manifest_filename, default_schema_filename};
+use crate::cli::InitCommand;
+use crate::ops::forc_index_init;
+use crate::utils::default_manifest_filename;
 use forc_util::{kebab_to_snake_case, validate_name};
 use fuel_indexer_lib::manifest::{ContractIds, Manifest};
 use inquire::{required, Confirm, Select, Text};
 use lazy_static::lazy_static;
 use std::collections::HashMap;
-use std::fs;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
@@ -45,13 +45,52 @@ pub async fn init() -> anyhow::Result<()> {
 
     let project_dir = parent_folder.join(identifier.clone());
 
-    println!("\nThanks! The rest of these fields are optional; feel free to use the default values.\n");
+    let native = !Confirm::new("Would you like to compile your indexer to WebAssembly?")
+        .with_default(true)
+        .with_help_message(
+            "WebAssembly is the recommended execution mode for indexers (default: true)",
+        )
+        .prompt()?;
 
-    let abi = Text::new("Path to ABI:").with_default("").prompt()?;
+    let command = InitCommand {
+        name: Some(identifier),
+        path: Some(parent_folder),
+        namespace,
+        native,
+        absolute_paths: false,
+        verbose: false,
+    };
+    forc_index_init::init(command, false)?;
+
+    println!(
+        "\nThanks! A default indexer has been created at {}.",
+        project_dir.display()
+    );
+    println!("The directory contains a configuration manifest, schema, and source file for your handler code.\n");
+
+    let should_continue = Confirm::new(
+        "Would you like to continue to customizing and deploying your indexer?",
+    )
+    .prompt()?;
+
+    if !should_continue {
+        println!("The directory contains a configuration manifest, schema, and source file for your handler code.");
+        return Ok(());
+    }
+
+    println!(
+        "The rest of these fields are optional; feel free to use the default values.\n"
+    );
+
+    let abi = Text::new("Path to ABI:")
+        .with_default("")
+        .with_help_message("Path to the JSON ABI of your contract (default: none)")
+        .prompt()?;
     let abi = if abi.is_empty() { None } else { Some(abi) };
 
     let contract_id = Text::new("Enter a contract ID to subscribe to:")
         .with_default("")
+        .with_help_message("An indexer can listen to all contracts or a specific set of contracts. (default: none)")
         .prompt()?;
 
     let contract_id = if contract_id.is_empty() {
@@ -79,7 +118,7 @@ pub async fn init() -> anyhow::Result<()> {
     let start_block = Text::new("Enter a start block:")
         .with_default("")
         .with_help_message(
-            "The block at which your indexer will start processing information",
+            "The block at which your indexer will start processing information (default: none)",
         )
         .prompt()?;
 
@@ -92,7 +131,7 @@ pub async fn init() -> anyhow::Result<()> {
     let end_block = Text::new("Enter a end block:")
         .with_default("")
         .with_help_message(
-            "The block at which your indexer will stop processing information",
+            "The block at which your indexer will stop processing information (default: none)",
         )
         .prompt()?;
 
@@ -102,90 +141,41 @@ pub async fn init() -> anyhow::Result<()> {
         Some(end_block.parse::<u64>()?)
     };
 
-    let native = !Confirm::new("Would you like to compile your indexer to WebAssembly?")
-        .with_default(true)
-        .with_help_message("WebAssembly is the recommended execution mode for indexers")
-        .prompt()?;
-
     let resumable = Confirm::new("Would you like your indexer to be resumable?")
-        .with_default(false)
-        .with_help_message("Specifies whether an indexer will automatically sync with the chain upon starting the indexer service")
+        .with_default(true)
+        .with_help_message("Specifies whether an indexer will automatically sync with the chain upon starting the indexer service (default: true)")
         .prompt()?;
 
-    let metrics = Confirm::new("Would you like to enable metrics for your indexer?")
+    let metrics_enabled = Confirm::new("Would you like to enable metrics for your indexer?")
         .with_default(false)
         .with_help_message(
-            "Enables metrics collection; endpoint will be available at `/api/metrics`",
+            "Enables metrics collection; endpoint will be available at `/api/metrics` (default: false)",
         )
         .prompt()?;
 
-    let manifest = Manifest {
-        namespace,
-        identifier,
-        graphql_schema: default_schema_filename(&project_name),
-        contract_id,
-        abi,
-        fuel_client: Some(fuel_client),
-        module: fuel_indexer_lib::manifest::Module::Wasm("".to_string()),
-        metrics: Some(metrics),
-        start_block,
-        end_block,
-        resumable: Some(resumable),
-    };
+    let manifest_path =
+        Path::new(&project_dir).join(default_manifest_filename(&project_name));
 
-    fs::create_dir_all(Path::new(&project_dir).join("src"))?;
+    let mut manifest = Manifest::from_file(manifest_path.clone())?;
 
-    let default_toml = defaults::default_indexer_cargo_toml(&project_name);
-
-    fs::write(
-        Path::new(&project_dir).join(defaults::CARGO_MANIFEST_FILE_NAME),
-        default_toml,
-    )
-    .expect("Failed to write Cargo manifest");
-
-    let manifest_filename = default_manifest_filename(&project_name);
-    let schema_filename = default_schema_filename(&project_name);
-
-    manifest.write(&project_dir.join(manifest_filename.clone()))?;
-
-    fs::create_dir_all(Path::new(&project_dir).join("schema"))?;
-    fs::write(
-        Path::new(&project_dir).join("schema").join(schema_filename),
-        defaults::default_indexer_schema(),
-    )
-    .expect("Failed to write GraphQL schema");
-
-    let (filename, content) = if native {
-        (
-            defaults::INDEXER_BINARY_FILENAME,
-            defaults::default_indexer_binary(&project_name, &manifest_filename, None),
-        )
-    } else {
-        (
-            defaults::INDEXER_LIB_FILENAME,
-            defaults::default_indexer_lib(&project_name, &manifest_filename, None),
-        )
-    };
-
-    fs::write(Path::new(&project_dir).join("src").join(filename), content)
-        .expect("Failed to write indexer source file");
-
-    if !native {
-        fs::create_dir_all(
-            Path::new(&project_dir).join(defaults::CARGO_CONFIG_DIR_NAME),
-        )?;
-        let _ = fs::write(
-            Path::new(&project_dir)
-                .join(defaults::CARGO_CONFIG_DIR_NAME)
-                .join(defaults::CARGO_CONFIG_FILENAME),
-            defaults::default_cargo_config(),
-        );
+    if abi.is_some() {
+        manifest.set_abi(abi.unwrap());
     }
 
-    println!(
-        "\nYour indexer has been created at {}",
-        project_dir.display()
-    );
+    if start_block.is_some() {
+        manifest.set_start_block(start_block.unwrap());
+    }
+
+    if end_block.is_some() {
+        manifest.set_end_block(end_block.unwrap());
+    }
+
+    manifest.set_contract_id(contract_id);
+    manifest.set_fuel_client(fuel_client);
+    manifest.set_resumable(resumable);
+    manifest.set_metrics(metrics_enabled);
+
+    manifest.write(&manifest_path)?;
 
     Ok(())
 }
