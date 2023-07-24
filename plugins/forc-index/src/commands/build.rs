@@ -1,4 +1,4 @@
-use crate::{defaults, ops::forc_index_build};
+use crate::ops::forc_index_build;
 use anyhow::Result;
 use clap::Parser;
 use std::path::PathBuf;
@@ -14,22 +14,9 @@ pub struct Command {
     #[clap(short, long, help = "Path to the indexer project.")]
     pub path: Option<PathBuf>,
 
-    /// Target at which to compile.
-    #[clap(long, default_value = defaults::INDEXER_TARGET, help = "Target at which to compile.")]
-    pub target: String,
-
-    /// Build optimized artifacts with the release profile.
-    #[clap(
-        short,
-        long,
-        help = "Build optimized artifacts with the release profile.",
-        default_value = defaults::BUILD_RELEASE_PROFILE,
-    )]
-    pub release: String,
-
-    /// Build with the given profile.
-    #[clap(long, help = "Build with the given profile.")]
-    pub profile: Option<String>,
+    /// Build optimized artifacts with the debug profile.
+    #[clap(short, long, help = "Build artifacts with the debug profile.")]
+    pub debug: bool,
 
     /// Ensure that the Cargo.lock file is up-to-date.
     #[clap(long, help = "Ensure that the Cargo.lock file is up-to-date.")]
@@ -56,9 +43,7 @@ impl Default for Command {
         Command {
             manifest: Some(String::new()),
             path: None,
-            target: defaults::WASM_TARGET.to_string(),
-            release: true.to_string(),
-            profile: Some("release".to_string()),
+            debug: false,
             verbose: false,
             locked: false,
             native: false,
