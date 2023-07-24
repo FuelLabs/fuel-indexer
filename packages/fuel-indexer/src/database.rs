@@ -1,4 +1,4 @@
-use crate::{IndexerResult, Manifest};
+use crate::{IndexerConfig, IndexerResult, Manifest};
 use fuel_indexer_database::{queries, IndexerConnection, IndexerConnectionPool};
 use fuel_indexer_lib::{fully_qualified_namespace, graphql::types::IdCol};
 use fuel_indexer_schema::FtColumn;
@@ -10,11 +10,12 @@ use tracing::{debug, error, info};
 pub struct Database {
     pool: IndexerConnectionPool,
     stashed: Option<IndexerConnection>,
-    pub namespace: String,
-    pub identifier: String,
-    pub version: String,
-    pub schema: HashMap<String, Vec<String>>,
-    pub tables: HashMap<i64, String>,
+    namespace: String,
+    identifier: String,
+    version: String,
+    schema: HashMap<String, Vec<String>>,
+    tables: HashMap<i64, String>,
+    config: IndexerConfig,
 }
 
 // TODO: Use mutex
@@ -27,7 +28,11 @@ fn is_id_only_upsert(columns: &[String]) -> bool {
 
 impl Database {
     /// Create a new `Database`.
-    pub async fn new(pool: IndexerConnectionPool, manifest: &Manifest) -> Database {
+    pub async fn new(
+        pool: IndexerConnectionPool,
+        manifest: &Manifest,
+        config: &IndexerConfig,
+    ) -> Database {
         Database {
             pool,
             stashed: None,
@@ -36,6 +41,7 @@ impl Database {
             version: Default::default(),
             schema: Default::default(),
             tables: Default::default(),
+            config: config.clone(),
         }
     }
 
@@ -109,7 +115,11 @@ impl Database {
 
     /// Return a query to get an object from the database.
     fn get_query(&self, table: &str, object_id: u64) -> String {
-        format!("SELECT object from {table} where id = {object_id}")
+        let q = format!("SELECT object from {table} where id = {object_id}");
+        if self.config.verbose {
+            info!("get_query: {q}");
+        }
+        q
     }
 
     /// Put an object into the database.
@@ -151,6 +161,10 @@ Do your WASM modules need to be rebuilt?
             .stashed
             .as_mut()
             .expect("No stashed connection for put. Was a transaction started?");
+
+        if self.config.verbose {
+            info!("put_object: {query_text}");
+        }
 
         if let Err(e) = queries::put_object(conn, query_text, bytes).await {
             error!("Failed to put object: {:?}", e);
