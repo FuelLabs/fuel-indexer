@@ -195,7 +195,7 @@ Do your WASM modules need to be rebuilt?
                 if let sqlx::Error::RowNotFound = e {
                     debug!("Row not found for object ID: {object_id}");
                 } else {
-                    error!("Failed to get object: {:?}", e);
+                    error!("Failed to get object: {e:?}");
                 }
                 None
             }
@@ -252,5 +252,19 @@ Do your WASM modules need to be rebuilt?
 
     pub fn schema(&self) -> &HashMap<String, Vec<String>> {
         &self.schema
+    }
+    
+    /// Put a record into the database.
+    ///
+    /// Specifically for many-to-many relationships.
+    pub async fn put_many_to_many_record(&mut self, query: String) {
+        let conn = self
+            .stashed
+            .as_mut()
+            .expect("No stashed connection for put. Was a transaction started?");
+
+        if let Err(e) = queries::put_many_to_many_record(conn, query).await {
+            error!("Failed to put object: {e:?}");
+        }
     }
 }
