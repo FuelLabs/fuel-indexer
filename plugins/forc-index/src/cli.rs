@@ -24,10 +24,9 @@ pub struct Opt {
 #[derive(Subcommand, Debug)]
 pub enum ForcIndex {
     Init(InitCommand),
-    New(NewCommand),
     Deploy(DeployCommand),
     Start(Box<StartCommand>),
-    Check(CheckCommand),
+    Check,
     Remove(RemoveCommand),
     Build(BuildCommand),
     Auth(AuthCommand),
@@ -48,7 +47,7 @@ pub async fn run_cli() -> Result<(), anyhow::Error> {
         ForcIndex::New(command) => crate::commands::new::exec(command),
         ForcIndex::Deploy(command) => crate::commands::deploy::exec(command).await,
         ForcIndex::Start(command) => crate::commands::start::exec(command).await,
-        ForcIndex::Check(command) => crate::commands::check::exec(command).await,
+        ForcIndex::Check => crate::commands::check::exec().await,
         ForcIndex::Remove(command) => crate::commands::remove::exec(command).await,
         ForcIndex::Build(command) => crate::commands::build::exec(command),
         ForcIndex::Auth(command) => crate::commands::auth::exec(command).await,

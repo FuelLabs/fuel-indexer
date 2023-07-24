@@ -2756,6 +2756,7 @@ dependencies = [
  "toml",
  "tracing",
  "walkdir",
+ "whoami",
 ]
 
 [[package]]
