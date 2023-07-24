@@ -24,6 +24,7 @@ use fuel_indexer_macro_utils::metrics;
 
 use chrono::{DateTime, NaiveDateTime, Utc};
 
+/// The nonce expiry time in seconds.
 const NONCE_EXPIRY_SECS: u64 = 3600;
 
 #[cfg_attr(feature = "metrics", metrics)]

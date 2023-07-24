@@ -10,20 +10,36 @@ use tracing::{debug, error, info};
 /// Database for an executor instance, with schema info.
 #[derive(Debug)]
 pub struct Database {
+    /// Connection pool for the database.
     pool: IndexerConnectionPool,
+
+    /// Stashed connection for the current transaction.
     stashed: Option<IndexerConnection>,
+
+    /// Namespace of the indexer.
     namespace: String,
+
+    /// Identifier of the indexer.
     identifier: String,
+
+    /// Version of the indexer.
     version: String,
+
+    /// Table schema for the indexer.
     schema: HashMap<String, Vec<String>>,
+
+    /// Mapping of `TypeId`s to tables.
     tables: HashMap<i64, String>,
+
+    /// Indexer configuration.
     config: IndexerConfig,
 }
 
-// TODO: Use mutex
+// TODO: https://github.com/FuelLabs/fuel-indexer/issues/1139
 unsafe impl Sync for Database {}
 unsafe impl Send for Database {}
 
+/// Check if the upsert query is for an ID column only.
 fn is_id_only_upsert(columns: &[String]) -> bool {
     columns.len() == 2 && columns[0] == IdCol::to_lowercase_string()
 }
@@ -186,8 +202,7 @@ Do your WASM modules need to be rebuilt?
         }
     }
 
-    /// Load the schema for this indexer from the database, and build a mapping of `TypeId`s to
-    /// tables.
+    /// Load the schema for this indexer from the database, and build a mapping of `TypeId`s to tables.
     pub async fn load_schema(&mut self, version: String) -> IndexerResult<()> {
         self.version = version;
 

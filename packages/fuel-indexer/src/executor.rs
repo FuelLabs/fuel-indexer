@@ -494,7 +494,7 @@ impl IndexEnv {
     }
 }
 
-// TODO: Use mutex
+// TODO: https://github.com/FuelLabs/fuel-indexer/issues/1139
 unsafe impl<F: Future<Output = IndexerResult<()>> + Send> Sync
     for NativeIndexExecutor<F>
 {
