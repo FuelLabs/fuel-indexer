@@ -141,6 +141,12 @@ pub fn create_indexer(command: InitCommand) -> anyhow::Result<()> {
         None
     };
 
+    let namespace = if let Some(ns) = namespace {
+        ns
+    } else {
+        whoami::username()
+    };
+
     let manifest_filename = default_manifest_filename(&project_name);
     let schema_filename = default_schema_filename(&project_name);
 

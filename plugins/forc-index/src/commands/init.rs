@@ -21,7 +21,7 @@ pub struct Command {
 
     /// Namespace to which indexer belongs.
     #[clap(long, help = "Namespace to which indexer belongs.")]
-    pub namespace: String,
+    pub namespace: Option<String>,
 
     /// Initialize an indexer with native execution enabled.
     #[clap(long, help = "Initialize an indexer with native execution enabled.")]
