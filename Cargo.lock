@@ -6769,10 +6769,12 @@ dependencies = [
  "tokio 1.29.1",
  "tokio-native-tls",
  "tokio-rustls 0.24.1",
+ "tokio-util 0.7.8",
  "tower-service",
  "url",
  "wasm-bindgen",
  "wasm-bindgen-futures",
+ "wasm-streams",
  "web-sys",
  "webpki-roots 0.22.6",
  "winreg 0.10.1",
@@ -8901,6 +8903,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "06a3d1b4a575ffb873679402b2aedb3117555eb65c27b1b86c8a91e574bc2a2a"
 dependencies = [
  "leb128",
+]
+
+[[package]]
+name = "wasm-streams"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6bbae3363c08332cadccd13b67db371814cd214c2524020932f0804b8cf7c078"
+dependencies = [
+ "futures-util",
+ "js-sys",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
 ]
 
 [[package]]
