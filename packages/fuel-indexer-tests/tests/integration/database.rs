@@ -1,4 +1,4 @@
-use fuel_indexer::{ffi, Database, FtColumn, IndexEnv, IndexerResult};
+use fuel_indexer::{ffi, Database, FtColumn, IndexEnv, IndexerConfig, IndexerResult};
 use fuel_indexer_database::{queries, IndexerConnectionPool};
 use fuel_indexer_lib::{
     fully_qualified_namespace, graphql::GraphQLSchema, manifest::Manifest, type_id,
@@ -39,8 +39,12 @@ async fn load_wasm_module(
     let compiler = compiler();
     let mut store = Store::new(compiler);
     let module = Module::new(&store, SIMPLE_WASM_WASM)?;
+    let config = IndexerConfig::default();
 
-    let env = wasmer::FunctionEnv::new(&mut store, IndexEnv::new(pool, manifest).await?);
+    let env = wasmer::FunctionEnv::new(
+        &mut store,
+        IndexEnv::new(pool, manifest, &config).await?,
+    );
 
     let mut import_object = imports! {};
     for (export_name, export) in ffi::get_exports(&mut store, &env) {
@@ -86,6 +90,7 @@ async fn generate_schema_then_load_schema_from_wasm_module(database_url: &str) {
     let manifest = Manifest::try_from(SIMPLE_WASM_MANIFEST).unwrap();
     let schema = GraphQLSchema::new(SIMPLE_WASM_GRAPHQL_SCHEMA.to_owned());
     let version = schema.version().to_owned();
+    let config = IndexerConfig::default();
 
     let result = manager
         .new_schema(
@@ -123,17 +128,17 @@ async fn generate_schema_then_load_schema_from_wasm_module(database_url: &str) {
     let version = ffi::get_version(&mut store.as_store_mut(), &instance)
         .expect("Could not get version");
 
-    let mut db = Database::new(pool.clone(), &manifest).await;
+    let mut db = Database::new(pool.clone(), &manifest, &config).await;
     db.load_schema(version.clone())
         .await
         .expect("Could not load db schema");
 
-    assert_eq!(db.namespace, "test_namespace");
-    assert_eq!(db.version, version);
+    assert_eq!(db.namespace(), "test_namespace");
+    assert_eq!(db.version(), version);
 
     for column in TEST_COLUMNS.iter() {
         let key = format!("{}_{}.{}", TEST_NAMESPACE, TEST_INDENTIFIER, column.0);
-        assert!(db.schema.contains_key(&key));
+        assert!(db.schema().contains_key(&key));
     }
 
     let object_id = 4;

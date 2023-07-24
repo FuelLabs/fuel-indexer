@@ -233,4 +233,16 @@ Do your WASM modules need to be rebuilt?
 
         Ok(())
     }
+
+    pub fn namespace(&self) -> &str {
+        &self.namespace
+    }
+
+    pub fn version(&self) -> &str {
+        &self.version
+    }
+
+    pub fn schema(&self) -> &HashMap<String, Vec<String>> {
+        &self.schema
+    }
 }
