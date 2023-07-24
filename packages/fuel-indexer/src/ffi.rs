@@ -193,11 +193,15 @@ pub fn get_exports(store: &mut Store, env: &wasmer::FunctionEnv<IndexEnv>) -> Ex
     let f_get_obj = Function::new_typed_with_env(store, env, get_object);
     let f_put_obj = Function::new_typed_with_env(store, env, put_object);
     let f_log_data = Function::new_typed_with_env(store, env, log_data);
-    let f_put_m2m_obj = Function::new_typed_with_env(store, env, put_many_to_many_record);
+    let f_put_many_to_many_record =
+        Function::new_typed_with_env(store, env, put_many_to_many_record);
 
     exports.insert("ff_get_object".to_string(), f_get_obj);
     exports.insert("ff_put_object".to_string(), f_put_obj);
-    exports.insert("ff_put_m2m_object".to_string(), f_put_m2m_obj);
+    exports.insert(
+        "ff_put_many_to_many_record".to_string(),
+        f_put_many_to_many_record,
+    );
     exports.insert("ff_log_data".to_string(), f_log_data);
 
     exports

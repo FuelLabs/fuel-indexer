@@ -3561,6 +3561,7 @@ dependencies = [
  "fuel-indexer-schema",
  "fuel-indexer-types",
  "hex",
+ "quote",
  "serde",
  "serde_json",
  "sha2 0.10.7",

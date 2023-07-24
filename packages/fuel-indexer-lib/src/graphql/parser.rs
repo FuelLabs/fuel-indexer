@@ -9,7 +9,7 @@ use crate::{
         extract_foreign_key_info, field_id, field_type_name, is_list_type,
         list_field_type_name, GraphQLSchema, GraphQLSchemaValidator, BASE_SCHEMA,
     },
-    ExecutionSource,
+    join_table_name, ExecutionSource,
 };
 use async_graphql_parser::{
     parse_schema,
@@ -43,51 +43,108 @@ pub enum ParsedError {
 /// Represents metadata related to a many-to-many relationship in the GraphQL schema.
 #[derive(Debug, Clone)]
 pub struct JoinTableMeta {
-    /// Name of the join table
-    pub table_name: String,
+    /// The `TypeDefinition` on which the `FieldDefinition` with a list type is defined.
+    parent: JoinTableRelation,
 
-    /// `TypeDefinition` name on which join relationship was found.
-    pub local_table_name: String,
+    /// The `TypeDefinition` who's inner content type is a list of foreign keys.
+    child: JoinTableRelation,
+}
 
-    /// Name of local column on which to join.
-    ///
-    /// This is always `id` for now.
+impl JoinTableMeta {
+    pub fn parent(&self) -> &JoinTableRelation {
+        &self.parent
+    }
+
+    pub fn child(&self) -> &JoinTableRelation {
+        &self.child
+    }
+}
+
+/// Represents a relationship between two `TypeDefinition`s in the GraphQL schema.
+#[derive(Debug, Clone)]
+pub struct JoinTableRelation {
+    /// Whether this is the parent or the child in the join.
+    pub relation_type: JoinTableRelationType,
+
+    /// Name of the `TypeDefinition` associated with this join.
+    pub typedef_name: String,
+
+    /// Name of the column in the join table.
     pub column_name: String,
 
-    /// Type of the column on the local table on which to join.
-    ///
-    /// This is always `ColumnType::UInt8` for now.
+    /// Type of the column in the join table.
     pub column_type: String,
 
-    /// `TypeDefinition` name to which this join references.
-    pub ref_table_name: String,
+    /// Position of the child in the join table.
+    pub child_position: Option<usize>,
+}
 
-    /// Name of the column on the referenced table on which to join.
-    ///
-    /// This is always `id` for now.
-    pub ref_column_name: String,
+/// Type of join table relationship.
+#[derive(Debug, Clone)]
+pub enum JoinTableRelationType {
+    /// `TypeDefinition` on which the list type is defined.
+    Parent,
 
-    /// Type of the column on the referenced table on which to join.
-    ///
-    /// This is always `ColumnType::UInt8` for now.
-    pub ref_column_type: String,
+    /// A `Child` in this case, is a `FieldDefinition` on a `TypeDefinition` that
+    /// contains a list type, whose inner content type is a foreign key reference.
+    Child,
 }
 
 impl JoinTableMeta {
     /// Create a new `JoinTableMeta`.
-    pub fn new(local_table_name: &str, ref_table_name: &str) -> Self {
-        let local_table_name = local_table_name.to_string().to_lowercase();
-        let ref_table_name = ref_table_name.to_string().to_lowercase();
-
+    pub fn new(
+        parent_typedef_name: &str,
+        parent_column_name: &str,
+        parent_column_type: &str,
+        child_typedef_name: &str,
+        child_column_name: &str,
+        child_column_type: &str,
+        child_position: Option<usize>,
+    ) -> Self {
         Self {
-            table_name: format!("{local_table_name}s_{ref_table_name}s"),
-            local_table_name,
-            column_name: "id".to_string(),
-            column_type: "ID".to_string(),
-            ref_table_name,
-            ref_column_name: "id".to_string(),
-            ref_column_type: "ID".to_string(),
+            parent: JoinTableRelation {
+                relation_type: JoinTableRelationType::Parent,
+                typedef_name: parent_typedef_name.to_string(),
+                column_name: parent_column_name.to_string(),
+                column_type: parent_column_type.to_string(),
+                child_position,
+            },
+            child: JoinTableRelation {
+                relation_type: JoinTableRelationType::Child,
+                typedef_name: child_typedef_name.to_string(),
+                column_name: child_column_name.to_string(),
+                column_type: child_column_type.to_string(),
+                child_position: None,
+            },
         }
+    }
+
+    pub fn table_name(&self) -> String {
+        join_table_name(&self.parent_table_name(), &self.child_table_name())
+    }
+
+    pub fn parent_table_name(&self) -> String {
+        self.parent.typedef_name.to_lowercase()
+    }
+
+    pub fn parent_column_name(&self) -> String {
+        self.parent.column_name.clone()
+    }
+
+    pub fn parent_column_type(&self) -> String {
+        self.parent.column_type.clone()
+    }
+
+    pub fn child_table_name(&self) -> String {
+        self.child.typedef_name.to_lowercase()
+    }
+
+    pub fn child_column_name(&self) -> String {
+        self.child.column_name.clone()
+    }
+
+    pub fn child_column_type(&self) -> String {
+        self.child.column_type.clone()
     }
 }
 
@@ -126,10 +183,10 @@ pub fn build_schema_types_set(
 
 /// A wrapper object used to encapsulate a lot of the boilerplate logic related
 /// to parsing schema, creating mappings of types, fields, objects, etc.
-//
-// Ideally `ParsedGraphQLSchema` prevents from having to manually parse `async_graphql_parser`
-// `TypeDefinition`s in order to get metadata on the types (e.g., Is a foreign key? is a virtual type?
-// and so on).
+///
+/// Ideally `ParsedGraphQLSchema` prevents from having to manually parse `async_graphql_parser`
+/// `TypeDefinition`s in order to get metadata on the types (e.g., Is a foreign key? is a virtual type?
+/// and so on).
 #[derive(Debug, Clone)]
 pub struct ParsedGraphQLSchema {
     /// Namespace of the indexer.
@@ -145,7 +202,8 @@ pub struct ParsedGraphQLSchema {
     type_names: HashSet<String>,
 
     /// Mapping of lowercase `TypeDefinition` names to their actual `TypeDefinition` names.
-    // Used to refer to top-level entities in GraphQL queries.
+    ///
+    /// Used to refer to top-level entities in GraphQL queries.
     typedef_names_to_types: HashMap<String, String>,
 
     /// Mapping of object names to objects.
@@ -182,8 +240,8 @@ pub struct ParsedGraphQLSchema {
     ast: ServiceDocument,
 
     /// Mapping of fully qualified field names to their `FieldDefinition` and `TypeDefinition` name.
-    //
-    // We keep the `TypeDefinition` name so that we can know what type of object the field belongs to.
+    ///
+    /// We keep the `TypeDefinition` name so that we can know what type of object the field belongs to.
     field_defs: HashMap<String, (FieldDefinition, String)>,
 
     /// Raw GraphQL schema content.
@@ -205,7 +263,7 @@ pub struct ParsedGraphQLSchema {
     ///
     /// Many-to-many (m2m) relationships are created when a `FieldDefinition` contains a
     /// list type, whose inner content type is a foreign key reference to another `TypeDefinition`.
-    join_table_meta: HashMap<String, JoinTableMeta>,
+    join_table_meta: HashMap<String, Vec<(String, JoinTableMeta)>>,
 }
 
 impl Default for ParsedGraphQLSchema {
@@ -289,7 +347,7 @@ impl ParsedGraphQLSchema {
                             parsed_typedef_names.insert(t.node.name.to_string());
 
                             let mut field_mapping = BTreeMap::new();
-                            for field in &o.fields {
+                            for (i, field) in o.fields.iter().enumerate() {
                                 let field_name = field.node.name.to_string();
                                 let field_typ_name = field.node.ty.to_string();
                                 let fid = field_id(&obj_name, &field_name);
@@ -320,16 +378,30 @@ impl ParsedGraphQLSchema {
                                     && !enum_names.contains(&ftype)
                                     && !virtual_type_names.contains(&ftype)
                                 {
-                                    let (_ref_coltype, ref_colname, ref_tablename) =
+                                    let (ref_coltype, ref_colname, ref_tablename) =
                                         extract_foreign_key_info(
                                             &field.node,
                                             &field_type_mappings,
                                         );
 
-                                    join_table_meta.insert(
-                                        obj_name.clone(),
-                                        JoinTableMeta::new(&obj_name, &ref_tablename),
-                                    );
+                                    if is_list_type(&field.node) {
+                                        join_table_meta
+                                            .entry(obj_name.clone())
+                                            .or_insert_with(Vec::new)
+                                            .push((
+                                                ref_tablename.clone(),
+                                                JoinTableMeta::new(
+                                                    &obj_name,
+                                                    &field_name,
+                                                    // Use the scalar type for this list type
+                                                    &ref_coltype,
+                                                    &ref_tablename,
+                                                    &ref_colname,
+                                                    &ref_coltype,
+                                                    Some(i),
+                                                ),
+                                            ));
+                                    }
 
                                     let fk = foreign_key_mappings
                                         .get_mut(&t.node.name.to_string().to_lowercase());
@@ -548,7 +620,7 @@ impl ParsedGraphQLSchema {
     }
 
     /// Metadata related to many-to-many relationships in the GraphQL schema.
-    pub fn join_table_meta(&self) -> &HashMap<String, JoinTableMeta> {
+    pub fn join_table_meta(&self) -> &HashMap<String, Vec<(String, JoinTableMeta)>> {
         &self.join_table_meta
     }
 
@@ -654,9 +726,10 @@ impl ParsedGraphQLSchema {
     }
 
     /// Return the GraphQL type for a given `FieldDefinition` or `TypeDefinition` name.
-    // This serves as a convenience function so that the caller doesn't have to
-    // worry about handling the case in which `cond` is not present; for example,
-    // `cond` is None when retrieving the type for a top-level entity in a query.
+    ///
+    /// This serves as a convenience function so that the caller doesn't have to
+    /// worry about handling the case in which `cond` is not present; for example,
+    /// `cond` is None when retrieving the type for a top-level entity in a query.
     pub fn graphql_type(&self, cond: Option<&String>, name: &str) -> Option<&String> {
         match cond {
             Some(c) => self.field_type(c, name),

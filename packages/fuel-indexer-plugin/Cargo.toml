@@ -23,6 +23,7 @@ fuel-indexer-lib = { workspace = true }
 fuel-indexer-schema = { workspace = true, default-features = false }
 fuel-indexer-types = { workspace = true }
 hex = "0.4"
+quote = "1.0"
 serde = { workspace = true }
 serde_json = { workspace = true }
 sha2 = { version = "0.10" }

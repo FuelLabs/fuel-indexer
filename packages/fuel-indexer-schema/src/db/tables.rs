@@ -126,7 +126,11 @@ impl IndexerSchema {
             .parsed
             .join_table_meta()
             .iter()
-            .map(|(_, info)| TypeId::from_join_meta(info.to_owned(), &self.parsed))
+            .flat_map(|(_, meta_items)| {
+                meta_items.iter().map(|(_, meta)| {
+                    TypeId::from_join_meta(meta.to_owned(), &self.parsed)
+                })
+            })
             .collect::<Vec<TypeId>>();
 
         type_ids.append(&mut join_type_ids);
@@ -144,7 +148,11 @@ impl IndexerSchema {
             .parsed
             .join_table_meta()
             .iter()
-            .map(|(_, item)| Table::from_join_meta(item.to_owned(), &self.parsed))
+            .flat_map(|(_, meta_items)| {
+                meta_items
+                    .iter()
+                    .map(|(_, meta)| Table::from_join_meta(meta.to_owned(), &self.parsed))
+            })
             .collect::<Vec<Table>>();
 
         tables.append(&mut join_tables);

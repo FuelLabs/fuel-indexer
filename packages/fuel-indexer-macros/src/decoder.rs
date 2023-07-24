@@ -5,7 +5,10 @@ use async_graphql_parser::types::{
 use async_graphql_parser::{Pos, Positioned};
 use async_graphql_value::Name;
 use fuel_indexer_lib::{
-    graphql::{field_id, types::IdCol, GraphQLSchemaValidator, ParsedGraphQLSchema},
+    graphql::{
+        field_id, types::IdCol, GraphQLSchemaValidator, ParsedGraphQLSchema,
+        MAX_FOREIGN_KEY_LIST_FIELDS,
+    },
     type_id, ExecutionSource,
 };
 use linked_hash_set::LinkedHashSet;
@@ -686,6 +689,43 @@ impl From<ObjectDecoder> for TokenStream {
             }
         };
 
+        let join_metadata = if let Some(meta) = impl_decoder
+            .parsed
+            .join_table_meta()
+            .get(&ident.to_string())
+        {
+            let mut tokens = meta
+                .iter()
+                .map(|(_, meta)| {
+                    let table_name = meta.table_name();
+                    let parent_column_name = meta.parent_column_name();
+                    let parent_column_type = meta.parent_column_type();
+                    let child_column_name = meta.child_column_name();
+                    let child_column_type = meta.child_column_type();
+                    let child_position = meta.parent().child_position.unwrap();
+
+                    quote! {
+                        Some(JoinMetadata {
+                            table_name: #table_name,
+                            parent_column_name: #parent_column_name,
+                            parent_column_type: #parent_column_type,
+                            child_column_name: #child_column_name,
+                            child_column_type: #child_column_type,
+                            child_position: #child_position,
+                        })
+                    }
+                })
+                .collect::<Vec<TokenStream>>();
+
+            tokens.resize(10, quote! { None });
+
+            quote! {
+                Some([ #( #tokens ),* ])
+            }
+        } else {
+            quote! { None }
+        };
+
         let impl_entity = match exec_source {
             ExecutionSource::Native => quote! {
                 #[derive(Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
@@ -694,8 +734,9 @@ impl From<ObjectDecoder> for TokenStream {
                 }
 
                 #[async_trait::async_trait]
-                impl Entity for #ident {
+                impl<'a> Entity<'a> for #ident {
                     const TYPE_ID: i64 = #type_id;
+                    const JOIN_METADATA: Option<[Option<JoinMetadata<'a>>; MAX_FOREIGN_KEY_LIST_FIELDS]> = #join_metadata;
 
                     fn from_row(mut vec: Vec<FtColumn>) -> Self {
                         #field_extractors
@@ -708,6 +749,24 @@ impl From<ObjectDecoder> for TokenStream {
                         vec![
                             #to_row
                         ]
+                    }
+
+                    async fn save_m2m(&self) {
+                        // if let Some(meta) = Self::JOIN_METADATA {
+                        //     let JoinMetadata {
+                        //         table_name,
+                        //         local_column,
+                        //         foreign_column,
+                        //         join_position,
+                        //     } = meta;
+                        //     let query = format!("INSERT INTO {} ({}, {}) VALUES ({}, {}) ON CONFLICT DO NOTHING;", table_name, local_column, foreign_column, "4", "5");
+                        //     unsafe {
+                        //         match &db {
+                        //             Some(d) => d.lock().await.put_many_to_many_record(query).await,
+                        //             None => {},
+                        //         }
+                        //     }
+                        // }
                     }
 
                     async fn load(id: u64) -> Option<Self> {
@@ -732,6 +791,7 @@ impl From<ObjectDecoder> for TokenStream {
                         unsafe {
                             match &db {
                                 Some(d) => {
+                                    self.save_m2m().await;
                                     d.lock().await.put_object(
                                         Self::TYPE_ID,
                                         self.to_row(),
@@ -750,8 +810,9 @@ impl From<ObjectDecoder> for TokenStream {
                     #struct_fields
                 }
 
-                impl Entity for #ident {
+                impl<'a> Entity<'a> for #ident {
                     const TYPE_ID: i64 = #type_id;
+                    const JOIN_METADATA: Option<[Option<JoinMetadata<'a>>; MAX_FOREIGN_KEY_LIST_FIELDS]> = #join_metadata;
 
                     fn from_row(mut vec: Vec<FtColumn>) -> Self {
                         #field_extractors
@@ -767,7 +828,6 @@ impl From<ObjectDecoder> for TokenStream {
                     }
 
                 }
-
             },
         };
 

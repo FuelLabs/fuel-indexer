@@ -522,9 +522,7 @@ impl TypeId {
 
     /// Create a new `TypeId` from a given `JoinTableMeta`.
     pub fn from_join_meta(info: JoinTableMeta, parsed: &ParsedGraphQLSchema) -> Self {
-        let JoinTableMeta { table_name, .. } = info;
-
-        let type_id = type_id(&parsed.fully_qualified_namespace(), &table_name);
+        let type_id = type_id(&parsed.fully_qualified_namespace(), &info.table_name());
         Self {
             id: type_id,
             version: parsed.schema().version().to_string(),
@@ -533,7 +531,7 @@ impl TypeId {
             // Doesn't matter what this is, but let's use `ID` since all column types
             // on join tables are `ColumnType::ID` for now.
             graphql_name: ColumnType::ID.to_string(),
-            table_name,
+            table_name: info.table_name(),
         }
     }
 }
@@ -1048,20 +1046,15 @@ impl Table {
     pub fn from_join_meta(item: JoinTableMeta, parsed: &ParsedGraphQLSchema) -> Self {
         // Since the join table is just two pre-determined columns, with two pre-determined
         // constraints, we can just manually create it.
-        let JoinTableMeta {
-            table_name,
-            local_table_name,
-            column_name,
-            ref_table_name,
-            ref_column_name,
-            ref_column_type,
-            ..
-        } = item;
-        let ty_id = type_id(&parsed.fully_qualified_namespace(), &table_name);
+        let ty_id = type_id(&parsed.fully_qualified_namespace(), &item.table_name());
         let columns = vec![
             Column {
                 type_id: ty_id,
-                name: format!("{local_table_name}_{column_name}"),
+                name: format!(
+                    "{}_{}",
+                    item.parent_table_name(),
+                    item.parent_column_name()
+                ),
                 graphql_type: ColumnType::UInt8.to_string(),
                 coltype: ColumnType::UInt8,
                 position: 0,
@@ -1072,7 +1065,7 @@ impl Table {
             },
             Column {
                 type_id: ty_id,
-                name: format!("{ref_table_name}_{ref_column_name}"),
+                name: format!("{}_{}", item.child_table_name(), item.child_column_name()),
                 graphql_type: ColumnType::UInt8.to_string(),
                 coltype: ColumnType::UInt8,
                 position: 1,
@@ -1087,27 +1080,35 @@ impl Table {
             Constraint::Fk(ForeignKey {
                 db_type: DbType::Postgres,
                 namespace: parsed.fully_qualified_namespace(),
-                table_name: table_name.clone(),
-                column_name: format!("{local_table_name}_{column_name}"),
-                ref_tablename: ref_table_name.clone(),
-                ref_colname: ref_column_name.clone(),
-                ref_coltype: ref_column_type.clone(),
+                table_name: item.table_name(),
+                column_name: format!(
+                    "{}_{}",
+                    item.parent_table_name(),
+                    item.parent_column_name()
+                ),
+                ref_tablename: item.child_table_name(),
+                ref_colname: item.child_column_name(),
+                ref_coltype: item.child_column_type(),
                 ..ForeignKey::default()
             }),
             Constraint::Fk(ForeignKey {
                 db_type: DbType::Postgres,
                 namespace: parsed.fully_qualified_namespace(),
-                table_name: table_name.clone(),
-                column_name: format!("{ref_table_name}_{ref_column_name}"),
-                ref_tablename: local_table_name,
-                ref_colname: column_name,
-                ref_coltype: ref_column_type,
+                table_name: item.table_name(),
+                column_name: format!(
+                    "{}_{}",
+                    item.child_table_name(),
+                    item.child_column_name()
+                ),
+                ref_tablename: item.parent_table_name(),
+                ref_colname: item.parent_column_name(),
+                ref_coltype: item.parent_column_type(),
                 ..ForeignKey::default()
             }),
         ];
 
         Self {
-            name: table_name,
+            name: item.table_name(),
             namespace: parsed.namespace().to_string(),
             identifier: parsed.identifier().to_string(),
             columns,
