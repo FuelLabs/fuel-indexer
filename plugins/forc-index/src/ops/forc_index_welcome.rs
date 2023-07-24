@@ -179,7 +179,7 @@ async fn deploy_to_network(mut input: String, manifest: String) -> anyhow::Resul
                     };
                     start(start_command).await?;
                     build(build_command)?;
-                    deploy(deploy_command)?;
+                    deploy(deploy_command).await?;
                 }
                 "2" => {
                     // init for testnet
@@ -193,7 +193,7 @@ async fn deploy_to_network(mut input: String, manifest: String) -> anyhow::Resul
                     };
                     start(start_command).await?;
                     build(build_command)?;
-                    deploy(deploy_command)?;
+                    deploy(deploy_command).await?;
                 }
                 _ => {
                     println!("Invalid input. Please enter 1 or 2");

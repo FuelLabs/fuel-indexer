@@ -1,14 +1,13 @@
 use crate::{cli::RemoveCommand, utils::project_dir_info};
 use fuel_indexer_lib::manifest::Manifest;
 use reqwest::{
-    blocking::Client,
     header::{HeaderMap, AUTHORIZATION},
-    StatusCode,
+    Client, StatusCode,
 };
 use serde_json::{to_string_pretty, value::Value, Map};
 use tracing::{error, info};
 
-pub fn init(command: RemoveCommand) -> anyhow::Result<()> {
+pub async fn init(command: RemoveCommand) -> anyhow::Result<()> {
     let RemoveCommand {
         path,
         manifest,
@@ -48,11 +47,13 @@ pub fn init(command: RemoveCommand) -> anyhow::Result<()> {
         .delete(&target)
         .headers(headers)
         .send()
+        .await
         .expect("Failed to remove indexer.");
 
     let status = res.status();
     let res_json = res
         .json::<Map<String, Value>>()
+        .await
         .expect("Failed to read JSON response.");
 
     if status != StatusCode::OK {
