@@ -17,11 +17,11 @@ pub struct Command {
     pub user: String,
 
     /// Database password.
-    #[clap(short, long, default_value = defaults::POSTGRES_PASSWORD, help = "Database password.")]
+    #[clap(long, default_value = defaults::POSTGRES_PASSWORD, help = "Database password.")]
     pub password: String,
 
     /// Port to use.
-    #[clap(short, long, default_value = defaults::POSTGRES_PORT, help = "Port to use.")]
+    #[clap(long, default_value = defaults::POSTGRES_PORT, help = "Port to use.")]
     pub port: String,
 
     /// Where to store the PostgreSQL database.
