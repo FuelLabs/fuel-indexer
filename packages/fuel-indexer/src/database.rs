@@ -1,6 +1,8 @@
 use crate::{IndexerConfig, IndexerResult, Manifest};
 use fuel_indexer_database::{queries, IndexerConnection, IndexerConnectionPool};
-use fuel_indexer_lib::{fully_qualified_namespace, graphql::types::IdCol};
+use fuel_indexer_lib::{
+    fully_qualified_namespace, graphql::types::IdCol, utils::format_sql_query,
+};
 use fuel_indexer_schema::FtColumn;
 use std::collections::HashMap;
 use tracing::{debug, error, info};
@@ -87,24 +89,14 @@ impl Database {
     ) -> String {
         if is_id_only_upsert(columns) {
             format!(
-                "INSERT INTO {}
-                    ({})
-                 VALUES
-                    ({}, $1::bytea)
-                 ON CONFLICT(id)
-                 DO NOTHING",
+                "INSERT INTO {} ({}) VALUES ({}, $1::bytea) ON CONFLICT(id) DO NOTHING",
                 table,
                 columns.join(", "),
                 inserts.join(", "),
             )
         } else {
             format!(
-                "INSERT INTO {}
-                    ({})
-                 VALUES
-                    ({}, $1::bytea)
-                 ON CONFLICT(id)
-                 DO UPDATE SET {}",
+                "INSERT INTO {} ({}) VALUES ({}, $1::bytea) ON CONFLICT(id) DO UPDATE SET {}",
                 table,
                 columns.join(", "),
                 inserts.join(", "),
@@ -117,7 +109,7 @@ impl Database {
     fn get_query(&self, table: &str, object_id: u64) -> String {
         let q = format!("SELECT object from {table} where id = {object_id}");
         if self.config.verbose {
-            info!("get_query: {q}");
+            info!("{q}");
         }
         q
     }
@@ -133,14 +125,14 @@ impl Database {
             Some(t) => t,
             None => {
                 error!(
-                    r#"TypeId({}) not found in tables: {:?}. 
+                    r#"TypeId({type_id}) not found in tables: {:?}. 
 
 Does the schema version in SchemaManager::new_schema match the schema version in Database::load_schema?
 
 Do your WASM modules need to be rebuilt?
 
 "#,
-                    type_id, self.tables,
+                    self.tables,
                 );
                 return;
             }
@@ -150,12 +142,13 @@ Do your WASM modules need to be rebuilt?
         let updates: Vec<_> = self.schema[table]
             .iter()
             .zip(columns.iter())
-            .map(|(colname, value)| format!("{} = {}", colname, value.query_fragment()))
+            .map(|(colname, value)| format!("{colname} = {}", value.query_fragment()))
             .collect();
 
         let columns = self.schema[table].clone();
 
-        let query_text = self.upsert_query(table, &columns, inserts, updates);
+        let query_text =
+            format_sql_query(self.upsert_query(table, &columns, inserts, updates));
 
         let conn = self
             .stashed
@@ -163,11 +156,11 @@ Do your WASM modules need to be rebuilt?
             .expect("No stashed connection for put. Was a transaction started?");
 
         if self.config.verbose {
-            info!("put_object: {query_text}");
+            info!("{query_text}");
         }
 
         if let Err(e) = queries::put_object(conn, query_text, bytes).await {
-            error!("Failed to put object: {:?}", e);
+            error!("Failed to put object: {e:?}");
         }
     }
 
