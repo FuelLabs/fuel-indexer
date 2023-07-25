@@ -310,15 +310,17 @@ jobs:
           cd /tmp/indexer
 
           # WASM indexer
-          forc-index new indexer-test --namespace fuel
-          cd indexer-test/
+          mkdir indexer-test
+          cd indexer-test
+          forc-index init --namespace fuel
           forc-index build
           cd ..
           rm -rfv indexer-test
 
           # Native indexer
-          forc-index new indexer-test --namespace fuel --native
-          cd indexer-test/
+          mkdir indexer-test
+          cd indexer-test
+          forc-index init --namespace fuel --native
           forc-index build --native
           cd ..
           rm -rfv indexer-test
