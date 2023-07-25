@@ -121,7 +121,7 @@ forc index check
 Create new indexer project at the provided path.
 
 ```bash
-forc index new --namespace my_org_name
+forc index new my-indexer --namespace fuellabs
 ```
 
 ### `forc index init`
@@ -129,7 +129,7 @@ forc index new --namespace my_org_name
 Create a new indexer project at the provided path. If no path is provided the current working directory will be used.
 
 ```bash
-forc index init --namespace my_org_name
+forc index init --namespace fuellabs
 ```
 
 ### `forc index build`
@@ -145,7 +145,7 @@ forc index build
 Deploy a given indexer project to a particular endpoint
 
 ```bash
-forc index deploy --url https://indexer.fuel.network
+forc index deploy --url https://beta-3-indexer.fuel.network
 ```
 
 ### `forc index remove`
@@ -153,7 +153,7 @@ forc index deploy --url https://indexer.fuel.network
 Kill a running indexer.
 
 ```bash
-forc index remove --url https://indexer.fuel.network
+forc index remove --url https://beta-3-indexer.fuel.network
 ```
 
 ### `forc index auth`
@@ -161,7 +161,7 @@ forc index remove --url https://indexer.fuel.network
 Authenticate against an indexer service.
 
 ```bash
-forc index auth --url https://indexer.fuel.network
+forc index auth --url https://beta-3-indexer.fuel.network
 ```
 
 ### `forc index start`

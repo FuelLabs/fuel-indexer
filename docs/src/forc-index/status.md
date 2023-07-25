@@ -3,7 +3,7 @@
 Check the status of a registered indexer.
 
 ```bash
-forc index status --url https://indexer.fuel.network
+forc index status --url https://beta-3-indexer.fuel.network
 ```
 
 ```text
