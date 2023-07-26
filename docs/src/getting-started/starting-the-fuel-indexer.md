@@ -68,6 +68,9 @@ OPTIONS:
         --metrics
             Use Prometheus metrics reporting.
 
+        --node-block-page-size <NODE_BLOCK_PAGE_SIZE>
+            Amount of blocks to return in a request to a Fuel node. [default: 10]
+
         --postgres-database <POSTGRES_DATABASE>
             Postgres database.
 

@@ -180,6 +180,10 @@ pub struct IndexerArgs {
     /// Allow the web API to accept raw SQL queries.
     #[clap(long, help = "Allow the web API to accept raw SQL queries.")]
     pub accept_sql_queries: bool,
+
+    /// Amount of blocks to return in a request to a Fuel node.
+    #[clap(long, help = "Amount of blocks to return in a request to a Fuel node.", default_value_t = defaults::NODE_BLOCK_PAGE_SIZE)]
+    pub block_page_size: usize,
 }
 
 #[derive(Debug, Parser, Clone)]
