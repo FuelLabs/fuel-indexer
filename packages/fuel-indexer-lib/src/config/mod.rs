@@ -105,7 +105,7 @@ impl Default for IndexerArgs {
             rate_limit_window_size: Some(defaults::RATE_LIMIT_WINDOW_SIZE),
             replace_indexer: defaults::REPLACE_INDEXER,
             accept_sql_queries: defaults::ACCEPT_SQL,
-            node_block_page_size: defaults::NODE_BLOCK_PAGE_SIZE,
+            block_page_size: defaults::NODE_BLOCK_PAGE_SIZE,
         }
     }
 }
@@ -236,7 +236,7 @@ impl From<IndexerArgs> for IndexerConfig {
             },
             replace_indexer: args.replace_indexer,
             accept_sql_queries: args.accept_sql_queries,
-            node_block_page_size: args.node_block_page_size,
+            node_block_page_size: args.block_page_size,
         };
 
         config
@@ -361,7 +361,7 @@ impl IndexerConfig {
             serde_yaml::Value::String("accept_sql_queries".into());
 
         let node_block_page_size_key =
-            serde_yaml::Value::String("node_block_page_size".into());
+            serde_yaml::Value::String("block_page_size".into());
 
         if let Some(accept_sql_queries) = content.get(accept_sql_config_key) {
             config.accept_sql_queries = accept_sql_queries.as_bool().unwrap();

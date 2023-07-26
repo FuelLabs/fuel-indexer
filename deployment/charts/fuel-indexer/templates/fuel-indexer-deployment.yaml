@@ -59,7 +59,7 @@ spec:
             - "--verbose"
             - "--replace-indexer"
             - "--accept-sql-queries"
-            - "--node-block-page-size"
+            - "--block-page-size"
             - "25"
           env:
           - name: POSTGRES_PASSWORD
