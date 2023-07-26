@@ -26,6 +26,7 @@ fuel-indexer-graphql = { workspace = true }
 fuel-indexer-lib = { workspace = true }
 fuel-indexer-metrics = { workspace = true, optional = true }
 fuel-indexer-schema = { workspace = true, features = ["db-models"] }
+futures = "0.3"
 futures-util = { version = "0.3", optional = true }
 hex = "0.4"
 http = "0.2"
@@ -41,7 +42,6 @@ tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 tower = { version = "0.4", features = ["limit", "buffer"] }
 tower-http = { version = "0.3", features = ["fs", "trace", "cors", "limit"] }
 tracing = { workspace = true }
-futures = "0.3"
 
 [features]
 default = ["metrics"]
