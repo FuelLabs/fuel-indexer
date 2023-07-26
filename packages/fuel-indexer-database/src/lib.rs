@@ -6,10 +6,7 @@ pub mod types {
 }
 
 pub use fuel_indexer_database_types::DbType;
-use fuel_indexer_lib::{
-    defaults,
-    utils::{attempt_database_connection, ServiceStatus},
-};
+use fuel_indexer_lib::utils::{attempt_database_connection, ServiceStatus};
 use fuel_indexer_postgres as postgres;
 use sqlx::{
     pool::PoolConnection, postgres::PgConnectOptions, ConnectOptions, Error as SqlxError,
@@ -60,11 +57,7 @@ impl IndexerConnectionPool {
             ));
         }
         let mut url = url.expect("Database URL should be correctly formed");
-        let mut query: HashMap<_, _> = url.query_pairs().into_owned().collect();
-
-        let verbose = query
-            .remove("verbose")
-            .unwrap_or(defaults::VERBOSE_DB_LOGGING.to_string());
+        let query: HashMap<_, _> = url.query_pairs().into_owned().collect();
 
         let query = query
             .iter()
@@ -76,14 +69,8 @@ impl IndexerConnectionPool {
 
         match url.scheme() {
             "postgres" => {
-                let opts = match verbose.as_ref() {
-                    "true" => PgConnectOptions::from_str(url.as_str())?,
-                    "false" => {
-                        let mut o = PgConnectOptions::from_str(url.as_str())?;
-                        o.disable_statement_logging().clone()
-                    }
-                    _ => unimplemented!(),
-                };
+                let mut opts = PgConnectOptions::from_str(url.as_str())?;
+                opts.disable_statement_logging();
 
                 let pool = attempt_database_connection(|| {
                     sqlx::postgres::PgPoolOptions::new().connect_with(opts.clone())

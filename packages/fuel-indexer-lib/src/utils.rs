@@ -243,3 +243,8 @@ pub async fn init_logging(config: &IndexerConfig) -> anyhow::Result<()> {
     }
     Ok(())
 }
+
+/// Format a SQL query for logging.
+pub fn format_sql_query(s: String) -> String {
+    s.replace('\n', " ")
+}

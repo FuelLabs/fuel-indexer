@@ -479,9 +479,13 @@ pub async fn get_metrics(_req: Request<Body>) -> impl IntoResponse {
 /// Return the results from a validated, arbitrary SQL query.
 pub async fn sql_query(
     Path((_namespace, _identifier)): Path<(String, String)>,
+    Extension(claims): Extension<Claims>,
     Extension(pool): Extension<IndexerConnectionPool>,
     Json(query): Json<SqlQuery>,
 ) -> ApiResult<axum::Json<Value>> {
+    if claims.is_unauthenticated() {
+        return Err(ApiError::Http(HttpError::Unauthorized));
+    }
     let SqlQuery { query } = query;
     SqlQueryValidator::validate_sql_query(&query)?;
     let mut conn = pool.acquire().await?;

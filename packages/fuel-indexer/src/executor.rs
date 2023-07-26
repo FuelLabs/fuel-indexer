@@ -486,8 +486,9 @@ impl IndexEnv {
     pub async fn new(
         pool: IndexerConnectionPool,
         manifest: &Manifest,
+        config: &IndexerConfig,
     ) -> IndexerResult<IndexEnv> {
-        let db = Database::new(pool, manifest).await;
+        let db = Database::new(pool, manifest, config).await;
         Ok(IndexEnv {
             memory: None,
             alloc: None,
@@ -497,7 +498,7 @@ impl IndexEnv {
     }
 }
 
-// TODO: Use mutex
+// TODO: https://github.com/FuelLabs/fuel-indexer/issues/1139
 unsafe impl<F: Future<Output = IndexerResult<()>> + Send> Sync
     for NativeIndexExecutor<F>
 {
@@ -521,12 +522,14 @@ impl<F> NativeIndexExecutor<F>
 where
     F: Future<Output = IndexerResult<()>> + Send,
 {
+    /// Create a new `NativeIndexExecutor`.
     pub async fn new(
         manifest: &Manifest,
         pool: IndexerConnectionPool,
+        config: &IndexerConfig,
         handle_events_fn: fn(Vec<BlockData>, Arc<Mutex<Database>>) -> F,
     ) -> IndexerResult<Self> {
-        let mut db = Database::new(pool.clone(), manifest).await;
+        let mut db = Database::new(pool.clone(), manifest, config).await;
         let mut conn = pool.acquire().await?;
         let version = fuel_indexer_database::queries::type_id_latest(
             &mut conn,
@@ -542,13 +545,20 @@ where
         })
     }
 
+    /// Create a new `NativeIndexExecutor`.
     pub async fn create<T: Future<Output = IndexerResult<()>> + Send + 'static>(
         config: &IndexerConfig,
         manifest: &Manifest,
         pool: IndexerConnectionPool,
         handle_events: fn(Vec<BlockData>, Arc<Mutex<Database>>) -> T,
-    ) -> IndexerResult<(JoinHandle<()>, ExecutorSource, Arc<AtomicBool>, futures::channel::oneshot::Receiver<()>)> {
-        let executor = NativeIndexExecutor::new(manifest, pool, handle_events).await?;
+    ) -> IndexerResult<(
+        JoinHandle<()>,
+        ExecutorSource,
+        Arc<AtomicBool>,
+        futures::channel::oneshot::Receiver<()>,
+    )> {
+        let executor =
+            NativeIndexExecutor::new(manifest, pool, config, handle_events).await?;
         let kill_switch = Arc::new(AtomicBool::new(false));
         let (kill_confirm_trigger, kill_confirm) = futures::channel::oneshot::channel();
         let handle = tokio::spawn(run_executor(
@@ -592,6 +602,7 @@ pub struct WasmIndexExecutor {
 }
 
 impl WasmIndexExecutor {
+    /// Create a new `WasmIndexExecutor`.
     pub async fn new(
         config: &IndexerConfig,
         manifest: &Manifest,
@@ -610,7 +621,7 @@ impl WasmIndexExecutor {
             compiler_config.push_middleware(metering);
         }
 
-        let idx_env = IndexEnv::new(pool, manifest).await?;
+        let idx_env = IndexEnv::new(pool, manifest, config).await?;
         let db: Arc<Mutex<Database>> = idx_env.db.clone();
 
         let mut store = Store::new(compiler_config);
@@ -676,6 +687,7 @@ impl WasmIndexExecutor {
         Self::new(&config, &manifest, bytes, pool).await
     }
 
+    /// Create a new `WasmIndexExecutor`.
     pub async fn create(
         config: &IndexerConfig,
         manifest: &Manifest,
@@ -751,8 +763,7 @@ impl WasmIndexExecutor {
         }
     }
 
-    // Returns remaining metering points if metering is enabled. Otherwise,
-    // returns None.
+    /// Returns remaining metering points if metering is enabled. Otherwise, returns None.
     pub async fn get_remaining_metering_points(&self) -> Option<MeteringPoints> {
         if self.metering_enabled() {
             let mut store_guard = self.store.lock().await;
@@ -766,6 +777,7 @@ impl WasmIndexExecutor {
         }
     }
 
+    /// Sets the remaining metering points if metering is enabled. Otherwise, returns an error.
     pub async fn set_metering_points(&self, metering_points: u64) -> IndexerResult<()> {
         if self.metering_enabled() {
             let mut store_guard = self.store.lock().await;
