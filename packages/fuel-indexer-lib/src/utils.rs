@@ -74,6 +74,8 @@ pub fn local_repository_root() -> Option<String> {
 pub struct ReloadRequest {
     pub namespace: String,
     pub identifier: String,
+    pub remove_data: bool,
+    pub replace_indexer: bool,
 }
 
 /// Request to remove the specified indexer executor from the indexer service.
@@ -83,6 +85,7 @@ pub struct ReloadRequest {
 pub struct StopRequest {
     pub namespace: String,
     pub identifier: String,
+    pub notify: Option<futures::channel::oneshot::Sender<()>>,
 }
 
 /// A general request sent from the API server to the indexer service.

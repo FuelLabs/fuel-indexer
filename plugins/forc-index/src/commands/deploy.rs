@@ -65,6 +65,20 @@ pub struct Command {
     /// Do not build before deploying.
     #[clap(long, help = "Do not build before deploying.")]
     pub skip_build: bool,
+
+    /// Replace an existing indexer with the same UID.
+    #[clap(
+        long,
+        help = "If an indexer with the same UID exists, remove it."
+    )]
+    pub replace_indexer: bool,
+
+    /// When replacing an indexer, remove all indexed data.
+    #[clap(
+        long,
+        help = "Remove all indexed data when replacing an existing indexer."
+    )]
+    pub remove_data: bool,
 }
 
 impl Default for Command {
@@ -81,6 +95,8 @@ impl Default for Command {
             locked: false,
             native: false,
             skip_build: false,
+            replace_indexer: false,
+            remove_data: false,
             target_dir: Some(std::path::PathBuf::from(".")),
         }
     }

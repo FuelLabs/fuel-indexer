@@ -28,4 +28,5 @@ tokio = { features = ["time", "rt"], workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { version = "0.3", features = ["ansi", "json", "env-filter"] }
 url = "2.3"
+futures = "0.3"
 

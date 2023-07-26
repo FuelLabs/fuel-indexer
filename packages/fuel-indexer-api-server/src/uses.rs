@@ -173,7 +173,9 @@ pub(crate) async fn remove_indexer(
             .map_err(|_e| ApiError::Http(HttpError::Unauthorized))?;
     }
 
-    if let Err(e) = queries::remove_indexer(&mut conn, &namespace, &identifier).await {
+    if let Err(e) =
+        queries::remove_indexer(&mut conn, &namespace, &identifier, false).await
+    {
         error!("Failed to remove Indexer({namespace}.{identifier}): {e}");
         queries::revert_transaction(&mut conn).await?;
         return Err(ApiError::Sqlx(sqlx::Error::RowNotFound));
@@ -184,6 +186,7 @@ pub(crate) async fn remove_indexer(
     tx.send(ServiceRequest::Stop(StopRequest {
         namespace,
         identifier,
+        notify: None,
     }))
     .await?;
 
@@ -213,31 +216,78 @@ pub(crate) async fn register_indexer_assets(
     if let Some(mut multipart) = multipart {
         queries::start_transaction(&mut conn).await?;
 
+        let mut replace_indexer: bool = false;
+        let mut remove_data: bool = false;
+        let mut asset_bytes: Vec<(IndexerAssetType, hyper::body::Bytes)> = Vec::new();
+
+        while let Some(field) = multipart.next_field().await.unwrap() {
+            let name = field.name().unwrap_or("").to_string();
+            let data = field.bytes().await.unwrap_or_default();
+            match name.as_str() {
+                "replace_indexer" => {
+                    println!("FOO {:?}", data.to_owned());
+                    replace_indexer = std::str::from_utf8(&data.to_owned())
+                        .unwrap()
+                        .parse()
+                        .unwrap();
+                    continue;
+                }
+                "remove_data" => {
+                    remove_data = std::str::from_utf8(&data.to_owned())
+                        .unwrap()
+                        .parse()
+                        .unwrap();
+                    continue;
+                }
+                name => {
+                    let asset_type =
+                        IndexerAssetType::from_str(&name).expect("Invalid asset type.");
+                    asset_bytes.push((asset_type, data))
+                }
+            };
+        }
+
         let indexer_exists = queries::get_indexer_id(&mut conn, &namespace, &identifier)
             .await
             .is_ok();
+
         if indexer_exists {
-            if !config.replace_indexer {
+            // --replace-indexer is only allowed if it has also been enabled at
+            // the fuel-indexer service level
+            if config.replace_indexer && replace_indexer {
+                let (sender, receiver) = futures::channel::oneshot::channel();
+                tx.send(ServiceRequest::Stop(StopRequest {
+                    namespace: namespace.clone(),
+                    identifier: identifier.clone(),
+                    notify: Some(sender),
+                }))
+                .await?;
+
+                // Since we remove and recreate indexer tables, we need to wait
+                // for the idexer to stop to ensure the old indexer does not
+                // write any data to the newly created tables.
+                if let Err(_) = receiver.await {
+                    return Err(ApiError::Http(HttpError::InternalServer));
+                }
+
+                if let Err(e) =
+                    queries::remove_indexer(&mut conn, &namespace, &identifier, remove_data)
+                        .await
+                {
+                    error!("Failed to remove Indexer({namespace}.{identifier}): {e}");
+                    queries::revert_transaction(&mut conn).await?;
+                    return Err(e.into());
+                }
+            } else {
                 error!("Indexer({namespace}.{identifier}) already exists.");
                 queries::revert_transaction(&mut conn).await?;
                 return Err(ApiError::Http(HttpError::Conflict(format!(
                     "Indexer({namespace}.{identifier}) already exists"
                 ))));
-            } else if let Err(e) =
-                queries::remove_indexer(&mut conn, &namespace, &identifier).await
-            {
-                error!("Failed to remove Indexer({namespace}.{identifier}): {e}");
-                queries::revert_transaction(&mut conn).await?;
-                return Err(e.into());
             }
         }
 
-        while let Some(field) = multipart.next_field().await.unwrap() {
-            let name = field.name().unwrap_or("").to_string();
-            let data = field.bytes().await.unwrap_or_default();
-            let asset_type =
-                IndexerAssetType::from_str(&name).expect("Invalid asset type.");
-
+        for (asset_type, data) in asset_bytes.iter() {
             match asset_type {
                 IndexerAssetType::Wasm | IndexerAssetType::Manifest => {
                     match queries::register_indexer_asset(
@@ -245,7 +295,7 @@ pub(crate) async fn register_indexer_assets(
                         &namespace,
                         &identifier,
                         data.to_vec(),
-                        asset_type,
+                        asset_type.clone(),
                         Some(claims.sub()),
                     )
                     .await
@@ -274,27 +324,31 @@ pub(crate) async fn register_indexer_assets(
                             let schema = GraphQLSchema::new(
                                 String::from_utf8_lossy(&data).to_string(),
                             );
-                            match schema_manager
-                                .write()
-                                .await
-                                .new_schema(
-                                    &namespace,
-                                    &identifier,
-                                    schema,
-                                    // Only WASM can be sent over the web.
-                                    ExecutionSource::Wasm,
-                                    &mut conn,
-                                )
-                                .await
-                            {
-                                Ok(_) => {
-                                    assets.push(result);
+                            if remove_data {
+                                match schema_manager
+                                    .write()
+                                    .await
+                                    .new_schema(
+                                        &namespace,
+                                        &identifier,
+                                        schema,
+                                        // Only WASM can be sent over the web.
+                                        ExecutionSource::Wasm,
+                                        &mut conn,
+                                    )
+                                    .await
+                                {
+                                    Ok(_) => {
+                                        assets.push(result);
+                                    }
+                                    Err(e) => {
+                                        let _res = queries::revert_transaction(&mut conn)
+                                            .await?;
+                                        return Err(e.into());
+                                    }
                                 }
-                                Err(e) => {
-                                    let _res =
-                                        queries::revert_transaction(&mut conn).await?;
-                                    return Err(e.into());
-                                }
+                            } else {
+                                assets.push(result);
                             }
                         }
                         Err(e) => {
@@ -311,6 +365,8 @@ pub(crate) async fn register_indexer_assets(
         tx.send(ServiceRequest::Reload(ReloadRequest {
             namespace,
             identifier,
+            remove_data,
+            replace_indexer,
         }))
         .await?;
 
