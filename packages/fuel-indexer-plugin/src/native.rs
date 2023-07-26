@@ -1,6 +1,6 @@
 extern crate alloc;
 
-use crate::JoinMetadata;
+use crate::join::JoinMetadata;
 use alloc::vec::Vec;
 use async_trait;
 use fuel_indexer_schema::FtColumn;
@@ -55,7 +55,7 @@ pub trait Entity<'a>: Sized + PartialEq + Eq + std::fmt::Debug {
     const TYPE_ID: i64;
     const JOIN_METADATA: Option<[Option<JoinMetadata<'a>>; MAX_FOREIGN_KEY_LIST_FIELDS]>;
 
-    async fn save_m2m(&self);
+    async fn save_many_to_many(&self);
 
     fn from_row(vec: Vec<FtColumn>) -> Self;
 

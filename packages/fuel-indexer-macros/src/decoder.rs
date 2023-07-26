@@ -696,28 +696,27 @@ impl From<ObjectDecoder> for TokenStream {
         {
             let mut tokens = meta
                 .iter()
-                .map(|(_, meta)| {
+                .map(|meta| {
                     let table_name = meta.table_name();
+                    let fully_qualified_namespace =
+                        impl_decoder.parsed.fully_qualified_namespace();
                     let parent_column_name = meta.parent_column_name();
-                    let parent_column_type = meta.parent_column_type();
                     let child_column_name = meta.child_column_name();
-                    let child_column_type = meta.child_column_type();
                     let child_position = meta.parent().child_position.unwrap();
 
                     quote! {
                         Some(JoinMetadata {
+                            namespace: #fully_qualified_namespace,
                             table_name: #table_name,
                             parent_column_name: #parent_column_name,
-                            parent_column_type: #parent_column_type,
                             child_column_name: #child_column_name,
-                            child_column_type: #child_column_type,
                             child_position: #child_position,
                         })
                     }
                 })
                 .collect::<Vec<TokenStream>>();
 
-            tokens.resize(10, quote! { None });
+            tokens.resize(MAX_FOREIGN_KEY_LIST_FIELDS, quote! { None });
 
             quote! {
                 Some([ #( #tokens ),* ])
@@ -751,22 +750,20 @@ impl From<ObjectDecoder> for TokenStream {
                         ]
                     }
 
-                    async fn save_m2m(&self) {
-                        // if let Some(meta) = Self::JOIN_METADATA {
-                        //     let JoinMetadata {
-                        //         table_name,
-                        //         local_column,
-                        //         foreign_column,
-                        //         join_position,
-                        //     } = meta;
-                        //     let query = format!("INSERT INTO {} ({}, {}) VALUES ({}, {}) ON CONFLICT DO NOTHING;", table_name, local_column, foreign_column, "4", "5");
-                        //     unsafe {
-                        //         match &db {
-                        //             Some(d) => d.lock().await.put_many_to_many_record(query).await,
-                        //             None => {},
-                        //         }
-                        //     }
-                        // }
+                    async fn save_many_to_many(&self) {
+                        unsafe {
+                            match &db {
+                                Some(d) => {
+                                    if let Some(meta) = Self::JOIN_METADATA {
+                                        let items = meta.iter().filter_map(|x| x.clone()).collect::<Vec<_>>();
+                                        let query = ManyToManyQuery::from_metadata(items, self.to_row());
+
+                                        d.lock().await.put_many_to_many_record(query.query().into()).await;
+                                    }
+                                }
+                                None => {}
+                            }
+                        }
                     }
 
                     async fn load(id: u64) -> Option<Self> {
@@ -791,7 +788,9 @@ impl From<ObjectDecoder> for TokenStream {
                         unsafe {
                             match &db {
                                 Some(d) => {
-                                    self.save_m2m().await;
+                                    if Self::JOIN_METADATA.is_some() {
+                                        self.save_many_to_many().await;
+                                    }
                                     d.lock().await.put_object(
                                         Self::TYPE_ID,
                                         self.to_row(),
@@ -946,7 +945,7 @@ type Person {
         // Trying to assert we have every single token expected might be a bit much, so
         // let's just assert that we have the main/primary method and function definitions.
         assert!(tokenstream.contains("pub struct Person"));
-        assert!(tokenstream.contains("impl Entity for Person"));
+        assert!(tokenstream.contains("impl < 'a > Entity < 'a > for Person"));
         assert!(tokenstream.contains("impl Person"));
         assert!(
             tokenstream.contains("pub fn new (name : Charfield , age : UInt1 ,) -> Self")
@@ -954,5 +953,94 @@ type Person {
         assert!(tokenstream.contains("pub fn get_or_create (self) -> Self"));
         assert!(tokenstream.contains("fn from_row (mut vec : Vec < FtColumn >) -> Self"));
         assert!(tokenstream.contains("fn to_row (& self) -> Vec < FtColumn >"));
+    }
+
+    #[test]
+    fn test_can_create_object_decoder_containing_expected_tokens_from_object_typedef_containing_m2m_relationship(
+    ) {
+        let schema = r#"
+type Account {
+    id: ID!
+    index: UInt8!
+}
+
+type Wallet {
+    id: ID!
+    account: [Account!]!
+}
+"#;
+
+        let wallet_fields = vec![
+            Positioned {
+                pos: Pos::default(),
+                node: FieldDefinition {
+                    description: None,
+                    name: Positioned {
+                        pos: Pos::default(),
+                        node: Name::new("id"),
+                    },
+                    arguments: vec![],
+                    ty: Positioned {
+                        pos: Pos::default(),
+                        node: Type {
+                            base: BaseType::Named(Name::new("ID")),
+                            nullable: false,
+                        },
+                    },
+                    directives: vec![],
+                },
+            },
+            Positioned {
+                pos: Pos::default(),
+                node: FieldDefinition {
+                    description: None,
+                    name: Positioned {
+                        pos: Pos::default(),
+                        node: Name::new("account"),
+                    },
+                    arguments: vec![],
+                    ty: Positioned {
+                        pos: Pos::default(),
+                        node: Type {
+                            base: BaseType::List(Box::new(Type {
+                                base: BaseType::Named(Name::new("Account")),
+                                nullable: false,
+                            })),
+                            nullable: false,
+                        },
+                    },
+                    directives: vec![],
+                },
+            },
+        ];
+
+        let wallet_typedef = TypeDefinition {
+            description: None,
+            extend: false,
+            name: Positioned {
+                pos: Pos::default(),
+                node: Name::new("Wallet"),
+            },
+            kind: TypeKind::Object(ObjectType {
+                implements: vec![],
+                fields: wallet_fields,
+            }),
+            directives: vec![],
+        };
+
+        let schema = ParsedGraphQLSchema::new(
+            "test",
+            "test",
+            ExecutionSource::Wasm,
+            Some(&GraphQLSchema::new(schema.to_string())),
+        )
+        .unwrap();
+
+        let wallet_decoder = ObjectDecoder::from_typedef(&wallet_typedef, &schema);
+        let tokenstream = TokenStream::from(wallet_decoder).to_string();
+
+        // Trying to assert we have every single token expected might be a bit much, so
+        // let's just assert that we have the main/primary method and function definitions.
+        assert!(tokenstream.contains("const JOIN_METADATA : Option < [Option < JoinMetadata < 'a >> ; MAX_FOREIGN_KEY_LIST_FIELDS] > = Some ([Some (JoinMetadata { namespace : \"test_test\" , table_name : \"wallets_accounts\" , parent_column_name : \"id\" , child_column_name : \"id\" , child_position : 1usize , }) , None , None , None , None , None , None , None , None , None]) ;"));
     }
 }

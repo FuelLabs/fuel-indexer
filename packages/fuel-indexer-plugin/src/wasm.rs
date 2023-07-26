@@ -1,15 +1,13 @@
 extern crate alloc;
 
-use crate::JoinMetadata;
+use crate::join::{JoinMetadata, ManyToManyQuery};
 use alloc::vec::Vec;
 use fuel_indexer_lib::{
     graphql::MAX_FOREIGN_KEY_LIST_FIELDS,
-    join_table_typedefs_name,
     utils::{deserialize, serialize},
 };
 use fuel_indexer_schema::FtColumn;
 use fuel_indexer_types::ffi::*;
-use quote::quote;
 
 pub use bincode;
 pub use hex::FromHex;
@@ -61,45 +59,12 @@ pub trait Entity<'a>: Sized + PartialEq + Eq + std::fmt::Debug {
         Self::TYPE_ID
     }
 
-    fn save_m2m(&self) {
+    fn save_many_to_many(&self) {
         if let Some(meta) = Self::JOIN_METADATA {
-            let items = meta
-                .iter()
-                .filter(|x| x.is_some())
-                .map(|x| x.clone().unwrap())
-                .collect::<Vec<_>>();
-
-            // Use the first item to construct the first part of the query
-            let first = &items[0];
-            let (parent_typedef_name, child_typedef_name) =
-                join_table_typedefs_name(&first.table_name);
-
-            // Since join table columns are _required_ to have an `ID` field,
-            let mut query = format!(
-                "INSERT INTO {} ({}_{}, {}_{}) VALUES",
-                first.table_name,
-                first.parent_typedef_name(),
-                first.parent_column_type(),
-                first.child_typedef_name(),
-                first.child_column_type()
-            );
-
-            items.iter().for_each(|item| {
-                // NOTE: Since join table's require an `ID` field on both the parent, and the child, we
-                // can assume this `Entity` has an `id` field.
-                let id = match self.to_row()[0] {
-                    FtColumn::ID(id) => match id {
-                        Some(id) => id,
-                        _ => panic!("No ID field found on Entity."),
-                    },
-                    _ => panic!("No ID field found on Entity."),
-                };
-
-                let list_type_field = &self.to_row()[item.child_position];
-
-                query.push_str(format!(" ({}, {}),", id, "").as_str());
-            });
-            unsafe { ff_put_many_to_many_record(query.as_ptr(), query.len() as u32) }
+            let items = meta.iter().filter_map(|x| x.clone()).collect::<Vec<_>>();
+            let query = ManyToManyQuery::from_metadata(items, self.to_row());
+            let bytes = Vec::<u8>::from(query);
+            unsafe { ff_put_many_to_many_record(bytes.as_ptr(), bytes.len() as u32) }
         }
     }
 
@@ -123,7 +88,7 @@ pub trait Entity<'a>: Sized + PartialEq + Eq + std::fmt::Debug {
     }
 
     fn save(&self) {
-        self.save_m2m();
+        self.save_many_to_many();
         unsafe {
             let buf = serialize(&self.to_row());
             ff_put_object(Self::TYPE_ID, buf.as_ptr(), buf.len() as u32)
