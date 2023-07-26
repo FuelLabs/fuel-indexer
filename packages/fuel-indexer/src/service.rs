@@ -239,13 +239,14 @@ impl IndexerService {
         manifest.set_start_block(start_block);
 
         let uid = manifest.uid();
-        let (handle, _module_bytes, killer, kill_confirm) = NativeIndexExecutor::<T>::create(
-            &self.config,
-            &manifest,
-            self.pool.clone(),
-            handle_events,
-        )
-        .await?;
+        let (handle, _module_bytes, killer, kill_confirm) =
+            NativeIndexExecutor::<T>::create(
+                &self.config,
+                &manifest,
+                self.pool.clone(),
+                handle_events,
+            )
+            .await?;
 
         info!("Registered NativeIndex({})", uid);
 

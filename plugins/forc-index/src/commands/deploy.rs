@@ -67,10 +67,7 @@ pub struct Command {
     pub skip_build: bool,
 
     /// Replace an existing indexer with the same UID.
-    #[clap(
-        long,
-        help = "If an indexer with the same UID exists, remove it."
-    )]
+    #[clap(long, help = "If an indexer with the same UID exists, remove it.")]
     pub replace_indexer: bool,
 
     /// When replacing an indexer, remove all indexed data.

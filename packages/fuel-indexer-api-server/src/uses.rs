@@ -270,9 +270,13 @@ pub(crate) async fn register_indexer_assets(
                     return Err(ApiError::Http(HttpError::InternalServer));
                 }
 
-                if let Err(e) =
-                    queries::remove_indexer(&mut conn, &namespace, &identifier, remove_data)
-                        .await
+                if let Err(e) = queries::remove_indexer(
+                    &mut conn,
+                    &namespace,
+                    &identifier,
+                    remove_data,
+                )
+                .await
                 {
                     error!("Failed to remove Indexer({namespace}.{identifier}): {e}");
                     queries::revert_transaction(&mut conn).await?;
