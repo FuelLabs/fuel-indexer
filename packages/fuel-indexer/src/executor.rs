@@ -129,7 +129,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
         loop {
             if kill_switch.load(Ordering::SeqCst) {
                 info!("Kill switch flipped, stopping Indexer({indexer_uid}). <('.')>");
-                if let Err(_) = kill_confirm.send(()) {
+                if kill_confirm.send(()).is_err() {
                     error!("Unable to notifty listeners that Indexer({indexer_uid}) has stopped.");
                 };
                 break;

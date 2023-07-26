@@ -241,7 +241,7 @@ pub(crate) async fn register_indexer_assets(
                 }
                 name => {
                     let asset_type =
-                        IndexerAssetType::from_str(&name).expect("Invalid asset type.");
+                        IndexerAssetType::from_str(name).expect("Invalid asset type.");
                     asset_bytes.push((asset_type, data))
                 }
             };
@@ -266,7 +266,7 @@ pub(crate) async fn register_indexer_assets(
                 // Since we remove and recreate indexer tables, we need to wait
                 // for the idexer to stop to ensure the old indexer does not
                 // write any data to the newly created tables.
-                if let Err(_) = receiver.await {
+                if receiver.await.is_err() {
                     return Err(ApiError::Http(HttpError::InternalServer));
                 }
 
@@ -326,7 +326,7 @@ pub(crate) async fn register_indexer_assets(
                     {
                         Ok(result) => {
                             let schema = GraphQLSchema::new(
-                                String::from_utf8_lossy(&data).to_string(),
+                                String::from_utf8_lossy(data).to_string(),
                             );
                             if remove_data {
                                 match schema_manager
