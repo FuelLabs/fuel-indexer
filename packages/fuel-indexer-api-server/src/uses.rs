@@ -225,7 +225,6 @@ pub(crate) async fn register_indexer_assets(
             let data = field.bytes().await.unwrap_or_default();
             match name.as_str() {
                 "replace_indexer" => {
-                    println!("FOO {:?}", data.to_owned());
                     replace_indexer = std::str::from_utf8(&data.to_owned())
                         .unwrap()
                         .parse()
