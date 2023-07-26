@@ -38,6 +38,9 @@
 # # Allow the web API to accept raw SQL queries.
 # accept_sql_queries: true
 
+# # Amount of blocks to return in a request to a Fuel node.
+# node_block_page_size: 10
+
 # # ***********************
 # # Fuel Node configuration
 # # ************************

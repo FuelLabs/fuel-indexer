@@ -66,8 +66,8 @@ impl ExecutorSource {
     }
 }
 
-// Run the executor task until the kill switch is flipped, or until some other
-// stop criteria is met.
+/// Run the executor task until the kill switch is flipped, or until some other
+/// stop criteria is met.
 //
 // In general the logic in this function isn't very idiomatic, but that's because
 // types in `fuel_core_client` don't compile to WASM.
@@ -96,6 +96,8 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
     } else {
         config.fuel_node.to_string()
     };
+
+    let node_block_page_size = config.node_block_page_size;
 
     let mut next_cursor = if start_block > 1 {
         let decremented = start_block - 1;
@@ -128,7 +130,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
         loop {
             let (block_info, cursor) = match retrieve_blocks_from_node(
                 &client,
-                NODE_GRAPHQL_PAGE_SIZE,
+                node_block_page_size,
                 &next_cursor,
                 end_block,
             )
