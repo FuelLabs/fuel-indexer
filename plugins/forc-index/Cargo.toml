@@ -26,7 +26,7 @@ hyper-rustls = { version = "0.23", features = ["http2"] }
 indicatif = "0.17"
 owo-colors = "1.3.0"
 rand = "0.8"
-reqwest = { version = "0.11", default-features = false, features = ["json", "rustls-tls", "multipart", "stream"] }
+reqwest = { version = "0.11", default-features = false, features = ["json", "rustls-tls", "multipart", "blocking"] }
 serde = { workspace = true }
 serde_json = { workspace = true }
 serde_yaml = "0.8"
