@@ -327,7 +327,11 @@ pub(crate) async fn register_indexer_assets(
                             let schema = GraphQLSchema::new(
                                 String::from_utf8_lossy(data).to_string(),
                             );
-                            if remove_data {
+                            // If re are replacing an indexer and keeping its
+                            // data, its schema already exists.
+                            if replace_indexer && !remove_data {
+                                assets.push(result);
+                            } else {
                                 match schema_manager
                                     .write()
                                     .await
@@ -350,8 +354,6 @@ pub(crate) async fn register_indexer_assets(
                                         return Err(e.into());
                                     }
                                 }
-                            } else {
-                                assets.push(result);
                             }
                         }
                         Err(e) => {
