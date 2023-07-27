@@ -83,6 +83,9 @@ pub struct ReloadRequest {
 pub struct StopRequest {
     pub namespace: String,
     pub identifier: String,
+    /// The requestor has an option to additonally request to be notified that
+    /// an indexer whose kill swich has been flipped has stopped execution. We
+    /// use this when replacing an indexer.
     pub notify: Option<futures::channel::oneshot::Sender<()>>,
 }
 
