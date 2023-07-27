@@ -1,13 +1,5 @@
-use reqwest::{multipart::Part, Body};
-use tokio::fs::File;
-use tokio::io;
-
 use crate::{defaults, defaults::manifest_name};
-use std::{
-    fs::canonicalize,
-    path::{Path, PathBuf},
-    process::Command,
-};
+use std::{fs::canonicalize, path::PathBuf, process::Command};
 
 pub fn dasherize_to_underscore(s: &str) -> String {
     str::replace(s, "-", "_")
@@ -77,19 +69,4 @@ pub fn center_align(s: &str, n: usize) -> String {
 
 pub fn rightpad_whitespace(s: &str, n: usize) -> String {
     format!("{s:0n$}")
-}
-
-pub async fn file_part<T: AsRef<Path>>(path: T) -> io::Result<Part> {
-    let path = path.as_ref();
-    let file_name = path
-        .file_name()
-        .map(|filename| filename.to_string_lossy().into_owned());
-    let file = File::open(path).await?;
-    let field = Part::stream(Body::from(file));
-
-    Ok(if let Some(file_name) = file_name {
-        field.file_name(file_name)
-    } else {
-        field
-    })
 }

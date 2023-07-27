@@ -1,14 +1,14 @@
 use crate::{
     cli::{BuildCommand, DeployCommand},
     commands::build,
-    utils::{file_part, project_dir_info},
+    utils::project_dir_info,
 };
 use fuel_indexer_lib::manifest::Manifest;
 use indicatif::{ProgressBar, ProgressStyle};
 use reqwest::{
+    blocking::{multipart::Form, Client},
     header::{HeaderMap, AUTHORIZATION, CONNECTION},
-    multipart::Form,
-    Client, StatusCode,
+    StatusCode,
 };
 use serde_json::{to_string_pretty, value::Value, Map};
 use std::{path::Path, time::Duration};
@@ -17,7 +17,7 @@ use tracing::{error, info};
 const STEADY_TICK_INTERVAL: u64 = 120;
 const TCP_TIMEOUT: u64 = 3;
 
-pub async fn init(command: DeployCommand) -> anyhow::Result<()> {
+pub fn init(command: DeployCommand) -> anyhow::Result<()> {
     let DeployCommand {
         url,
         manifest,
@@ -69,9 +69,10 @@ pub async fn init(command: DeployCommand) -> anyhow::Result<()> {
     }
 
     let form = Form::new()
-        .part("manifest", file_part(&manifest_path).await?)
-        .part("schema", file_part(manifest.graphql_schema()).await?)
-        .part("wasm", file_part(manifest.module().to_string()).await?);
+        .file("manifest", &manifest_path)?
+        .file("schema", manifest.graphql_schema())?
+        .file("wasm", manifest.module().to_string())?;
+
     let target = format!(
         "{url}/api/index/{}/{}",
         manifest.namespace(),
@@ -120,13 +121,11 @@ pub async fn init(command: DeployCommand) -> anyhow::Result<()> {
         .multipart(form)
         .headers(headers)
         .send()
-        .await
         .expect("Failed to deploy indexer.");
 
     let status = res.status();
     let res_json = res
         .json::<Map<String, Value>>()
-        .await
         .expect("Failed to read JSON response.");
 
     if status != StatusCode::OK {
