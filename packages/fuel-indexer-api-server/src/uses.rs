@@ -370,8 +370,6 @@ pub(crate) async fn register_indexer_assets(
         tx.send(ServiceRequest::Reload(ReloadRequest {
             namespace,
             identifier,
-            remove_data,
-            replace_indexer,
         }))
         .await?;
 
