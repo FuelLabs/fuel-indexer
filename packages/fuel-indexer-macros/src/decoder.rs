@@ -788,9 +788,7 @@ impl From<ObjectDecoder> for TokenStream {
                         unsafe {
                             match &db {
                                 Some(d) => {
-                                    if Self::JOIN_METADATA.is_some() {
-                                        self.save_many_to_many().await;
-                                    }
+                                    self.save_many_to_many().await;
                                     d.lock().await.put_object(
                                         Self::TYPE_ID,
                                         self.to_row(),
