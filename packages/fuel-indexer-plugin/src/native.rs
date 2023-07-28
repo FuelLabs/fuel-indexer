@@ -8,7 +8,7 @@ pub use fuel_indexer::prelude::{
     Arc, Database, IndexerError, IndexerResult, IndexerService, Mutex,
     NativeIndexExecutor,
 };
-pub use fuel_indexer_api_server::api::GraphQlApi;
+pub use fuel_indexer_api_server::api::WebApi;
 pub use fuel_indexer_database::{queries, IndexerConnectionPool};
 pub use fuel_indexer_lib::{
     config::{cli::Parser, IndexerArgs, IndexerConfig},

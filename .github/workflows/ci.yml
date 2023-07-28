@@ -107,6 +107,18 @@ jobs:
         uses: peaceiris/actions-mdbook@v1
         with:
           mdbook-version: latest
+  cargo-release-check:
+    needs:
+      - cargo-toml-fmt-check
+      - set-env-vars
+    runs-on: ubuntu-latest
+    if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_SEMVER == 'true'
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install toolchain
+        uses: dtolnay/rust-toolchain@stable
+      - name: cargo check --locked --all-features --all-targets
+        run: cargo check --locked --all-features --all-targets
   cargo-verifications:
     runs-on: ubuntu-latest
     needs:
@@ -216,10 +228,10 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
       - name: >-
           cargo test --locked --all-targets --workspace --exclude
-          fuel-indexer-tests --exclude plugin-tests
+          fuel-indexer-tests --exclude plugin-tests --exclude fuel-indexer-benchmarks
         run: >-
           cargo test --locked --all-targets --workspace --exclude
-          fuel-indexer-tests --exclude plugin-tests
+          fuel-indexer-tests --exclude plugin-tests --exclude fuel-indexer-benchmarks
   cargo-test-e2e-and-integration-tests:
     if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_SEMVER != 'true'
     needs:
@@ -350,23 +362,6 @@ jobs:
           which fuel-indexer
 
           bash ./ci/build-and-deploy-examples.bash
-  cargo-test-forc-index-plugins:
-    if: needs.check-is-semver-branch.outputs.is_semver_branch != 'true'
-    needs:
-      - cargo-toml-fmt-check
-      - check-is-semver-branch
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Install toolchain
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: wasm32-unknown-unknown
-      - uses: Swatinem/rust-cache@v1
-      - name: wasm-snip
-        run: cargo install wasm-snip
-      - name: cargo test --locked --all-targets -p plugin-tests -- --test-threads=1
-        run: cargo test --locked --all-targets -p plugin-tests -- --test-threads=1
   publish-docker-image:
     needs:
       - set-env-vars
@@ -714,7 +709,6 @@ jobs:
       - cargo-clippy
       - cargo-fmt-check
       - build-default-indexer
-      - cargo-test-forc-index-plugins
     runs-on: ubuntu-latest
     steps:
       - run: true

@@ -184,7 +184,7 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
         let abs_wasm = abs_artifact_path.as_path().display().to_string();
         let relative_wasm = rel_artifact_path.as_path().display().to_string();
 
-        manifest.module = Module::Wasm(relative_wasm);
+        manifest.set_module(Module::Wasm(relative_wasm));
 
         let status = Command::new("wasm-snip")
             .arg(&abs_wasm)

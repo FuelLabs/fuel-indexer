@@ -43,17 +43,17 @@ fn process_definition(
 
 /// Process user-supplied GraphQL schema into code for indexer module.
 pub(crate) fn process_graphql_schema(
-    namespace: String,
-    identifier: String,
-    schema_path: String,
+    namespace: &str,
+    identifier: &str,
+    schema_path: &str,
     exec_source: ExecutionSource,
 ) -> proc_macro2::TokenStream {
-    let namespace_tokens = const_item("NAMESPACE", &namespace);
-    let identifer_tokens = const_item("IDENTIFIER", &identifier);
+    let namespace_tokens = const_item("NAMESPACE", namespace);
+    let identifer_tokens = const_item("IDENTIFIER", identifier);
 
     let path = local_repository_root()
-        .map(|p| Path::new(&p).join(schema_path.clone()))
-        .unwrap_or_else(|| PathBuf::from(&schema_path));
+        .map(|p| Path::new(&p).join(schema_path))
+        .unwrap_or_else(|| PathBuf::from(schema_path));
 
     let mut file = File::open(&path)
         .map_err(|e| {
@@ -79,7 +79,7 @@ pub(crate) fn process_graphql_schema(
     };
 
     let schema =
-        ParsedGraphQLSchema::new(&namespace, &identifier, exec_source, Some(&schema))
+        ParsedGraphQLSchema::new(namespace, identifier, exec_source, Some(&schema))
             .expect("Failed to parse GraphQL schema.");
 
     for definition in schema.ast().clone().definitions.iter() {

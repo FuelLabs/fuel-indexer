@@ -1,14 +1,13 @@
 use crate::{cli::RemoveCommand, utils::project_dir_info};
 use fuel_indexer_lib::manifest::Manifest;
 use reqwest::{
-    blocking::Client,
     header::{HeaderMap, AUTHORIZATION},
-    StatusCode,
+    Client, StatusCode,
 };
 use serde_json::{to_string_pretty, value::Value, Map};
 use tracing::{error, info};
 
-pub fn init(command: RemoveCommand) -> anyhow::Result<()> {
+pub async fn init(command: RemoveCommand) -> anyhow::Result<()> {
     let RemoveCommand {
         path,
         manifest,
@@ -25,7 +24,8 @@ pub fn init(command: RemoveCommand) -> anyhow::Result<()> {
 
     let target = format!(
         "{url}/api/index/{}/{}",
-        &manifest.namespace, &manifest.identifier
+        manifest.namespace(),
+        manifest.identifier()
     );
 
     let mut headers = HeaderMap::new();
@@ -35,22 +35,25 @@ pub fn init(command: RemoveCommand) -> anyhow::Result<()> {
 
     if verbose {
         info!(
-            "\n🛑 Removing indexer'{}.{}' at {target}",
-            &manifest.namespace, &manifest.identifier
+            "\n🛑 Removing indexer '{}.{}' at {target}",
+            manifest.namespace(),
+            manifest.identifier()
         );
     } else {
-        info!("\n🛑 Removing indexer")
+        info!("\n🛑 Removing indexer.")
     }
 
     let res = Client::new()
         .delete(&target)
         .headers(headers)
         .send()
+        .await
         .expect("Failed to remove indexer.");
 
     let status = res.status();
     let res_json = res
         .json::<Map<String, Value>>()
+        .await
         .expect("Failed to read JSON response.");
 
     if status != StatusCode::OK {
@@ -67,11 +70,10 @@ pub fn init(command: RemoveCommand) -> anyhow::Result<()> {
 
     if verbose {
         info!(
-            "\n{}\n✅ Successfully removed indexer '{}.{}' at {} \n",
+            "\n{}\n✅ Successfully removed indexer '{}.{}' at {target} \n",
             to_string_pretty(&res_json)?,
-            &manifest.namespace,
-            &manifest.identifier,
-            &target
+            manifest.namespace(),
+            manifest.identifier()
         );
     } else {
         info!("\n✅ Successfully removed indexer\n");

@@ -1,0 +1,30 @@
+[package]
+name = "fuel-indexer-benchmarks"
+edition = { workspace = true }
+license = { workspace = true }
+publish = false
+version = "0.0.0"
+
+[[bench]]
+harness = false
+name = "graphql"
+
+[[bench]]
+harness = false
+name = "wasm"
+
+[lib]
+name = "fuel_indexer_benchmarks"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+criterion = { version = "0.5.1", features = ["html_reports", "async_tokio"] }
+fuel-core-client = "0.17.2"
+fuel-indexer = { workspace = true }
+fuel-indexer-database = { workspace = true }
+fuel-indexer-graphql = { workspace = true }
+fuel-indexer-lib = { workspace = true }
+fuel-indexer-schema = { workspace = true }
+fuel-indexer-tests = { path = "../fuel-indexer-tests" }
+futures = "0.3"
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }

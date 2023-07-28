@@ -25,11 +25,10 @@ impl SchemaManager {
         &self,
         namespace: &str,
         identifier: &str,
-        schema: &str,
+        schema: GraphQLSchema,
         exec_source: ExecutionSource,
         conn: &mut IndexerConnection,
     ) -> IndexerSchemaDbResult<()> {
-        let schema = GraphQLSchema::new(schema.to_string());
         let version = schema.version();
 
         if !queries::schema_exists(conn, namespace, identifier, version).await? {

@@ -1,10 +1,10 @@
-use fuel_indexer::{ffi, Database, FtColumn, IndexEnv, IndexerResult};
+use fuel_indexer::{ffi, Database, FtColumn, IndexEnv, IndexerConfig, IndexerResult};
 use fuel_indexer_database::{queries, IndexerConnectionPool};
 use fuel_indexer_lib::{
     fully_qualified_namespace, graphql::GraphQLSchema, manifest::Manifest, type_id,
 };
 use fuel_indexer_schema::db::manager::SchemaManager;
-use wasmer::{imports, Cranelift, Instance, Module, Store};
+use wasmer::{imports, AsStoreMut, Cranelift, Instance, Module, Store};
 
 fn compiler() -> Cranelift {
     Cranelift::default()
@@ -39,8 +39,12 @@ async fn load_wasm_module(
     let compiler = compiler();
     let mut store = Store::new(compiler);
     let module = Module::new(&store, SIMPLE_WASM_WASM)?;
+    let config = IndexerConfig::default();
 
-    let env = wasmer::FunctionEnv::new(&mut store, IndexEnv::new(pool, manifest).await?);
+    let env = wasmer::FunctionEnv::new(
+        &mut store,
+        IndexEnv::new(pool, manifest, &config).await?,
+    );
 
     let mut import_object = imports! {};
     for (export_name, export) in ffi::get_exports(&mut store, &env) {
@@ -54,6 +58,16 @@ async fn load_wasm_module(
 
 #[tokio::test]
 async fn test_schema_manager_generates_and_loads_schema_postgres() {
+    if let Ok(mut current_dir) = std::env::current_dir() {
+        if current_dir.ends_with("fuel-indexer-tests") {
+            current_dir.pop();
+            current_dir.pop();
+        }
+
+        if let Err(e) = std::env::set_current_dir(current_dir) {
+            eprintln!("Failed to change directory: {}", e);
+        }
+    }
     let database_url = "postgres://postgres:my-secret@localhost:5432";
     generate_schema_then_load_schema_from_wasm_module(database_url).await;
 }
@@ -75,12 +89,14 @@ async fn generate_schema_then_load_schema_from_wasm_module(database_url: &str) {
 
     let manifest = Manifest::try_from(SIMPLE_WASM_MANIFEST).unwrap();
     let schema = GraphQLSchema::new(SIMPLE_WASM_GRAPHQL_SCHEMA.to_owned());
+    let version = schema.version().to_owned();
+    let config = IndexerConfig::default();
 
     let result = manager
         .new_schema(
             "test_namespace",
             "simple_wasm_executor",
-            SIMPLE_WASM_GRAPHQL_SCHEMA,
+            schema,
             manifest.execution_source(),
             &mut conn,
         )
@@ -88,7 +104,6 @@ async fn generate_schema_then_load_schema_from_wasm_module(database_url: &str) {
 
     assert!(result.is_ok());
 
-    let version = schema.version().to_owned();
     let results = queries::columns_get_schema(
         &mut conn,
         "test_namespace",
@@ -106,20 +121,24 @@ async fn generate_schema_then_load_schema_from_wasm_module(database_url: &str) {
         assert_eq!(result.column_name, TEST_COLUMNS[index].2);
     }
 
-    let (_instance, mut _store) = load_wasm_module(pool.clone(), &manifest)
+    let (instance, mut store) = load_wasm_module(pool.clone(), &manifest)
         .await
         .expect("Error creating WASM module");
 
-    let mut db = Database::new(pool.clone(), &manifest)
-        .await
-        .expect("Failed to create database object.");
+    let version = ffi::get_version(&mut store.as_store_mut(), &instance)
+        .expect("Could not get version");
 
-    assert_eq!(db.namespace, "test_namespace");
-    assert_eq!(db.version, version);
+    let mut db = Database::new(pool.clone(), &manifest, &config).await;
+    db.load_schema(version.clone())
+        .await
+        .expect("Could not load db schema");
+
+    assert_eq!(db.namespace(), "test_namespace");
+    assert_eq!(db.version(), version);
 
     for column in TEST_COLUMNS.iter() {
         let key = format!("{}_{}.{}", TEST_NAMESPACE, TEST_INDENTIFIER, column.0);
-        assert!(db.schema.contains_key(&key));
+        assert!(db.schema().contains_key(&key));
     }
 
     let object_id = 4;

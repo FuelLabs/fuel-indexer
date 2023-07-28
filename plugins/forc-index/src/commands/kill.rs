@@ -6,7 +6,7 @@ use clap::Parser;
 #[derive(Debug, Parser)]
 pub struct Command {
     /// Port on which the process is listening.
-    #[clap(long, default_value = defaults::GRAPHQL_API_PORT, help = "Port at which to detect indexer service API is running.")]
+    #[clap(long, default_value = defaults::WEB_API_PORT, help = "Port at which to detect indexer service API is running.")]
     pub port: String,
     /// Terminate or kill.
     #[clap(short = '9')]

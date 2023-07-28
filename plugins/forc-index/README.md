@@ -33,7 +33,7 @@ forc index start
 Deploy a given indexer project to a particular endpoint
 
 ```bash
-forc index deploy --url https://indexer.fuel.network
+forc index deploy --url https://beta-3-indexer.fuel.network
 ```
 
 ### `forc index remove`
@@ -41,7 +41,7 @@ forc index deploy --url https://indexer.fuel.network
 Kill a running indexer
 
 ```bash
-forc index remove --url https://indexer.fuel.network
+forc index remove --url https://beta-3-indexer.fuel.network
 ```
 
 ### `forc index check`

@@ -39,6 +39,7 @@ tokio = { features = ["macros", "rt-multi-thread", "sync", "process"], workspace
 tokio-util = { workspace = true }
 tracing = { workspace = true }
 wasmer = "4"
+wasmer-middlewares = "4"
 
 [dependencies.openssl]
 version = "0.10.52"

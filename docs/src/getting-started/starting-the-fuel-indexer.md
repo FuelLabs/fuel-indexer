@@ -9,11 +9,17 @@ USAGE:
     fuel-indexer run [OPTIONS]
 
 OPTIONS:
+        --accept-sql-queries
+            Allow the web API to accept raw SQL queries.
+
         --auth-enabled
             Require users to authenticate for some operations.
 
         --auth-strategy <AUTH_STRATEGY>
             Authentication scheme used.
+
+        --block-page-size <BLOCK_PAGE_SIZE>
+            Amount of blocks to return in a request to a Fuel node. [default: 10]
 
     -c, --config <FILE>
             Indexer service config file.
@@ -30,17 +36,8 @@ OPTIONS:
         --fuel-node-port <FUEL_NODE_PORT>
             Listening port of the running Fuel node. [default: 4000]
 
-        --graphql-api-host <GRAPHQL_API_HOST>
-            GraphQL API host. [default: localhost]
-
-        --graphql-api-port <GRAPHQL_API_PORT>
-            GraphQL API port. [default: 29987]
-
     -h, --help
             Print help information
-
-        --indexer-handler-timeout <INDEXER_HANDLER_TIMEOUT>
-            Maximum length of time (in seconds) that an indexer's event handler can run before timing out. [default: 2]
 
         --indexer-net-config
             Allow network configuration via indexer manifests.
@@ -65,7 +62,11 @@ OPTIONS:
             Indexer config file.
 
         --max-body-size <MAX_BODY_SIZE>
-            Max body size for GraphQL API requests. [default: 5242880]
+            Max body size for web API requests. [default: 5242880]
+
+        --metering-points <METERING_POINTS>
+            The number of WASM opcodes after which the indexer's event handler will stop execution.
+            [default: 30000000000]
 
         --metrics
             Use Prometheus metrics reporting.
@@ -88,11 +89,15 @@ OPTIONS:
         --rate-limit
             Enable rate limiting.
 
-        --rate-limit-rps <RATE_LIMIT_RPS>
-            Maximum number of requests to allow over --rate-limit-window.
+        --rate-limit-request-count <RATE_LIMIT_REQUEST_COUNT>
+            Maximum number of requests to allow over --rate-limit-window..
 
-        --rate-limit-window <RATE_LIMIT_WINDOW_SIZE>
+        --rate-limit-window-size <RATE_LIMIT_WINDOW_SIZE>
             Number of seconds over which to allow --rate-limit-rps.
+
+        --replace-indexer
+            Whether to allow replacing an existing indexer. If not specified, an attempt to deploy
+            over an existing indexer results in an error.
 
         --run-migrations
             Run database migrations before starting service.
@@ -105,6 +110,13 @@ OPTIONS:
 
     -V, --version
             Print version information
+
+        --web-api-host <WEB_API_HOST>
+            Web API host. [default: localhost]
+
+        --web-api-port <WEB_API_PORT>
+            Web API port. [default: 29987]
+
 ```
 
 ## Using a configuration file

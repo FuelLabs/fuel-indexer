@@ -173,13 +173,13 @@ async fn deploy_to_network(mut input: String, manifest: String) -> anyhow::Resul
                     let start_command = StartCommand {
                         fuel_node_host: "http://127.0.0.1:29987".to_string(),
                         fuel_node_port: "29987".to_string(),
-                        graphql_api_host: defaults::GRAPHQL_API_HOST.to_string(),
-                        graphql_api_port: defaults::GRAPHQL_API_PORT.to_string(),
+                        web_api_host: defaults::WEB_API_HOST.to_string(),
+                        web_api_port: defaults::WEB_API_PORT.to_string(),
                         ..Default::default()
                     };
                     start(start_command).await?;
                     build(build_command)?;
-                    deploy(deploy_command)?;
+                    deploy(deploy_command).await?;
                 }
                 "2" => {
                     // init for testnet
@@ -187,13 +187,13 @@ async fn deploy_to_network(mut input: String, manifest: String) -> anyhow::Resul
                         fuel_node_host: "https://node-beta-2.fuel.network/graphql"
                             .to_string(),
                         fuel_node_port: "4000".to_string(),
-                        graphql_api_host: "node-beta-2.fuel.network".to_string(),
-                        graphql_api_port: "80".to_string(),
+                        web_api_host: "node-beta-2.fuel.network".to_string(),
+                        web_api_port: "80".to_string(),
                         ..Default::default()
                     };
                     start(start_command).await?;
                     build(build_command)?;
-                    deploy(deploy_command)?;
+                    deploy(deploy_command).await?;
                 }
                 _ => {
                     println!("Invalid input. Please enter 1 or 2");

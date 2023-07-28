@@ -54,7 +54,10 @@ tracing = { workspace = true }
 tracing-subscriber = { version = "0.2", features = ["env-filter"] }
 url = "2.3"
 wasmer = "4"
+wasmer-middlewares = "4"
+wasmer-types = "4"
 
 [features]
+default = ["e2e", "postgres"]
 e2e = []
 postgres = []

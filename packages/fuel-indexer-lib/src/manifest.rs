@@ -1,4 +1,4 @@
-use crate::ExecutionSource;
+use crate::{graphql::GraphQLSchema, ExecutionSource};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -71,22 +71,45 @@ impl AsRef<Path> for Module {
 /// the indexer executor (e.g., Where should the indexing start?).
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Manifest {
-    pub namespace: String,
-    pub abi: Option<String>,
-    pub identifier: String,
-    pub fuel_client: Option<String>,
-    pub graphql_schema: String,
-    pub module: Module,
-    pub metrics: Option<bool>,
+    /// Namespace of indexer.
+    namespace: String,
+
+    /// Identifier of indexer.
+    identifier: String,
+
+    /// Filepath to Sway contract ABI.
+    abi: Option<String>,
+
+    /// URL to Fuel client.
+    ///
+    /// Only set if `--indexer-net-config` is specified in `IndexerArgs`.
+    fuel_client: Option<String>,
+
+    /// Filepath to this indexer's GraphQL schema.
+    graphql_schema: String,
+
+    /// Executor module.
+    module: Module,
+
+    /// Whether or not to record metrics for this indexer.
+    metrics: Option<bool>,
+
+    /// Set of contract IDs this indexer should subscribe to.
     #[serde(
         serialize_with = "ContractIds::serialize",
         deserialize_with = "ContractIds::deserialize"
     )]
-    pub contract_id: ContractIds,
-    pub start_block: Option<u64>,
-    pub end_block: Option<u64>,
+    contract_id: ContractIds,
+
+    /// Block at which indexer should start.
+    start_block: Option<u64>,
+
+    /// Block at which indexer should stop.
+    end_block: Option<u64>,
+
+    /// When set to true, the indexer will resume from the block height at which it last stopped.
     #[serde(default)]
-    pub resumable: Option<bool>,
+    resumable: Option<bool>,
 }
 
 impl Manifest {
@@ -103,13 +126,13 @@ impl Manifest {
     }
 
     /// Return the raw GraphQL schema string for an indexer manifest.
-    pub fn graphql_schema(&self) -> ManifestResult<String> {
+    pub fn graphql_schema_content(&self) -> ManifestResult<GraphQLSchema> {
         let mut file = File::open(&self.graphql_schema)
             .map_err(|err| ManifestError::FileError(self.graphql_schema.clone(), err))?;
         let mut schema = String::new();
         file.read_to_string(&mut schema)
             .map_err(|err| ManifestError::FileError(self.graphql_schema.clone(), err))?;
-        Ok(schema)
+        Ok(GraphQLSchema::new(schema))
     }
 
     /// Derive the unique identifier for a manifest.
@@ -157,6 +180,66 @@ impl Manifest {
             ManifestError::FileError(path.to_str().unwrap_or_default().to_string(), err)
         })?;
         Ok(())
+    }
+
+    /// Set the start block for this indexer.
+    pub fn set_start_block(&mut self, block: u64) {
+        self.start_block = Some(block);
+    }
+
+    /// Set the executor module for this indexer.
+    pub fn set_module(&mut self, module: Module) {
+        self.module = module;
+    }
+
+    /// Set the GraphQL schema for this indexer.
+    pub fn set_graphql_schema(&mut self, schema: String) {
+        self.graphql_schema = schema;
+    }
+
+    /// Set the contract ABI for this indexer.
+    pub fn set_abi(&mut self, abi: String) {
+        self.abi = Some(abi);
+    }
+
+    pub fn namespace(&self) -> &str {
+        &self.namespace
+    }
+
+    pub fn identifier(&self) -> &str {
+        &self.identifier
+    }
+
+    pub fn graphql_schema(&self) -> &str {
+        &self.graphql_schema
+    }
+
+    pub fn start_block(&self) -> Option<u64> {
+        self.start_block
+    }
+
+    pub fn contract_id(&self) -> &ContractIds {
+        &self.contract_id
+    }
+
+    pub fn abi(&self) -> Option<&str> {
+        self.abi.as_deref()
+    }
+
+    pub fn fuel_client(&self) -> Option<&str> {
+        self.fuel_client.as_deref()
+    }
+
+    pub fn module(&self) -> &Module {
+        &self.module
+    }
+
+    pub fn end_block(&self) -> Option<u64> {
+        self.end_block
+    }
+
+    pub fn resumable(&self) -> Option<bool> {
+        self.resumable
     }
 }
 

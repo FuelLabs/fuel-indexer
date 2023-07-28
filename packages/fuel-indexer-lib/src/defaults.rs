@@ -5,10 +5,10 @@ pub const FUEL_NODE_HOST: &str = "localhost";
 pub const FUEL_NODE_PORT: &str = "4000";
 
 /// GraphQL API host.
-pub const GRAPHQL_API_HOST: &str = "localhost";
+pub const WEB_API_HOST: &str = "localhost";
 
 /// GraphQL API port.
-pub const GRAPHQL_API_PORT: &str = "29987";
+pub const WEB_API_PORT: &str = "29987";
 
 /// Database type.
 pub const DATABASE: &str = "postgres";
@@ -91,8 +91,8 @@ pub const VERBOSE_LOGGING: bool = false;
 /// Verbose output for database operations.
 pub const VERBOSE_DB_LOGGING: &str = "false";
 
-/// Amount of blocks to return in a GraphQL page.
-pub const NODE_GRAPHQL_PAGE_SIZE: usize = 10;
+/// Amount of blocks to return in a request to a Fuel node.
+pub const NODE_BLOCK_PAGE_SIZE: usize = 10;
 
 /// Start a local Fuel node.
 pub const LOCAL_FUEL_NODE: bool = false;
@@ -112,10 +112,13 @@ pub const RATE_LIMIT_WINDOW_SIZE: u64 = 5;
 /// Log level.
 pub const LOG_LEVEL: &str = "info";
 
-/// Maximum amount of time (seconds) that an indexer's `handle_events` function can take before being timed out.
-pub const INDEXER_HANDLER_TIMEOUT: u64 = 5;
+/// The number of WASM opcodes after which the indexer's `handle_events` function will stop execution.
+pub const METERING_POINTS: u64 = 30_000_000_000;
 
 /// Whether to allow replacing an indexer.
 ///
 /// If this is disabled, then an HTTP 409 Conflict will be returned if an indexer with the same name already exists.
 pub const REPLACE_INDEXER: bool = false;
+
+/// Allow the web API to accept raw SQL queries.
+pub const ACCEPT_SQL: bool = false;

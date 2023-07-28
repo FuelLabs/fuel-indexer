@@ -1,15 +1,16 @@
-use fuel_indexer_lib::config::GraphQLConfig;
-use fuel_indexer_postgres as postgres;
-use fuel_indexer_tests::assets::{
-    SIMPLE_WASM_MANIFEST, SIMPLE_WASM_SCHEMA, SIMPLE_WASM_WASM,
+use fuel_indexer::IndexerConfig;
+use fuel_indexer_lib::config::{
+    auth::AuthenticationStrategy, defaults as config_defaults, AuthenticationConfig,
 };
-use fuel_indexer_tests::fixtures::{
-    api_server_app_postgres, authenticated_api_server_app_postgres, http_client,
-    indexer_service_postgres, TestPostgresDb,
+use fuel_indexer_postgres as postgres;
+use fuel_indexer_tests::{
+    assets,
+    fixtures::{http_client, setup_web_test_components, WebTestComponents},
 };
 use hyper::header::CONTENT_TYPE;
 use reqwest::multipart;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 const SIGNATURE: &str = "cb19384361af5dd7fec2a0052ca49d289f997238ea90590baf47f16ff0a33fb20170a43bd20208ce16daf443bad06dd66c1d1bf73f48b5ae53de682a5731d7d9";
@@ -17,14 +18,7 @@ const NONCE: &str = "ea35be0c98764e7ca06d02067982e3b4";
 
 #[tokio::test]
 async fn test_metrics_endpoint_returns_proper_count_of_metrics_postgres() {
-    let test_db = TestPostgresDb::new().await.unwrap();
-    let _srvc = indexer_service_postgres(Some(&test_db.url), None).await;
-    let (app, _rx) = api_server_app_postgres(Some(&test_db.url)).await;
-
-    let server = axum::Server::bind(&GraphQLConfig::default().into())
-        .serve(app.into_make_service());
-
-    let srv = tokio::spawn(server);
+    let WebTestComponents { server, .. } = setup_web_test_components(None).await;
 
     let client = http_client();
     let _ = client
@@ -42,23 +36,16 @@ async fn test_metrics_endpoint_returns_proper_count_of_metrics_postgres() {
         .await
         .unwrap();
 
-    srv.abort();
+    server.abort();
     assert!((resp.split('\n').count() >= 127));
 }
 
 #[tokio::test]
 async fn test_database_postgres_metrics_properly_increments_counts_when_queries_are_made()
 {
-    let test_db = TestPostgresDb::new().await.unwrap();
-    let _ = indexer_service_postgres(Some(&test_db.url), None).await;
-    let (app, _rx) = api_server_app_postgres(Some(&test_db.url)).await;
+    let WebTestComponents { server, db, .. } = setup_web_test_components(None).await;
 
-    let server = axum::Server::bind(&GraphQLConfig::default().into())
-        .serve(app.into_make_service());
-
-    let _srv = tokio::spawn(server);
-
-    let mut conn = test_db.pool.acquire().await.unwrap();
+    let mut conn = db.pool.acquire().await.unwrap();
     let _ = postgres::execute_query(&mut conn, "SELECT 1;".into()).await;
     let _ = postgres::execute_query(&mut conn, "SELECT 1;".into()).await;
 
@@ -87,31 +74,32 @@ async fn test_database_postgres_metrics_properly_increments_counts_when_queries_
             .unwrap()
             >= 0,
     );
+
+    server.abort();
 }
 
 #[tokio::test]
 async fn test_asset_upload_endpoint_properly_adds_assets_to_database_postgres() {
-    let test_db = TestPostgresDb::new().await.unwrap();
-    let (app, _rx) = api_server_app_postgres(Some(&test_db.url)).await;
+    let WebTestComponents {
+        server,
+        db,
+        rx: _rx,
+        ..
+    } = setup_web_test_components(None).await;
 
-    let server = axum::Server::bind(&GraphQLConfig::default().into())
-        .serve(app.into_make_service());
-
-    let srv = tokio::spawn(server);
-
-    let mut conn = test_db.pool.acquire().await.unwrap();
+    let mut conn = db.pool.acquire().await.unwrap();
     let is_indexer_registered =
         postgres::get_indexer(&mut conn, "test_namespace", "simple_wasm_executor")
             .await
             .unwrap();
     assert!(is_indexer_registered.is_none());
 
-    let manifest_file =
-        multipart::Part::stream(SIMPLE_WASM_MANIFEST).file_name("simple_wasm.yaml");
-    let schema_file =
-        multipart::Part::stream(SIMPLE_WASM_SCHEMA).file_name("simple_wasm.graphql");
+    let manifest_file = multipart::Part::stream(assets::SIMPLE_WASM_MANIFEST)
+        .file_name("simple_wasm.yaml");
+    let schema_file = multipart::Part::stream(assets::SIMPLE_WASM_SCHEMA)
+        .file_name("simple_wasm.graphql");
     let wasm_file =
-        multipart::Part::stream(SIMPLE_WASM_WASM).file_name("simple_wasm.wasm");
+        multipart::Part::stream(assets::SIMPLE_WASM_WASM).file_name("simple_wasm.wasm");
 
     let form = multipart::Form::new()
         .part("manifest", manifest_file)
@@ -127,7 +115,7 @@ async fn test_asset_upload_endpoint_properly_adds_assets_to_database_postgres() 
         .await
         .unwrap();
 
-    srv.abort();
+    server.abort();
 
     assert!(resp.status().is_success());
 
@@ -152,8 +140,19 @@ struct SignatureResponse {
 
 #[tokio::test]
 async fn test_signature_route_validates_signature_expires_nonce_and_creates_jwt() {
-    let test_db = TestPostgresDb::new().await.unwrap();
-    let app = authenticated_api_server_app_postgres(Some(&test_db.url)).await;
+    let config = IndexerConfig {
+        authentication: AuthenticationConfig{
+            enabled: true,
+            strategy: Some(AuthenticationStrategy::JWT),
+            jwt_secret: Some("6906573247652854078288872150120717701634680141358560585446649749925714230966".to_string()),
+            jwt_issuer: Some("FuelLabs".to_string()),
+            jwt_expiry: Some(config_defaults::JWT_EXPIRY_SECS)
+        },
+        ..IndexerConfig::default()
+    };
+
+    let WebTestComponents { server, db, .. } =
+        setup_web_test_components(Some(config)).await;
 
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -161,7 +160,7 @@ async fn test_signature_route_validates_signature_expires_nonce_and_creates_jwt(
         .as_secs();
     let expiry = now + 3600;
 
-    let mut conn = test_db.pool.acquire().await.unwrap();
+    let mut conn = db.pool.acquire().await.unwrap();
     let _ = sqlx::QueryBuilder::new("INSERT INTO nonce (uid, expiry) VALUES ($1, $2)")
         .build()
         .bind(NONCE)
@@ -169,11 +168,6 @@ async fn test_signature_route_validates_signature_expires_nonce_and_creates_jwt(
         .execute(&mut conn)
         .await
         .unwrap();
-
-    let server = axum::Server::bind(&GraphQLConfig::default().into())
-        .serve(app.into_make_service());
-
-    let _srv = tokio::spawn(server);
 
     let resp = http_client()
         .post("http://localhost:29987/api/auth/signature")
@@ -197,4 +191,108 @@ async fn test_signature_route_validates_signature_expires_nonce_and_creates_jwt(
         .execute(&mut conn)
         .await
         .unwrap();
+
+    server.abort();
+}
+
+#[actix_web::test]
+async fn test_querying_sql_endpoint_when_sql_not_enabled_returns_404() {
+    let WebTestComponents { server, .. } = setup_web_test_components(None).await;
+
+    let client = http_client();
+    let resp = client
+        .post("http://127.0.0.1:29987/api/sql/fuel_indexer_test/index1")
+        .header(CONTENT_TYPE, "application/json".to_owned())
+        .body(r#"{ "query": "SELECT COUNT(*)" }"#)
+        .send()
+        .await
+        .unwrap();
+
+    server.abort();
+
+    assert_eq!(resp.status(), 404);
+}
+
+#[actix_web::test]
+async fn test_querying_sql_endpoint_when_sql_is_enabled_returns_actual_query_response() {
+    let config = IndexerConfig {
+        accept_sql_queries: true,
+        ..IndexerConfig::default()
+    };
+
+    let WebTestComponents { server, db, .. } =
+        setup_web_test_components(Some(config)).await;
+
+    let mut conn = db.pool.acquire().await.unwrap();
+
+    let _ = sqlx::QueryBuilder::new("INSERT INTO fuel_indexer_test_index1.pingentity  (id, value, message, object) VALUES ($1, $2, $3, $4::bytea)")
+        .build()
+        .bind(123456789)
+        .bind(987654321)
+        .bind("My message")
+        .bind("fake object")
+        .execute(&mut conn)
+        .await
+        .unwrap();
+
+    let client = http_client();
+    let resp = client
+        .post("http://127.0.0.1:29987/api/sql/fuel_indexer_test/index1")
+        .header(CONTENT_TYPE, "application/json".to_owned())
+        .body(
+            r#"{ "query": "SELECT json_agg(t) FROM (SELECT COUNT(*) FROM fuel_indexer_test_index1.pingentity) t" }"#,
+        )
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(resp.status(), 200);
+    let body = resp.text().await.unwrap();
+
+    let v: Value = serde_json::from_str(&body).unwrap();
+    assert_eq!(v["data"][0][0]["count"], 1);
+
+    server.abort();
+}
+
+#[actix_web::test]
+async fn test_querying_sql_endpoint_when_sql_is_enabled_returns_error_for_non_supported_queries(
+) {
+    let config = IndexerConfig {
+        accept_sql_queries: true,
+        ..IndexerConfig::default()
+    };
+
+    let WebTestComponents { server, db, .. } =
+        setup_web_test_components(Some(config)).await;
+
+    let mut conn = db.pool.acquire().await.unwrap();
+
+    let _ = sqlx::QueryBuilder::new("INSERT INTO fuel_indexer_test_index1.pingentity  (id, value, message, object) VALUES ($1, $2, $3, $4::bytea)")
+        .build()
+        .bind(123456789)
+        .bind(987654321)
+        .bind("My message")
+        .bind("fake object")
+        .execute(&mut conn)
+        .await
+        .unwrap();
+
+    let client = http_client();
+    let resp = client
+        .post("http://127.0.0.1:29987/api/sql/fuel_indexer_test/index1")
+        .header(CONTENT_TYPE, "application/json".to_owned())
+        .body(r#"{ "query": "DROP SCHEMA fuel_indexer_test" }"#)
+        .send()
+        .await
+        .unwrap();
+
+    assert_eq!(resp.status(), 400);
+    let body = resp.text().await.unwrap();
+
+    let v: Value = serde_json::from_str(&body).unwrap();
+    assert_eq!(v["success"], "false");
+    assert_eq!(v["details"], "Error: Operation is not supported.");
+
+    server.abort();
 }
