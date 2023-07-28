@@ -85,19 +85,13 @@ jobs:
           else
             echo "Not a release branch ^(^.^)^"
           fi
-  mdbook-lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: 18
-      - run: |
-          npm install -g markdownlint-cli@0.31.1
-          markdownlint --config .markdownlintrc **/*.md docs/src/
+  docs-test:
+    uses: FuelLabs/github-actions/.github/workflows/mdbook-docs.yml@sarah/docs
+    with:
+      docs-src-path: 'docs/src'
   mdbook-build:
     needs:
-      - mdbook-lint
+      - docs-test
     runs-on: ubuntu-latest
     steps:
       - name: Install toolchain
