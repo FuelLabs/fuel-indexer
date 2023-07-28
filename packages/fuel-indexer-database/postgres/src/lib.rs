@@ -807,17 +807,17 @@ pub async fn remove_indexer(
     )
     .await?;
 
-    if remove_data {
-        execute_query(
-            conn,
-            format!(
-                "DELETE FROM index_asset_registry_schema WHERE index_id IN
+    execute_query(
+        conn,
+        format!(
+            "DELETE FROM index_asset_registry_schema WHERE index_id IN
             (SELECT id FROM index_registry
                 WHERE namespace = '{namespace}' AND identifier = '{identifier}')"
-            ),
-        )
-        .await?;
+        ),
+    )
+    .await?;
 
+    if remove_data {
         execute_query(
             conn,
             format!(
