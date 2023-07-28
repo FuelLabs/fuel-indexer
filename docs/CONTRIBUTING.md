@@ -140,6 +140,7 @@ This is a rough outline of what a contributor's workflow looks like:
 - Use Github to merge the PR once approved.
 
 ### Commit categories
+
 - `bug`: If fixing broken functionality
 - `enhancement`: If adding new functionality
 - `chore`: If finishing valuable work (that's no fun!)

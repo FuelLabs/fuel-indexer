@@ -10,9 +10,9 @@ To run the Fuel indexer, you'll need to install a few dependencies on your syste
 
 If you don't want to install a database directly onto your system, you can use Docker to run it as an isolated container. You can install it by following the [install instructions](https://docs.docker.com/get-docker/). For reference purposes, we provide a [`docker compose` file](https://github.com/FuelLabs/fuel-indexer/blob/master/scripts/docker-compose.yaml) that runs a Postgres database and the Fuel indexer service.
 
-> IMPORTANT: Note for Apple Silicon macOS users: 
+> IMPORTANT: Note for Apple Silicon macOS users:
 >
-> Using the Fuel indexer through Docker on Apple Silicon systems is currently not supported. 
+> Using the Fuel indexer through Docker on Apple Silicon systems is currently not supported.
 >
 > We're working to bring support to these systems.
 
@@ -38,9 +38,9 @@ The Fuel indexer requires the use of a database. We currently support [PostgresS
 
 ### macOS
 
-On macOS systems, you can install PostgreSQL through Homebrew. If it isn't present on your system, you can install it according to the [instructions](https://brew.sh/). 
+On macOS systems, you can install PostgreSQL through Homebrew. If it isn't present on your system, you can install it according to the [instructions](https://brew.sh/).
 
-Once installed, you can add PostgreSQL to your system by running `brew install postgresql`. 
+Once installed, you can add PostgreSQL to your system by running `brew install postgresql`.
 
 ## WASM
 
@@ -69,7 +69,7 @@ rustup target add wasm32-unknown-unknown
 > - `AR=/opt/homebrew/opt/llvm/bin/llvm-ar`
 > - `CC=/opt/homebrew/opt/llvm/bin/clang`
 >
-> Addtionally, on some systems you need to explictly link clang to llvm. 
+> Addtionally, on some systems you need to explictly link clang to llvm.
 >
 > - `LIBCLANG_PATH="/opt/homebrew/opt/llvm/lib"`
 > - `LDFLAGS="-L/opt/homebrew/opt/llvm/lib"`

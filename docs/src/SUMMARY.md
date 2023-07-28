@@ -11,6 +11,7 @@
 - [Starting the Fuel Indexer](./getting-started/starting-the-fuel-indexer.md)
 
 # Reference Guide
+
 - [Project Components](./project-components/index.md)
   - [Manifest](./project-components/manifest.md)
   - [Schema](./project-components/schema.md)

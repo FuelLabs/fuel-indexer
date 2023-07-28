@@ -8,8 +8,8 @@ pub struct Revert {
   }
 ```
 
-- A `Revert` receipt is produced when a Sway smart contract function call fails. 
-- The table below lists possible reasons for the failure and their values. 
+- A `Revert` receipt is produced when a Sway smart contract function call fails.
+- The table below lists possible reasons for the failure and their values.
 - The `error_val` field records these values, enabling your indexer to identify the specific cause of the reversion.
 
 | Reason                | Value |
