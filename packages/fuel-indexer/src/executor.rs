@@ -164,7 +164,8 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                         if inner.constraint().is_some() {
                             // Just bump the cursor and keep going
                             warn!("Constraint violation. Continuing...");
-                            next_cursor = cursor;
+
+                            // Try to fetch the page again using same cursor.
                             continue;
                         } else {
                             error!("Database error: {inner}.");
@@ -179,6 +180,8 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
 
                 if retry_count < INDEXER_FAILED_CALLS {
                     warn!("Indexer({indexer_uid}) retrying handler after {retry_count} failed attempts.");
+
+                    // Try to fetch the page again using same cursor.
                     continue;
                 } else {
                     error!(

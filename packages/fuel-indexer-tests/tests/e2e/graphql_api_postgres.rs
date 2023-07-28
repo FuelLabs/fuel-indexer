@@ -24,8 +24,11 @@ async fn test_can_return_query_response_with_all_fields_required_postgres() {
     let v: Value = serde_json::from_str(&body).unwrap();
     let data = v["data"].as_array().expect("data is not an array");
 
-    assert!(data[0]["height"].as_u64().unwrap() > 0);
-    assert!(data[0]["timestamp"].as_u64().unwrap() > 0);
+    assert_eq!(data[0]["height"].as_u64().unwrap(), 0);
+    assert_eq!(data[0]["timestamp"].as_u64().unwrap(), 0);
+
+    assert!(data[1]["height"].as_u64().unwrap() > 0);
+    assert!(data[1]["timestamp"].as_u64().unwrap() > 0);
 
     server.abort();
 }
