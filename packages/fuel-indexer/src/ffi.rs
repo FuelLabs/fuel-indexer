@@ -1,5 +1,5 @@
 use fuel_indexer_lib::defaults;
-use fuel_indexer_schema::FtColumn;
+use fuel_indexer_schema::{join::RawQuery, FtColumn};
 use fuel_indexer_types::ffi::{
     LOG_LEVEL_DEBUG, LOG_LEVEL_ERROR, LOG_LEVEL_INFO, LOG_LEVEL_TRACE, LOG_LEVEL_WARN,
 };
@@ -182,9 +182,19 @@ fn put_many_to_many_record(mut env: FunctionEnvMut<IndexEnv>, ptr: u32, len: u32
     unsafe {
         bytes.extend_from_slice(&mem.data_unchecked()[range]);
     }
-    let query = String::from_utf8(bytes).expect("String contains invalid UTF-8.");
+
+    let queries: Vec<RawQuery> =
+        bincode::deserialize(&bytes).expect("Failed to deserialize queries");
+    let queries = queries.iter().map(|q| q.to_string()).collect::<Vec<_>>();
     let rt = tokio::runtime::Handle::current();
-    rt.block_on(async { idx_env.db.lock().await.put_many_to_many_record(query).await });
+    rt.block_on(async {
+        idx_env
+            .db
+            .lock()
+            .await
+            .put_many_to_many_record(queries)
+            .await
+    });
 }
 
 pub fn get_exports(store: &mut Store, env: &wasmer::FunctionEnv<IndexEnv>) -> Exports {

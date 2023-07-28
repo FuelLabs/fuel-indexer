@@ -1,9 +1,8 @@
 extern crate alloc;
 
-use crate::join::JoinMetadata;
 use alloc::vec::Vec;
 use async_trait;
-use fuel_indexer_schema::FtColumn;
+use fuel_indexer_schema::{join::JoinMetadata, FtColumn};
 
 pub use anyhow;
 pub use fuel_indexer::prelude::{

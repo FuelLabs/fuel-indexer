@@ -525,7 +525,7 @@ impl Decoder for ObjectDecoder {
 
                 let mut fields_map = BTreeMap::new();
 
-                for field in &o.fields {
+                for field in o.fields.iter() {
                     let ProcessedTypedefField {
                         field_name_ident,
                         extractor,
@@ -832,12 +832,15 @@ impl From<ObjectDecoder> for TokenStream {
                                 Some(d) => {
                                     if let Some(meta) = Self::JOIN_METADATA {
                                         let items = meta.iter().filter_map(|x| x.clone()).collect::<Vec<_>>();
-                                        let query = ManyToManyQuery::from_metadata(items, self.to_row());
-                                        if query.is_empty() {
-                                            return;
-                                        }
+                                        let row = self.to_row();
+                                        let queries = items
+                                            .iter()
+                                            .map(|item| RawQuery::from_metadata(item, &row))
+                                            .filter(|query| !query.is_empty())
+                                            .map(|query| query.to_string())
+                                            .collect::<Vec<_>>();
 
-                                        d.lock().await.put_many_to_many_record(query.query().into()).await;
+                                        d.lock().await.put_many_to_many_record(queries).await;
                                     }
                                 }
                                 None => {}

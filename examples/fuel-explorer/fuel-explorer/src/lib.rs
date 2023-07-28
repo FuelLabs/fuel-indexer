@@ -193,14 +193,14 @@ impl From<Bytes32> for TransactionIdFragment {
 
 impl From<fuel::TransactionData> for TransactionIdFragment {
     fn from(tx: fuel::TransactionData) -> Self {
-        Self::from(Bytes32::from(<[u8; 32]>::from(tx.id)))
+        Self::from(Bytes32::from(<[u8; 32]>::from(tx.id))).get_or_create()
     }
 }
 
 impl From<fuel::StorageSlot> for StorageSlot {
     fn from(slot: fuel::StorageSlot) -> Self {
         let fuel::StorageSlot { key, value } = slot;
-        Self::new(key, value)
+        Self::new(key, value).get_or_create()
     }
 }
 
@@ -802,6 +802,7 @@ impl From<fuel::TransactionData> for Transaction {
                     .map(|s| StorageSlot::from(s.to_owned()))
                     .map(|s| s.id)
                     .collect::<Vec<u64>>();
+
                 let inputs = inputs
                     .iter()
                     .map(|i| Input::from(i.to_owned()))
@@ -921,7 +922,5 @@ pub mod explorer_index {
             .iter()
             .map(|t| Transaction::from(t.to_owned()))
             .collect::<Vec<Transaction>>();
-
-        info!("8");
     }
 }

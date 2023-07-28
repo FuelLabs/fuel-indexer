@@ -1,5 +1,6 @@
+use crate::FtColumn;
 use fuel_indexer_lib::join_table_typedefs_name;
-use fuel_indexer_schema::FtColumn;
+use serde::{Deserialize, Serialize};
 
 extern crate alloc;
 
@@ -25,36 +26,35 @@ pub struct JoinMetadata<'a> {
     pub child_position: usize,
 }
 
-/// The query to insert many-to-many relationships.
-pub struct ManyToManyQuery {
-    /// The literal SQL query.
-    query: String,
+/// A raw SQL query.
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+pub struct RawQuery(pub String);
+
+impl From<RawQuery> for Vec<u8> {
+    fn from(query: RawQuery) -> Self {
+        query.0.into_bytes()
+    }
 }
 
-impl ManyToManyQuery {
+impl RawQuery {
     pub fn query(&self) -> &str {
-        &self.query
+        &self.0
     }
 
     /// Whether or not there are actual records to insert for this query.
     pub fn is_empty(&self) -> bool {
-        self.query.is_empty()
+        self.0.is_empty()
     }
 
-    /// Create a new `ManyToManyQuery` from the given metadata and columns.
-    pub fn from_metadata(
-        metadata: Vec<JoinMetadata<'_>>,
-        columns: Vec<FtColumn>,
-    ) -> Self {
-        let first = &metadata[0];
-
+    /// Create a new `RawQuery` from the given metadata and columns.
+    pub fn from_metadata(metadata: &JoinMetadata<'_>, columns: &[FtColumn]) -> Self {
         let JoinMetadata {
             table_name,
             namespace,
             parent_column_name,
             child_column_name,
-            ..
-        } = first;
+            child_position,
+        } = metadata;
 
         let (parent_typedef_name, child_typedef_name) =
             join_table_typedefs_name(table_name);
@@ -72,26 +72,19 @@ impl ManyToManyQuery {
             _ => panic!("No ID field found on Entity."),
         };
 
-        metadata.iter().for_each(|m| {
-            let JoinMetadata { child_position, .. } = m;
-            let list_type_field = &columns[*child_position];
-            match list_type_field {
-                FtColumn::Array(list) => {
-                    if let Some(list) = list {
-                        if list.is_empty() {
-                            return;
-                        }
-
-                        list.iter().for_each(|item| {
-                            query.push_str(
-                                format!(" ({}, {}),", id, item.query_fragment()).as_str(),
-                            );
-                        });
-                    }
+        let list_type_field = &columns[*child_position];
+        match list_type_field {
+            FtColumn::Array(list) => {
+                if let Some(list) = list {
+                    list.iter().for_each(|item| {
+                        query.push_str(
+                            format!(" ({}, {}),", id, item.query_fragment()).as_str(),
+                        );
+                    });
                 }
-                _ => panic!("Expected array type for many-to-many relationship."),
             }
-        });
+            _ => panic!("Expected array type for many-to-many relationship."),
+        }
 
         // If we didn't actually push any records...
         if query.ends_with("VALUES ") {
@@ -106,12 +99,12 @@ impl ManyToManyQuery {
                 ));
         }
 
-        ManyToManyQuery { query }
+        Self(query)
     }
 }
 
-impl From<ManyToManyQuery> for Vec<u8> {
-    fn from(query: ManyToManyQuery) -> Self {
-        query.query.into_bytes()
+impl std::fmt::Display for RawQuery {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
     }
 }

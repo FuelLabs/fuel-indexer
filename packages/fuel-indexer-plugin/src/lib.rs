@@ -1,12 +1,14 @@
 #![deny(unused_crate_dependencies)]
 
-pub(crate) mod join;
 #[cfg(feature = "native-execution")]
 pub mod native;
 pub mod wasm;
 
 pub mod types {
-    pub use fuel_indexer_schema::FtColumn;
+    pub use fuel_indexer_schema::{
+        join::{JoinMetadata, RawQuery},
+        FtColumn,
+    };
     pub use fuel_indexer_types::fuel::{BlockData, TxId};
 
     // Traits needed to access client type fields. Could also include this as a sub-module
@@ -38,11 +40,7 @@ pub use serde_json;
 
 pub mod prelude {
     pub use super::{
-        bincode, deserialize,
-        join::{JoinMetadata, ManyToManyQuery},
-        serde, serde_json, serialize,
-        types::*,
-        utils::*,
+        bincode, deserialize, serde, serde_json, serialize, types::*, utils::*,
         MAX_FOREIGN_KEY_LIST_FIELDS,
     };
     pub use crate::{debug, error, info, trace, warn};

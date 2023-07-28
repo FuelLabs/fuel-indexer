@@ -1,12 +1,14 @@
 extern crate alloc;
 
-use crate::join::{JoinMetadata, ManyToManyQuery};
 use alloc::vec::Vec;
 use fuel_indexer_lib::{
     graphql::MAX_FOREIGN_KEY_LIST_FIELDS,
     utils::{deserialize, serialize},
 };
-use fuel_indexer_schema::FtColumn;
+use fuel_indexer_schema::{
+    join::{JoinMetadata, RawQuery},
+    FtColumn,
+};
 use fuel_indexer_types::ffi::*;
 
 pub use bincode;
@@ -62,11 +64,13 @@ pub trait Entity<'a>: Sized + PartialEq + Eq + std::fmt::Debug {
     fn save_many_to_many(&self) {
         if let Some(meta) = Self::JOIN_METADATA {
             let items = meta.iter().filter_map(|x| x.clone()).collect::<Vec<_>>();
-            let query = ManyToManyQuery::from_metadata(items, self.to_row());
-            if query.is_empty() {
-                return;
-            }
-            let bytes = Vec::<u8>::from(query);
+            let row = self.to_row();
+            let queries = items
+                .iter()
+                .map(|item| RawQuery::from_metadata(item, &row))
+                .filter(|query| !query.is_empty())
+                .collect::<Vec<_>>();
+            let bytes = serialize(&queries);
             unsafe { ff_put_many_to_many_record(bytes.as_ptr(), bytes.len() as u32) }
         }
     }
@@ -91,11 +95,12 @@ pub trait Entity<'a>: Sized + PartialEq + Eq + std::fmt::Debug {
     }
 
     fn save(&self) {
-        self.save_many_to_many();
         unsafe {
             let buf = serialize(&self.to_row());
             ff_put_object(Self::TYPE_ID, buf.as_ptr(), buf.len() as u32)
         }
+
+        self.save_many_to_many();
     }
 }
 
