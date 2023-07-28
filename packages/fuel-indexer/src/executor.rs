@@ -76,7 +76,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
     manifest: &Manifest,
     mut executor: T,
     kill_switch: Arc<AtomicBool>,
-    kill_confirm: futures::channel::oneshot::Sender<()>,
+    kill_confirm_trigger: futures::channel::oneshot::Sender<()>,
 ) -> impl Future<Output = ()> {
     // TODO: https://github.com/FuelLabs/fuel-indexer/issues/286
 
@@ -129,7 +129,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
         loop {
             if kill_switch.load(Ordering::SeqCst) {
                 info!("Kill switch flipped, stopping Indexer({indexer_uid}). <('.')>");
-                if kill_confirm.send(()).is_err() {
+                if kill_confirm_trigger.send(()).is_err() {
                     error!("Unable to notifty listeners that Indexer({indexer_uid}) has stopped.");
                 };
                 break;
