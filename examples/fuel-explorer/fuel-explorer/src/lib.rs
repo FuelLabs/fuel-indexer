@@ -161,7 +161,7 @@ impl From<ContractId> for ContractIdFragment {
         // just manaully derived the ID, then use `::get_or_create()`.
         Self {
             id: id8(hash),
-            hash: Bytes32::from(<[u8; 32]>::try_from(hash).unwrap()),
+            hash: Bytes32::from(<[u8; 32]>::from(hash)),
         }
         .get_or_create()
     }
@@ -193,8 +193,7 @@ impl From<Bytes32> for TransactionIdFragment {
 
 impl From<fuel::TransactionData> for TransactionIdFragment {
     fn from(tx: fuel::TransactionData) -> Self {
-        let tx_hash = <[u8; 32]>::try_from(tx.id).unwrap();
-        Self::from(Bytes32::from(tx_hash))
+        Self::from(Bytes32::from(<[u8; 32]>::from(tx.id)))
     }
 }
 
@@ -278,13 +277,11 @@ impl From<fuel::Input> for Input {
                     predicate_data,
                 } = input;
 
-                let nonce_bytes = <[u8; 32]>::try_from(nonce).unwrap();
-
                 let input = InputMessage::new(
                     sender,
                     recipient,
                     amount,
-                    Nonce::from(nonce_bytes),
+                    Nonce::from(<[u8; 32]>::from(nonce)),
                     witness_index.into(),
                     data.into(),
                     predicate.into(),
@@ -375,8 +372,8 @@ impl From<fuel::Output> for Output {
                 let output = ContractCreated::new(
                     contract_frag.id,
                     state_root,
-                    OutputLabel::ContractCreated.into(),
                     true,
+                    OutputLabel::ContractCreated.into(),
                 );
 
                 Self::from(output).get_or_create()
@@ -389,7 +386,7 @@ impl From<fuel::Output> for Output {
                 Self::from(output)
             }
             fuel::Output::Unknown => {
-                let output = UnknownOutput::new(OutputLabel::Unknown.into(), true);
+                let output = UnknownOutput::new(true, OutputLabel::Unknown.into());
 
                 Self::from(output).get_or_create()
             }
@@ -925,6 +922,6 @@ pub mod explorer_index {
             .map(|t| Transaction::from(t.to_owned()))
             .collect::<Vec<Transaction>>();
 
-        info!("4");
+        info!("8");
     }
 }

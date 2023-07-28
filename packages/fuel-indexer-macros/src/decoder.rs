@@ -11,7 +11,6 @@ use fuel_indexer_lib::{
     },
     type_id, ExecutionSource,
 };
-use linked_hash_set::LinkedHashSet;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use std::collections::{BTreeMap, HashSet};
@@ -155,35 +154,52 @@ impl Decoder for ImplementationDecoder {
             }
             TypeKind::Union(u) => {
                 let union_name = typ.name.to_string();
-                let member_fields = u
+                // Manually keep track of fields we've seen so we don't duplicate them.
+                //
+                // Other crates like `LinkedHashSet` preserve order but in a different way
+                // than what is needed here.
+                let mut seen_fields = HashSet::new();
+
+                let fields = u
                     .members
                     .iter()
                     .flat_map(|m| {
+                        // We grab the object `TypeDefinition` from the parsed schema so as to maintain the
+                        // same order of the fields as they appear when being parsed in `ParsedGraphQLSchema`.
                         let name = m.node.to_string();
-                        parsed
-                            .object_field_mappings()
+                        let mut fields = parsed
+                            .object_ordered_fields()
                             .get(&name)
                             .expect("Could not find union member in parsed schema.")
+                            .to_owned();
+
+                        fields.sort_by(|a, b| a.1.cmp(&b.1));
+
+                        fields
                             .iter()
-                            .map(|(k, v)| (k.to_owned(), v.to_owned()))
+                            .map(|f| f.0.name.to_string())
+                            .collect::<Vec<String>>()
                     })
-                    .collect::<LinkedHashSet<(String, String)>>()
-                    .iter()
-                    .map(|(k, _)| {
-                        let fid = field_id(&union_name, k);
+                    .filter_map(|field_name| {
+                        if seen_fields.contains(&field_name) {
+                            return None;
+                        }
+
+                        seen_fields.insert(field_name.clone());
+
+                        let field_id = field_id(&union_name, &field_name);
                         let f = &parsed
                             .field_defs()
-                            .get(&fid)
-                            .expect("FielDefinition not found in parsed schema.");
-                        // All fields in a derived union type are nullable, except for
-                        // the `ID` field.
+                            .get(&field_id)
+                            .expect("FieldDefinition not found in parsed schema.");
+                        // All fields in a derived union type are nullable, except for the `ID` field.
                         let mut f = f.0.clone();
                         f.ty.node.nullable =
                             f.name.to_string() != IdCol::to_lowercase_str();
-                        Positioned {
+                        Some(Positioned {
                             pos: Pos::default(),
                             node: f,
-                        }
+                        })
                     })
                     .collect::<Vec<Positioned<FieldDefinition>>>();
 
@@ -196,7 +212,7 @@ impl Decoder for ImplementationDecoder {
                     },
                     kind: TypeKind::Object(ObjectType {
                         implements: vec![],
-                        fields: member_fields,
+                        fields,
                     }),
                     directives: vec![],
                 };
@@ -301,6 +317,8 @@ impl From<ImplementationDecoder> for TokenStream {
                 }
             }
             TypeKind::Union(u) => {
+                let union_name = typdef.name.to_string();
+
                 let mut from_method_impls = quote! {};
                 let get_or_create_tokens = if parsed.is_virtual_typedef(&typdef_name) {
                     quote! {}
@@ -312,22 +330,58 @@ impl From<ImplementationDecoder> for TokenStream {
                     }
                 };
 
-                let union_field_set = u
+                // Manually keep track of fields we've seen so we don't duplicate them.
+                //
+                // Other crates like `LinkedHashSet` preserve order but in a different way
+                // than what is needed here.
+                let mut seen_fields = HashSet::new();
+
+                let field_set = u
                     .members
                     .iter()
                     .flat_map(|m| {
+                        // We grab the object `TypeDefinition` from the parsed schema so as to maintain the
+                        // same order of the fields as they appear when being parsed in `ParsedGraphQLSchema`.
                         let name = m.node.to_string();
-                        parsed
-                            .object_field_mappings()
+                        let mut fields = parsed
+                            .object_ordered_fields()
                             .get(&name)
                             .expect("Could not find union member in parsed schema.")
+                            .to_owned();
+
+                        fields.sort_by(|a, b| a.1.cmp(&b.1));
+
+                        fields
                             .iter()
-                            .map(|(k, v)| (k.to_owned(), v.to_owned()))
+                            .map(|f| f.0.name.to_string())
+                            .collect::<Vec<String>>()
                     })
-                    .collect::<LinkedHashSet<(String, String)>>()
-                    .iter()
-                    .map(|(k, _v)| k.to_owned())
-                    .collect::<HashSet<String>>();
+                    .filter_map(|field_name| {
+                        if seen_fields.contains(&field_name) {
+                            return None;
+                        }
+
+                        seen_fields.insert(field_name.clone());
+
+                        let field_id = field_id(&union_name, &field_name);
+                        let f = &parsed
+                            .field_defs()
+                            .get(&field_id)
+                            .expect("FieldDefinition not found in parsed schema.");
+                        // All fields in a derived union type are nullable, except for the `ID` field.
+                        let mut f = f.0.clone();
+                        f.ty.node.nullable =
+                            f.name.to_string() != IdCol::to_lowercase_str();
+                        Some(Positioned {
+                            pos: Pos::default(),
+                            node: f,
+                        })
+                    })
+                    .map(|f| f.node.name.to_string())
+                    .collect::<Vec<String>>();
+
+                let field_hashset: HashSet<String> =
+                    HashSet::from_iter(field_set.iter().map(|f| f.to_owned()));
 
                 u.members.iter().for_each(|m| {
                     let member_ident = format_ident!("{}", m.to_string());
@@ -338,13 +392,13 @@ impl From<ImplementationDecoder> for TokenStream {
                         .expect("Could not get field mappings for union member.")
                         .keys()
                         .map(|k| k.to_owned())
-                        .collect::<HashSet<String>>();
+                        .collect::<HashSet<_>>();
 
                     // Member fields that match with union fields are checked for optionality
                     // and are assigned accordingly.
-                    let common_fields = union_field_set
-                        .intersection(&member_fields)
-                        .fold(quote! {}, |acc, common_field| {
+                    let common_fields = field_hashset.intersection(&member_fields).fold(
+                        quote! {},
+                        |acc, common_field| {
                             let ident = format_ident!("{}", common_field);
                             let fid = field_id(&m.node, common_field);
                             if common_field == &IdCol::to_lowercase_string() {
@@ -369,18 +423,20 @@ impl From<ImplementationDecoder> for TokenStream {
                             } else {
                                 quote! { #acc }
                             }
-                        });
+                        },
+                    );
 
                     // Any member fields that don't have a match with union fields should be assigned to None.
-                    let disjoint_fields = union_field_set
-                        .difference(&member_fields)
-                        .fold(quote! {}, |acc, disjoint_field| {
+                    let disjoint_fields = field_hashset.difference(&member_fields).fold(
+                        quote! {},
+                        |acc, disjoint_field| {
                             let ident = format_ident!("{}", disjoint_field);
                             quote! {
                                 #acc
                                 #ident: None,
                             }
-                        });
+                        },
+                    );
 
                     from_method_impls = quote! {
                         #from_method_impls
@@ -532,35 +588,53 @@ impl Decoder for ObjectDecoder {
             }
             TypeKind::Union(u) => {
                 let union_name = typ.name.to_string();
+
+                // Manually keep track of fields we've seen so we don't duplicate them.
+                //
+                // Other crates like `LinkedHashSet` preserve order but in a different way
+                // than what is needed here.
+                let mut seen_fields = HashSet::new();
+
                 let fields = u
                     .members
                     .iter()
                     .flat_map(|m| {
+                        // We grab the object `TypeDefinition` from the parsed schema so as to maintain the
+                        // same order of the fields as they appear when being parsed in `ParsedGraphQLSchema`.
                         let name = m.node.to_string();
-                        parsed
-                            .object_field_mappings()
+                        let mut fields = parsed
+                            .object_ordered_fields()
                             .get(&name)
                             .expect("Could not find union member in parsed schema.")
+                            .to_owned();
+
+                        fields.sort_by(|a, b| a.1.cmp(&b.1));
+
+                        fields
                             .iter()
-                            .map(|(k, v)| (k.to_owned(), v.to_owned()))
+                            .map(|f| f.0.name.to_string())
+                            .collect::<Vec<String>>()
                     })
-                    .collect::<LinkedHashSet<(String, String)>>()
-                    .iter()
-                    .map(|(k, _)| {
-                        let fid = field_id(&union_name, k);
+                    .filter_map(|field_name| {
+                        if seen_fields.contains(&field_name) {
+                            return None;
+                        }
+
+                        seen_fields.insert(field_name.clone());
+
+                        let field_id = field_id(&union_name, &field_name);
                         let f = &parsed
                             .field_defs()
-                            .get(&fid)
+                            .get(&field_id)
                             .expect("FieldDefinition not found in parsed schema.");
-                        // All fields in a derived union type are nullable, except for
-                        // the `ID` field.
+                        // All fields in a derived union type are nullable, except for the `ID` field.
                         let mut f = f.0.clone();
                         f.ty.node.nullable =
                             f.name.to_string() != IdCol::to_lowercase_str();
-                        Positioned {
+                        Some(Positioned {
                             pos: Pos::default(),
                             node: f,
-                        }
+                        })
                     })
                     .collect::<Vec<Positioned<FieldDefinition>>>();
 

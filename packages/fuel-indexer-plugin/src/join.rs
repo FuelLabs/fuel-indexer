@@ -79,7 +79,6 @@ impl ManyToManyQuery {
                 FtColumn::Array(list) => {
                     if let Some(list) = list {
                         if list.is_empty() {
-                            query = "".to_string();
                             return;
                         }
 
@@ -88,13 +87,16 @@ impl ManyToManyQuery {
                                 format!(" ({}, {}),", id, item.query_fragment()).as_str(),
                             );
                         });
-                    } else {
-                        query = "".to_string();
                     }
                 }
                 _ => panic!("Expected array type for many-to-many relationship."),
             }
         });
+
+        // If we didn't actually push any records...
+        if query.ends_with("VALUES ") {
+            query = "".to_string();
+        }
 
         if !query.is_empty() {
             // Trim the trailing comma

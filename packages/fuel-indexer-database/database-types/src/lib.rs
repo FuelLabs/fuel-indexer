@@ -20,10 +20,9 @@ use fuel_indexer_lib::{
     },
     type_id, MAX_ARRAY_LENGTH,
 };
-use linked_hash_set::LinkedHashSet;
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::BTreeMap,
+    collections::HashSet,
     fmt,
     fmt::Write,
     string::ToString,
@@ -1034,37 +1033,53 @@ impl Table {
                 // just get the set of all member fields and manually build an
                 // `TypeDefinition(TypeKind::Object)` from that.
                 let union_name = typ.name.to_string();
-                let default_ = BTreeMap::<String, String>::new();
+
+                // Manually keep track of fields we've seen so we don't duplicate them.
+                //
+                // Other crates like `LinkedHashSet` preserve order but in a different way
+                // than what is needed here.
+                let mut seen_fields = HashSet::new();
 
                 let fields = u
                     .members
                     .iter()
                     .flat_map(|m| {
+                        // We grab the object `TypeDefinition` from the parsed schema so as to maintain the
+                        // same order of the fields as they appear when being parsed in `ParsedGraphQLSchema`.
                         let name = m.node.to_string();
-                        parsed
-                            .object_field_mappings()
+                        let mut fields = parsed
+                            .object_ordered_fields()
                             .get(&name)
-                            .unwrap_or(&default_)
+                            .expect("Could not find union member in parsed schema.")
+                            .to_owned();
+
+                        fields.sort_by(|a, b| a.1.cmp(&b.1));
+
+                        fields
                             .iter()
-                            .map(|(k, v)| (k.to_owned(), v.to_owned()))
+                            .map(|f| f.0.name.to_string())
+                            .collect::<Vec<String>>()
                     })
-                    .collect::<LinkedHashSet<(String, String)>>()
-                    .iter()
-                    .map(|(k, _)| {
-                        let fid = field_id(&union_name, k);
+                    .filter_map(|field_name| {
+                        if seen_fields.contains(&field_name) {
+                            return None;
+                        }
+
+                        seen_fields.insert(field_name.clone());
+
+                        let field_id = field_id(&union_name, &field_name);
                         let f = &parsed
                             .field_defs()
-                            .get(&fid)
+                            .get(&field_id)
                             .expect("FieldDefinition not found in parsed schema.");
-                        // All fields in a derived union type are nullable, except for
-                        // the `ID` field.
+                        // All fields in a derived union type are nullable, except for the `ID` field.
                         let mut f = f.0.clone();
                         f.ty.node.nullable =
                             f.name.to_string() != IdCol::to_lowercase_str();
-                        Positioned {
+                        Some(Positioned {
                             pos: Pos::default(),
                             node: f,
-                        }
+                        })
                     })
                     .collect::<Vec<Positioned<FieldDefinition>>>();
 
