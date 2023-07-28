@@ -50,6 +50,8 @@
   - [deploy](./forc-index/deploy.md)
   - [remove](./forc-index/remove.md)
   - [auth](./forc-index/auth.md)
+  - [pull-abi](./forc-index/pull-abi.md)
+  - [status](./forc-index/status.md)
 - [forc index postgres](./forc-postgres/index.md)
   - [create](./forc-postgres/create.md)
   - [start](./forc-postgres/start.md)
@@ -62,6 +64,8 @@
 - [Environment Setup](./for-contributors/index.md)
 - [Contributing Standards](./for-contributors/contributing-standards.md)
 - [Release Schedule](./for-contributors/release-schedule.md)
+- [Building From Source](./for-contributors/building-from-source.md)
+- [System Dependencides](./for-contributors/system-dependencies.md)
 
 # Appendix
 

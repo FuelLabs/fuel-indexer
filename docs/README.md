@@ -3,8 +3,8 @@
 <!-- markdownlint-disable MD041 -->
 <p align="center">
     <picture>
-        <source media="(prefers-color-scheme: dark)" srcset="./src/img/fuel-indexer-logo-dark.png">
-        <img alt="Fuel Indexer logo" width="400px" src="./src/img/fuel-indexer-logo-light.png">
+        <source media="(prefers-color-scheme: dark)" srcset="./img/fuel-indexer-logo-dark.png">
+        <img alt="Fuel Indexer logo" width="400px" src="./img/fuel-indexer-logo-light.png">
     </picture>
 
 </p>
