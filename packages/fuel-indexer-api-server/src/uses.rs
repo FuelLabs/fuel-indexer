@@ -220,7 +220,7 @@ pub(crate) async fn register_indexer_assets(
         let mut remove_data: bool = false;
         let mut asset_bytes: Vec<(IndexerAssetType, hyper::body::Bytes)> = Vec::new();
 
-        while let Some(field) = multipart.next_field().await.unwrap() {
+        while let Ok(Some(field)) = multipart.next_field().await {
             let name = field.name().unwrap_or("").to_string();
             let data = field.bytes().await.unwrap_or_default();
             match name.as_str() {
