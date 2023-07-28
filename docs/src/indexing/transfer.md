@@ -15,7 +15,7 @@ pub struct Transfer {
 - A `Transfer` receipt is generated when coins are transferred to a contract as part of a Sway contract.
 - The `asset_id` field contains the asset ID of the transferred coins, as the FuelVM has built-in support for working with multiple assets.
   - The `pc` and `is` fields aren't currently used for anything, but are included for completeness.
-- [Read more about `Transfer` in the Fuel protocol ABI spec](https://github.com/FuelLabs/fuel-specs/blob/master/src/protocol/abi/receipts.md#transfer-receipt)
+- [Read more about `Transfer` in the Fuel protocol ABI spec](https://specs.fuel.network/master/abi/receipts.html#transfer-receipt)
 
 You can handle functions that produce a `Transfer` receipt type by adding a parameter with the type `Transfer`.
 

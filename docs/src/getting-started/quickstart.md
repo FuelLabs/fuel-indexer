@@ -26,13 +26,13 @@ curl \
 
 Indexers are typically compiled to WASM so you'll need to have the proper WASM compilation target available on your system. You can install this target using `rustup`:
 
-```
+```bash
 rustup target add wasm32-unknown-unknown
 ```
 
 Additionally, you'll need the `wasm-snip` utility in order to remove errant symbols from your compiled WASM binary. You can install this tool using `cargo`:
 
-```
+```bash
 cargo install wasm-snip
 ```
 

@@ -193,7 +193,7 @@ type Account {
 
 ### GraphQL Functionality
 
-While we do our best to maintain compliance with the GraphQL specification and parity with other implementations, there are a few things that are under development or will not be implemented. You can find more information in [the GraphQL chapter of the book](https://fuellabs.github.io/fuel-indexer/master/reference-guide/components/graphql/index.html).
+While we do our best to maintain compliance with the GraphQL specification and parity with other implementations, there are a few things that are under development or will not be implemented. You can find more information in [the GraphQL chapter of the book](https://fuellabs.github.io/fuel-indexer/master/graphql/index.html).
 
 ## Modules
 

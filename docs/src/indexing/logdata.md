@@ -15,7 +15,7 @@ pub struct LogData {
 - A `LogData` receipt is generated when calling `log()` in a Sway contract on a reference type; this includes all types _except_ non-reference types.
 - The `data` field will include the logged value as a hexadecimal.
   - The `rb` field will contain a unique ID that can be used to look up the logged data type.
-- [Read more about `LogData` in the Fuel protocol ABI spec](https://github.com/FuelLabs/fuel-specs/blob/master/src/protocol/abi/receipts.md#logdata-receipt)
+- [Read more about `LogData` in the Fuel protocol ABI spec](https://specs.fuel.network/master/abi/receipts.html#logdata-receipt)
 
 You can handle functions that produce a `LogData` receipt type by using the logged type as a function parameter.
 

@@ -20,7 +20,7 @@ pub struct Revert {
 | FailedAssertEq        | 3     |
 | FailedAssert          | 4     |
 
-- [Read more about `Revert` in the Fuel Protocol spec](https://github.com/FuelLabs/fuel-specs/blob/master/src/protocol/abi/receipts.md#revert-receipt)
+- [Read more about `Revert` in the Fuel Protocol spec](https://specs.fuel.network/master/abi/receipts.html#revert-receipt)
 
 You can handle functions that could produce a `Revert` receipt by adding a parameter with the type `Revert`.
 

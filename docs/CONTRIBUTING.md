@@ -12,7 +12,7 @@ We use an RFC process to maintain our code standards. They currently live in the
 
 Fuel Core is mostly written in Rust, but includes components written in C++ (RocksDB).
 We are currently using the latest Rust stable toolchain to build the project.
-But for `rustfmt`, we use Rust nightly toolchain because it provides more code style features(you can check [`rustfmt.toml`](.rustfmt.toml)).
+But for `rustfmt`, we use Rust nightly toolchain because it provides more code style features(you can check [`rustfmt.toml`](../.rustfmt.toml)).
 
 ### Prerequisites
 
