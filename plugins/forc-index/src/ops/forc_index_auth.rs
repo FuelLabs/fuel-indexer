@@ -1,5 +1,5 @@
 use crate::cli::AuthCommand;
-use reqwest::{blocking::Client, StatusCode};
+use reqwest::{Client, StatusCode};
 use serde::{Deserialize, Serialize};
 use std::process::Command;
 use tracing::{error, info};
@@ -26,7 +26,7 @@ fn derive_signature_from_output(o: &str) -> String {
     o.split(':').last().unwrap().trim().to_string()
 }
 
-pub fn init(command: AuthCommand) -> anyhow::Result<()> {
+pub async fn init(command: AuthCommand) -> anyhow::Result<()> {
     let AuthCommand {
         url,
         account,
@@ -38,6 +38,7 @@ pub fn init(command: AuthCommand) -> anyhow::Result<()> {
     let res = Client::new()
         .get(&target)
         .send()
+        .await
         .expect("Failed to deploy indexer.");
 
     if res.status() != StatusCode::OK {
@@ -53,7 +54,7 @@ pub fn init(command: AuthCommand) -> anyhow::Result<()> {
         return Ok(());
     }
 
-    let response: NonceResponse = res.json().unwrap();
+    let response: NonceResponse = res.json().await.unwrap();
 
     let signature = match Command::new("forc-wallet")
         .arg("sign")
@@ -87,6 +88,7 @@ pub fn init(command: AuthCommand) -> anyhow::Result<()> {
         .post(&target)
         .json(&body)
         .send()
+        .await
         .expect("Failed post signature.");
 
     if res.status() != StatusCode::OK {
@@ -102,7 +104,7 @@ pub fn init(command: AuthCommand) -> anyhow::Result<()> {
         return Ok(());
     }
 
-    let response: SignatureResponse = res.json().unwrap();
+    let response: SignatureResponse = res.json().await.unwrap();
 
     if let Some(token) = response.token {
         if verbose {

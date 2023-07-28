@@ -29,7 +29,7 @@ pub mod prelude {
         WasmIndexExecutor,
     };
     pub use async_std::sync::{Arc, Mutex};
-    pub use fuel_indexer_lib::config::{DatabaseConfig, FuelClientConfig, GraphQLConfig};
+    pub use fuel_indexer_lib::config::{DatabaseConfig, FuelClientConfig, WebApiConfig};
     pub use fuel_indexer_types::*;
 }
 
@@ -47,6 +47,8 @@ pub enum IndexerError {
     ExportError(#[from] ExportError),
     #[error("Error executing function: {0:#?}")]
     RuntimeError(#[from] RuntimeError),
+    #[error("Run time limit exceeded error")]
+    RunTimeLimitExceededError,
     #[error("IO Error: {0:#?}")]
     IoError(#[from] std::io::Error),
     #[error("FFI Error {0:?}")]
@@ -81,4 +83,6 @@ pub enum IndexerError {
     NativeExecutionRuntimeError,
     #[error("Tokio time error: {0:?}")]
     Elapsed(#[from] tokio::time::error::Elapsed),
+    #[error("Indexer end block has been stopping execution.")]
+    EndBlockMet,
 }

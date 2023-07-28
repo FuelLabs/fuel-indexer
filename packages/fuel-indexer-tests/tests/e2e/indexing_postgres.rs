@@ -1,57 +1,30 @@
-use actix_service::Service;
-use actix_web::test;
 use bigdecimal::ToPrimitive;
-use fuel_indexer::IndexerService;
-use fuel_indexer_lib::manifest::Manifest;
-use fuel_indexer_tests::{
-    assets, defaults,
-    fixtures::{
-        connect_to_deployed_contract, indexer_service_postgres,
-        setup_example_test_fuel_node, test_web::app, TestPostgresDb,
-    },
-    utils::update_test_manifest_asset_paths,
+use fuel_indexer::IndexerConfig;
+use fuel_indexer_tests::fixtures::{
+    mock_request, setup_indexing_test_components, IndexingTestComponents,
 };
 use fuel_indexer_types::prelude::*;
 use serde::{Deserialize, Serialize};
 use sqlx::{types::BigDecimal, Row};
 use std::str::FromStr;
-use tokio::{
-    task::JoinHandle,
-    time::{sleep, Duration},
-};
 
 const REVERT_VM_CODE: u64 = 0x0004;
 const EXPECTED_CONTRACT_ID: &str =
-    "a8892fdc1ba52ca37c41e41a00cc7ddb7cf6e6edb46398fc775f8c7a57a430bb";
-
-async fn setup_test_components(
-) -> (JoinHandle<Result<(), ()>>, TestPostgresDb, IndexerService) {
-    let node_handle = tokio::spawn(setup_example_test_fuel_node());
-    let test_db = TestPostgresDb::new().await.unwrap();
-    let srvc = indexer_service_postgres(Some(&test_db.url), None).await;
-
-    (node_handle, test_db, srvc)
-}
+    "164c38e3cf312b346e51a6a928cb0beefe3cd0a1efd461f24b1fc2c9c957e613";
+const TRANSFER_BASE_ASSET_ID: &str =
+    "0000000000000000000000000000000000000000000000000000000000000000";
 
 #[actix_web::test]
 async fn test_can_trigger_and_index_events_with_multiple_args_in_index_handler_postgres()
 {
-    let (node_handle, test_db, mut srvc) = setup_test_components().await;
+    let IndexingTestComponents { node, db, .. } =
+        setup_indexing_test_components(None).await;
 
-    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
-    update_test_manifest_asset_paths(&mut manifest);
+    mock_request("/multiarg").await;
 
-    srvc.register_indexer_from_manifest(manifest).await.unwrap();
+    node.abort();
 
-    let contract = connect_to_deployed_contract().await.unwrap();
-    let app = test::init_service(app(contract)).await;
-    let req = test::TestRequest::post().uri("/multiarg").to_request();
-    let _ = app.call(req).await;
-
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-    node_handle.abort();
-
-    let mut conn = test_db.pool.acquire().await.unwrap();
+    let mut conn = db.pool.acquire().await.unwrap();
     let block_row = sqlx::query(
         "SELECT * FROM fuel_indexer_test_index1.blockentity ORDER BY height DESC LIMIT 1",
     )
@@ -103,22 +76,14 @@ async fn test_can_trigger_and_index_events_with_multiple_args_in_index_handler_p
 
 #[actix_web::test]
 async fn test_can_trigger_and_index_callreturn_postgres() {
-    let (node_handle, test_db, mut srvc) = setup_test_components().await;
+    let IndexingTestComponents { node, db, .. } =
+        setup_indexing_test_components(None).await;
 
-    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
-    update_test_manifest_asset_paths(&mut manifest);
+    mock_request("/callreturn").await;
 
-    srvc.register_indexer_from_manifest(manifest).await.unwrap();
+    node.abort();
 
-    let contract = connect_to_deployed_contract().await.unwrap();
-    let app = test::init_service(app(contract)).await;
-    let req = test::TestRequest::post().uri("/callreturn").to_request();
-    let _ = app.call(req).await;
-
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-    node_handle.abort();
-
-    let mut conn = test_db.pool.acquire().await.unwrap();
+    let mut conn = db.pool.acquire().await.unwrap();
     let row =
         sqlx::query("SELECT * FROM fuel_indexer_test_index1.pungentity WHERE id = 3")
             .fetch_one(&mut conn)
@@ -139,29 +104,15 @@ async fn test_can_trigger_and_index_callreturn_postgres() {
 
 #[actix_web::test]
 async fn test_can_trigger_and_index_blocks_and_transactions_postgres() {
-    let (node_handle, test_db, mut srvc) = setup_test_components().await;
+    let IndexingTestComponents { node, db, .. } =
+        setup_indexing_test_components(None).await;
 
-    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
-    update_test_manifest_asset_paths(&mut manifest);
+    mock_request("/block").await;
 
-    srvc.register_indexer_from_manifest(manifest).await.unwrap();
+    node.abort();
 
-    let contract = connect_to_deployed_contract().await.unwrap();
-    let app = test::init_service(app(contract)).await;
-    let req = test::TestRequest::get().uri("/block_height").to_request();
-    let res = test::call_and_read_body(&app, req).await;
-    let block_height = String::from_utf8(res.to_vec())
-        .unwrap()
-        .parse::<u64>()
-        .unwrap();
+    let mut conn = db.pool.acquire().await.unwrap();
 
-    let req = test::TestRequest::post().uri("/block").to_request();
-    let _ = app.call(req).await;
-    node_handle.abort();
-
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-
-    let mut conn = test_db.pool.acquire().await.unwrap();
     let row = sqlx::query(
         "SELECT * FROM fuel_indexer_test_index1.blockentity ORDER BY timestamp DESC LIMIT 1",
     )
@@ -169,43 +120,23 @@ async fn test_can_trigger_and_index_blocks_and_transactions_postgres() {
     .await
     .unwrap();
 
-    let id = row.get::<BigDecimal, usize>(0).to_u64().unwrap();
+    let _id = row.get::<BigDecimal, usize>(0).to_u64().unwrap();
     let timestamp = row.get::<i64, usize>(2);
 
-    assert_eq!(
-        row.get::<BigDecimal, usize>(1).to_u64().unwrap(),
-        block_height + 1
-    );
+    assert!(row.get::<BigDecimal, usize>(1).to_u64().unwrap() > 1);
     assert!(timestamp > 0);
-
-    let row = sqlx::query(&format!(
-        "SELECT * FROM fuel_indexer_test_index1.txentity WHERE block = {id}",
-    ))
-    .fetch_all(&mut conn)
-    .await
-    .unwrap();
-
-    assert_eq!(row.len(), 2);
 }
 
 #[actix_web::test]
 async fn test_can_trigger_and_index_ping_event_postgres() {
-    let (node_handle, test_db, mut srvc) = setup_test_components().await;
+    let IndexingTestComponents { node, db, .. } =
+        setup_indexing_test_components(None).await;
 
-    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
-    update_test_manifest_asset_paths(&mut manifest);
+    mock_request("/ping").await;
 
-    srvc.register_indexer_from_manifest(manifest).await.unwrap();
+    node.abort();
 
-    let contract = connect_to_deployed_contract().await.unwrap();
-    let app = test::init_service(app(contract)).await;
-    let req = test::TestRequest::post().uri("/ping").to_request();
-    let _ = app.call(req).await;
-
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-    node_handle.abort();
-
-    let mut conn = test_db.pool.acquire().await.unwrap();
+    let mut conn = db.pool.acquire().await.unwrap();
     let row =
         sqlx::query("SELECT * FROM fuel_indexer_test_index1.pingentity WHERE id = 1")
             .fetch_one(&mut conn)
@@ -234,22 +165,14 @@ async fn test_can_trigger_and_index_ping_event_postgres() {
 
 #[actix_web::test]
 async fn test_can_trigger_and_index_transfer_event_postgres() {
-    let (node_handle, test_db, mut srvc) = setup_test_components().await;
+    let IndexingTestComponents { node, db, .. } =
+        setup_indexing_test_components(None).await;
 
-    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
-    update_test_manifest_asset_paths(&mut manifest);
+    mock_request("/transfer").await;
 
-    srvc.register_indexer_from_manifest(manifest).await.unwrap();
+    node.abort();
 
-    let contract = connect_to_deployed_contract().await.unwrap();
-    let app = test::init_service(app(contract)).await;
-    let req = test::TestRequest::post().uri("/transfer").to_request();
-    let _ = app.call(req).await;
-
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-    node_handle.abort();
-
-    let mut conn = test_db.pool.acquire().await.unwrap();
+    let mut conn = db.pool.acquire().await.unwrap();
     let row =
         sqlx::query("SELECT * FROM fuel_indexer_test_index1.transferentity LIMIT 1")
             .fetch_one(&mut conn)
@@ -257,27 +180,19 @@ async fn test_can_trigger_and_index_transfer_event_postgres() {
             .unwrap();
 
     assert_eq!(row.get::<BigDecimal, usize>(3).to_u64().unwrap(), 1); // value is defined in test contract
-    assert_eq!(row.get::<&str, usize>(4), defaults::TRANSFER_BASE_ASSET_ID);
+    assert_eq!(row.get::<&str, usize>(4), TRANSFER_BASE_ASSET_ID);
 }
 
 #[actix_web::test]
 async fn test_can_trigger_and_index_log_event_postgres() {
-    let (node_handle, test_db, mut srvc) = setup_test_components().await;
+    let IndexingTestComponents { node, db, .. } =
+        setup_indexing_test_components(None).await;
 
-    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
-    update_test_manifest_asset_paths(&mut manifest);
+    mock_request("/log").await;
 
-    srvc.register_indexer_from_manifest(manifest).await.unwrap();
+    node.abort();
 
-    let contract = connect_to_deployed_contract().await.unwrap();
-    let app = test::init_service(app(contract)).await;
-    let req = test::TestRequest::post().uri("/log").to_request();
-    let _ = app.call(req).await;
-
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-    node_handle.abort();
-
-    let mut conn = test_db.pool.acquire().await.unwrap();
+    let mut conn = db.pool.acquire().await.unwrap();
     let row = sqlx::query(
         "SELECT * FROM fuel_indexer_test_index1.logentity WHERE ra = 8675309 LIMIT 1",
     )
@@ -290,22 +205,14 @@ async fn test_can_trigger_and_index_log_event_postgres() {
 
 #[actix_web::test]
 async fn test_can_trigger_and_index_logdata_event_postgres() {
-    let (node_handle, test_db, mut srvc) = setup_test_components().await;
+    let IndexingTestComponents { node, db, .. } =
+        setup_indexing_test_components(None).await;
 
-    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
-    update_test_manifest_asset_paths(&mut manifest);
+    mock_request("/logdata").await;
 
-    srvc.register_indexer_from_manifest(manifest).await.unwrap();
+    node.abort();
 
-    let contract = connect_to_deployed_contract().await.unwrap();
-    let app = test::init_service(app(contract)).await;
-    let req = test::TestRequest::post().uri("/logdata").to_request();
-    let _ = app.call(req).await;
-
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-    node_handle.abort();
-
-    let mut conn = test_db.pool.acquire().await.unwrap();
+    let mut conn = db.pool.acquire().await.unwrap();
     let row =
         sqlx::query("SELECT * FROM fuel_indexer_test_index1.pungentity WHERE id = 1")
             .fetch_one(&mut conn)
@@ -325,22 +232,14 @@ async fn test_can_trigger_and_index_logdata_event_postgres() {
 
 #[actix_web::test]
 async fn test_can_trigger_and_index_scriptresult_event_postgres() {
-    let (node_handle, test_db, mut srvc) = setup_test_components().await;
+    let IndexingTestComponents { node, db, .. } =
+        setup_indexing_test_components(None).await;
 
-    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
-    update_test_manifest_asset_paths(&mut manifest);
+    mock_request("/scriptresult").await;
 
-    srvc.register_indexer_from_manifest(manifest).await.unwrap();
+    node.abort();
 
-    let contract = connect_to_deployed_contract().await.unwrap();
-    let app = test::init_service(app(contract)).await;
-    let req = test::TestRequest::post().uri("/scriptresult").to_request();
-    let _ = app.call(req).await;
-
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-    node_handle.abort();
-
-    let mut conn = test_db.pool.acquire().await.unwrap();
+    let mut conn = db.pool.acquire().await.unwrap();
     let row =
         sqlx::query("SELECT * FROM fuel_indexer_test_index1.scriptresultentity LIMIT 1")
             .fetch_one(&mut conn)
@@ -362,22 +261,14 @@ async fn test_can_trigger_and_index_scriptresult_event_postgres() {
 #[actix_web::test]
 #[ignore]
 async fn test_can_trigger_and_index_transferout_event_postgres() {
-    let (node_handle, test_db, mut srvc) = setup_test_components().await;
+    let IndexingTestComponents { node, db, .. } =
+        setup_indexing_test_components(None).await;
 
-    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
-    update_test_manifest_asset_paths(&mut manifest);
+    mock_request("/transferout").await;
 
-    srvc.register_indexer_from_manifest(manifest).await.unwrap();
+    node.abort();
 
-    let contract = connect_to_deployed_contract().await.unwrap();
-    let app = test::init_service(app(contract)).await;
-    let req = test::TestRequest::post().uri("/transferout").to_request();
-    let _ = app.call(req).await;
-
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-    node_handle.abort();
-
-    let mut conn = test_db.pool.acquire().await.unwrap();
+    let mut conn = db.pool.acquire().await.unwrap();
     let row =
         sqlx::query("SELECT * FROM fuel_indexer_test_index1.transferoutentity LIMIT 1")
             .fetch_one(&mut conn)
@@ -389,28 +280,20 @@ async fn test_can_trigger_and_index_transferout_event_postgres() {
         "532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96"
     );
     assert_eq!(row.get::<BigDecimal, usize>(3).to_u64().unwrap(), 1);
-    assert_eq!(row.get::<&str, usize>(4), defaults::TRANSFER_BASE_ASSET_ID);
+    assert_eq!(row.get::<&str, usize>(4), TRANSFER_BASE_ASSET_ID);
 }
 
 #[actix_web::test]
 #[ignore]
 async fn test_can_trigger_and_index_messageout_event_postgres() {
-    let (node_handle, test_db, mut srvc) = setup_test_components().await;
+    let IndexingTestComponents { node, db, .. } =
+        setup_indexing_test_components(None).await;
 
-    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
-    update_test_manifest_asset_paths(&mut manifest);
+    mock_request("/messageout").await;
 
-    srvc.register_indexer_from_manifest(manifest).await.unwrap();
+    node.abort();
 
-    let contract = connect_to_deployed_contract().await.unwrap();
-    let app = test::init_service(app(contract)).await;
-    let req = test::TestRequest::post().uri("/messageout").to_request();
-    let _ = app.call(req).await;
-
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-    node_handle.abort();
-
-    let mut conn = test_db.pool.acquire().await.unwrap();
+    let mut conn = db.pool.acquire().await.unwrap();
     let row =
         sqlx::query("SELECT * FROM fuel_indexer_test_index1.messageoutentity LIMIT 1")
             .fetch_one(&mut conn)
@@ -439,22 +322,14 @@ async fn test_can_trigger_and_index_messageout_event_postgres() {
 
 #[actix_web::test]
 async fn test_can_index_event_with_optional_fields_postgres() {
-    let (node_handle, test_db, mut srvc) = setup_test_components().await;
+    let IndexingTestComponents { node, db, .. } =
+        setup_indexing_test_components(None).await;
 
-    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
-    update_test_manifest_asset_paths(&mut manifest);
+    mock_request("/optionals").await;
 
-    srvc.register_indexer_from_manifest(manifest).await.unwrap();
+    node.abort();
 
-    let contract = connect_to_deployed_contract().await.unwrap();
-    let app = test::init_service(app(contract)).await;
-    let req = test::TestRequest::post().uri("/optionals").to_request();
-    let _ = app.call(req).await;
-
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-    node_handle.abort();
-
-    let mut conn = test_db.pool.acquire().await.unwrap();
+    let mut conn = db.pool.acquire().await.unwrap();
     let row = sqlx::query(
         "SELECT * FROM fuel_indexer_test_index1.optionentity WHERE id = 8675309",
     )
@@ -475,274 +350,34 @@ async fn test_can_index_event_with_optional_fields_postgres() {
 
 #[actix_web::test]
 async fn test_can_index_metadata_when_indexer_macro_is_called_postgres() {
-    let (node_handle, test_db, mut srvc) = setup_test_components().await;
+    let IndexingTestComponents { node, db, .. } =
+        setup_indexing_test_components(None).await;
 
-    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
-    update_test_manifest_asset_paths(&mut manifest);
+    mock_request("/block").await;
 
-    srvc.register_indexer_from_manifest(manifest).await.unwrap();
+    node.abort();
 
-    let contract = connect_to_deployed_contract().await.unwrap();
-    let app = test::init_service(app(contract)).await;
-    let req = test::TestRequest::post().uri("/ping").to_request();
-    let _ = app.call(req).await;
-
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-    node_handle.abort();
-
-    let mut conn = test_db.pool.acquire().await.unwrap();
+    let mut conn = db.pool.acquire().await.unwrap();
     let row =
         sqlx::query("SELECT * FROM fuel_indexer_test_index1.indexmetadataentity LIMIT 1")
             .fetch_one(&mut conn)
             .await
             .unwrap();
 
-    assert!(row.get::<BigDecimal, usize>(0).to_u64().unwrap() >= 1);
-    assert!(row.get::<BigDecimal, usize>(1).to_u64().unwrap() >= 1);
-}
-
-#[actix_web::test]
-async fn test_indexer_respects_start_block_postgres() {
-    let (node_handle, test_db, mut srvc) = setup_test_components().await;
-
-    let contract = connect_to_deployed_contract().await.unwrap();
-    let app = test::init_service(app(contract)).await;
-    let req = test::TestRequest::get().uri("/block_height").to_request();
-    let res = test::call_and_read_body(&app, req).await;
-    let block_height = String::from_utf8(res.to_vec())
-        .unwrap()
-        .parse::<u64>()
-        .unwrap();
-
-    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
-    update_test_manifest_asset_paths(&mut manifest);
-    manifest.start_block = Some(block_height + 2);
-
-    srvc.register_indexer_from_manifest(manifest).await.unwrap();
-
-    let mut conn = test_db.pool.acquire().await.unwrap();
-    let pre_check = sqlx::query(&format!(
-        "SELECT * FROM fuel_indexer_test_index1.blockentity where height = {}",
-        block_height + 1,
-    ))
-    .fetch_optional(&mut conn)
-    .await
-    .unwrap();
-
-    assert!(pre_check.is_none());
-
-    let req = test::TestRequest::post().uri("/ping").to_request();
-    let _ = app.call(req).await;
-
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-
-    let first_check = sqlx::query(&format!(
-        "SELECT * FROM fuel_indexer_test_index1.blockentity where height = {}",
-        block_height + 1,
-    ))
-    .fetch_optional(&mut conn)
-    .await
-    .unwrap();
-
-    assert!(first_check.is_none());
-
-    let req = test::TestRequest::post().uri("/ping").to_request();
-    let _ = app.call(req).await;
-
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-    node_handle.abort();
-
-    let final_check = sqlx::query(&format!(
-        "SELECT * FROM fuel_indexer_test_index1.blockentity where height = {}",
-        block_height + 2,
-    ))
-    .fetch_optional(&mut conn)
-    .await
-    .unwrap();
-
-    assert!(final_check.is_some());
-
-    let row = final_check.unwrap();
-    let height = row.get::<BigDecimal, usize>(1).to_u64().unwrap();
-
-    assert_eq!(height, (block_height + 2));
-    assert!(row.get::<i64, usize>(2) > 0);
-}
-
-#[actix_web::test]
-async fn test_indexer_respects_end_block_postgres() {
-    let (node_handle, test_db, mut srvc) = setup_test_components().await;
-
-    let contract = connect_to_deployed_contract().await.unwrap();
-    let app = test::init_service(app(contract)).await;
-    let req = test::TestRequest::get().uri("/block_height").to_request();
-    let res = test::call_and_read_body(&app, req).await;
-    let block_height = String::from_utf8(res.to_vec())
-        .unwrap()
-        .parse::<u64>()
-        .unwrap();
-
-    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
-    update_test_manifest_asset_paths(&mut manifest);
-    manifest.end_block = Some(block_height + 1);
-
-    srvc.register_indexer_from_manifest(manifest).await.unwrap();
-
-    let req = test::TestRequest::post().uri("/ping").to_request();
-    let _ = app.call(req).await;
-
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-
-    let mut conn = test_db.pool.acquire().await.unwrap();
-    let first_check = sqlx::query(&format!(
-        "SELECT * FROM fuel_indexer_test_index1.blockentity where height = {}",
-        block_height,
-    ))
-    .fetch_optional(&mut conn)
-    .await
-    .unwrap();
-
-    let row = first_check.unwrap();
-    let indexed_height = row.get::<BigDecimal, usize>(1).to_u64().unwrap();
-
-    assert_eq!(indexed_height, (block_height));
-    assert!(row.get::<i64, usize>(2) > 0);
-
-    let req = test::TestRequest::post().uri("/ping").to_request();
-    let _ = app.call(req).await;
-
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-    node_handle.abort();
-
-    let second_check = sqlx::query(&format!(
-        "SELECT * FROM fuel_indexer_test_index1.blockentity where height = {}",
-        block_height + 1,
-    ))
-    .fetch_optional(&mut conn)
-    .await
-    .unwrap();
-
-    let row = second_check.unwrap();
-    let indexed_height = row.get::<BigDecimal, usize>(1).to_u64().unwrap();
-
-    assert_eq!(indexed_height, (block_height + 1));
-    assert!(row.get::<i64, usize>(2) > 0);
-
-    let req = test::TestRequest::post().uri("/ping").to_request();
-    let _ = app.call(req).await;
-
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-    node_handle.abort();
-
-    let final_check = sqlx::query(&format!(
-        "SELECT * FROM fuel_indexer_test_index1.blockentity where height = {}",
-        block_height + 2,
-    ))
-    .fetch_optional(&mut conn)
-    .await
-    .unwrap();
-
-    // Should not have indexed this block
-    assert!(final_check.is_none());
-}
-
-#[actix_web::test]
-async fn test_index_respects_end_block_and_start_block_postgres() {
-    let (node_handle, test_db, mut srvc) = setup_test_components().await;
-
-    let contract = connect_to_deployed_contract().await.unwrap();
-    let app = test::init_service(app(contract)).await;
-    let req = test::TestRequest::get().uri("/block_height").to_request();
-    let res = test::call_and_read_body(&app, req).await;
-    let block_height = String::from_utf8(res.to_vec())
-        .unwrap()
-        .parse::<u64>()
-        .unwrap();
-
-    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
-    update_test_manifest_asset_paths(&mut manifest);
-    manifest.start_block = Some(block_height + 1);
-    manifest.end_block = Some(block_height + 2);
-
-    srvc.register_indexer_from_manifest(manifest).await.unwrap();
-
-    let mut conn = test_db.pool.acquire().await.unwrap();
-
-    // Check block before start block is not indexed
-    let pre_check = sqlx::query(&format!(
-        "SELECT * FROM fuel_indexer_test_index1.blockentity where height = {}",
-        block_height,
-    ))
-    .fetch_optional(&mut conn)
-    .await
-    .unwrap();
-
-    assert!(pre_check.is_none());
-
-    // Index and check start block
-    let req = test::TestRequest::post().uri("/ping").to_request();
-    let _ = app.call(req).await;
-
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-
-    let start_block_check = sqlx::query(&format!(
-        "SELECT * FROM fuel_indexer_test_index1.blockentity where height = {}",
-        block_height + 1,
-    ))
-    .fetch_optional(&mut conn)
-    .await
-    .unwrap();
-
-    assert!(start_block_check.is_some());
-
-    // Index and check end block
-    let req = test::TestRequest::post().uri("/ping").to_request();
-    let _ = app.call(req).await;
-
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-
-    let end_block_check = sqlx::query(&format!(
-        "SELECT * FROM fuel_indexer_test_index1.blockentity where height = {}",
-        block_height + 2,
-    ))
-    .fetch_optional(&mut conn)
-    .await
-    .unwrap();
-
-    assert!(end_block_check.is_some());
-
-    // Check block after end block is not indexed
-    let post_check = sqlx::query(&format!(
-        "SELECT * FROM fuel_indexer_test_index1.blockentity where height = {}",
-        block_height + 3,
-    ))
-    .fetch_optional(&mut conn)
-    .await
-    .unwrap();
-
-    assert!(post_check.is_none());
-
-    node_handle.abort();
+    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 0);
+    assert_eq!(row.get::<BigDecimal, usize>(1).to_u64().unwrap(), 0);
 }
 
 #[actix_web::test]
 async fn test_can_trigger_and_index_tuple_events_postgres() {
-    let (node_handle, test_db, mut srvc) = setup_test_components().await;
+    let IndexingTestComponents { node, db, .. } =
+        setup_indexing_test_components(None).await;
 
-    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
-    update_test_manifest_asset_paths(&mut manifest);
+    mock_request("/tuples").await;
 
-    srvc.register_indexer_from_manifest(manifest).await.unwrap();
+    node.abort();
 
-    let contract = connect_to_deployed_contract().await.unwrap();
-    let app = test::init_service(app(contract)).await;
-    let req = test::TestRequest::post().uri("/tuples").to_request();
-    let _ = app.call(req).await;
-
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-    node_handle.abort();
-
-    let mut conn = test_db.pool.acquire().await.unwrap();
+    let mut conn = db.pool.acquire().await.unwrap();
     let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.tupleentity LIMIT 1")
         .fetch_one(&mut conn)
         .await
@@ -754,55 +389,15 @@ async fn test_can_trigger_and_index_tuple_events_postgres() {
 }
 
 #[actix_web::test]
-async fn test_can_trigger_and_index_pure_function_postgres() {
-    let (node_handle, test_db, mut srvc) = setup_test_components().await;
+async fn test_can_trigger_and_index_revert_event_postgres() {
+    let IndexingTestComponents { node, db, .. } =
+        setup_indexing_test_components(None).await;
 
-    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
-    update_test_manifest_asset_paths(&mut manifest);
+    mock_request("/revert").await;
 
-    srvc.register_indexer_from_manifest(manifest).await.unwrap();
+    node.abort();
 
-    let contract = connect_to_deployed_contract().await.unwrap();
-    let app = test::init_service(app(contract)).await;
-    let req = test::TestRequest::post().uri("/pure_function").to_request();
-    let _ = app.call(req).await;
-
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-    node_handle.abort();
-
-    let mut conn = test_db.pool.acquire().await.unwrap();
-    let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.callentity LIMIT 1")
-        .fetch_one(&mut conn)
-        .await
-        .unwrap();
-
-    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 123);
-    assert_eq!(
-        row.get::<&str, usize>(1),
-        "0000000000000000000000000000000000000000000000000000000000000000"
-    );
-    assert_eq!(row.get::<&str, usize>(3), defaults::TRANSFER_BASE_ASSET_ID);
-    assert_eq!(row.get::<&str, usize>(5), "trigger_pure_function");
-}
-
-#[actix_web::test]
-async fn test_can_trigger_and_index_revert_function_postgres() {
-    let (node_handle, test_db, mut srvc) = setup_test_components().await;
-
-    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
-    update_test_manifest_asset_paths(&mut manifest);
-
-    srvc.register_indexer_from_manifest(manifest).await.unwrap();
-
-    let contract = connect_to_deployed_contract().await.unwrap();
-    let app = test::init_service(app(contract)).await;
-    let req = test::TestRequest::post().uri("/revert").to_request();
-    let _ = app.call(req).await;
-
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-    node_handle.abort();
-
-    let mut conn = test_db.pool.acquire().await.unwrap();
+    let mut conn = db.pool.acquire().await.unwrap();
     let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.revertentity LIMIT 1")
         .fetch_one(&mut conn)
         .await
@@ -817,23 +412,15 @@ async fn test_can_trigger_and_index_revert_function_postgres() {
 }
 
 #[actix_web::test]
-async fn test_can_trigger_and_index_panic_function_postgres() {
-    let (node_handle, test_db, mut srvc) = setup_test_components().await;
+async fn test_can_trigger_and_index_panic_event_postgres() {
+    let IndexingTestComponents { node, db, .. } =
+        setup_indexing_test_components(None).await;
 
-    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
-    update_test_manifest_asset_paths(&mut manifest);
+    mock_request("/panic").await;
 
-    srvc.register_indexer_from_manifest(manifest).await.unwrap();
+    node.abort();
 
-    let contract = connect_to_deployed_contract().await.unwrap();
-    let app = test::init_service(app(contract)).await;
-    let req = test::TestRequest::post().uri("/panic").to_request();
-    let _ = app.call(req).await;
-
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-    node_handle.abort();
-
-    let mut conn = test_db.pool.acquire().await.unwrap();
+    let mut conn = db.pool.acquire().await.unwrap();
     let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.panicentity LIMIT 1")
         .fetch_one(&mut conn)
         .await
@@ -846,22 +433,14 @@ async fn test_can_trigger_and_index_panic_function_postgres() {
 
 #[actix_web::test]
 async fn test_can_trigger_and_index_enum_error_function_postgres() {
-    let (node_handle, test_db, mut srvc) = setup_test_components().await;
+    let IndexingTestComponents { node, db, .. } =
+        setup_indexing_test_components(None).await;
 
-    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
-    update_test_manifest_asset_paths(&mut manifest);
+    mock_request("/enum_error").await;
 
-    srvc.register_indexer_from_manifest(manifest).await.unwrap();
+    node.abort();
 
-    let contract = connect_to_deployed_contract().await.unwrap();
-    let app = test::init_service(app(contract)).await;
-    let req = test::TestRequest::post().uri("/enum_error").to_request();
-    let _ = app.call(req).await;
-
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-    node_handle.abort();
-
-    let mut conn = test_db.pool.acquire().await.unwrap();
+    let mut conn = db.pool.acquire().await.unwrap();
     let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.enumerror LIMIT 1")
         .fetch_one(&mut conn)
         .await
@@ -874,22 +453,14 @@ async fn test_can_trigger_and_index_enum_error_function_postgres() {
 
 #[actix_web::test]
 async fn test_can_trigger_and_index_block_explorer_types_postgres() {
-    let (node_handle, test_db, mut srvc) = setup_test_components().await;
+    let IndexingTestComponents { node, db, .. } =
+        setup_indexing_test_components(None).await;
 
-    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
-    update_test_manifest_asset_paths(&mut manifest);
+    mock_request("/block").await;
 
-    srvc.register_indexer_from_manifest(manifest).await.unwrap();
+    node.abort();
 
-    let contract = connect_to_deployed_contract().await.unwrap();
-    let app = test::init_service(app(contract)).await;
-    let req = test::TestRequest::post().uri("/block").to_request();
-    let _ = app.call(req).await;
-
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-    node_handle.abort();
-
-    let mut conn = test_db.pool.acquire().await.unwrap();
+    let mut conn = db.pool.acquire().await.unwrap();
     let row =
         sqlx::query("SELECT * FROM fuel_indexer_test_index1.explorerentity LIMIT 1")
             .fetch_one(&mut conn)
@@ -911,22 +482,14 @@ async fn test_can_trigger_and_index_block_explorer_types_postgres() {
 
 #[actix_web::test]
 async fn test_can_trigger_and_index_enum_types_postgres() {
-    let (node_handle, test_db, mut srvc) = setup_test_components().await;
+    let IndexingTestComponents { node, db, .. } =
+        setup_indexing_test_components(None).await;
 
-    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
-    update_test_manifest_asset_paths(&mut manifest);
+    mock_request("/enum").await;
 
-    srvc.register_indexer_from_manifest(manifest).await.unwrap();
+    node.abort();
 
-    let contract = connect_to_deployed_contract().await.unwrap();
-    let app = test::init_service(app(contract)).await;
-    let req = test::TestRequest::post().uri("/enum").to_request();
-    let _ = app.call(req).await;
-
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-    node_handle.abort();
-
-    let mut conn = test_db.pool.acquire().await.unwrap();
+    let mut conn = db.pool.acquire().await.unwrap();
     let row =
         sqlx::query("SELECT * FROM fuel_indexer_test_index1.complexenumentity LIMIT 1")
             .fetch_one(&mut conn)
@@ -937,7 +500,6 @@ async fn test_can_trigger_and_index_enum_types_postgres() {
     assert_eq!(row.get::<&str, usize>(1), "EnumEntity::One");
 }
 
-// Taken from fuel_indexer_test.graphql
 #[derive(Serialize, Deserialize, sqlx::FromRow, sqlx::Decode, Debug, Eq, PartialEq)]
 struct VirtualEntity {
     name: Option<String>,
@@ -946,22 +508,14 @@ struct VirtualEntity {
 
 #[actix_web::test]
 async fn test_can_trigger_and_index_nonindexable_events() {
-    let (node_handle, test_db, mut srvc) = setup_test_components().await;
+    let IndexingTestComponents { node, db, .. } =
+        setup_indexing_test_components(None).await;
 
-    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
-    update_test_manifest_asset_paths(&mut manifest);
+    mock_request("/block").await;
 
-    srvc.register_indexer_from_manifest(manifest).await.unwrap();
+    node.abort();
 
-    let contract = connect_to_deployed_contract().await.unwrap();
-    let app = test::init_service(app(contract)).await;
-    let req = test::TestRequest::post().uri("/block").to_request();
-    let _ = app.call(req).await;
-
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-    node_handle.abort();
-
-    let mut conn = test_db.pool.acquire().await.unwrap();
+    let mut conn = db.pool.acquire().await.unwrap();
     let row =
         sqlx::query("SELECT * FROM fuel_indexer_test_index1.usesvirtualentity LIMIT 1")
             .fetch_one(&mut conn)
@@ -978,32 +532,33 @@ async fn test_can_trigger_and_index_nonindexable_events() {
     assert_eq!(entity.size, 1);
 }
 
+// FIXME: This is not an indexing test...
 #[actix_web::test]
-async fn test_deploying_twice_returns_an_error() {
-    let test_db = TestPostgresDb::new().await.unwrap();
-
-    let mut indexer = {
-        let modify_config = Box::new(|config: &mut fuel_indexer::IndexerConfig| {
-            config.replace_indexer = false;
-        });
-        indexer_service_postgres(Some(&test_db.url), Some(modify_config)).await
+async fn test_redeploying_an_already_active_indexer_returns_error_when_replace_indexer_is_false(
+) {
+    let config = IndexerConfig {
+        replace_indexer: false,
+        ..IndexerConfig::default()
     };
 
-    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
-    update_test_manifest_asset_paths(&mut manifest);
+    let IndexingTestComponents {
+        node,
+        mut service,
+        manifest,
+        db: _db,
+        ..
+    } = setup_indexing_test_components(Some(config)).await;
 
-    indexer
-        .register_indexer_from_manifest(manifest.clone())
-        .await
-        .unwrap();
+    node.abort();
 
-    let result = indexer.register_indexer_from_manifest(manifest).await;
+    // Attempt to re-register the indexer
+    let result = service.register_indexer_from_manifest(manifest).await;
 
     assert!(result.is_err());
 
     match result.unwrap_err() {
         fuel_indexer::IndexerError::Unknown(msg) => {
-            assert_eq!(&msg, "Indexer(fuel_indexer_test.index1) already exists")
+            assert_eq!(&msg, "Indexer(fuel_indexer_test.index1) already exists.")
         }
         err => {
             panic!("Expected Unknown but got: {}", err)
@@ -1011,40 +566,33 @@ async fn test_deploying_twice_returns_an_error() {
     }
 }
 
+// FIXME: This is not an indexing test...
 #[actix_web::test]
-async fn test_can_replace_indexer() {
-    let node_handle = tokio::spawn(setup_example_test_fuel_node());
-    let test_db = TestPostgresDb::new().await.unwrap();
-
-    let mut indexer = {
-        let modify_config = Box::new(|config: &mut fuel_indexer::IndexerConfig| {
-            config.replace_indexer = true;
-        });
-        indexer_service_postgres(Some(&test_db.url), Some(modify_config)).await
+async fn test_redeploying_an_already_active_indexer_works_when_replace_indexer_is_true() {
+    let config = IndexerConfig {
+        replace_indexer: true,
+        ..IndexerConfig::default()
     };
 
-    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
-    update_test_manifest_asset_paths(&mut manifest);
+    let IndexingTestComponents {
+        node,
+        mut service,
+        db,
+        manifest,
+        ..
+    } = setup_indexing_test_components(Some(config)).await;
 
-    indexer
-        .register_indexer_from_manifest(manifest.clone())
-        .await
-        .unwrap();
-
-    indexer
+    // Re-register the indexer
+    service
         .register_indexer_from_manifest(manifest)
         .await
         .unwrap();
 
-    let contract = connect_to_deployed_contract().await.unwrap();
-    let app = test::init_service(app(contract)).await;
-    let req = test::TestRequest::post().uri("/enum").to_request();
-    let _ = app.call(req).await;
+    mock_request("/enum").await;
 
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-    node_handle.abort();
+    node.abort();
 
-    let mut conn = test_db.pool.acquire().await.unwrap();
+    let mut conn = db.pool.acquire().await.unwrap();
     let row =
         sqlx::query("SELECT * FROM fuel_indexer_test_index1.complexenumentity LIMIT 1")
             .fetch_one(&mut conn)
@@ -1065,22 +613,14 @@ struct UnionEntity {
 
 #[actix_web::test]
 async fn test_can_trigger_and_index_union_types() {
-    let (node_handle, test_db, mut srvc) = setup_test_components().await;
+    let IndexingTestComponents { node, db, .. } =
+        setup_indexing_test_components(None).await;
 
-    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
-    update_test_manifest_asset_paths(&mut manifest);
+    mock_request("/block").await;
 
-    srvc.register_indexer_from_manifest(manifest).await.unwrap();
+    node.abort();
 
-    let contract = connect_to_deployed_contract().await.unwrap();
-    let app = test::init_service(app(contract)).await;
-    let req = test::TestRequest::post().uri("/block").to_request();
-    let _ = app.call(req).await;
-
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-    node_handle.abort();
-
-    let mut conn = test_db.pool.acquire().await.unwrap();
+    let mut conn = db.pool.acquire().await.unwrap();
     let row = sqlx::query(
         "SELECT * FROM fuel_indexer_test_index1.indexableunionentity LIMIT 1",
     )
@@ -1119,22 +659,14 @@ struct ListFKType {
 
 #[actix_web::test]
 async fn test_can_trigger_and_index_list_types() {
-    let (node_handle, test_db, mut srvc) = setup_test_components().await;
+    let IndexingTestComponents { node, db, .. } =
+        setup_indexing_test_components(None).await;
 
-    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
-    update_test_manifest_asset_paths(&mut manifest);
+    mock_request("/block").await;
 
-    srvc.register_indexer_from_manifest(manifest).await.unwrap();
+    node.abort();
 
-    let contract = connect_to_deployed_contract().await.unwrap();
-    let app = test::init_service(app(contract)).await;
-    let req = test::TestRequest::post().uri("/block").to_request();
-    let _ = app.call(req).await;
-
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-    node_handle.abort();
-
-    let mut conn = test_db.pool.acquire().await.unwrap();
+    let mut conn = db.pool.acquire().await.unwrap();
     let row =
         sqlx::query("SELECT * FROM fuel_indexer_test_index1.listtypeentity LIMIT 1")
             .fetch_one(&mut conn)

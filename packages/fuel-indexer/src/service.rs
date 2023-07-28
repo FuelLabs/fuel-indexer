@@ -23,16 +23,29 @@ use tokio::{
 };
 use tracing::{debug, error, info, warn};
 
+/// Primary service used to run one or many indexers.
 pub struct IndexerService {
+    /// Indexer service configuration.
     config: IndexerConfig,
+
+    /// Connection pool used to connect to the database.
     pool: IndexerConnectionPool,
+
+    /// Schema manager used to manage the database schema.
     manager: SchemaManager,
+
+    /// Handles to the spawned indexers.
     handles: HashMap<String, JoinHandle<()>>,
+
+    /// Channel used to receive `ServiceRequest`s.
     rx: Receiver<ServiceRequest>,
+
+    /// Killers used to stop the spawned indexers.
     killers: HashMap<String, Arc<AtomicBool>>,
 }
 
 impl IndexerService {
+    /// Create a new `IndexerService`.
     pub async fn new(
         config: IndexerConfig,
         pool: IndexerConnectionPool,
@@ -50,6 +63,7 @@ impl IndexerService {
         })
     }
 
+    /// Register new indexers to the `IndexerService`, from a `Manifest`.
     pub async fn register_indexer_from_manifest(
         &mut self,
         mut manifest: Manifest,
@@ -58,56 +72,59 @@ impl IndexerService {
 
         let indexer_exists = (queries::get_indexer_id(
             &mut conn,
-            &manifest.namespace,
-            &manifest.identifier,
+            manifest.namespace(),
+            manifest.identifier(),
         )
         .await)
             .is_ok();
         if indexer_exists {
             if !self.config.replace_indexer {
                 return Err(IndexerError::Unknown(format!(
-                    "Indexer({}.{}) already exists",
-                    &manifest.namespace, &manifest.identifier
+                    "Indexer({}.{}) already exists.",
+                    manifest.namespace(),
+                    manifest.identifier()
                 )));
             } else if let Err(e) = queries::remove_indexer(
                 &mut conn,
-                &manifest.namespace,
-                &manifest.identifier,
+                manifest.namespace(),
+                manifest.identifier(),
             )
             .await
             {
                 error!(
                     "Failed to remove Indexer({}.{}): {e}",
-                    &manifest.namespace, &manifest.identifier
+                    manifest.namespace(),
+                    manifest.identifier()
                 );
                 queries::revert_transaction(&mut conn).await?;
                 return Err(e.into());
             }
         }
 
-        let index = queries::register_indexer(
+        let _indexer = queries::register_indexer(
             &mut conn,
-            &manifest.namespace,
-            &manifest.identifier,
+            manifest.namespace(),
+            manifest.identifier(),
             None,
         )
         .await?;
 
-        let schema = manifest.graphql_schema()?;
-        let schema_bytes = schema.as_bytes().to_vec();
+        let schema = manifest.graphql_schema_content()?;
+        let schema_bytes = Vec::<u8>::from(&schema);
 
         self.manager
             .new_schema(
-                &manifest.namespace,
-                &manifest.identifier,
-                &schema,
+                manifest.namespace(),
+                manifest.identifier(),
+                schema,
                 manifest.execution_source(),
                 &mut conn,
             )
             .await?;
 
         let start_block = get_start_block(&mut conn, &manifest).await?;
-        manifest.start_block = Some(start_block);
+        manifest.set_start_block(start_block);
+
         let (handle, exec_source, killer) = WasmIndexExecutor::create(
             &self.config,
             &manifest,
@@ -127,16 +144,16 @@ impl IndexerService {
 
         while let Some((asset_type, bytes)) = items.pop() {
             info!(
-                "Registering Asset({:?}) for Indexer({})",
-                asset_type,
-                index.uid()
+                "Registering Asset({asset_type:?}) for Indexer({}.{})",
+                manifest.namespace(),
+                manifest.identifier()
             );
 
             {
                 queries::register_indexer_asset(
                     &mut conn,
-                    &manifest.namespace,
-                    &manifest.identifier,
+                    manifest.namespace(),
+                    manifest.identifier(),
                     bytes,
                     asset_type,
                     None,
@@ -144,13 +161,18 @@ impl IndexerService {
                 .await?;
             }
         }
-        info!("Registered Indexer({})", &manifest.uid());
+        info!(
+            "Registered Indexer({}.{})",
+            manifest.namespace(),
+            manifest.identifier()
+        );
         self.handles.insert(manifest.uid(), handle);
         self.killers.insert(manifest.uid(), killer);
 
         Ok(())
     }
 
+    /// Register pre-existing indexers from the database.
     pub async fn register_indexers_from_registry(&mut self) -> IndexerResult<()> {
         let mut conn = self.pool.acquire().await?;
         let indices = queries::all_registered_indexers(&mut conn).await?;
@@ -159,7 +181,8 @@ impl IndexerService {
             let mut manifest = Manifest::try_from(&assets.manifest.bytes)?;
 
             let start_block = get_start_block(&mut conn, &manifest).await.unwrap_or(1);
-            manifest.start_block = Some(start_block);
+            manifest.set_start_block(start_block);
+
             let (handle, _module_bytes, killer) = WasmIndexExecutor::create(
                 &self.config,
                 &manifest,
@@ -176,6 +199,7 @@ impl IndexerService {
         Ok(())
     }
 
+    /// Register a native indexer to the `IndexerService`, from a `Manifest`.
     pub async fn register_native_indexer<
         T: Future<Output = IndexerResult<()>> + Send + 'static,
     >(
@@ -186,26 +210,25 @@ impl IndexerService {
         let mut conn = self.pool.acquire().await?;
         let _index = queries::register_indexer(
             &mut conn,
-            &manifest.namespace,
-            &manifest.identifier,
+            manifest.namespace(),
+            manifest.identifier(),
             None,
         )
         .await?;
-        let schema = manifest.graphql_schema()?;
-        let _schema_bytes = schema.as_bytes().to_vec();
 
         self.manager
             .new_schema(
-                &manifest.namespace,
-                &manifest.identifier,
-                &schema,
+                manifest.namespace(),
+                manifest.identifier(),
+                manifest.graphql_schema_content()?,
                 manifest.execution_source(),
                 &mut conn,
             )
             .await?;
 
         let start_block = get_start_block(&mut conn, &manifest).await.unwrap_or(1);
-        manifest.start_block = Some(start_block);
+        manifest.set_start_block(start_block);
+
         let uid = manifest.uid();
         let (handle, _module_bytes, killer) = NativeIndexExecutor::<T>::create(
             &self.config,
@@ -222,6 +245,7 @@ impl IndexerService {
         Ok(())
     }
 
+    /// Kick it off!
     pub async fn run(self) {
         let IndexerService {
             handles,
@@ -252,6 +276,7 @@ impl IndexerService {
     }
 }
 
+/// Create a tokio task used to listen to service messages primarily coming from the web API.
 async fn create_service_task(
     mut rx: Receiver<ServiceRequest>,
     config: IndexerConfig,
@@ -282,7 +307,8 @@ async fn create_service_task(
 
                             let start_block =
                                 get_start_block(&mut conn, &manifest).await?;
-                            manifest.start_block = Some(start_block);
+                            manifest.set_start_block(start_block);
+
                             let (handle, _module_bytes, killer) =
                                 WasmIndexExecutor::create(
                                     &config,
@@ -330,31 +356,32 @@ async fn create_service_task(
     }
 }
 
+/// Determine the starting block for this indexer.
 async fn get_start_block(
     conn: &mut IndexerConnection,
     manifest: &Manifest,
 ) -> Result<u64, IndexerError> {
-    let Manifest {
-        namespace,
-        identifier,
-        start_block,
-        resumable,
-        ..
-    } = manifest;
-    match &resumable {
+    match &manifest.resumable() {
         Some(resumable) => {
-            let last =
-                queries::last_block_height_for_indexer(conn, namespace, identifier)
-                    .await?;
-            let start = start_block.unwrap_or(last);
-            let resume = if *resumable {
+            let last = queries::last_block_height_for_indexer(
+                conn,
+                manifest.namespace(),
+                manifest.identifier(),
+            )
+            .await?;
+            let start = manifest.start_block().unwrap_or(last);
+            let block = if *resumable {
                 std::cmp::max(start, last)
             } else {
                 start
             };
-            info!("Resuming index from block {resume}");
-            Ok(resume)
+            info!(
+                "Resuming Indexer({}.{}) from block {block}",
+                manifest.namespace(),
+                manifest.identifier()
+            );
+            Ok(block)
         }
-        None => Ok(start_block.unwrap_or(1)),
+        None => Ok(manifest.start_block().unwrap_or(1)),
     }
 }

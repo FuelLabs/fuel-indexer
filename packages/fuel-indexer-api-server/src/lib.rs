@@ -5,6 +5,7 @@ pub mod cli;
 pub(crate) mod commands;
 pub(crate) mod middleware;
 pub(crate) mod models;
+pub(crate) mod sql;
 mod uses;
 
 pub mod utils {

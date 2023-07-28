@@ -34,6 +34,7 @@ hyper-rustls = { version = "0.23", features = ["http2"] }
 jsonwebtoken = "8"
 serde = { features = ["derive"], workspace = true }
 serde_json = { workspace = true, features = ["raw_value"] }
+sqlparser = { version = "0.35" }
 sqlx = { version = "0.6", features = ["postgres", "runtime-tokio-rustls", "bigdecimal"] }
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }

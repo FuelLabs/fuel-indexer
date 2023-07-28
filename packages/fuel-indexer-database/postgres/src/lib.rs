@@ -24,7 +24,8 @@ use fuel_indexer_macro_utils::metrics;
 
 use chrono::{DateTime, NaiveDateTime, Utc};
 
-const NONCE_EXPIRY: u64 = 3600; // 1 hour
+/// The nonce expiry time in seconds.
+const NONCE_EXPIRY_SECS: u64 = 3600;
 
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn put_object(
@@ -67,7 +68,10 @@ pub async fn run_query(
         .fetch_all(conn)
         .await?
         .iter()
-        .map(|r| r.get::<JsonValue, usize>(0))
+        .filter_map(|r| match r.try_get::<JsonValue, usize>(0) {
+            Ok(v) => Some(v),
+            Err(_e) => None,
+        })
         .collect())
 }
 
@@ -882,7 +886,7 @@ pub async fn create_nonce(conn: &mut PoolConnection<Postgres>) -> sqlx::Result<N
         .unwrap()
         .as_secs();
 
-    let expiry = now + NONCE_EXPIRY;
+    let expiry = now + NONCE_EXPIRY_SECS;
 
     let row = sqlx::QueryBuilder::new(&format!(
         "INSERT INTO nonce (uid, expiry) VALUES ('{uid}', {expiry}) RETURNING *"

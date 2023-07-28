@@ -86,6 +86,12 @@ impl GraphQLSchema {
     }
 }
 
+impl From<&GraphQLSchema> for Vec<u8> {
+    fn from(schema: &GraphQLSchema) -> Self {
+        schema.schema().as_bytes().to_vec()
+    }
+}
+
 impl std::fmt::Display for GraphQLSchema {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.schema)
