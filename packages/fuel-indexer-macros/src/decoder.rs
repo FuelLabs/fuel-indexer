@@ -694,27 +694,29 @@ impl From<ObjectDecoder> for TokenStream {
             .join_table_meta()
             .get(&ident.to_string())
         {
-            let mut tokens = meta
-                .iter()
-                .map(|meta| {
-                    let table_name = meta.table_name();
-                    let fully_qualified_namespace =
-                        impl_decoder.parsed.fully_qualified_namespace();
-                    let parent_column_name = meta.parent_column_name();
-                    let child_column_name = meta.child_column_name();
-                    let child_position = meta.parent().child_position.unwrap();
+            let mut tokens =
+                meta.iter()
+                    .map(|meta| {
+                        let table_name = meta.table_name();
+                        let fully_qualified_namespace =
+                            impl_decoder.parsed.fully_qualified_namespace();
+                        let parent_column_name = meta.parent_column_name();
+                        let child_column_name = meta.child_column_name();
+                        let child_position = meta.parent().child_position.expect(
+                            "Parent `JoinTableMeta` is missing `child_position`.",
+                        );
 
-                    quote! {
-                        Some(JoinMetadata {
-                            namespace: #fully_qualified_namespace,
-                            table_name: #table_name,
-                            parent_column_name: #parent_column_name,
-                            child_column_name: #child_column_name,
-                            child_position: #child_position,
-                        })
-                    }
-                })
-                .collect::<Vec<TokenStream>>();
+                        quote! {
+                            Some(JoinMetadata {
+                                namespace: #fully_qualified_namespace,
+                                table_name: #table_name,
+                                parent_column_name: #parent_column_name,
+                                child_column_name: #child_column_name,
+                                child_position: #child_position,
+                            })
+                        }
+                    })
+                    .collect::<Vec<TokenStream>>();
 
             tokens.resize(MAX_FOREIGN_KEY_LIST_FIELDS, quote! { None });
 
@@ -757,6 +759,9 @@ impl From<ObjectDecoder> for TokenStream {
                                     if let Some(meta) = Self::JOIN_METADATA {
                                         let items = meta.iter().filter_map(|x| x.clone()).collect::<Vec<_>>();
                                         let query = ManyToManyQuery::from_metadata(items, self.to_row());
+                                        if query.is_empty() {
+                                            return;
+                                        }
 
                                         d.lock().await.put_many_to_many_record(query.query().into()).await;
                                     }
@@ -968,7 +973,7 @@ type Wallet {
 }
 "#;
 
-        let wallet_fields = vec![
+        let fields = vec![
             Positioned {
                 pos: Pos::default(),
                 node: FieldDefinition {
@@ -1012,7 +1017,7 @@ type Wallet {
             },
         ];
 
-        let wallet_typedef = TypeDefinition {
+        let typdef = TypeDefinition {
             description: None,
             extend: false,
             name: Positioned {
@@ -1021,7 +1026,7 @@ type Wallet {
             },
             kind: TypeKind::Object(ObjectType {
                 implements: vec![],
-                fields: wallet_fields,
+                fields,
             }),
             directives: vec![],
         };
@@ -1034,7 +1039,7 @@ type Wallet {
         )
         .unwrap();
 
-        let wallet_decoder = ObjectDecoder::from_typedef(&wallet_typedef, &schema);
+        let wallet_decoder = ObjectDecoder::from_typedef(&typdef, &schema);
         let tokenstream = TokenStream::from(wallet_decoder).to_string();
 
         // Trying to assert we have every single token expected might be a bit much, so

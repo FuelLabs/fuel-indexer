@@ -1401,5 +1401,15 @@ type Wallet {
                 on_update: OnUpdate::NoAction,
             })
         );
+
+        assert_eq!(
+            table.constraints()[2],
+            Constraint::Pk(PrimaryKey {
+                db_type: DbType::Postgres,
+                namespace: schema.fully_qualified_namespace(),
+                table_name: "wallets_accounts".to_string(),
+                column_names: vec!["wallet_id".to_string(), "account_id".to_string()],
+            })
+        );
     }
 }

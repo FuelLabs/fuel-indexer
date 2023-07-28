@@ -782,6 +782,7 @@ impl From<fuel::TransactionData> for Transaction {
                     true,
                     Some(receipts),
                     tx_status.id,
+                    TransactionLabel::Script.into(),
                 );
 
                 Self::from(script_tx).get_or_create()
@@ -840,6 +841,7 @@ impl From<fuel::TransactionData> for Transaction {
                     true,
                     Some(receipts),
                     tx_status.id,
+                    TransactionLabel::Create.into(),
                 );
 
                 Self::from(create_tx).get_or_create()
@@ -868,6 +870,7 @@ impl From<fuel::TransactionData> for Transaction {
                     true,
                     Some(receipts),
                     tx_status.id,
+                    TransactionLabel::Mint.into(),
                 );
 
                 Self::from(mint_tx).get_or_create()
@@ -921,5 +924,7 @@ pub mod explorer_index {
             .iter()
             .map(|t| Transaction::from(t.to_owned()))
             .collect::<Vec<Transaction>>();
+
+        info!("4");
     }
 }

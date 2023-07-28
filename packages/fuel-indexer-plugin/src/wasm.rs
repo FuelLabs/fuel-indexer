@@ -63,6 +63,9 @@ pub trait Entity<'a>: Sized + PartialEq + Eq + std::fmt::Debug {
         if let Some(meta) = Self::JOIN_METADATA {
             let items = meta.iter().filter_map(|x| x.clone()).collect::<Vec<_>>();
             let query = ManyToManyQuery::from_metadata(items, self.to_row());
+            if query.is_empty() {
+                return;
+            }
             let bytes = Vec::<u8>::from(query);
             unsafe { ff_put_many_to_many_record(bytes.as_ptr(), bytes.len() as u32) }
         }

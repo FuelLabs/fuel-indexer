@@ -119,7 +119,7 @@ fn get_object(
         WasmPtr::<u32>::new(len_ptr)
             .deref(&mem)
             .write(size)
-            .unwrap();
+            .expect("Failed to write length to memory.");
 
         unsafe {
             mem.data_unchecked_mut()[range].copy_from_slice(&bytes);
@@ -182,7 +182,7 @@ fn put_many_to_many_record(mut env: FunctionEnvMut<IndexEnv>, ptr: u32, len: u32
     unsafe {
         bytes.extend_from_slice(&mem.data_unchecked()[range]);
     }
-    let query = String::from_utf8(bytes).unwrap();
+    let query = String::from_utf8(bytes).expect("String contains invalid UTF-8.");
     let rt = tokio::runtime::Handle::current();
     rt.block_on(async { idx_env.db.lock().await.put_many_to_many_record(query).await });
 }

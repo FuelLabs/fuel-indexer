@@ -36,6 +36,11 @@ impl ManyToManyQuery {
         &self.query
     }
 
+    /// Whether or not there are actual records to insert for this query.
+    pub fn is_empty(&self) -> bool {
+        self.query.is_empty()
+    }
+
     /// Create a new `ManyToManyQuery` from the given metadata and columns.
     pub fn from_metadata(
         metadata: Vec<JoinMetadata<'_>>,
@@ -54,13 +59,7 @@ impl ManyToManyQuery {
         let (parent_typedef_name, child_typedef_name) =
             join_table_typedefs_name(table_name);
         let mut query = format!(
-            "INSERT INTO {}.{} ({}_{}, {}_{}) VALUES ",
-            namespace,
-            table_name,
-            parent_typedef_name,
-            parent_column_name,
-            child_typedef_name,
-            child_column_name,
+            "INSERT INTO {namespace}.{table_name} ({parent_typedef_name}_{parent_column_name}, {child_typedef_name}_{child_column_name}) VALUES "
         );
 
         let id_index: usize = columns
@@ -79,26 +78,31 @@ impl ManyToManyQuery {
             match list_type_field {
                 FtColumn::Array(list) => {
                     if let Some(list) = list {
+                        if list.is_empty() {
+                            query = "".to_string();
+                            return;
+                        }
+
                         list.iter().for_each(|item| {
                             query.push_str(
                                 format!(" ({}, {}),", id, item.query_fragment()).as_str(),
                             );
                         });
+                    } else {
+                        query = "".to_string();
                     }
                 }
                 _ => panic!("Expected array type for many-to-many relationship."),
             }
         });
 
-        // Trim the trailing comma
-        query.pop();
-        query.push_str(&format!(
-            " ON CONFLICT({}_{}, {}_{}) DO NOTHING;",
-            parent_typedef_name,
-            parent_column_name,
-            child_typedef_name,
-            child_column_name,
-        ));
+        if !query.is_empty() {
+            // Trim the trailing comma
+            query.pop();
+            query.push_str(&format!(
+                    " ON CONFLICT({parent_typedef_name}_{parent_column_name}, {child_typedef_name}_{child_column_name}) DO NOTHING;"
+                ));
+        }
 
         ManyToManyQuery { query }
     }

@@ -5,7 +5,7 @@ use fuel_indexer_lib::{
 };
 use fuel_indexer_schema::FtColumn;
 use std::collections::HashMap;
-use tracing::{debug, error, info, warn};
+use tracing::{debug, error, info};
 
 /// Database for an executor instance, with schema info.
 #[derive(Debug)]
@@ -193,7 +193,7 @@ Do your WASM modules need to be rebuilt?
             Ok(v) => Some(v),
             Err(e) => {
                 if let sqlx::Error::RowNotFound = e {
-                    warn!("Row not found for object ID: {object_id}");
+                    debug!("Row not found for object ID: {object_id}");
                 } else {
                     error!("Failed to get_object: {e:?}");
                 }
@@ -259,7 +259,7 @@ Do your WASM modules need to be rebuilt?
     /// Specifically for many-to-many relationships.
     ///
     /// Since many-to-many relationships can _only_ ever reference certain `ID` fields
-    /// on entities, we don't need to save any `FtColumn::Object` columns, which means
+    /// on `TypeDefinition`s, we don't need to save any `FtColumn::Object` columns, which means
     /// we can simplify the `INSERT` into a simple string.
     pub async fn put_many_to_many_record(&mut self, query: String) {
         if self.config.verbose {

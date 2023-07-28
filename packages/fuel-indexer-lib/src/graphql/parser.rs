@@ -456,11 +456,69 @@ impl ParsedGraphQLSchema {
                                 &mut virtual_type_names,
                             );
 
+                            // Ensure we're not creating duplicate join table metadata, else we'll
+                            // have issues trying to create duplicate `TypeIds` when constructing SQL tables.
+                            let mut processed_fields = HashSet::new();
+
                             u.members.iter().for_each(|m| {
                                 let member_name = m.node.to_string();
                                 if let Some(name) = virtual_type_names.get(&member_name) {
                                     virtual_type_names.insert(name.to_owned());
                                 }
+
+                                // Don't create many-to-many relationships for `TypeDefintions` that are themselves
+                                // members of union `TypeDefinition`s.
+                                if join_table_meta.contains_key(&member_name) {
+                                    join_table_meta.remove(&member_name);
+                                }
+
+                                // Parse the many-to-many relationship metadata the same as we do for
+                                // `TypeKind::Object` above, just using each union member's fields.
+                                let member_obj = objects.get(&member_name).unwrap();
+
+                                member_obj.fields.iter().enumerate().for_each(
+                                    |(i, f)| {
+                                        let ftype = field_type_name(&f.node);
+
+                                        if processed_fields
+                                            .contains(&f.node.name.to_string())
+                                        {
+                                            return;
+                                        }
+
+                                        processed_fields.insert(f.node.name.to_string());
+
+                                        if parsed_typedef_names
+                                            .contains(&field_type_name(&f.node))
+                                            && !scalar_names.contains(&ftype)
+                                            && !enum_names.contains(&ftype)
+                                            && !virtual_type_names.contains(&ftype)
+                                        {
+                                            let (
+                                                _ref_coltype,
+                                                ref_colname,
+                                                ref_tablename,
+                                            ) = extract_foreign_key_info(
+                                                &f.node,
+                                                &field_type_mappings,
+                                            );
+
+                                            if is_list_type(&f.node) {
+                                                join_table_meta
+                                                    .entry(union_name.clone())
+                                                    .or_insert_with(Vec::new)
+                                                    .push(JoinTableMeta::new(
+                                                        &union_name.to_lowercase(),
+                                                        // The parent join column is _always_ `id: ID!`
+                                                        IdCol::to_lowercase_str(),
+                                                        &ref_tablename,
+                                                        &ref_colname,
+                                                        Some(i),
+                                                    ));
+                                            }
+                                        }
+                                    },
+                                );
                             });
 
                             // These member fields are already cached under their respective object names, but
@@ -769,6 +827,14 @@ type Wallet {
     id: ID!
     accounts: [Account!]!
 }
+
+type Vault {
+    id: ID!
+    label: Charfield!
+    user: [User!]!
+}
+
+union Platform = Vault | Wallet
 "#;
 
         let parsed = ParsedGraphQLSchema::new(
@@ -782,6 +848,7 @@ type Wallet {
 
         let parsed = parsed.unwrap();
 
+        // Basic stuff
         assert!(parsed.has_type("Account"));
         assert!(parsed.has_type("User"));
         assert!(parsed.is_possible_foreign_key("Account"));
@@ -792,11 +859,16 @@ type Wallet {
             .contains_key("Account.label"));
 
         assert!(parsed.is_union_typedef("Person"));
+
+        // Many to many for objects
         assert!(parsed.is_list_typedef("Wallet"));
         assert_eq!(parsed.join_table_meta().len(), 1);
         assert_eq!(
             parsed.join_table_meta().get("Wallet").unwrap()[0],
             JoinTableMeta::new("wallet", "id", "account", "id", Some(1))
         );
+
+        // Many to many for unions
+        assert!(parsed.is_list_typedef("Platform"));
     }
 }
