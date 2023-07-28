@@ -629,10 +629,10 @@ async fn test_can_trigger_and_index_union_types() {
     .unwrap();
 
     // Fields are in a different order for these union types
-    assert_eq!(row.get::<BigDecimal, usize>(3).to_u64().unwrap(), 1);
-    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 5);
-    assert_eq!(row.get::<BigDecimal, usize>(1).to_u64().unwrap(), 10);
-    assert_eq!(row.get::<&str, usize>(4), "UnionType::A");
+    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 1);
+    assert_eq!(row.get::<BigDecimal, usize>(1).to_u64().unwrap(), 5);
+    assert_eq!(row.get::<&str, usize>(2), "UnionType::A");
+    assert_eq!(row.get::<BigDecimal, usize>(3).to_u64().unwrap(), 10);
 
     let row = sqlx::query(
         "SELECT * FROM fuel_indexer_test_index1.virtualunioncontainerentity LIMIT 1",
