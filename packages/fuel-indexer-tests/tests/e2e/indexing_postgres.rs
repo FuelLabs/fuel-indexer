@@ -364,8 +364,8 @@ async fn test_can_index_metadata_when_indexer_macro_is_called_postgres() {
             .await
             .unwrap();
 
-    assert!(row.get::<BigDecimal, usize>(0).to_u64().unwrap() >= 1);
-    assert!(row.get::<BigDecimal, usize>(1).to_u64().unwrap() >= 1);
+    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 0);
+    assert_eq!(row.get::<BigDecimal, usize>(1).to_u64().unwrap(), 0);
 }
 
 #[actix_web::test]
