@@ -226,16 +226,16 @@ pub(crate) async fn register_indexer_assets(
             match name.as_str() {
                 "replace_indexer" => {
                     replace_indexer = std::str::from_utf8(&data.to_owned())
-                        .unwrap()
-                        .parse()
-                        .unwrap();
+                        .map_err(|e| ApiError::InternalError(e.to_string()))?
+                        .parse::<bool>()
+                        .map_err(|e| ApiError::InternalError(e.to_string()))?;
                     continue;
                 }
                 "remove_data" => {
                     remove_data = std::str::from_utf8(&data.to_owned())
-                        .unwrap()
-                        .parse()
-                        .unwrap();
+                        .map_err(|e| ApiError::InternalError(e.to_string()))?
+                        .parse::<bool>()
+                        .map_err(|e| ApiError::InternalError(e.to_string()))?;
                     continue;
                 }
                 name => {
