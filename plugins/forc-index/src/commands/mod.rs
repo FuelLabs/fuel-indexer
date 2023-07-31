@@ -5,8 +5,6 @@ pub mod deploy;
 pub mod init;
 pub mod kill;
 pub mod new;
-pub mod pull_abi;
 pub mod remove;
 pub mod start;
 pub mod status;
-pub mod welcome;

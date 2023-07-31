@@ -6,24 +6,10 @@ Fuel Indexer has many dependent repositories. If you need any help or mentoring 
 
 ## Code Standards
 
-We use an RFC process to maintain our code standards. They currently live in the RFC repo: <https://github.com/FuelLabs/rfcs/tree/master/text/code-standards>
+- [ ] If you've added a new function, method, class or abstraction, please include rustdoc comments for the new code so others can better understand the change.
+- [ ] If your change is non-trivial and testable, please try to include at least one happy path test to ensure that your change works.
+  - "Trivial" changes would be changes to docs, comments, or small style/syntactic changes
 
-## Building and setting up a development workspace
-
-Fuel Core is mostly written in Rust, but includes components written in C++ (RocksDB).
-We are currently using the latest Rust stable toolchain to build the project.
-But for `rustfmt`, we use Rust nightly toolchain because it provides more code style features(you can check [`rustfmt.toml`](.rustfmt.toml)).
-
-### Prerequisites
-
-To build Fuel Core you'll need to at least have the following installed:
-
-- `git` - version control
-- [`rustup`](https://rustup.rs/) - Rust installer and toolchain manager
-- [`clang`](http://releases.llvm.org/download.html) - Used to build system libraries (required for rocksdb).
-- [`postgresql/libpq`](https://grpc.io/docs/protoc-installation/) - Used for Postgres backend.
-
-See the [README.md](README.md#system-requirements) for platform specific setup steps.
 
 ### Getting the repository
 
@@ -59,10 +45,8 @@ Fuel Indexer's two primary crates are `fuel-indexer` and `fuel-indexer-api-serve
 You can build Fuel Indexer:
 
 ```sh
-cargo build -p fuel-indexer -p fuel-indexer-api-server
+cargo build -p fuel-indexer -p fuel-indexer-api-server --release --locked
 ```
-
-This command will run `cargo build` and also dump the latest schema into `/assets/` folder.
 
 Linting is done using rustfmt and clippy, which are each separate commands:
 
@@ -74,34 +58,12 @@ cargo fmt --all --check
 cargo clippy --all-features --all-targets -- -D warnings
 ```
 
-The test suite follows the Rust cargo standards. The GraphQL service will be instantiated by
-Tower and will emulate a server/client structure.
+The test suite follows the Rust cargo standards.
 
 Testing is simply done using Cargo:
 
 ```sh
 RUSTFLAGS='-D warnings' SQLX_OFFLINE=1 cargo test --locked --all-targets --all-features
-```
-
-#### Build Options
-
-For optimal performance, we recommend using native builds. The generated binary will be optimized for your CPU and may contain specific instructions supported only in your hardware.
-
-To build, run:
-
-```sh
-cargo build --release --bin fuel-indexer
-```
-
-The generated binary will be located in `./target/release/fuel-indexer`
-
-### Build issues
-
-- Due to dependencies on external components such as RocksDb, build times can be large without caching.
-  We currently use [sccache](https://github.com/mozilla/sccache)
-
-```sh
-cargo build -p fuel-indexer --no-default-features
 ```
 
 ## Contribution flow
@@ -112,18 +74,17 @@ This is a rough outline of what a contributor's workflow looks like:
     We may discuss the problem and solution in the issue.
   ⚠️ **DO NOT submit PRs that do not have an associated issue** ⚠️
 - Create a Git branch from where you want to base your work.
-  - Most work is usually branched off of `master`
+  - Most work is usually branched off of `develop`
   - Give your branch a name related to the work you're doing
+    - The convention for branch naming is usually `1234/short-description`, where `1234` is the number of the associated issue.
 - Write code, add test cases, and commit your work.
 - Run tests and make sure all tests pass.
 - Your commit message should be formatted as `[commit type]: [short commit blurb]`
   - Examples:
     - If you fixed a bug, your message is `fix: database locking issue`
-    - If you added new functionality, your message would be `enhancement: i add
-        something super cool`
+    - If you added new functionality, your message would be `enhancement: i added something super cool`
     - If you just did a chore your message is: `chore: i did somthing not fun`
-  - Keeping commit messages short and consistent helps users parse release
-        notes
+  - Keeping commit messages short and consistent helps users parse release notes
 - Push up your branch to Github then (on the right hand side of the Github UI):
   - Assign yourself as the owner of the PR
   - Add any and all necessary labels to your PR

@@ -15,10 +15,16 @@ cargo run -p hello-world-node --bin hello-world-node
 > IMPORTANT: Remember that unlike WebAssembly (WASM) execution, native execution builds a binary
 > that can be invoked using either `cargo` or executed directly.
 
+Build binary.
+
 ```bash
-cargo run -p hello_indexer_native --bin hello_indexer_native -- \
-    --manifest examples/hello-world-native/hello-indexer-native/hello_indexer_native.manifest.yaml \
-    --run-migrations
+cargo build -p hello_indexer_native --locked --release
+```
+
+Run binary.
+
+```bash
+./target/release/hello_indexer_native --manifest examples/hello-world-native/hello-indexer-native/hello_indexer_native.manifest.yaml --run-migrations
 ```
 
 ### Interact

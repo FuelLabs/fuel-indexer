@@ -30,22 +30,24 @@ fn print_welcome_message() {
 
     let plugin_msg = r#"Take a quick tour.
 
-`forc index check`
-    List indexer components.
-`forc index new`
-    Create a new indexer.
-`forc index init`
-    Create a new indexer in an existing directory.
-`forc index start`
-    Start a local indexer service.
-`forc index build`
-    Build your indexer.
-`forc index deploy`
-    Deploy your indexer.
-`forc index remove`
-    Stop a running indexer.
 `forc index auth`
     Authenticate against an indexer service.
+`forc index build`
+    Build your indexer.
+`forc index check`
+    List indexer components.
+`forc index deploy`
+    Deploy your indexer.
+`forc index init`
+    Create a new indexer in an existing directory.
+`forc index kill`
+    Kill a running Fuel indexer process on a given port.
+`forc index new`
+    Create a new indexer.
+`forc index remove`
+    Stop a running indexer.
+`forc index start`
+    Start a local indexer service.
 `forc index status`
     Check the status of an indexer."#;
 
