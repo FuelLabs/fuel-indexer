@@ -104,6 +104,7 @@ impl Default for IndexerArgs {
             rate_limit_request_count: Some(defaults::RATE_LIMIT_REQUEST_COUNT),
             rate_limit_window_size: Some(defaults::RATE_LIMIT_WINDOW_SIZE),
             replace_indexer: defaults::REPLACE_INDEXER,
+            remove_data: defaults::REMOVE_DATA,
             accept_sql_queries: defaults::ACCEPT_SQL,
         }
     }
