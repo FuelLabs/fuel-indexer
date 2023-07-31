@@ -257,8 +257,6 @@ pub(crate) async fn register_indexer_assets(
                 if !remove_data {
                     // And the indexer already exists
                     if let Ok(indexer_id) = indexer_id {
-                        let digest = fuel_indexer_lib::utils::sha256_digest(data);
-                        tracing::info!("DIGEST {digest}");
                         // The schema must be the same. This query returns an
                         // asset if the bytes match. If it returns None (and the
                         // indexer exists), it means that its schema is
