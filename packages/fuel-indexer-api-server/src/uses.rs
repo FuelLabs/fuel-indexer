@@ -253,24 +253,30 @@ pub(crate) async fn register_indexer_assets(
         // Check that the schema has not changed.
         for (asset_type, data) in asset_bytes.iter() {
             if *asset_type == IndexerAssetType::Schema {
-                // If the indexer already exists
-                if let Ok(indexer_id) = indexer_id {
-                    // The schema must be the same. This query returns an asset
-                    // if the bytes match. If it returns None (and the indexer
-                    // exists), it means that its schema is different.
-                    if queries::asset_already_exists(
-                        &mut conn,
-                        &IndexerAssetType::Schema,
-                        &data.to_vec(),
-                        &indexer_id,
-                    )
-                    .await?
-                    .is_none()
-                    {
-                        queries::revert_transaction(&mut conn).await?;
-                        return Err(ApiError::Http(HttpError::Conflict(format!(
+                // If we're not removing data
+                if !remove_data {
+                    // And the indexer already exists
+                    if let Ok(indexer_id) = indexer_id {
+                        let digest = fuel_indexer_lib::utils::sha256_digest(data);
+                        tracing::info!("DIGEST {digest}");
+                        // The schema must be the same. This query returns an
+                        // asset if the bytes match. If it returns None (and the
+                        // indexer exists), it means that its schema is
+                        // different.
+                        if queries::asset_already_exists(
+                            &mut conn,
+                            &IndexerAssetType::Schema,
+                            &data.to_vec(),
+                            &indexer_id,
+                        )
+                        .await?
+                        .is_none()
+                        {
+                            queries::revert_transaction(&mut conn).await?;
+                            return Err(ApiError::Http(HttpError::Conflict(format!(
                             "Indexer({namespace}.{identifier})'s schema has changed. Use --replace-indexer --remove-data to replace the indexer and the indexed data."
                         ))));
+                        }
                     }
                 }
             }
