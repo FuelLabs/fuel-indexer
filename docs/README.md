@@ -32,25 +32,12 @@ The Fuel indexer is a standalone service that can be used to index various compo
 
 - [For Users](#for-users)
   - [Dependencies](#dependencies)
-    - [`fuelup`](#fuelup)
-    - [`WebAssembly`](#webassembly)
   - [`forc-index` Plugin](#forc-index-plugin)
   - [WebAssembly (WASM) modules](#webassembly-wasm-modules)
 - [For Contributors](#for-contributors)
   - [Dev Dependencies](#dev-dependencies)
-    - [`docker`](#docker)
-    - [Database](#database)
-      - [PostgreSQL](#postgresql)
-    - [SQLx](#sqlx)
   - [Building from Source](#building-from-source)
-    - [Clone repository](#clone-repository)
-    - [Run migrations](#run-migrations)
-      - [PostgreSQL migrations](#postgresql-migrations)
-    - [Start the service](#start-the-service)
   - [Testing](#testing)
-    - [Default tests](#default-tests)
-    - [End-to-end tests](#end-to-end-tests)
-    - [`trybuild` tests](#trybuild-tests)
   - [Contributing](#contributing)
 - [Read the book](#read-the-book)
 
@@ -95,6 +82,10 @@ As mentioned in the [dependencies](#dependencies) section, the `forc-index` plug
 If you've successfully gone through the [Quickstart](#quickstart), you should already have `forc-index` installed and available in your `PATH`.
 
 ```text
+forc index --help
+```
+
+```
 Fuel Indexer Orchestrator
 
 USAGE:
