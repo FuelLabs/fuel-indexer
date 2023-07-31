@@ -375,7 +375,7 @@ pub(crate) async fn register_indexer_assets(
                                     .to_string();
                                 GraphQLSchema::new(content)
                             };
-                            // If re are replacing an indexer and keeping its
+                            // If we are replacing an indexer and keeping its
                             // data, its schema already exists.
                             if replace_indexer && !remove_data {
                                 assets.push(result);
