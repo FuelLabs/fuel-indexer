@@ -161,8 +161,6 @@ Take a quick tour.
     List indexer components.
 `forc index new`
     Create a new indexer.
-`forc index init`
-    Create a new indexer in an existing directory.
 `forc index start`
     Start a local indexer service.
 `forc index build`

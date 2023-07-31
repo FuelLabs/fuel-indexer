@@ -4,14 +4,6 @@ A `forc` plugin for basic Fuel Indexer interaction.
 
 ## Commands
 
-### `forc index init`
-
-Create a new indexer project at the provided path. If no path is provided the current working directory will be used.
-
-```bash
-forc index init --namespace fuel
-```
-
 ### `forc index new`
 
 Create new indexer project at the provided path.
