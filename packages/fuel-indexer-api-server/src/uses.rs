@@ -258,13 +258,14 @@ pub(crate) async fn register_indexer_assets(
                     // The schema must be the same. This query returns an asset
                     // if the bytes match. If it returns None (and the indexer
                     // exists), it means that its schema is different.
-                    if let None = queries::asset_already_exists(
+                    if queries::asset_already_exists(
                         &mut conn,
                         &IndexerAssetType::Schema,
                         &data.to_vec(),
                         &indexer_id,
                     )
                     .await?
+                    .is_none()
                     {
                         queries::revert_transaction(&mut conn).await?;
                         return Err(ApiError::Http(HttpError::Conflict(format!(
