@@ -348,9 +348,12 @@ pub(crate) async fn register_indexer_assets(
                     .await
                     {
                         Ok(result) => {
-                            let schema = GraphQLSchema::new(
-                                String::from_utf8_lossy(data).to_string(),
-                            );
+                            let schema = {
+                                let content = String::from_utf8(data.to_vec())
+                                    .map_err(|e| ApiError::InternalError(e.to_string()))?
+                                    .to_string();
+                                GraphQLSchema::new(content)
+                            };
                             // If re are replacing an indexer and keeping its
                             // data, its schema already exists.
                             if replace_indexer && !remove_data {
