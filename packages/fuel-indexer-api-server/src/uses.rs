@@ -275,6 +275,14 @@ pub(crate) async fn register_indexer_assets(
             }
         }
 
+        if !config.replace_indexer && replace_indexer {
+            error!("Error when attempting to replace Indexer({namespace}.{identifier}): replacing an indexer is not enabled.");
+            queries::revert_transaction(&mut conn).await?;
+            return Err(ApiError::Http(HttpError::Conflict(format!(
+                "Error when attempting to replace Indexer({namespace}.{identifier}): replacing an indexer is not enabled."
+            ))));
+        }
+
         if indexer_id.is_ok() {
             // --replace-indexer is only allowed if it has also been enabled at
             // the fuel-indexer service level
