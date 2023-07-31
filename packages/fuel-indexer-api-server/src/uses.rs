@@ -246,11 +246,35 @@ pub(crate) async fn register_indexer_assets(
             };
         }
 
-        let indexer_exists = queries::get_indexer_id(&mut conn, &namespace, &identifier)
-            .await
-            .is_ok();
+        let indexer_id =
+            queries::get_indexer_id(&mut conn, &namespace, &identifier).await;
 
-        if indexer_exists {
+        // Check that the schema has not changed.
+        for (asset_type, data) in asset_bytes.iter() {
+            if *asset_type == IndexerAssetType::Schema {
+                // If the indexer already exists
+                if let Ok(indexer_id) = indexer_id {
+                    // The schema must be the same. This query returns an asset
+                    // if the bytes match. If it returns None (and the indexer
+                    // exists), it means that its schema is different.
+                    if let None = queries::asset_already_exists(
+                        &mut conn,
+                        &IndexerAssetType::Schema,
+                        &data.to_vec(),
+                        &indexer_id,
+                    )
+                    .await?
+                    {
+                        queries::revert_transaction(&mut conn).await?;
+                        return Err(ApiError::Http(HttpError::Conflict(format!(
+                            "Indexer({namespace}.{identifier})'s schema has changed. Use --remove-data to replace the indexer."
+                        ))));
+                    }
+                }
+            }
+        }
+
+        if indexer_id.is_ok() {
             // --replace-indexer is only allowed if it has also been enabled at
             // the fuel-indexer service level
             if config.replace_indexer && replace_indexer {
