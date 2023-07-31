@@ -214,8 +214,6 @@ pub(crate) async fn register_indexer_assets(
     let mut assets: Vec<IndexerAsset> = Vec::new();
 
     if let Some(mut multipart) = multipart {
-        queries::start_transaction(&mut conn).await?;
-
         let mut replace_indexer: bool = false;
         let mut remove_data: bool = false;
         let mut asset_bytes: Vec<(IndexerAssetType, hyper::body::Bytes)> = Vec::new();
@@ -245,6 +243,8 @@ pub(crate) async fn register_indexer_assets(
                 }
             };
         }
+
+        queries::start_transaction(&mut conn).await?;
 
         let indexer_id =
             queries::get_indexer_id(&mut conn, &namespace, &identifier).await;
