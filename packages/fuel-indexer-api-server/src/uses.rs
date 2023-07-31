@@ -173,6 +173,7 @@ pub(crate) async fn remove_indexer(
             .map_err(|_e| ApiError::Http(HttpError::Unauthorized))?;
     }
 
+    // Allways remove data when removing an indexer
     if let Err(e) =
         queries::remove_indexer(&mut conn, &namespace, &identifier, false).await
     {
