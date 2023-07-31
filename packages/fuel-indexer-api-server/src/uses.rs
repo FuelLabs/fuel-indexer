@@ -224,16 +224,16 @@ pub(crate) async fn register_indexer_assets(
             match name.as_str() {
                 "replace_indexer" => {
                     replace_indexer = std::str::from_utf8(&data.to_owned())
-                        .map_err(|e| ApiError::InternalError(e.to_string()))?
+                        .map_err(|e| ApiError::OtherError(e.to_string()))?
                         .parse::<bool>()
-                        .map_err(|e| ApiError::InternalError(e.to_string()))?;
+                        .map_err(|e| ApiError::OtherError(e.to_string()))?;
                     continue;
                 }
                 "remove_data" => {
                     remove_data = std::str::from_utf8(&data.to_owned())
-                        .map_err(|e| ApiError::InternalError(e.to_string()))?
+                        .map_err(|e| ApiError::OtherError(e.to_string()))?
                         .parse::<bool>()
-                        .map_err(|e| ApiError::InternalError(e.to_string()))?;
+                        .map_err(|e| ApiError::OtherError(e.to_string()))?;
                     continue;
                 }
                 name => {
@@ -350,7 +350,12 @@ pub(crate) async fn register_indexer_assets(
                         Ok(result) => {
                             let schema = {
                                 let content = String::from_utf8(data.to_vec())
-                                    .map_err(|e| ApiError::InternalError(e.to_string()))?
+                                    .map_err(|e| {
+                                        ApiError::OtherError(format!(
+                                            "Invalid schema: {}",
+                                            e
+                                        ))
+                                    })?
                                     .to_string();
                                 GraphQLSchema::new(content)
                             };

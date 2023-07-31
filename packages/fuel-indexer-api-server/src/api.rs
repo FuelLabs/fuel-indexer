@@ -101,8 +101,8 @@ pub enum ApiError {
     BoxError(#[from] axum::BoxError),
     #[error("Sql validator error: {0:?}")]
     SqlValidator(#[from] crate::sql::SqlValidatorError),
-    #[error("Internal error: {0}")]
-    InternalError(String),
+    #[error("Other error: {0}")]
+    OtherError(String),
 }
 
 impl Default for ApiError {
