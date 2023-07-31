@@ -267,7 +267,7 @@ pub(crate) async fn register_indexer_assets(
                     {
                         queries::revert_transaction(&mut conn).await?;
                         return Err(ApiError::Http(HttpError::Conflict(format!(
-                            "Indexer({namespace}.{identifier})'s schema has changed. Use --remove-data to replace the indexer."
+                            "Indexer({namespace}.{identifier})'s schema has changed. Use --replace-indexer --remove-data to replace the indexer and the indexed data."
                         ))));
                     }
                 }
