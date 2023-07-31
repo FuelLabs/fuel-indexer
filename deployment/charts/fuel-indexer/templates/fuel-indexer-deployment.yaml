@@ -76,6 +76,13 @@ spec:
           - name: POSTGRES_DATABASE
             value: "{{ .Values.app.postgres.database }}"
           imagePullPolicy: {{ .Values.app.image.pullPolicy }}
+          resources:
+            limits:
+              cpu: {{ .Values.app.resources.cpu_limits }}
+              memory: {{ .Values.app.resources.memory_limits }}
+            requests:
+              cpu: {{ .Values.app.resources.cpu_requests }}
+              memory: {{ .Values.app.resources.memory_requests }}
           ports:
             - name: http
               containerPort: {{ .Values.app.target_port }}
