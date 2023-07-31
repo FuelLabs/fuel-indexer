@@ -287,7 +287,7 @@ pub(crate) async fn register_indexer_assets(
                 .await?;
 
                 // Since we remove and recreate indexer tables, we need to wait
-                // for the idexer to stop to ensure the old indexer does not
+                // for the indexer to stop to ensure the old indexer does not
                 // write any data to the newly created tables.
                 if receiver.await.is_err() {
                     return Err(ApiError::Http(HttpError::InternalServer));
