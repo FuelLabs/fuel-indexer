@@ -98,7 +98,7 @@ impl Default for Command {
         }
     }
 }
-pub fn exec(command: Command) -> Result<()> {
-    forc_index_deploy::init(command)?;
+pub async fn exec(command: Command) -> Result<()> {
+    forc_index_deploy::init(command).await?;
     Ok(())
 }

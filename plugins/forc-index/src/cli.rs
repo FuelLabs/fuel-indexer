@@ -48,14 +48,14 @@ pub async fn run_cli() -> Result<(), anyhow::Error> {
     match opt.command {
         ForcIndex::Init(command) => crate::commands::init::exec(command),
         ForcIndex::New(command) => crate::commands::new::exec(command),
-        ForcIndex::Deploy(command) => crate::commands::deploy::exec(command),
+        ForcIndex::Deploy(command) => crate::commands::deploy::exec(command).await,
         ForcIndex::Start(command) => crate::commands::start::exec(command).await,
         ForcIndex::Check(command) => crate::commands::check::exec(command).await,
-        ForcIndex::Remove(command) => crate::commands::remove::exec(command),
+        ForcIndex::Remove(command) => crate::commands::remove::exec(command).await,
         ForcIndex::Build(command) => crate::commands::build::exec(command),
         ForcIndex::PullAbi(command) => crate::commands::pull_abi::exec(command).await,
         //ForcIndex::Welcome(command) => crate::commands::welcome::exec(command).await,
-        ForcIndex::Auth(command) => crate::commands::auth::exec(command),
+        ForcIndex::Auth(command) => crate::commands::auth::exec(command).await,
         ForcIndex::Postgres(opt) => match opt.command {
             ForcPostgres::Create(command) => pg_commands::create::exec(command).await,
             ForcPostgres::Stop(command) => pg_commands::stop::exec(command).await,
