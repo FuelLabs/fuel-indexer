@@ -1,4 +1,4 @@
-use crate::ops::forc_index_init;
+use crate::ops::forc_index_new;
 use anyhow::Result;
 use clap::Parser;
 use std::path::PathBuf;
@@ -6,18 +6,12 @@ use std::path::PathBuf;
 /// Create a new indexer project in the current directory.
 #[derive(Debug, Parser)]
 pub struct Command {
-    /// Name of indexer
+    /// Path at which to create indexer.
+    pub path: PathBuf,
+
+    /// Name of indexer.
     #[clap(long, help = "Name of indexer.")]
     pub name: Option<String>,
-
-    /// Path at which to create indexer.
-    #[clap(
-        short,
-        long,
-        parse(from_os_str),
-        help = "Path at which to create indexer."
-    )]
-    pub path: Option<PathBuf>,
 
     /// Namespace to which indexer belongs.
     #[clap(long, help = "Namespace to which indexer belongs.")]
@@ -37,6 +31,6 @@ pub struct Command {
 }
 
 pub fn exec(command: Command) -> Result<()> {
-    forc_index_init::init(command)?;
+    forc_index_new::init(command)?;
     Ok(())
 }

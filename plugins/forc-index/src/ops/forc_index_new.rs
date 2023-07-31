@@ -1,10 +1,7 @@
-use crate::{cli::InitCommand, defaults, utils::*};
+use crate::{cli::NewCommand, defaults, utils::*};
 use anyhow::Context;
 use forc_util::{kebab_to_snake_case, validate_name};
-use std::{
-    fs,
-    path::{Path, PathBuf},
-};
+use std::{fs, path::Path};
 use tracing::info;
 
 fn print_welcome_message() {
@@ -13,13 +10,13 @@ fn print_welcome_message() {
         "Fuel Indexer: https://github.com/FuelLabs/fuel-indexer",
         "Fuel Indexer Book: https://fuellabs.github.io/fuel-indexer/latest",
         "Sway Book: https://fuellabs.github.io/sway/latest",
-        "Rust SDK Book: https://fuellabs.github.io/fuels-rs/latest",
+        "Rust SDK Book: https://rust.fuel.network",
     );
 
     let join_the_community = format!(
         "Join the Community:\n- Follow us {}
 - Ask questions in dev-chat on {}",
-        "@SwayLang: https://twitter.com/fuellabs_",
+        "@Fuel: https://twitter.com/fuel_network",
         "Discord: https://discord.com/invite/xfpK4Pe"
     );
 
@@ -33,13 +30,11 @@ fn print_welcome_message() {
 `forc index auth`
     Authenticate against an indexer service.
 `forc index build`
-    Build your indexer.
+    Build an indexer.
 `forc index check`
     List indexer components.
 `forc index deploy`
-    Deploy your indexer.
-`forc index init`
-    Create a new indexer in an existing directory.
+    Deploy an indexer.
 `forc index kill`
     Kill a running Fuel indexer process on a given port.
 `forc index new`
@@ -68,25 +63,17 @@ An easy-to-use, flexible indexing service built to go fast. 🚗💨
     );
 }
 
-pub fn create_indexer(command: InitCommand) -> anyhow::Result<()> {
-    let InitCommand {
+pub fn create_indexer(command: NewCommand) -> anyhow::Result<()> {
+    let NewCommand {
         name,
-        path,
+        path: project_dir,
         namespace,
         native,
         absolute_paths,
         verbose,
     } = command;
 
-    let project_dir = match &path {
-        Some(p) => PathBuf::from(p),
-        None => std::env::current_dir()
-            .context("❌ Failed to get current directory for forc index init.")?,
-    };
-
-    if !project_dir.is_dir() {
-        anyhow::bail!("❌ '{}' is not a valid directory.", project_dir.display());
-    }
+    std::fs::create_dir_all(&project_dir)?;
 
     if project_dir
         .join(defaults::CARGO_MANIFEST_FILE_NAME)
@@ -132,8 +119,7 @@ pub fn create_indexer(command: InitCommand) -> anyhow::Result<()> {
     fs::write(
         Path::new(&project_dir).join(defaults::CARGO_MANIFEST_FILE_NAME),
         default_toml,
-    )
-    .unwrap();
+    )?;
 
     let proj_abspath = if absolute_paths {
         Some(fs::canonicalize(Path::new(&project_dir))?)
@@ -141,6 +127,7 @@ pub fn create_indexer(command: InitCommand) -> anyhow::Result<()> {
         None
     };
 
+    // If not supplied, set namespace to system username
     let namespace = if let Some(ns) = namespace {
         ns
     } else {
@@ -167,8 +154,7 @@ pub fn create_indexer(command: InitCommand) -> anyhow::Result<()> {
     fs::write(
         Path::new(&project_dir).join("schema").join(schema_filename),
         defaults::default_indexer_schema(),
-    )
-    .unwrap();
+    )?;
 
     // What content are we writing?
     let (filename, content) = if native {
@@ -192,7 +178,7 @@ pub fn create_indexer(command: InitCommand) -> anyhow::Result<()> {
     };
 
     // Write indexer file
-    fs::write(Path::new(&project_dir).join("src").join(filename), content).unwrap();
+    fs::write(Path::new(&project_dir).join("src").join(filename), content)?;
 
     // Write cargo config with WASM target
     if !native {
@@ -214,7 +200,9 @@ pub fn create_indexer(command: InitCommand) -> anyhow::Result<()> {
     }
     Ok(())
 }
-pub fn init(command: InitCommand) -> anyhow::Result<()> {
+
+/// Execute the command for `forc_index_new`.
+pub fn init(command: NewCommand) -> anyhow::Result<()> {
     create_indexer(command)?;
     print_welcome_message();
     Ok(())

@@ -1,8 +1,7 @@
 #[allow(unused)]
 pub(crate) use crate::commands::{
     auth::Command as AuthCommand, build::Command as BuildCommand,
-    check::Command as CheckCommand, deploy::Command as DeployCommand,
-    init::Command as InitCommand, kill::Command as KillCommand,
+    deploy::Command as DeployCommand, kill::Command as KillCommand,
     new::Command as NewCommand, remove::Command as RemoveCommand,
     start::Command as StartCommand, status::Command as StatusCommand,
 };
@@ -23,7 +22,7 @@ pub struct Opt {
 
 #[derive(Subcommand, Debug)]
 pub enum ForcIndex {
-    Init(InitCommand),
+    New(NewCommand),
     Deploy(DeployCommand),
     Start(Box<StartCommand>),
     Check,
@@ -43,7 +42,7 @@ pub async fn run_cli() -> Result<(), anyhow::Error> {
     init_tracing_subscriber(tracing_options);
 
     match opt.command {
-        ForcIndex::Init(command) => crate::commands::init::exec(command),
+        // ForcIndex::Init(command) => crate::commands::init::exec(command),
         ForcIndex::New(command) => crate::commands::new::exec(command),
         ForcIndex::Deploy(command) => crate::commands::deploy::exec(command).await,
         ForcIndex::Start(command) => crate::commands::start::exec(command).await,
