@@ -43,8 +43,8 @@ pub struct IndexerService {
     /// Killers used to stop the spawned indexers.
     killers: HashMap<String, Arc<AtomicBool>>,
 
-    /// For notifications that an indexer stopped execution after kill was
-    /// requested.
+    /// When an indexer has stopped execution after kill was requested, the
+    /// notification will be received through this end of a channel.
     kill_confirms: HashMap<String, futures::channel::oneshot::Receiver<()>>,
 }
 
