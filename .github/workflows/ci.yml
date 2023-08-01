@@ -85,13 +85,13 @@ jobs:
           else
             echo "Not a release branch ^(^.^)^"
           fi
-  # docs-test:
-  #   uses: FuelLabs/github-actions/.github/workflows/mdbook-docs.yml
-  #   with:
-  #     docs-src-path: 'docs/src'
+  docs-test:
+    uses: FuelLabs/github-actions/.github/workflows/mdbook-docs.yml@master
+    with:
+      docs-src-path: 'docs/src'
   mdbook-build:
-    # needs:
-    #   - docs-test
+    needs:
+      - docs-test
     runs-on: ubuntu-latest
     steps:
       - name: Install toolchain
