@@ -25,7 +25,6 @@ async fn get_blocks(start_cursor: u64, num_blocks: usize) -> Result<Vec<BlockDat
         num_blocks,
         &next_cursor,
         Some(start_cursor + num_blocks as u64),
-        "",
     )
     .await
     .expect("Could not retrieve blocks from node");
