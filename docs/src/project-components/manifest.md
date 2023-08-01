@@ -66,9 +66,9 @@ The `start_block` field indicates the block height after which you'd like your i
 
 _Optional._
 
-The `end_block` field indicates the block height after which the indexer should stop indexing blocks. 
+The `end_block` field indicates the block height after which the indexer should stop indexing blocks.
 
-> Important: If no `end_block` is added the indexer will keep listening to new blocks indefinitely. 
+> Important: If no `end_block` is added the indexer will keep listening to new blocks indefinitely.
 
 ## `module`
 

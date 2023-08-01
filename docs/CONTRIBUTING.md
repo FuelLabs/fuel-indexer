@@ -10,7 +10,6 @@ Fuel Indexer has many dependent repositories. If you need any help or mentoring 
 - [ ] If your change is non-trivial and testable, please try to include at least one happy path test to ensure that your change works.
   - "Trivial" changes would be changes to docs, comments, or small style/syntactic changes
 
-
 ### Getting the repository
 
 > Future instructions assume you are in this repository
@@ -101,6 +100,7 @@ This is a rough outline of what a contributor's workflow looks like:
 - Use Github to merge the PR once approved.
 
 ### Commit categories
+
 - `bug`: If fixing broken functionality
 - `enhancement`: If adding new functionality
 - `chore`: If finishing valuable work (that's no fun!)

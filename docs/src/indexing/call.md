@@ -14,7 +14,7 @@ pub struct Call {
 
 - A `Call` receipt is generated whenever a function is called in a Sway contract.
 - The `fn_name` field contains the name of the called function from the aforementioned contract.
-- [Read more about `Call` in the Fuel protocol ABI spec](https://github.com/FuelLabs/fuel-specs/blob/master/src/protocol/abi/receipts.md#return-receipt)
+- [Read more about `Call` in the Fuel protocol ABI spec](https://specs.fuel.network/master/abi/receipts.html#call-receipt)
 
 You can handle functions that produce a `Call` receipt type by adding a parameter with the type `Call`.
 

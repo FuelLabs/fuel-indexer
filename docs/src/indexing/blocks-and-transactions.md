@@ -39,7 +39,7 @@ pub enum Transaction {
 }
 ```
 
-`Transaction` refers to the Fuel transaction entity and can be one of three distinct types: `Script`, `Create`, or `Mint`. Explaining the differences between each of the types is out of scope for the Fuel indexer; however, you can find information about the `Transaction` type in the [Fuel specifications](https://github.com/FuelLabs/fuel-specs/blob/master/src/protocol/tx_format/transaction.md).
+`Transaction` refers to the Fuel transaction entity and can be one of three distinct types: `Script`, `Create`, or `Mint`. Explaining the differences between each of the types is out of scope for the Fuel indexer; however, you can find information about the `Transaction` type in the [Fuel specifications](https://specs.fuel.network/master/tx-format/transaction.html).
 
 ### `TransactionStatus`
 

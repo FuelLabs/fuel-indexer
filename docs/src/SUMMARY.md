@@ -11,6 +11,7 @@
 - [Starting the Fuel Indexer](./getting-started/starting-the-fuel-indexer.md)
 
 # Reference Guide
+
 - [Project Components](./project-components/index.md)
   - [Manifest](./project-components/manifest.md)
   - [Schema](./project-components/schema.md)
@@ -50,6 +51,7 @@
   - [deploy](./forc-index/deploy.md)
   - [remove](./forc-index/remove.md)
   - [auth](./forc-index/auth.md)
+  - [status](./forc-index/status.md)
 - [forc index postgres](./forc-postgres/index.md)
   - [create](./forc-postgres/create.md)
   - [start](./forc-postgres/start.md)
@@ -62,6 +64,8 @@
 - [Environment Setup](./for-contributors/index.md)
 - [Contributing Standards](./for-contributors/contributing-standards.md)
 - [Release Schedule](./for-contributors/release-schedule.md)
+- [Building From Source](./for-contributors/building-from-source.md)
+- [System Dependencides](./for-contributors/system-dependencies.md)
 
 # Appendix
 

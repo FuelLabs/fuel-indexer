@@ -6,7 +6,7 @@ Every public indexer can access the GraphQL playground of the Fuel indexer node 
 
 ## Usage
 
-To use the GraphQL playground to explor your indices, simply [start your indexer service](../../../getting-started/starting-the-fuel-indexer.md) - then open the following URL in your browser - where `namespace` and `identifier` correspond to the namespace and identifier of the index that you'd like to explore.
+To use the GraphQL playground to explor your indices, simply [start your indexer service](../getting-started/starting-the-fuel-indexer.md) - then open the following URL in your browser - where `namespace` and `identifier` correspond to the namespace and identifier of the index that you'd like to explore.
 
 ```bash
 http://localhost:29987/api/playground/:namespace/:identifier

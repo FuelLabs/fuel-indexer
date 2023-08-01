@@ -24,13 +24,13 @@ curl --proto '=https' --tlsv1.2 -sSf https://install.fuel.network/fuelup-init.sh
 
 Indexers are typically compiled to WASM so you'll need to have the proper WASM compilation target available on your system. You can install this target using `rustup`:
 
-```
+```bash
 rustup target add wasm32-unknown-unknown
 ```
 
 Additionally, you'll need the `wasm-snip` utility in order to remove errant symbols from your compiled WASM binary. You can install this tool using `cargo`:
 
-```
+```bash
 cargo install wasm-snip
 ```
 
@@ -201,7 +201,7 @@ With our indexer deployed, we should be able to query for newly indexed data aft
 
 Below, we write a simple GraphQL query that simply returns a few fields from all transactions that we've indexed.
 
-You can open your GraphQL query playground at http://127.0.0.1:29987/api/playground/fuellabs/hello_indexer and submit the following GraphQL query.
+You can open your GraphQL query playground at `http://127.0.0.1:29987/api/playground/fuellabs/hello_indexer` and submit the following GraphQL query.
 
 ```graphql
 query {
