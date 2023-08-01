@@ -371,32 +371,26 @@ pub(crate) async fn register_indexer_assets(
                     .await
                     {
                         Ok(result) => {
-                            // If we are replacing an indexer and keeping its
-                            // data, its schema already exists.
-                            if replace_indexer && !remove_data {
-                                assets.push(result);
-                            } else {
-                                match schema_manager
-                                    .write()
-                                    .await
-                                    .new_schema(
-                                        &namespace,
-                                        &identifier,
-                                        schema,
-                                        // Only WASM can be sent over the web.
-                                        ExecutionSource::Wasm,
-                                        &mut conn,
-                                    )
-                                    .await
-                                {
-                                    Ok(_) => {
-                                        assets.push(result);
-                                    }
-                                    Err(e) => {
-                                        let _res = queries::revert_transaction(&mut conn)
-                                            .await?;
-                                        return Err(e.into());
-                                    }
+                            match schema_manager
+                                .write()
+                                .await
+                                .new_schema(
+                                    &namespace,
+                                    &identifier,
+                                    schema,
+                                    // Only WASM can be sent over the web.
+                                    ExecutionSource::Wasm,
+                                    &mut conn,
+                                )
+                                .await
+                            {
+                                Ok(_) => {
+                                    assets.push(result);
+                                }
+                                Err(e) => {
+                                    let _res =
+                                        queries::revert_transaction(&mut conn).await?;
+                                    return Err(e.into());
                                 }
                             }
                         }
