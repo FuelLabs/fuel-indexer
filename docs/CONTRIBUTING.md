@@ -10,7 +10,6 @@ Fuel Indexer has many dependent repositories. If you need any help or mentoring 
 - [ ] If your change is non-trivial and testable, please try to include at least one happy path test to ensure that your change works.
   - "Trivial" changes would be changes to docs, comments, or small style/syntactic changes
 
-
 ### Getting the repository
 
 > Future instructions assume you are in this repository

@@ -51,7 +51,6 @@
   - [deploy](./forc-index/deploy.md)
   - [remove](./forc-index/remove.md)
   - [auth](./forc-index/auth.md)
-  - [pull-abi](./forc-index/pull-abi.md)
   - [status](./forc-index/status.md)
 - [forc index postgres](./forc-postgres/index.md)
   - [create](./forc-postgres/create.md)

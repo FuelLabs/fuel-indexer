@@ -201,7 +201,7 @@ With our indexer deployed, we should be able to query for newly indexed data aft
 
 Below, we write a simple GraphQL query that simply returns a few fields from all transactions that we've indexed.
 
-You can open your GraphQL query playground at http://127.0.0.1:29987/api/playground/fuellabs/hello_indexer and submit the following GraphQL query.
+You can open your GraphQL query playground at `http://127.0.0.1:29987/api/playground/fuellabs/hello_indexer` and submit the following GraphQL query.
 
 ```graphql
 query {
