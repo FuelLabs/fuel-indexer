@@ -36,11 +36,9 @@ struct Config {
 
 pub fn init(command: BuildCommand) -> anyhow::Result<()> {
     let BuildCommand {
-        target: target_triple,
         native,
         path,
-        profile,
-        release,
+        debug,
         locked,
         manifest,
         target_dir,
@@ -48,7 +46,7 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
         ..
     } = command;
 
-    let release = release.parse::<bool>().unwrap();
+    let release = !debug;
 
     let (root_dir, manifest, _index_name) =
         project_dir_info(path.as_ref(), manifest.as_ref())?;
@@ -79,7 +77,7 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
         .arg(&cargo_manifest_path);
 
     if !native {
-        cmd.arg("--target").arg(&target_triple);
+        cmd.arg("--target").arg(defaults::WASM_TARGET);
     }
 
     let bool_opts = [
@@ -92,10 +90,6 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
         if *value {
             cmd.arg(flag);
         }
-    }
-
-    if let Some(profile) = profile {
-        cmd.arg("--profile").arg(profile);
     }
 
     // Do the build
@@ -173,11 +167,13 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
         let profile = if release { "release" } else { "debug" };
 
         let target_dir = target_dir.unwrap_or(".".into()).join("target");
-        let abs_artifact_path =
-            target_dir.join(&target_triple).join(profile).join(&binary);
+        let abs_artifact_path = target_dir
+            .join(defaults::WASM_TARGET)
+            .join(profile)
+            .join(&binary);
 
         let rel_artifact_path = Path::new("target")
-            .join(&target_triple)
+            .join(defaults::WASM_TARGET)
             .join(profile)
             .join(&binary);
 

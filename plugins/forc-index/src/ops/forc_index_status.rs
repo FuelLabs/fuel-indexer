@@ -8,7 +8,8 @@ use tracing::{error, info};
 pub async fn status(
     StatusCommand { url, auth, verbose }: StatusCommand,
 ) -> anyhow::Result<()> {
-    let target = format!("{url}/api/status");
+    let health_target = format!("{url}/api/health");
+    let status_target = format!("{url}/api/status");
 
     let mut headers = HeaderMap::new();
     headers.insert(CONNECTION, "keep-alive".parse()?);
@@ -18,14 +19,39 @@ pub async fn status(
 
     let client = reqwest::Client::new();
 
-    match client.get(&target).headers(headers).send().await {
+    match client.get(&health_target).send().await {
+        Ok(res) => {
+            if res.status() != reqwest::StatusCode::OK {
+                error!(
+                    "\n❌ {health_target} returned a non-200 response code: {:?}",
+                    res.status()
+                );
+                return Ok(());
+            }
+
+            let res_json = res
+                .json::<Map<String, Value>>()
+                .await
+                .expect("Failed to read JSON response.");
+
+            info!(
+                "\n✅ Sucessfully fetched service health:\n\n{}",
+                to_string_pretty(&res_json).unwrap()
+            );
+        }
+        Err(e) => {
+            error!("\n❌ Could not connect to indexer service:\n'{e}'");
+        }
+    }
+
+    match client.get(&status_target).headers(headers).send().await {
         Ok(res) => {
             let status = res.status();
 
             if status != reqwest::StatusCode::OK {
                 if verbose {
                     error!(
-                        "\n❌ Status check failed. {target} returned a non-200 response code: {:?}",
+                        "\n❌ Status check failed. {status_target} returned a non-200 response code: {:?}",
                         status
                     );
                 }

@@ -35,6 +35,7 @@ tokio = { features = ["macros", "rt-multi-thread", "process"], workspace = true 
 toml = "0.5"
 tracing = { workspace = true }
 walkdir = "2"
+whoami = "1.4"
 
 [[bin]]
 name = "forc-index"

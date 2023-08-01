@@ -26,22 +26,13 @@ pub struct Command {
     #[clap(long, help = "Authentication header value.")]
     pub auth: Option<String>,
 
-    /// Target at which to compile.
-    #[clap(long, default_value = defaults::INDEXER_TARGET, help = "Target at which to compile.")]
-    pub target: String,
-
     /// Build optimized artifacts with the release profile.
     #[clap(
         short,
         long,
-        help = "Build optimized artifacts with the release profile.",
-        default_value = defaults::BUILD_RELEASE_PROFILE,
+        help = "Build optimized artifacts with the debug profile."
     )]
-    pub release: String,
-
-    /// Build with the given profile.
-    #[clap(long, help = "Build with the given profile.")]
-    pub profile: Option<String>,
+    pub debug: bool,
 
     /// Ensure that the Cargo.lock file is up-to-date.
     #[clap(long, help = "Ensure that the Cargo.lock file is up-to-date.")]
@@ -85,9 +76,7 @@ impl Default for Command {
             manifest: Some(String::new()),
             path: None,
             auth: Some("".to_string()),
-            target: defaults::WASM_TARGET.to_string(),
-            release: true.to_string(),
-            profile: Some("release".to_string()),
+            debug: false,
             verbose: false,
             locked: false,
             native: false,

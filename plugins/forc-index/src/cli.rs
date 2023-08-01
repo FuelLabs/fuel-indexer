@@ -2,9 +2,9 @@
 pub(crate) use crate::commands::{
     auth::Command as AuthCommand, build::Command as BuildCommand,
     check::Command as CheckCommand, deploy::Command as DeployCommand,
-    init::Command as InitCommand, kill::Command as KillCommand,
-    new::Command as NewCommand, remove::Command as RemoveCommand,
-    start::Command as StartCommand, status::Command as StatusCommand,
+    kill::Command as KillCommand, new::Command as NewCommand,
+    remove::Command as RemoveCommand, start::Command as StartCommand,
+    status::Command as StatusCommand,
 };
 use clap::{Parser, Subcommand};
 use forc_postgres::{
@@ -23,7 +23,6 @@ pub struct Opt {
 
 #[derive(Subcommand, Debug)]
 pub enum ForcIndex {
-    Init(InitCommand),
     New(NewCommand),
     Deploy(DeployCommand),
     Start(Box<StartCommand>),
@@ -44,11 +43,10 @@ pub async fn run_cli() -> Result<(), anyhow::Error> {
     init_tracing_subscriber(tracing_options);
 
     match opt.command {
-        ForcIndex::Init(command) => crate::commands::init::exec(command),
         ForcIndex::New(command) => crate::commands::new::exec(command),
         ForcIndex::Deploy(command) => crate::commands::deploy::exec(command).await,
         ForcIndex::Start(command) => crate::commands::start::exec(command).await,
-        ForcIndex::Check(command) => crate::commands::check::exec(command).await,
+        ForcIndex::Check(_command) => crate::commands::check::exec().await,
         ForcIndex::Remove(command) => crate::commands::remove::exec(command).await,
         ForcIndex::Build(command) => crate::commands::build::exec(command),
         ForcIndex::Auth(command) => crate::commands::auth::exec(command).await,
