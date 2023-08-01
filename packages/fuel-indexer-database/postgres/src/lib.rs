@@ -575,8 +575,9 @@ pub async fn register_indexer_asset(
         .await?;
 
     info!(
-        "Registered Asset({:?}) to Indexer({}).",
+        "Registered Asset({:?}) with Version({}) to Indexer({}).",
         asset_type,
+        digest,
         index.uid()
     );
 

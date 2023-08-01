@@ -351,54 +351,46 @@ pub(crate) async fn register_indexer_assets(
                     }
                 }
                 IndexerAssetType::Schema => {
+                    let schema = {
+                        let content = String::from_utf8(data.to_vec())
+                            .map_err(|e| {
+                                ApiError::OtherError(format!("Invalid schema: {}", e))
+                            })?
+                            .to_string();
+                        GraphQLSchema::new(content)
+                    };
+                    let schema_bytes = Vec::<u8>::from(&schema);
                     match queries::register_indexer_asset(
                         &mut conn,
                         &namespace,
                         &identifier,
-                        data.to_vec(),
+                        schema_bytes,
                         IndexerAssetType::Schema,
                         Some(claims.sub()),
                     )
                     .await
                     {
                         Ok(result) => {
-                            let schema = {
-                                let content = String::from_utf8(data.to_vec())
-                                    .map_err(|e| {
-                                        ApiError::OtherError(format!(
-                                            "Invalid schema: {}",
-                                            e
-                                        ))
-                                    })?
-                                    .to_string();
-                                GraphQLSchema::new(content)
-                            };
-                            // If we are replacing an indexer and keeping its
-                            // data, its schema already exists.
-                            if replace_indexer && !remove_data {
-                                assets.push(result);
-                            } else {
-                                match schema_manager
-                                    .write()
-                                    .await
-                                    .new_schema(
-                                        &namespace,
-                                        &identifier,
-                                        schema,
-                                        // Only WASM can be sent over the web.
-                                        ExecutionSource::Wasm,
-                                        &mut conn,
-                                    )
-                                    .await
-                                {
-                                    Ok(_) => {
-                                        assets.push(result);
-                                    }
-                                    Err(e) => {
-                                        let _res = queries::revert_transaction(&mut conn)
-                                            .await?;
-                                        return Err(e.into());
-                                    }
+                            match schema_manager
+                                .write()
+                                .await
+                                .new_schema(
+                                    &namespace,
+                                    &identifier,
+                                    schema,
+                                    // Only WASM can be sent over the web.
+                                    ExecutionSource::Wasm,
+                                    &mut conn,
+                                )
+                                .await
+                            {
+                                Ok(_) => {
+                                    assets.push(result);
+                                }
+                                Err(e) => {
+                                    let _res =
+                                        queries::revert_transaction(&mut conn).await?;
+                                    return Err(e.into());
                                 }
                             }
                         }
