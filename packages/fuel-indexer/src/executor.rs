@@ -202,7 +202,9 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
             if cursor.is_none() {
                 num_empty_block_reqs += 1;
 
-                info!("No new blocks to process, sleeping. zzZZ");
+                info!(
+                    "Indexer({indexer_uid}) has no new blocks to process, sleeping. zzZZ"
+                );
                 sleep(Duration::from_secs(DELAY_FOR_EMPTY_PAGE)).await;
 
                 if num_empty_block_reqs == max_empty_block_reqs {

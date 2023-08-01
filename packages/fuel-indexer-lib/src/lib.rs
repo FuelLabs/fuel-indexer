@@ -45,7 +45,6 @@ pub fn type_id(namespace: &str, name: &str) -> i64 {
     i64::from_be_bytes(bytes)
 }
 
-
 /// Return a fully qualified indexer namespace.
 pub fn fully_qualified_namespace(namespace: &str, identifier: &str) -> String {
     format!("{}_{}", namespace, identifier)
