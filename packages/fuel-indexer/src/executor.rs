@@ -142,6 +142,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                 node_block_page_size,
                 &next_cursor,
                 end_block,
+                &indexer_uid,
             )
             .await
             {
@@ -157,10 +158,10 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
             if let Err(e) = result {
                 // Run time metering is deterministic. There is no point in retrying.
                 if let IndexerError::RunTimeLimitExceededError = e {
-                    error!("Indexer executor run time limit exceeded. Giving up. <('.')>. Consider increasing metering points");
+                    error!("Indexer({indexer_uid}) executor run time limit exceeded. Giving up. <('.')>. Consider increasing metering points");
                     break;
                 }
-                error!("Indexer executor failed {e:?}, retrying.");
+                error!("Indexer({indexer_uid}) executor failed {e:?}, retrying.");
                 match e {
                     IndexerError::SqlxError(sqlx::Error::Database(inner)) => {
                         // sqlx v0.7 let's you determine if this was specifically a unique constraint violation
@@ -227,6 +228,7 @@ pub async fn retrieve_blocks_from_node(
     block_page_size: usize,
     next_cursor: &Option<String>,
     end_block: Option<u64>,
+    indexer_uid: &str,
 ) -> IndexerResult<(Vec<BlockData>, Option<String>)> {
     debug!("Fetching paginated results from {next_cursor:?}");
 
@@ -240,7 +242,7 @@ pub async fn retrieve_blocks_from_node(
         })
         .await
         .unwrap_or_else(|e| {
-            error!("Failed to retrieve blocks: {e}");
+            error!("Indexer({indexer_uid}) Failed to retrieve blocks: {e}");
             PaginatedResult {
                 cursor: None,
                 results: vec![],
@@ -584,8 +586,9 @@ where
     async fn handle_events(&mut self, blocks: Vec<BlockData>) -> IndexerResult<()> {
         self.db.lock().await.start_transaction().await?;
         let res = (self.handle_events_fn)(blocks, self.db.clone()).await;
+        let uid = self.manifest.uid();
         if let Err(e) = res {
-            error!("NativeIndexExecutor handle_events failed: {e}.");
+            error!("NativeIndexExecutor({uid}) handle_events failed: {e}.");
             self.db.lock().await.revert_transaction().await?;
             return Err(IndexerError::NativeExecutionRuntimeError);
         } else {
@@ -603,6 +606,7 @@ pub struct WasmIndexExecutor {
     store: Arc<Mutex<Store>>,
     db: Arc<Mutex<Database>>,
     metering_points: Option<u64>,
+    manifest: Manifest,
 }
 
 impl WasmIndexExecutor {
@@ -676,6 +680,7 @@ impl WasmIndexExecutor {
             store: Arc::new(Mutex::new(store)),
             db: db.clone(),
             metering_points: config.metering_points,
+            manifest: manifest.clone(),
         })
     }
 
@@ -842,12 +847,14 @@ impl Executor for WasmIndexExecutor {
         })
         .await?;
 
+        let uid = self.manifest.uid();
+
         if let Err(e) = res {
             if self.metering_points_exhausted().await {
                 self.db.lock().await.revert_transaction().await?;
                 return Err(IndexerError::RunTimeLimitExceededError);
             } else {
-                error!("WasmIndexExecutor WASM execution failed: {e:?}.");
+                error!("WasmIndexExecutor({uid}) WASM execution failed: {e:?}.");
                 self.db.lock().await.revert_transaction().await?;
                 return Err(IndexerError::from(e));
             }
