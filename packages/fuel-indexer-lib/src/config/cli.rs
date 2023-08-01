@@ -14,7 +14,7 @@ use std::path::PathBuf;
 #[derive(Debug, Parser, Clone)]
 #[clap(
     name = "Indexer Service",
-    about = "Standalone binary for the fuel indexer service.",
+    about = "Standalone binary for the Fuel indexer service",
     version
 )]
 pub struct IndexerArgs {

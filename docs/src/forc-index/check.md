@@ -8,32 +8,22 @@ forc index check
 
 ```text
 USAGE:
-    forc-index check [OPTIONS]
+    forc-index check
 
 OPTIONS:
-        --grpahql-api-port <GRPAHQL_API_PORT>
-            Port at which to detect indexer service API is running. [default: 29987]
-
     -h, --help
             Print help information
-
-        --url <URL>
-            URL at which to find indexer service. [default: http://localhost:29987]
 ```
 
-You can expect the command output to look something like this example in which the requisite components are installed but the indexer service is not running:
+You can expect the command output to look something like this:
 
 ```text
 ➜  forc index check
-
-❌ Could not connect to indexer service: error sending request for url (http://localhost:29987/api/health): error trying to connect: tcp connect error: Connection refused (os error 61)
 
 +--------+------------------------+----------------------------------------------------------------------------+
 | Status |       Component        |                                  Details                                   |
 +--------+------------------------+----------------------------------------------------------------------------+
 |   ✅   | fuel-indexer binary    |  Found 'fuel-indexer' at '/Users/me/.fuelup/bin/fuel-indexer'              |
-+--------+------------------------+----------------------------------------------------------------------------+
-|   ⛔️   | fuel-indexer service   |  Failed to detect a locally running fuel-indexer service at Port(29987).   |
 +--------+------------------------+----------------------------------------------------------------------------+
 |   ✅   | psql                   |  Found 'psql' at '/usr/local/bin/psql'                                     |
 +--------+------------------------+----------------------------------------------------------------------------+

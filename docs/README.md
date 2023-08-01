@@ -98,16 +98,15 @@ OPTIONS:
 SUBCOMMANDS:
     auth        Authenticate against an indexer service
     build       Build an indexer
-    check       Get status checks on all indexer components
+    check       Check for Fuel indexer components
     deploy      Deploy an indexer to an indexer service
     help        Print this message or the help of the given subcommand(s)
-    init        Create a new indexer project in the current directory
     kill        Kill the indexer process. Note that this command will kill any process listening
                     on the default indexer port or the port specified by the `--port` flag
     new         Create a new indexer project in a new directory
     postgres    Fuel Postgres Orchestrator
     remove      Stop and remove a running indexer
-    start       Standalone binary for the fuel indexer service.
+    start       Standalone binary for the Fuel indexer service
     status      Check the status of a registered indexer
 ```
 
