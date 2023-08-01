@@ -8,7 +8,6 @@ pub const INDEXER_BINARY_FILENAME: &str = "main.rs";
 pub const CARGO_CONFIG_DIR_NAME: &str = ".cargo";
 pub const CARGO_CONFIG_FILENAME: &str = "config";
 pub const INDEXER_SERVICE_HOST: &str = "http://127.0.0.1:29987";
-pub const WEB_API_HOST: &str = defaults::WEB_API_HOST;
 pub const WEB_API_PORT: &str = defaults::WEB_API_PORT;
 pub const WASM_TARGET: &str = "wasm32-unknown-unknown";
 pub const INDEXER_TARGET: &str = "wasm32-unknown-unknown";

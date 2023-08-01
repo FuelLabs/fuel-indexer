@@ -15,9 +15,7 @@ In this Quickstart, we'll use Fuel's toolchain manager [`fuelup`](https://github
 To install fuelup with the default features/options, use the following command to download the fuelup installation script and run it interactively.
 
 ```bash
-curl \
-  --proto '=https' \
-  --tlsv1.2 -sSf https://fuellabs.github.io/fuelup/fuelup-init.sh | sh
+curl --proto '=https' --tlsv1.2 -sSf https://install.fuel.network/fuelup-init.sh | sh
 ```
 
 > If you require a non-default `fuelup` installation, please [read the `fuelup` installation docs.](https://github.com/FuelLabs/fuelup)
@@ -100,46 +98,39 @@ To quickly setup and bootstrap the PostgreSQL database that we'll need, we'll us
 
 We can quickly create a bootstrapped database and start the Fuel indexer service by running the following command:
 
-> IMPORTANT: Ensure that any local PostgreSQL instance that is running on port `5432` is stopped.
+> IMPORTANT: Below we're specifying our Postgres hostname as `--postgres-host postgresql`, but you will need to be specific to your own Postgres instance details (see `forc index start --help` for more details). You can try using the `--embedded-database` flag in order to quickly use an embedded instance of Postgres, but this is flaky and often depends on what platform you're using.
 
 ```bash
-forc index start \
-    --embedded-database
-    --fuel-node-host beta-3.fuel.network \
-    --fuel-node-port 80 \
-    --run-migrations
+forc index start --fuel-node-host beta-3.fuel.network --fuel-node-port 80 --run-migrations --postgres-host postgresql
 ```
 
 You should see output indicating the successful creation of a database and start of the indexer service; there may be much more content in your session, but it should generally contain output similar to the following lines:
 
 ```text
-📦 Downloading, unpacking, and bootstrapping database...
+✅ Successfully started the indexer service at PID 39407
 
-▹▹▸▹▹ ⏱  Setting up database...
-
-💡 Creating database at 'postgres://postgres:postgres@localhost:5432/postgres'
-
-✅ Successfully created database at 'postgres://postgres:postgres@localhost:5432/postgres'.
-
-✅ Successfully started database at 'postgres://postgres:postgres@localhost:5432/postgres'.
-
-✅ Successfully started the indexer service.
+2023-07-31T15:57:28.942954Z  INFO fuel_indexer::commands::run: 109: Configuration: IndexerConfig { metering_points: Some(30000000000), log_level: "info", verbose: false, local_fuel_node: false, indexer_net_config: false, fuel_node: FuelClientConfig { host: "beta-3.fuel.network", port: "80" }, web_api: WebApiConfig { host: "localhost", port: "29987", max_body_size: 5242880 }, database: PostgresConfig { user: "postgres", password: "XXXX", host: "localhost", port: "5432", database: "postgres", verbose: "false" }, metrics: false, stop_idle_indexers: false, run_migrations: true, authentication: AuthenticationConfig { enabled: false, strategy: None, jwt_secret: "XXXX", jwt_issuer: None, jwt_expiry: None }, rate_limit: RateLimitConfig { enabled: false, request_count: None, window_size: None }, replace_indexer: false, accept_sql_queries: false }
+2023-07-31T15:57:28.948657Z  INFO sqlx::postgres::notice: 157: relation "_sqlx_migrations" already exists, skipping
+2023-07-31T15:57:28.976258Z  INFO fuel_indexer::service: 378: Resuming Indexer(fuel.indexer_test) from block 81188
+2023-07-31T15:57:29.077928Z  INFO fuel_indexer::database: 187: Loading schema for Indexer(fuel.indexer_test) with Version(2738d221cf1e926d28e62bc93604a96ec6f7c5093e766f45a4555ed06e437b7f).
+2023-07-31T15:57:29.081302Z  WARN fuel_indexer::executor: 87: No end_block specified in manifest. Indexer will run forever.
+2023-07-31T15:57:29.081311Z  INFO fuel_indexer::executor: 109: Indexer(fuel.indexer_test) subscribing to Fuel node at beta-3.fuel.network:80
+2023-07-31T15:57:29.081424Z  INFO fuel_indexer::service: 194: Registered Indexer(fuel.indexer_test)
+2023-07-31T15:57:29.082150Z  INFO fuel_indexer_lib::utils: 132: Parsed SocketAddr '127.0.0.1:29987' from 'localhost:29987
 ```
-
-> You can `Ctrl+C` to exit the `forc index start` process, and your indexer service and database should still be running in the background.
 
 ### 2.3 Creating a new indexer
 
 Now that we have our development environment set up, the next step is to create an indexer.
 
 ```bash
-forc index new hello-indexer --namespace my_project && cd hello-indexer
+forc index new hello-indexer --namespace FuelLabs && cd hello-indexer
 ```
 
 > The `namespace` of your project is a required option. You can think of a `namespace` as your organization name or company name. Your project might contain one or many indexers all under the same `namespace`. For a complete list of options passed to `forc index new`, see [here](../forc-index/new.md)
 
 ```text
-forc index new hello-indexer --namespace my_project
+forc index new hello-indexer --namespace FuelLabs
 
 ███████╗██╗   ██╗███████╗██╗         ██╗███╗   ██╗██████╗ ███████╗██╗  ██╗███████╗██████╗
 ██╔════╝██║   ██║██╔════╝██║         ██║████╗  ██║██╔══██╗██╔════╝╚██╗██╔╝██╔════╝██╔══██╗
@@ -210,13 +201,21 @@ With our indexer deployed, we should be able to query for newly indexed data aft
 
 Below, we write a simple GraphQL query that simply returns a few fields from all transactions that we've indexed.
 
-```bash
-curl -X POST -H "Content-Type: application/graphql"
---data '{ "query": "query { tx { id, hash, block } }" }'
-http://127.0.0.1:29987/api/graph/my_project/hello_indexer
+You can open your GraphQL query playground at http://127.0.0.1:29987/api/playground/fuellabs/hello_indexer and submit the following GraphQL query.
+
+```graphql
+query {
+  tx {
+    id
+    hash
+    block
+  }
+}
 ```
 
-```text
+The response you get should resemble:
+
+```json
 [
    {
       "block" : 7017844286925529648,
@@ -235,10 +234,6 @@ http://127.0.0.1:29987/api/graph/my_project/hello_indexer
    },
 ]
 ```
-
-### 3.1 Using the playgrond
-
-As opposed to writing `curL` commands to query data, note that you can also explore your indexed data using the indexer's GraphQL playground. For more info on using the playground - [checkout the playground docs](../graphql/playground.md).
 
 ### Finished! 🥳
 

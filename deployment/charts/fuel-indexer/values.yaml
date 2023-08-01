@@ -23,6 +23,11 @@ app:
     storageclass: ${fuel_indexer_pvc_storage_class}
     storagerequests: ${fuel_indexer_pvc_storage_requests}
     accessmodes: ReadWriteOnce
+  resources:
+    cpu_requests: ${fuel_indexer_cpu_requests}
+    memory_requests: ${fuel_indexer_memory_requests}
+    cpu_limits: ${fuel_indexer_cpu_limits}
+    memory_limits: ${fuel_indexer_memory_limits}
   postgres:
     host: ${postgres_host}
     database: ${postgres_database}

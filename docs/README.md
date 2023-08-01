@@ -28,43 +28,16 @@
 
 The Fuel indexer is a standalone service that can be used to index various components of the blockchain. These indexable components include blocks, transactions, receipts, and state within the Fuel network, allowing for high-performance read-only access to the blockchain for advanced dApp use-cases.
 
-<!-- Using an <img> so we can size it -->
-<p align="center"><img src="https://i.imgur.com/8K14p9h.png" alt="diagram" width="500"/></align></p>
-
 <font size="4">Want to get started right away? Check out our [Quickstart](https://fuellabs.github.io/fuel-indexer/master/getting-started/quickstart.html)!</font>
 
 - [For Users](#for-users)
   - [Dependencies](#dependencies)
-    - [`fuelup`](#fuelup)
-    - [`WebAssembly`](#webassembly)
   - [`forc-index` Plugin](#forc-index-plugin)
-    - [`forc index check`](#forc-index-check)
-    - [`forc index new`](#forc-index-new)
-    - [`forc index init`](#forc-index-init)
-    - [`forc index build`](#forc-index-build)
-    - [`forc index deploy`](#forc-index-deploy)
-    - [`forc index remove`](#forc-index-remove)
-    - [`forc index auth`](#forc-index-auth)
-    - [`forc index start`](#forc-index-start)
-    - [`forc index status`](#forc-index-status)
-  - [Schema](#schema)
-  - [Modules](#modules)
-    - [WebAssembly (WASM) modules](#webassembly-wasm-modules)
+  - [WebAssembly (WASM) modules](#webassembly-wasm-modules)
 - [For Contributors](#for-contributors)
   - [Dev Dependencies](#dev-dependencies)
-    - [`docker`](#docker)
-    - [Database](#database)
-      - [PostgreSQL](#postgresql)
-    - [SQLx](#sqlx)
   - [Building from Source](#building-from-source)
-    - [Clone repository](#clone-repository)
-    - [Run migrations](#run-migrations)
-      - [PostgreSQL migrations](#postgresql-migrations)
-    - [Start the service](#start-the-service)
   - [Testing](#testing)
-    - [Default tests](#default-tests)
-    - [End-to-end tests](#end-to-end-tests)
-    - [`trybuild` tests](#trybuild-tests)
   - [Contributing](#contributing)
 - [Read the book](#read-the-book)
 
@@ -108,98 +81,39 @@ As mentioned in the [dependencies](#dependencies) section, the `forc-index` plug
 
 If you've successfully gone through the [Quickstart](#quickstart), you should already have `forc-index` installed and available in your `PATH`.
 
-### `forc index check`
-
-Check to see which indexer components you have installed.
-
-```bash
-forc index check
+```text
+forc index --help
 ```
 
-### `forc index new`
+```
+Fuel Indexer Orchestrator
 
-Create new indexer project at the provided path.
+USAGE:
+    forc-index <SUBCOMMAND>
 
-```bash
-forc index new my-indexer --namespace fuellabs
+OPTIONS:
+    -h, --help       Print help information
+    -V, --version    Print version information
+
+SUBCOMMANDS:
+    auth        Authenticate against an indexer service
+    build       Build an indexer
+    check       Get status checks on all indexer components
+    deploy      Deploy an indexer to an indexer service
+    help        Print this message or the help of the given subcommand(s)
+    init        Create a new indexer project in the current directory
+    kill        Kill the indexer process. Note that this command will kill any process listening
+                    on the default indexer port or the port specified by the `--port` flag
+    new         Create a new indexer project in a new directory
+    postgres    Fuel Postgres Orchestrator
+    remove      Stop and remove a running indexer
+    start       Standalone binary for the fuel indexer service.
+    status      Check the status of a registered indexer
 ```
 
-### `forc index init`
+## WebAssembly (WASM) modules
 
-Create a new indexer project at the provided path. If no path is provided the current working directory will be used.
-
-```bash
-forc index init --namespace fuellabs
-```
-
-### `forc index build`
-
-Build the indexer in the current directory.
-
-```bash
-forc index build
-```
-
-### `forc index deploy`
-
-Deploy a given indexer project to a particular endpoint
-
-```bash
-forc index deploy --url https://beta-3-indexer.fuel.network
-```
-
-### `forc index remove`
-
-Kill a running indexer.
-
-```bash
-forc index remove --url https://beta-3-indexer.fuel.network
-```
-
-### `forc index auth`
-
-Authenticate against an indexer service.
-
-```bash
-forc index auth --url https://beta-3-indexer.fuel.network
-```
-
-### `forc index start`
-
-Start the indexer service.
-
-```bash
-forc index start
-```
-
-### `forc index status`
-
-Check the status of a registered indexer.
-
-```bash
-forc index status
-```
-
-## Schema
-
-The Fuel indexer uses data models derived from GraphQL schema types in order to persist data to a database backend.
-
-```graphql
-type Account {
-    id: ID!
-    address: Address! @unique
-}
-```
-
-### GraphQL Functionality
-
-While we do our best to maintain compliance with the GraphQL specification and parity with other implementations, there are a few things that are under development or will not be implemented. You can find more information in [the GraphQL chapter of the book](https://fuellabs.github.io/fuel-indexer/master/graphql/index.html).
-
-## Modules
-
-Within the context of the Fuel indexer, WebAssembly (WASM) modules are binaries that are compiled to a `wasm32-unknown-unknown` target, which can then be deployed to a running indexer service.
-
-### WebAssembly (WASM) modules
+Within the context of the Fuel indexer, WebAssembly (WASM) modules are binaries that are compiled to a `wasm32-unknown-unknown` target, which can then be deployed to a running indexer service, and run as isolated runtime environments.
 
 There are a few points that Fuel indexer users should know when using WASM:
 
