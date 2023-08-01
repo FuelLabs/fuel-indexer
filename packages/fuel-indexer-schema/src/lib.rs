@@ -15,6 +15,8 @@ use thiserror::Error;
 #[cfg(feature = "db-models")]
 pub mod db;
 
+pub mod join;
+
 /// Placeholder value for SQL `NULL` values.
 const NULL_VALUE: &str = "NULL";
 

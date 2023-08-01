@@ -30,7 +30,7 @@ mod fuel_indexer_test {
     }
 
     fn fuel_indexer_test_ping(ping: Ping) {
-        info!("fuel_indexer_test_ping handling a Ping event: {:?}", ping);
+        info!("fuel_indexer_test_ping handling a Ping event: {:?}.", ping);
 
         let entity = PingEntity {
             id: ping.id,

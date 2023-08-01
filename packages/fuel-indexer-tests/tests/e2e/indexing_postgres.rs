@@ -7,7 +7,7 @@ use fuel_indexer_tests::fixtures::{
 use fuel_indexer_types::prelude::*;
 use serde::{Deserialize, Serialize};
 use sqlx::{types::BigDecimal, Row};
-use std::str::FromStr;
+use std::{collections::HashSet, str::FromStr};
 
 const REVERT_VM_CODE: u64 = 0x0004;
 const EXPECTED_CONTRACT_ID: &str =
@@ -632,10 +632,10 @@ async fn test_can_trigger_and_index_union_types() {
     .unwrap();
 
     // Fields are in a different order for these union types
-    assert_eq!(row.get::<BigDecimal, usize>(3).to_u64().unwrap(), 1);
-    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 5);
-    assert_eq!(row.get::<BigDecimal, usize>(1).to_u64().unwrap(), 10);
-    assert_eq!(row.get::<&str, usize>(4), "UnionType::A");
+    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 1);
+    assert_eq!(row.get::<BigDecimal, usize>(1).to_u64().unwrap(), 5);
+    assert_eq!(row.get::<&str, usize>(2), "UnionType::A");
+    assert_eq!(row.get::<BigDecimal, usize>(3).to_u64().unwrap(), 10);
 
     let row = sqlx::query(
         "SELECT * FROM fuel_indexer_test_index1.virtualunioncontainerentity LIMIT 1",
@@ -728,4 +728,30 @@ async fn test_can_trigger_and_index_list_types() {
             .collect::<Vec<Option<VirtualEntity>>>(),
         expected_virtual_optional_inner
     );
+
+    // Check that data is in M2M table
+    let row =
+        sqlx::query("SELECT * FROM fuel_indexer_test_index1.listtypeentitys_listfktypes")
+            .fetch_all(&mut conn)
+            .await
+            .unwrap();
+    assert_eq!(row.len(), 3);
+
+    // Should all have the same parent ID
+    let parent_ids = row
+        .iter()
+        .map(|x| x.get::<BigDecimal, usize>(0).to_u64().unwrap())
+        .collect::<HashSet<u64>>();
+    assert_eq!(parent_ids.len(), 1);
+    assert!(parent_ids.contains(&1));
+
+    // Should have 3 unique child IDs
+    let child_ids = row
+        .iter()
+        .map(|x| x.get::<BigDecimal, usize>(1).to_u64().unwrap())
+        .collect::<HashSet<u64>>();
+    assert_eq!(child_ids.len(), 3);
+    assert!(child_ids.contains(&1));
+    assert!(child_ids.contains(&2));
+    assert!(child_ids.contains(&3));
 }

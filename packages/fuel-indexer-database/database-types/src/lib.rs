@@ -20,10 +20,9 @@ use fuel_indexer_lib::{
     },
     type_id, MAX_ARRAY_LENGTH,
 };
-use linked_hash_set::LinkedHashSet;
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::BTreeMap,
+    collections::HashSet,
     fmt,
     fmt::Write,
     string::ToString,
@@ -32,7 +31,7 @@ use std::{
 use strum::{AsRefStr, EnumString};
 
 // SQL index method.
-#[derive(Debug, EnumString, AsRefStr, Default)]
+#[derive(Debug, EnumString, AsRefStr, Default, Eq, PartialEq)]
 pub enum IndexMethod {
     /// SQL BTree index.
     #[default]
@@ -522,9 +521,7 @@ impl TypeId {
 
     /// Create a new `TypeId` from a given `JoinTableMeta`.
     pub fn from_join_meta(info: JoinTableMeta, parsed: &ParsedGraphQLSchema) -> Self {
-        let JoinTableMeta { table_name, .. } = info;
-
-        let type_id = type_id(&parsed.fully_qualified_namespace(), &table_name);
+        let type_id = type_id(&parsed.fully_qualified_namespace(), &info.table_name());
         Self {
             id: type_id,
             version: parsed.schema().version().to_string(),
@@ -533,7 +530,7 @@ impl TypeId {
             // Doesn't matter what this is, but let's use `ID` since all column types
             // on join tables are `ColumnType::ID` for now.
             graphql_name: ColumnType::ID.to_string(),
-            table_name,
+            table_name: info.table_name(),
         }
     }
 }
@@ -643,16 +640,58 @@ impl DbType {
     }
 }
 
-/// SQL database index for a given column.
-#[derive(Debug, Default)]
+/// SQL primary key constraint for a given set of columns.
+#[derive(Debug, Default, Eq, PartialEq)]
+pub struct PrimaryKey {
+    /// The type of database.
+    pub db_type: DbType,
+
+    /// Name of table on which constraint is applied.
+    pub table_name: String,
+
+    /// Fully qualified namespace of the indexer.
+    pub namespace: String,
+
+    /// Name of columns to which constraint is applied.
+    pub column_names: Vec<String>,
+}
+
+impl SqlNamed for PrimaryKey {
+    /// Return the SQL name of the primary key.
+    fn sql_name(&self) -> String {
+        let cols = self.column_names.join("_");
+        format!("{}__{}_pk", self.table_name, cols)
+    }
+}
+
+impl SqlFragment for PrimaryKey {
+    /// Return the SQL create statement for a `PrimaryKey`.
+    fn create(&self) -> String {
+        let cols = self.column_names.join(", ");
+        match self.db_type {
+            DbType::Postgres => {
+                format!(
+                    "ALTER TABLE {}.{} ADD CONSTRAINT {} PRIMARY KEY ({});",
+                    self.namespace,
+                    self.table_name,
+                    self.sql_name(),
+                    cols
+                )
+            }
+        }
+    }
+}
+
+/// SQL index constraint for a given column.
+#[derive(Debug, Default, Eq, PartialEq)]
 pub struct SqlIndex {
     /// The type of database.
     pub db_type: DbType,
 
-    /// Name of table index is applied to.
+    /// Name of table on which constraint is applied.
     pub table_name: String,
 
-    /// Namespace of the indexer.
+    /// Fully qualified namespace of the indexer.
     pub namespace: String,
 
     /// SQL index method.
@@ -661,7 +700,7 @@ pub struct SqlIndex {
     /// Whether this index is unique.
     pub unique: bool,
 
-    /// Name of column index is applied to.
+    /// Name of column to which index is applied.
     pub column_name: String,
 }
 
@@ -699,7 +738,7 @@ impl SqlFragment for SqlIndex {
 }
 
 /// On delete action for a FK constraint.
-#[derive(Debug, Clone, Copy, Default, EnumString, AsRefStr)]
+#[derive(Debug, Clone, Copy, Default, EnumString, AsRefStr, Eq, PartialEq)]
 pub enum OnDelete {
     /// Take no action on delete.
     #[default]
@@ -716,7 +755,7 @@ pub enum OnDelete {
 }
 
 /// On update action for a FK constraint.
-#[derive(Debug, Clone, Copy, Default, EnumString, AsRefStr)]
+#[derive(Debug, Clone, Copy, Default, EnumString, AsRefStr, Eq, PartialEq)]
 pub enum OnUpdate {
     #[default]
     #[strum(serialize = "NO ACTION")]
@@ -724,13 +763,16 @@ pub enum OnUpdate {
 }
 
 /// SQL database constraint for a given column.
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub enum Constraint {
     /// SQL index constraint.
     Index(SqlIndex),
 
     /// SQL foreign key constraint.
     Fk(ForeignKey),
+
+    /// SQL primary key constraint.
+    Pk(PrimaryKey),
 }
 
 impl SqlFragment for Constraint {
@@ -739,12 +781,13 @@ impl SqlFragment for Constraint {
         match self {
             Constraint::Index(idx) => idx.create(),
             Constraint::Fk(fk) => fk.create(),
+            Constraint::Pk(pk) => pk.create(),
         }
     }
 }
 
 /// SQL database foreign key for a given column.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Eq, PartialEq)]
 pub struct ForeignKey {
     /// The type of database.
     pub db_type: DbType,
@@ -990,37 +1033,53 @@ impl Table {
                 // just get the set of all member fields and manually build an
                 // `TypeDefinition(TypeKind::Object)` from that.
                 let union_name = typ.name.to_string();
-                let default_ = BTreeMap::<String, String>::new();
+
+                // Manually keep track of fields we've seen so we don't duplicate them.
+                //
+                // Other crates like `LinkedHashSet` preserve order but in a different way
+                // than what is needed here.
+                let mut seen_fields = HashSet::new();
 
                 let fields = u
                     .members
                     .iter()
                     .flat_map(|m| {
+                        // We grab the object `TypeDefinition` from the parsed schema so as to maintain the
+                        // same order of the fields as they appear when being parsed in `ParsedGraphQLSchema`.
                         let name = m.node.to_string();
-                        parsed
-                            .object_field_mappings()
+                        let mut fields = parsed
+                            .object_ordered_fields()
                             .get(&name)
-                            .unwrap_or(&default_)
+                            .expect("Could not find union member in parsed schema.")
+                            .to_owned();
+
+                        fields.sort_by(|a, b| a.1.cmp(&b.1));
+
+                        fields
                             .iter()
-                            .map(|(k, v)| (k.to_owned(), v.to_owned()))
+                            .map(|f| f.0.name.to_string())
+                            .collect::<Vec<String>>()
                     })
-                    .collect::<LinkedHashSet<(String, String)>>()
-                    .iter()
-                    .map(|(k, _)| {
-                        let fid = field_id(&union_name, k);
+                    .filter_map(|field_name| {
+                        if seen_fields.contains(&field_name) {
+                            return None;
+                        }
+
+                        seen_fields.insert(field_name.clone());
+
+                        let field_id = field_id(&union_name, &field_name);
                         let f = &parsed
                             .field_defs()
-                            .get(&fid)
+                            .get(&field_id)
                             .expect("FieldDefinition not found in parsed schema.");
-                        // All fields in a derived union type are nullable, except for
-                        // the `ID` field.
+                        // All fields in a derived union type are nullable, except for the `ID` field.
                         let mut f = f.0.clone();
                         f.ty.node.nullable =
                             f.name.to_string() != IdCol::to_lowercase_str();
-                        Positioned {
+                        Some(Positioned {
                             pos: Pos::default(),
                             node: f,
-                        }
+                        })
                     })
                     .collect::<Vec<Positioned<FieldDefinition>>>();
 
@@ -1048,20 +1107,15 @@ impl Table {
     pub fn from_join_meta(item: JoinTableMeta, parsed: &ParsedGraphQLSchema) -> Self {
         // Since the join table is just two pre-determined columns, with two pre-determined
         // constraints, we can just manually create it.
-        let JoinTableMeta {
-            table_name,
-            local_table_name,
-            column_name,
-            ref_table_name,
-            ref_column_name,
-            ref_column_type,
-            ..
-        } = item;
-        let ty_id = type_id(&parsed.fully_qualified_namespace(), &table_name);
+        let ty_id = type_id(&parsed.fully_qualified_namespace(), &item.table_name());
         let columns = vec![
             Column {
                 type_id: ty_id,
-                name: format!("{local_table_name}_{column_name}"),
+                name: format!(
+                    "{}_{}",
+                    item.parent_table_name(),
+                    item.parent_column_name()
+                ),
                 graphql_type: ColumnType::UInt8.to_string(),
                 coltype: ColumnType::UInt8,
                 position: 0,
@@ -1072,7 +1126,7 @@ impl Table {
             },
             Column {
                 type_id: ty_id,
-                name: format!("{ref_table_name}_{ref_column_name}"),
+                name: format!("{}_{}", item.child_table_name(), item.child_column_name()),
                 graphql_type: ColumnType::UInt8.to_string(),
                 coltype: ColumnType::UInt8,
                 position: 1,
@@ -1087,27 +1141,47 @@ impl Table {
             Constraint::Fk(ForeignKey {
                 db_type: DbType::Postgres,
                 namespace: parsed.fully_qualified_namespace(),
-                table_name: table_name.clone(),
-                column_name: format!("{local_table_name}_{column_name}"),
-                ref_tablename: ref_table_name.clone(),
-                ref_colname: ref_column_name.clone(),
-                ref_coltype: ref_column_type.clone(),
+                table_name: item.table_name(),
+                column_name: format!(
+                    "{}_{}",
+                    item.parent_table_name(),
+                    item.parent_column_name()
+                ),
+                ref_tablename: item.parent_table_name(),
+                ref_colname: item.parent_column_name(),
+                // Join table's _always_ reference `ID` columns only.
+                ref_coltype: ColumnType::UInt8.to_string(),
                 ..ForeignKey::default()
             }),
             Constraint::Fk(ForeignKey {
                 db_type: DbType::Postgres,
                 namespace: parsed.fully_qualified_namespace(),
-                table_name: table_name.clone(),
-                column_name: format!("{ref_table_name}_{ref_column_name}"),
-                ref_tablename: local_table_name,
-                ref_colname: column_name,
-                ref_coltype: ref_column_type,
+                table_name: item.table_name(),
+                column_name: format!(
+                    "{}_{}",
+                    item.child_table_name(),
+                    item.child_column_name()
+                ),
+                ref_tablename: item.child_table_name(),
+                ref_colname: item.child_column_name(),
+                // Join table's _always_ reference `ID` columns only.
+                ref_coltype: ColumnType::UInt8.to_string(),
                 ..ForeignKey::default()
+            }),
+            // Prevent duplicate rows in the join table.
+            Constraint::Pk(PrimaryKey {
+                db_type: DbType::Postgres,
+                namespace: parsed.fully_qualified_namespace(),
+                table_name: item.table_name(),
+                column_names: vec![
+                    format!("{}_{}", item.parent_table_name(), item.parent_column_name()),
+                    format!("{}_{}", item.child_table_name(), item.child_column_name()),
+                ],
             }),
         ];
 
         Self {
-            name: table_name,
+            name: item.table_name(),
             namespace: parsed.namespace().to_string(),
             identifier: parsed.identifier().to_string(),
             columns,
@@ -1286,5 +1360,71 @@ type Person {
         assert_eq!(column.coltype, ColumnType::Charfield);
         assert!(column.unique);
         assert!(!column.nullable);
+    }
+
+    #[test]
+    fn test_can_create_well_formed_join_table_from_m2m_relationship() {
+        let schema = r#"
+type Account {
+    id: ID!
+    index: UInt8!
+}
+
+type Wallet {
+    id: ID!
+    account: [Account!]!
+}
+"#;
+
+        let schema = ParsedGraphQLSchema::new(
+            "test",
+            "test",
+            ExecutionSource::Wasm,
+            Some(&GraphQLSchema::new(schema.to_string())),
+        )
+        .unwrap();
+
+        let meta = schema.join_table_meta().get("Wallet").unwrap()[0].to_owned();
+        let table = Table::from_join_meta(meta, &schema);
+
+        assert_eq!(
+            table.constraints()[0],
+            Constraint::Fk(ForeignKey {
+                db_type: DbType::Postgres,
+                namespace: schema.fully_qualified_namespace(),
+                table_name: "wallets_accounts".to_string(),
+                column_name: "wallet_id".to_string(),
+                ref_tablename: "wallet".to_string(),
+                ref_colname: "id".to_string(),
+                ref_coltype: ColumnType::UInt8.to_string(),
+                on_delete: OnDelete::NoAction,
+                on_update: OnUpdate::NoAction,
+            })
+        );
+
+        assert_eq!(
+            table.constraints()[1],
+            Constraint::Fk(ForeignKey {
+                db_type: DbType::Postgres,
+                namespace: schema.fully_qualified_namespace(),
+                table_name: "wallets_accounts".to_string(),
+                column_name: "account_id".to_string(),
+                ref_tablename: "account".to_string(),
+                ref_colname: "id".to_string(),
+                ref_coltype: ColumnType::UInt8.to_string(),
+                on_delete: OnDelete::NoAction,
+                on_update: OnUpdate::NoAction,
+            })
+        );
+
+        assert_eq!(
+            table.constraints()[2],
+            Constraint::Pk(PrimaryKey {
+                db_type: DbType::Postgres,
+                namespace: schema.fully_qualified_namespace(),
+                table_name: "wallets_accounts".to_string(),
+                column_names: vec!["wallet_id".to_string(), "account_id".to_string()],
+            })
+        );
     }
 }

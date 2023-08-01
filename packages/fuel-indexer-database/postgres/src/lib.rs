@@ -980,3 +980,12 @@ pub async fn indexer_owned_by(
 
     Err(sqlx::Error::RowNotFound)
 }
+
+#[cfg_attr(feature = "metrics", metrics)]
+pub async fn put_many_to_many_record(
+    conn: &mut PoolConnection<Postgres>,
+    query: String,
+) -> sqlx::Result<()> {
+    execute_query(conn, query).await?;
+    Ok(())
+}

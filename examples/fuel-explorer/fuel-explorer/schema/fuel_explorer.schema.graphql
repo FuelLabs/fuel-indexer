@@ -78,6 +78,12 @@ enum TransactionStatusLabel {
   Unknown
 }
 
+enum TransactionLabel {
+  Create
+  Script
+  Mint
+}
+
 enum ReturnType {
   Return
   ReturnData
@@ -365,6 +371,74 @@ union Receipt =
   | ScriptResultReceipt
   | MessageOutReceipt
 
+type VariableOutput {
+  id: ID!
+  # `to` is a reserved keyword in PostgreSQL.
+  recipient: Address!
+  amount: UInt8!
+  asset_id: AssetId!
+  is_variable: Boolean!
+  label: OutputLabel!
+}
+
+type ChangeOutput {
+  id: ID!
+  # `to` is a reserved keyword in PostgreSQL.
+  recipient: Address!
+  amount: UInt8!
+  asset_id: AssetId!
+  is_change: Boolean!
+  label: OutputLabel!
+}
+
+type ContractOutput {
+  id: ID!
+  input_index: Int8!
+  balance_root: Bytes32!
+  state_root: Bytes32!
+  is_contract: Boolean!
+  label: OutputLabel!
+}
+
+type CoinOutput {
+  id: ID!
+  # `to` is a reserved keyword in PostgreSQL.
+  recipient: Address!
+  amount: UInt8!
+  asset_id: AssetId!
+  is_coin: Boolean!
+  label: OutputLabel!
+}
+
+type UnknownOutput {
+  id: ID!
+  is_unknown: Boolean!
+  label: OutputLabel!
+}
+
+type ContractCreated {
+  id: ID!
+  contract: ContractIdFragment!
+  state_root: Bytes32!
+  is_contract_created: Boolean!
+  label: OutputLabel!
+}
+
+type MessageOutput {
+  id: ID!
+  amount: UInt8!
+  recipient: Address!
+}
+
+union Output =
+    CoinOutput
+  | ContractOutput
+  | ChangeOutput
+  | VariableOutput
+  | ContractCreated
+  | MessageOutput
+  | UnknownOutput
+
 # `Create` is a reserved word in SQL so we append the suffix `Transaction` to these
 # transaction type names.
 type CreateTransaction {
@@ -383,6 +457,7 @@ type CreateTransaction {
   is_create: Boolean!
   receipts: [Receipt!]
   status: TransactionStatus!
+  label: TransactionLabel!
 }
 
 type ScriptTransaction {
@@ -400,6 +475,7 @@ type ScriptTransaction {
   is_script: Boolean!
   receipts: [Receipt!]
   status: TransactionStatus!
+  label: TransactionLabel!
 }
 
 type MintTransaction {
@@ -410,6 +486,7 @@ type MintTransaction {
   is_mint: Boolean!
   receipts: [Receipt!]
   status: TransactionStatus!
+  label: TransactionLabel!
 }
 
 union Transaction =
@@ -494,74 +571,6 @@ type NodeInfo {
   max_depth: UInt8!
   node_version: Charfield!
 }
-
-type UnknownOutput {
-  id: ID!
-  label: OutputLabel!
-  is_unknown: Boolean!
-}
-
-type ContractCreated {
-  id: ID!
-  contract: ContractIdFragment!
-  state_root: Bytes32!
-  label: OutputLabel!
-  is_contract_created: Boolean!
-}
-
-type VariableOutput {
-  id: ID!
-  # `to` is a reserved keyword in PostgreSQL.
-  recipient: Address!
-  amount: UInt8!
-  asset_id: AssetId!
-  is_variable: Boolean!
-  label: OutputLabel!
-}
-
-type ChangeOutput {
-  id: ID!
-  # `to` is a reserved keyword in PostgreSQL.
-  recipient: Address!
-  amount: UInt8!
-  asset_id: AssetId!
-  is_change: Boolean!
-  label: OutputLabel!
-}
-
-type ContractOutput {
-  id: ID!
-  input_index: Int8!
-  balance_root: Bytes32!
-  state_root: Bytes32!
-  is_contract: Boolean!
-  label: OutputLabel!
-}
-
-type CoinOutput {
-  id: ID!
-  # `to` is a reserved keyword in PostgreSQL.
-  recipient: Address!
-  amount: UInt8!
-  asset_id: AssetId!
-  is_coin: Boolean!
-  label: OutputLabel!
-}
-
-type MessageOutput {
-  id: ID!
-  amount: UInt8!
-  recipient: Address!
-}
-
-union Output =
-    CoinOutput
-  | ContractOutput
-  | ChangeOutput
-  | VariableOutput
-  | ContractCreated
-  | MessageOutput
-  | UnknownOutput
 
 type ConsensusParameters {
   id: ID!

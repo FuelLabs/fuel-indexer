@@ -146,11 +146,8 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
             .await
             {
                 Ok((block_info, cursor)) => (block_info, cursor),
-                Err(_e) => {
-                    info!(
-                        "Stopping indexer at the specified end_block: {}",
-                        end_block.unwrap()
-                    );
+                Err(e) => {
+                    error!("Fetching blocks failed: {e:?}",);
                     break;
                 }
             };
@@ -178,6 +175,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                             continue;
                         } else {
                             error!("Database error: {inner}.");
+                            sleep(Duration::from_secs(DELAY_FOR_SERVICE_ERROR)).await;
                             retry_count += 1;
                         }
                     }
@@ -201,10 +199,10 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
             }
 
             if cursor.is_none() {
-                info!("No new blocks to process, sleeping.");
-                sleep(Duration::from_secs(DELAY_FOR_EMPTY_PAGE)).await;
-
                 num_empty_block_reqs += 1;
+
+                info!("No new blocks to process, sleeping. zzZZ");
+                sleep(Duration::from_secs(DELAY_FOR_EMPTY_PAGE)).await;
 
                 if num_empty_block_reqs == max_empty_block_reqs {
                     error!("No blocks being produced, Indexer({indexer_uid}) giving up. <('.')>");
@@ -221,6 +219,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
 }
 
 /// Retrieve blocks from a client node.
+///
 // This was abstracted out of `run_executor` in order to allow for
 // use in the benchmarking suite to give consistent timings.
 pub async fn retrieve_blocks_from_node(

@@ -176,7 +176,7 @@ Do your WASM modules need to be rebuilt?
         }
 
         if let Err(e) = queries::put_object(conn, query_text, bytes).await {
-            error!("Failed to put object: {e:?}");
+            error!("Failed to put_object: {e:?}");
         }
     }
 
@@ -195,7 +195,7 @@ Do your WASM modules need to be rebuilt?
                 if let sqlx::Error::RowNotFound = e {
                     debug!("Row not found for object ID: {object_id}");
                 } else {
-                    error!("Failed to get object: {:?}", e);
+                    error!("Failed to get_object: {e:?}");
                 }
                 None
             }
@@ -252,5 +252,32 @@ Do your WASM modules need to be rebuilt?
 
     pub fn schema(&self) -> &HashMap<String, Vec<String>> {
         &self.schema
+    }
+
+    /// Put a record into the database.
+    ///
+    /// Specifically for many-to-many relationships.
+    ///
+    /// Since many-to-many relationships can _only_ ever reference certain `ID` fields
+    /// on `TypeDefinition`s, we don't need to save any `FtColumn::Object` columns, which means
+    /// we can simplify the `INSERT` into a simple string.
+    ///
+    /// There are multiple queries here because a single parent `TypeDefinition` can have several
+    /// many-to-many relationships with children `TypeDefinition`s.
+    pub async fn put_many_to_many_record(&mut self, queries: Vec<String>) {
+        let conn = self
+            .stashed
+            .as_mut()
+            .expect("No stashed connection for put. Was a transaction started?");
+
+        for query in queries {
+            if self.config.verbose {
+                info!("{query}");
+            }
+
+            if let Err(e) = queries::put_many_to_many_record(conn, query).await {
+                error!("Failed to put_many_to_many_record: {e:?}");
+            }
+        }
     }
 }

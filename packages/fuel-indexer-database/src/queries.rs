@@ -406,3 +406,14 @@ pub async fn indexer_owned_by(
         }
     }
 }
+
+pub async fn put_many_to_many_record(
+    conn: &mut IndexerConnection,
+    query: String,
+) -> sqlx::Result<()> {
+    match conn {
+        IndexerConnection::Postgres(ref mut c) => {
+            postgres::put_many_to_many_record(c, query).await
+        }
+    }
+}

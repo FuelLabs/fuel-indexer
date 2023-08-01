@@ -1,7 +1,8 @@
 extern crate alloc;
+
 use alloc::vec::Vec;
 use async_trait;
-use fuel_indexer_schema::FtColumn;
+use fuel_indexer_schema::{join::JoinMetadata, FtColumn};
 
 pub use anyhow;
 pub use fuel_indexer::prelude::{
@@ -13,6 +14,7 @@ pub use fuel_indexer_database::{queries, IndexerConnectionPool};
 pub use fuel_indexer_lib::{
     config::{cli::Parser, IndexerArgs, IndexerConfig},
     defaults::SERVICE_REQUEST_CHANNEL_SIZE,
+    graphql::MAX_FOREIGN_KEY_LIST_FIELDS,
     manifest::Manifest,
     utils::{init_logging, ServiceRequest},
 };
@@ -48,8 +50,11 @@ impl Logger {
 }
 
 #[async_trait::async_trait]
-pub trait Entity: Sized + PartialEq + Eq + std::fmt::Debug {
+pub trait Entity<'a>: Sized + PartialEq + Eq + std::fmt::Debug {
     const TYPE_ID: i64;
+    const JOIN_METADATA: Option<[Option<JoinMetadata<'a>>; MAX_FOREIGN_KEY_LIST_FIELDS]>;
+
+    async fn save_many_to_many(&self);
 
     fn from_row(vec: Vec<FtColumn>) -> Self;
 

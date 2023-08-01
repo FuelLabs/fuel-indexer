@@ -49,3 +49,18 @@ pub fn type_id(namespace: &str, name: &str) -> i64 {
 pub fn fully_qualified_namespace(namespace: &str, identifier: &str) -> String {
     format!("{}_{}", namespace, identifier)
 }
+
+/// Return the name of the join table for the given entities.
+pub fn join_table_name(a: &str, b: &str) -> String {
+    format!("{}s_{}s", a, b)
+}
+
+/// Return the name of each TypeDefinition in the join table.
+pub fn join_table_typedefs_name(join_table_name: &str) -> (String, String) {
+    let mut parts = join_table_name.split('_');
+    let a = parts.next().unwrap();
+    let b = parts.next().unwrap();
+
+    // Trim the plural 's' from the end of the TypeDefinition name.
+    (a[0..a.len() - 1].to_string(), b[0..b.len() - 1].to_string())
+}
