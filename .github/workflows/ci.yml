@@ -19,10 +19,10 @@ env:
   RUSTC_VERSION: 1.69.0
   BRANCH_NAME: '${{ github.head_ref || github.ref_name }}'
   IS_MASTER: '${{ github.ref == ''refs/heads/master'' }}'
+  IS_DEVELOP: '${{ github.ref == ''refs/heads/develop'' }}'
   IS_RELEASE: '${{ github.event_name == ''release'' && github.event.action == ''published'' }}'
-  IS_RELEASE_OR_MASTER: >-
-    ${{ github.event_name == 'release' || github.event.action == 'published' ||
-    github.ref == 'refs/heads/master' }}
+  IS_RELEASE_OR_MASTER: '${IS_RELEASE} || ${IS_MASTER}'
+  IS_RELEASE_OR_MASTER_OR_DEVELOP: '${IS_RELEASE_OR_MASTER} || ${IS_DEVELOP}'
 jobs:
   cancel-previous-runs:
     runs-on: ubuntu-latest
@@ -50,26 +50,29 @@ jobs:
       IS_MASTER: '${{ steps.set-env.outputs.IS_MASTER }}'
       IS_RELEASE: '${{ steps.set-env.outputs.IS_RELEASE }}'
       IS_RELEASE_OR_MASTER: '${{ steps.set-env.outputs.IS_RELEASE_OR_MASTER }}'
-      IS_RELEASE_OR_MASTER_OR_SEMVER: '${{ steps.set-env.outputs.IS_RELEASE_OR_MASTER_OR_SEMVER }}'
+      IS_RELEASE_OR_MASTER_OR_DEVELOP: '${{ steps.set-env.outputs.IS_RELEASE_OR_MASTER_OR_DEVELOP }}'
+      IS_RELEASE_OR_MASTER_OR_DEVELOP_OR_SEMVER: '${{ steps.set-env.outputs.IS_RELEASE_OR_MASTER_OR_DEVELOP_OR_SEMVER }}'
     steps:
       - name: Set env vars
         id: set-env
         run: >
-          echo "IS_MASTER=${{ env.IS_MASTER }}" >> $GITHUB_OUTPUT
-
-          echo "IS_RELEASE=${{ env.IS_RELEASE }}" >> $GITHUB_OUTPUT
-
-          echo "IS_RELEASE_OR_MASTER=${{ env.IS_RELEASE_OR_MASTER }}" >>
-          $GITHUB_OUTPUT
-
+          echo "IS_MASTER=${{ env.IS_MASTER }}" >> $GITHUB_OUTPUT echo
+          "IS_DEVELOP=${{ env.IS_DEVELOP }}" >> $GITHUB_OUTPUT echo
+          "IS_RELEASE=${{ env.IS_RELEASE }}" >> $GITHUB_OUTPUT echo
+          "IS_RELEASE_OR_MASTER=${{ env.IS_RELEASE_OR_MASTER }}" >>
+          $GITHUB_OUTPUT echo "IS_RELEASE_OR_MASTER_OR_DEVELOP=${{
+          env.IS_RELEASE_OR_MASTER_OR_DEVELOP }}" >> $GITHUB_OUTPUT
 
           if [[ ${{ env.BRANCH_NAME }} =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-              echo "IS_RELEASE_OR_MASTER_OR_SEMVER=true" >> $GITHUB_OUTPUT
+              echo "IS_RELEASE_OR_MASTER_OR_DEVELOP_OR_SEMVER=${{ env.IS_RELEASE_OR_MASTER_OR_DEVELOP }}" >> $GITHUB_OUTPUT
+              if [[ ${{ env.IS_DEVELOP }} ]]; then
+                echo "IS_RELEASE_OR_MASTER_OR_DEVELOP_OR_SEMVER=${{ env.IS_RELEASE_OR_MASTER_OR_DEVELOP }}" >> $GITHUB_OUTPUT
+              fi
           else
-            echo "IS_RELEASE_OR_MASTER_OR_SEMVER=${{ env.IS_RELEASE_OR_MASTER }}" >> $GITHUB_OUTPUT
+            echo "IS_RELEASE_OR_MASTER_OR_DEVELOP_OR_SEMVER=${{ env.IS_RELEASE_OR_MASTER_OR_DEVELOP }}" >> $GITHUB_OUTPUT
           fi
   check-is-semver-branch:
-    if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER != 'true'
+    if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_DEVELOP != 'true'
     needs:
       - set-env-vars
     runs-on: ubuntu-latest
@@ -78,7 +81,7 @@ jobs:
     steps:
       - name: Check for semver branch
         id: semver-branch-check
-        run: |
+        run: >
           if [[ ${{ env.BRANCH_NAME }} =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
               echo "is_semver_branch=true" >> $GITHUB_OUTPUT
               echo "This is a release branch ^(^.^)^"
@@ -101,12 +104,14 @@ jobs:
         uses: peaceiris/actions-mdbook@v1
         with:
           mdbook-version: latest
-  cargo-release-check:
+  cargo-check:
     needs:
       - cargo-toml-fmt-check
       - set-env-vars
     runs-on: ubuntu-latest
-    if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_SEMVER == 'true'
+    if: >-
+      needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_DEVELOP_OR_SEMVER ==
+      'true'
     steps:
       - uses: actions/checkout@v3
       - name: Install toolchain
@@ -118,7 +123,9 @@ jobs:
     needs:
       - cargo-toml-fmt-check
       - set-env-vars
-    if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_SEMVER != 'true'
+    if: >-
+      needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_DEVELOP_OR_SEMVER !=
+      'true'
     strategy:
       matrix:
         command:
@@ -168,7 +175,9 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: '${{ secrets.SLACK_WEBHOOK_NOTIFY_BUILD }}'
   cargo-clippy:
-    if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_SEMVER != 'true'
+    if: >-
+      needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_DEVELOP_OR_SEMVER !=
+      'true'
     needs:
       - cargo-toml-fmt-check
       - set-env-vars
@@ -196,7 +205,9 @@ jobs:
       - name: cargo fmt --all --verbose -- --check
         run: cargo fmt --all --verbose -- --check
   cargo-test-unit-tests:
-    if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_SEMVER != 'true'
+    if: >-
+      needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_DEVELOP_OR_SEMVER !=
+      'true'
     needs:
       - cargo-toml-fmt-check
       - set-env-vars
@@ -222,12 +233,16 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
       - name: >-
           cargo test --locked --all-targets --workspace --exclude
-          fuel-indexer-tests --exclude plugin-tests --exclude fuel-indexer-benchmarks
+          fuel-indexer-tests --exclude plugin-tests --exclude
+          fuel-indexer-benchmarks
         run: >-
           cargo test --locked --all-targets --workspace --exclude
-          fuel-indexer-tests --exclude plugin-tests --exclude fuel-indexer-benchmarks
+          fuel-indexer-tests --exclude plugin-tests --exclude
+          fuel-indexer-benchmarks
   cargo-test-e2e-and-integration-tests:
-    if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_SEMVER != 'true'
+    if: >-
+      needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_DEVELOP_OR_SEMVER !=
+      'true'
     needs:
       - cargo-toml-fmt-check
       - set-env-vars

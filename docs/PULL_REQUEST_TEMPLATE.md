@@ -2,7 +2,7 @@ Thanks for opening a PR with the Fuel Indexer project, please review the **Check
 
 
 ### Checklist
-- [ ] Ensure your top-leve commit message is inline with our [contributor guidelines](./CONTRIBUTING.md).
+- [ ] Ensure your top-level commit message is inline with our [contributor guidelines](./CONTRIBUTING.md).
 - [ ] Please add proper labels.
 - [ ] If there is an issue associated with this PR, please link the issue (right-hand sidebar)
 - [ ] If there is not an issue associated with this PR, add this PR to the "Fuel Indexer" project (right-hand sidebar)
