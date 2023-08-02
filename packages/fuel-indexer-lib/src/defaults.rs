@@ -92,7 +92,7 @@ pub const VERBOSE_LOGGING: bool = false;
 pub const VERBOSE_DB_LOGGING: &str = "false";
 
 /// Amount of blocks to return in a request to a Fuel node.
-pub const NODE_BLOCK_PAGE_SIZE: usize = 10;
+pub const NODE_BLOCK_PAGE_SIZE: usize = 20;
 
 /// Start a local Fuel node.
 pub const LOCAL_FUEL_NODE: bool = false;

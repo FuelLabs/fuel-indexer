@@ -955,7 +955,7 @@ pub async fn put_many_to_many_record(
 /// block IDs were inserted into the database.
 ///
 /// This count will be used to determine whether or not an indexer executor should refetch
-/// a page of blocks due to all blocks in the previously fetched page not being indexed.
+/// a page of blocks due to all blocks in the previously fetched page not being indexed
 pub async fn get_recent_block_page(
     conn: &mut PoolConnection<Postgres>,
     ids: Vec<&str>,
