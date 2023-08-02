@@ -536,6 +536,8 @@ impl TypeId {
 }
 
 /// `ColumnInfo` is a derived version of `Column` that is only for `queries::columns_get_schema`.
+///
+/// It includes various pieces of metadata that aren't found on a single data model.
 #[derive(Debug)]
 pub struct ColumnInfo {
     pub type_id: i64,
