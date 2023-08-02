@@ -48,23 +48,23 @@ pub async fn init(command: DeployCommand) -> anyhow::Result<()> {
 
     let mut manifest = Manifest::from_file(&manifest_path)?;
 
-    if let Some(path) = path {
-        let target_dir: std::path::PathBuf = {
-            let mut target = crate::ops::utils::cargo_target_dir(path.as_path()).unwrap();
-            target.pop();
-            target
-        };
+    let path = path.unwrap_or(".".into());
 
-        manifest.set_graphql_schema(
-            Path::new(&target_dir)
-                .join(manifest.graphql_schema())
-                .to_str()
-                .unwrap()
-                .to_string(),
-        );
+    let target_dir: std::path::PathBuf = {
+        let mut target = crate::ops::utils::cargo_target_dir(path.as_path()).unwrap();
+        target.pop();
+        target
+    };
 
-        manifest.set_module(target_dir.join(manifest.module()).into());
-    }
+    manifest.set_graphql_schema(
+        Path::new(&target_dir)
+            .join(manifest.graphql_schema())
+            .to_str()
+            .unwrap()
+            .to_string(),
+    );
+
+    manifest.set_module(target_dir.join(manifest.module()).into());
 
     let form = Form::new()
         .text("replace_indexer", replace_indexer.to_string())
