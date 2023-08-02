@@ -89,3 +89,10 @@ The `report_metrics` field indicates whether to report Prometheus metrics to the
 _Optional._
 
 The `resumable` field contains a boolean value and specifies whether the indexer should synchronise with the latest block if it has fallen out of sync.
+
+
+## `skip_missing_blocks`
+
+_Optional._
+
+Whether or not indexers should continue indexing Block(n) if any blocks in range Block(n-1) .. Block(1) haven't already been indexed. When set to `false`, indexers that encounter a non-linear block history will pause indexing until the missing blocks are indexed.

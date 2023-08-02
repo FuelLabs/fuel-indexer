@@ -254,6 +254,7 @@ pub async fn retrieve_blocks_from_node(
         });
 
     let mut block_info = Vec::new();
+    let block_ids = results.iter().map(|b| b.id.clone()).collect_vec();
     for block in results.into_iter() {
         if let Some(end_block) = end_block {
             if block.header.height.0 > end_block {

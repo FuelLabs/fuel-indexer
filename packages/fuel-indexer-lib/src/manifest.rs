@@ -110,6 +110,9 @@ pub struct Manifest {
     /// When set to true, the indexer will resume from the block height at which it last stopped.
     #[serde(default)]
     resumable: Option<bool>,
+
+    /// Whether or not to continue indexing if blocks are missed.
+    skip_missing_blocks: Option<bool>,
 }
 
 impl Manifest {
@@ -240,6 +243,10 @@ impl Manifest {
 
     pub fn resumable(&self) -> Option<bool> {
         self.resumable
+    }
+
+    pub fn skip_missing_blocks(&self) -> Option<bool> {
+        self.skip_missing_blocks
     }
 }
 
