@@ -90,7 +90,6 @@ _Optional._
 
 The `resumable` field contains a boolean value and specifies whether the indexer should synchronise with the latest block if it has fallen out of sync.
 
-
 ## `skip_missing_blocks`
 
 _Optional._
