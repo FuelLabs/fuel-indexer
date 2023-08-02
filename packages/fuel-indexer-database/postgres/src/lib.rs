@@ -11,7 +11,7 @@ use sqlx::{
 };
 use std::str::FromStr;
 use std::time::{SystemTime, UNIX_EPOCH};
-use tracing::info;
+use tracing::{error, info};
 
 #[cfg(feature = "metrics")]
 use std::time::Instant;
@@ -956,9 +956,35 @@ pub async fn put_many_to_many_record(
 ///
 /// This count will be used to determine whether or not an indexer executor should refetch
 /// a page of blocks due to all blocks in the previously fetched page not being indexed
-pub async fn get_recent_block_page(
+pub async fn assert_indexer_is_in_sync(
     conn: &mut PoolConnection<Postgres>,
-    ids: Vec<&str>,
+    namespace: &str,
+    identifier: &str,
+    ids: &Vec<String>,
 ) -> sqlx::Result<()> {
+    let total = ids.len();
+
+    let ids = ids
+        .iter()
+        .map(|id| format!("'{}'", id))
+        .collect::<Vec<_>>()
+        .join(",");
+    let query = format!(
+        "SELECT COUNT(distinct id) FROM {namespace}_{identifier}.indexmetadataentity WHERE block_id IN ({ids})"
+    );
+    let result = sqlx::query(&query)
+        .fetch_one(conn)
+        .await?
+        .try_get::<i64, usize>(0)
+        .unwrap_or(0) as usize;
+
+    let missing = total - result;
+    if missing > 0 {
+        error!(
+            "Indexer({namespace}.{identifier}) failed to index {missing}/{total} blocks, retrying... <('.')>"
+        );
+        return Err(sqlx::Error::RowNotFound);
+    }
+
     Ok(())
 }

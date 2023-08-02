@@ -401,11 +401,10 @@ async fn get_start_block(
             } else {
                 start
             };
-            info!(
-                "Resuming Indexer({}.{}) from block {block}",
-                manifest.namespace(),
-                manifest.identifier()
-            );
+
+            let action = if *resumable { "Resuming" } else { "Starting" };
+
+            info!("{action} Indexer({}) from block {block}", manifest.uid());
             Ok(block)
         }
         None => Ok(manifest.start_block().unwrap_or(1)),

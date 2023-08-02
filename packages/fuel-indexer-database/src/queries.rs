@@ -427,13 +427,15 @@ pub async fn put_many_to_many_record(
 ///
 /// This count will be used to determine whether or not an indexer executor should refetch
 /// a page of blocks due to all blocks in the previously fetched page not being indexed.
-pub async fn get_recent_block_page(
+pub async fn assert_indexer_is_in_sync(
     conn: &mut IndexerConnection,
-    ids: Vec<&str>,
+    namespace: &str,
+    identifier: &str,
+    ids: &Vec<String>,
 ) -> sqlx::Result<()> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
-            postgres::get_recent_block_page(c, ids).await
+            postgres::assert_indexer_is_in_sync(c, namespace, identifier, ids).await
         }
     }
 }

@@ -280,4 +280,15 @@ Do your WASM modules need to be rebuilt?
             }
         }
     }
+
+    pub async fn assert_indexer_is_in_sync(
+        &self,
+        namespace: &str,
+        identifier: &str,
+        ids: &Vec<String>,
+    ) -> IndexerResult<()> {
+        let mut conn = self.pool.acquire().await?;
+        queries::assert_indexer_is_in_sync(&mut conn, namespace, identifier, ids).await?;
+        Ok(())
+    }
 }

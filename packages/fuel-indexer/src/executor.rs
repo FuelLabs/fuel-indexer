@@ -66,6 +66,12 @@ impl ExecutorSource {
     }
 }
 
+#[derive(Debug)]
+pub enum HandleEventsResult {
+    Retry,
+    Pass,
+}
+
 /// Run the executor task until the kill switch is flipped, or until some other
 /// stop criteria is met.
 //
@@ -88,6 +94,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
         warn!("No end_block specified in manifest. Indexer will run forever.");
     }
     let stop_idle_indexers = config.stop_idle_indexers;
+    let indexer_uid = manifest.uid();
 
     let fuel_node_addr = if config.indexer_net_config {
         manifest
@@ -106,8 +113,6 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
     } else {
         None
     };
-
-    let indexer_uid = manifest.uid();
 
     info!("Indexer({indexer_uid}) subscribing to Fuel node at {fuel_node_addr}");
 
@@ -153,8 +158,6 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                 }
             };
 
-            let block_ids = block_info.iter().map(|b| b.id.clone()).collect_vec();
-
             let result = executor.handle_events(block_info).await;
 
             if let Err(e) = result {
@@ -199,6 +202,13 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                     );
                     break;
                 }
+            }
+
+            if let Ok(HandleEventsResult::Retry) = result {
+                warn!("Indexer({indexer_uid}) retrying handler after retry request.");
+
+                // Try to fetch the page again using same cursor.
+                continue;
             }
 
             if cursor.is_none() {
@@ -475,7 +485,10 @@ pub trait Executor
 where
     Self: Sized,
 {
-    async fn handle_events(&mut self, blocks: Vec<BlockData>) -> IndexerResult<()>;
+    async fn handle_events(
+        &mut self,
+        blocks: Vec<BlockData>,
+    ) -> IndexerResult<HandleEventsResult>;
 }
 
 #[derive(Error, Debug)]
@@ -568,7 +581,8 @@ where
         futures::channel::oneshot::Receiver<()>,
     )> {
         let executor =
-            NativeIndexExecutor::new(manifest, pool, config, handle_events).await?;
+            NativeIndexExecutor::new(manifest, pool.clone(), config, handle_events)
+                .await?;
         let kill_switch = Arc::new(AtomicBool::new(false));
         let (kill_confirm_trigger, kill_confirm) = futures::channel::oneshot::channel();
         let handle = tokio::spawn(run_executor(
@@ -587,7 +601,10 @@ impl<F> Executor for NativeIndexExecutor<F>
 where
     F: Future<Output = IndexerResult<()>> + Send,
 {
-    async fn handle_events(&mut self, blocks: Vec<BlockData>) -> IndexerResult<()> {
+    async fn handle_events(
+        &mut self,
+        blocks: Vec<BlockData>,
+    ) -> IndexerResult<HandleEventsResult> {
         self.db.lock().await.start_transaction().await?;
         let res = (self.handle_events_fn)(blocks, self.db.clone()).await;
         let uid = self.manifest.uid();
@@ -598,7 +615,7 @@ where
         } else {
             self.db.lock().await.commit_transaction().await?;
         }
-        Ok(())
+        Ok(HandleEventsResult::Pass)
     }
 }
 
@@ -626,8 +643,7 @@ impl WasmIndexExecutor {
         if let Some(metering_points) = config.metering_points {
             // `Metering` needs to be configured with a limit and a cost
             // function. For each `Operator`, the metering middleware will call
-            // the cost function and subtract the cost from the remaining
-            // points.
+            // the cost function and subtract the cost from the remaining points.
             let metering =
                 Arc::new(wasmer_middlewares::Metering::new(metering_points, |_| 1));
             compiler_config.push_middleware(metering);
@@ -722,9 +738,13 @@ impl WasmIndexExecutor {
                     let mut file = File::open(module).await?;
                     file.read_to_end(&mut bytes).await?;
 
-                    let executor =
-                        WasmIndexExecutor::new(config, manifest, bytes.clone(), pool)
-                            .await?;
+                    let executor = WasmIndexExecutor::new(
+                        config,
+                        manifest,
+                        bytes.clone(),
+                        pool.clone(),
+                    )
+                    .await?;
                     let handle = tokio::spawn(run_executor(
                         config,
                         manifest,
@@ -812,11 +832,17 @@ impl WasmIndexExecutor {
 #[async_trait]
 impl Executor for WasmIndexExecutor {
     /// Trigger a WASM event handler, passing in a serialized event struct.
-    async fn handle_events(&mut self, blocks: Vec<BlockData>) -> IndexerResult<()> {
+    async fn handle_events(
+        &mut self,
+        blocks: Vec<BlockData>,
+    ) -> IndexerResult<HandleEventsResult> {
         if let Some(metering_points) = self.metering_points {
             self.set_metering_points(metering_points).await?
         }
         let bytes = serialize(&blocks);
+        let uid = self.manifest.uid();
+        let skip_missing_blocks = self.manifest.skip_missing_blocks().unwrap_or(false);
+        let block_ids = blocks.iter().map(|b| b.id.to_string()).collect_vec();
 
         let mut arg = {
             let mut store_guard = self.store.lock().await;
@@ -851,8 +877,6 @@ impl Executor for WasmIndexExecutor {
         })
         .await?;
 
-        let uid = self.manifest.uid();
-
         if let Err(e) = res {
             if self.metering_points_exhausted().await {
                 self.db.lock().await.revert_transaction().await?;
@@ -866,9 +890,28 @@ impl Executor for WasmIndexExecutor {
             let _ = self.db.lock().await.commit_transaction().await?;
         }
 
+        // IMPORTANT: We should never continue to index blocks without a linear history, unless the creator
+        // of the indexer specifies such.
+        if !skip_missing_blocks {
+            if let Err(e) = self
+                .db
+                .lock()
+                .await
+                .assert_indexer_is_in_sync(
+                    self.manifest.namespace(),
+                    self.manifest.identifier(),
+                    &block_ids,
+                )
+                .await
+            {
+                error!("Indexer({uid}) failed to determine number of blocks processed in most recent call: {e}.");
+                return Ok(HandleEventsResult::Retry);
+            }
+        }
+
         let mut store_guard = self.store.lock().await;
         arg.drop(&mut store_guard);
 
-        Ok(())
+        Ok(HandleEventsResult::Pass)
     }
 }
