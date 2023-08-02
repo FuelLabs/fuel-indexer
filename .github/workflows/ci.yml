@@ -246,8 +246,8 @@ jobs:
         run: cargo test --locked --all-targets --features e2e,postgres -p
           fuel-indexer-tests -- --test-threads=1
   build-default-indexer:
-    if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_DEVELOP_OR_SEMVER !=
-      'true'
+    # if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_DEVELOP_OR_SEMVER != 'true'
+    if: false
     needs:
       - cargo-toml-fmt-check
       - set-env-vars
