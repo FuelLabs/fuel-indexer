@@ -20,6 +20,8 @@ env:
   IS_MASTER: ${{ github.head_ref == 'master' || github.ref_name == 'master' }}
   IS_DEVELOP: ${{ github.head_ref == 'develop' || github.ref_name == 'develop' }}
   IS_RELEASE: ${{ github.event_name == 'release' && github.event.action == 'published' }}
+  IS_RELEASE_OR_MASTER: >-
+    ${{ (github.event_name == 'release' && github.event.action == 'published') || (github.head_ref == 'master' || github.ref_name == 'master') }}
 jobs:
   cancel-previous-runs:
     runs-on: ubuntu-latest
@@ -58,7 +60,7 @@ jobs:
           echo "IS_MASTER=${{ env.IS_MASTER }}" >> $GITHUB_OUTPUT
           echo "IS_DEVELOP=${{ env.IS_DEVELOP }}" >> $GITHUB_OUTPUT
           echo "IS_RELEASE=${{ env.IS_RELEASE }}" >> $GITHUB_OUTPUT
-          echo "IS_RELEASE_OR_MASTER=${{ env.IS_MASTER || env.IS_RELEASE }}" >> $GITHUB_OUTPUT
+          echo "IS_RELEASE_OR_MASTER=${{ env.IS_RELEASE_OR_MASTER }}" >> $GITHUB_OUTPUT
           echo "IS_RELEASE_OR_MASTER_OR_DEVELOP=${{ env.IS_MASTER  }}" >> $GITHUB_OUTPUT
 
           if [[ ${{ env.IS_MASTER }} == 'true' || ${{ env.IS_DEVELOP }} == 'true' || ${{ env.IS_RELEASE }} == 'true' || ${{ env.BRANCH_NAME }} =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
