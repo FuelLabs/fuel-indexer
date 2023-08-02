@@ -25,7 +25,7 @@ forc-index start --postgres-password my-secret --run-migrations &
 sleep 2
 
 # Deploy the example indexer
-forc-index deploy --path ./hello-indexer --target-dir ./../../
+forc-index deploy --path ./hello-indexer
 sleep 5
 
 # Ensure service is up and running via health check
@@ -71,7 +71,7 @@ forc-index start --postgres-password my-secret --run-migrations &
 sleep 2
 
 # Deploy the example indexer
-forc-index deploy --path ./fuel-explorer --target-dir ./../../
+forc-index deploy --path ./fuel-explorer
 sleep 5
 
 # Ensure service is up and running via 
