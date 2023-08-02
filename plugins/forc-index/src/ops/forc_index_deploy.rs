@@ -50,20 +50,22 @@ pub async fn init(command: DeployCommand) -> anyhow::Result<()> {
 
     let mut manifest = Manifest::from_file(&manifest_path)?;
 
-    if path.is_some() {
-        if let Some(t) = target_dir {
-            manifest.set_graphql_schema(
-                Path::new(&t)
-                    .join(manifest.graphql_schema())
-                    .to_str()
-                    .unwrap()
-                    .to_string(),
-            );
+    if let Some(path) = path {
+        let target_dir: std::path::PathBuf = target_dir.unwrap_or_else(|| {
+            let mut target = crate::ops::utils::cargo_target_dir(path.as_path()).unwrap();
+            target.pop();
+            target
+        });
 
-            manifest.set_module(Path::new(&t).join(manifest.module()).into());
-        } else {
-            anyhow::bail!("--target-dir must be specified when --path is specified.");
-        }
+        manifest.set_graphql_schema(
+            Path::new(&target_dir)
+                .join(manifest.graphql_schema())
+                .to_str()
+                .unwrap()
+                .to_string(),
+        );
+
+        manifest.set_module(target_dir.join(manifest.module()).into());
     }
 
     let form = Form::new()
