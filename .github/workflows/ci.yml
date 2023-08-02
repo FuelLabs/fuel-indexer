@@ -52,15 +52,17 @@ jobs:
       - name: Set env vars
         id: set-env
         run: >
+          echo "IS_MASTER=${{ env.IS_MASTER }}" >> $GITHUB_OUTPUT 
+
+          echo "IS_DEVELOP=${{ env.IS_DEVELOP }}" >> $GITHUB_OUTPUT 
+
+          echo "IS_RELEASE=${{ env.IS_RELEASE }}" >> $GITHUB_OUTPUT 
+
           if [[ ${{ env.IS_MASTER }} == 'true' || ${{ env.IS_DEVELOP }} == 'true' || ${{ env.IS_RELEASE }} == 'true' || ${{ env.BRANCH_NAME }} =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "IS_RELEASE_OR_MASTER_OR_DEVELOP_OR_SEMVER=true" >> $GITHUB_OUTPUT
           else
             echo "IS_RELEASE_OR_MASTER_OR_DEVELOP_OR_SEMVER=false" >> $GITHUB_OUTPUT
           fi
-  
-          echo "IS_MASTER=${{ env.IS_MASTER }}" >> $GITHUB_OUTPUT 
-          echo "IS_DEVELOP=${{ env.IS_DEVELOP }}" >> $GITHUB_OUTPUT 
-          echo "IS_RELEASE=${{ env.IS_RELEASE }}" >> $GITHUB_OUTPUT 
   docs-test:
     uses: FuelLabs/github-actions/.github/workflows/mdbook-docs.yml@master
     with:
@@ -331,8 +333,7 @@ jobs:
   publish-docker-image:
     needs:
       - set-env-vars
-    if: needs.set-env-vars.outputs.IS_RELEASE == 'true' ||
-      needs.set-env-vars.outputs.IS_MASTER == 'true'
+    if: needs.set-env-vars.outputs.IS_RELEASE == 'true' || needs.set-env-vars.outputs.IS_MASTER == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
