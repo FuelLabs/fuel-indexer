@@ -26,7 +26,6 @@ pub async fn init(command: DeployCommand) -> anyhow::Result<()> {
         debug,
         locked,
         native,
-        target_dir,
         verbose,
         replace_indexer,
         remove_data,
@@ -41,7 +40,6 @@ pub async fn init(command: DeployCommand) -> anyhow::Result<()> {
             verbose,
             locked,
             native,
-            target_dir: target_dir.clone(),
         })?;
     }
 
@@ -51,11 +49,11 @@ pub async fn init(command: DeployCommand) -> anyhow::Result<()> {
     let mut manifest = Manifest::from_file(&manifest_path)?;
 
     if let Some(path) = path {
-        let target_dir: std::path::PathBuf = target_dir.unwrap_or_else(|| {
+        let target_dir: std::path::PathBuf = {
             let mut target = crate::ops::utils::cargo_target_dir(path.as_path()).unwrap();
             target.pop();
             target
-        });
+        };
 
         manifest.set_graphql_schema(
             Path::new(&target_dir)

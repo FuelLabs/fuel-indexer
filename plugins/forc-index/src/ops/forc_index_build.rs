@@ -41,7 +41,6 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
         debug,
         locked,
         manifest,
-        target_dir,
         verbose,
         ..
     } = command;
@@ -166,10 +165,9 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
         let binary = format!("{}.wasm", config.package.name);
         let profile = if release { "release" } else { "debug" };
 
-        let target_dir: std::path::PathBuf = target_dir.unwrap_or_else(|| {
+        let target_dir: std::path::PathBuf =
             crate::ops::utils::cargo_target_dir(path.unwrap_or(".".into()).as_path())
-                .unwrap()
-        });
+                .unwrap();
 
         let abs_artifact_path = target_dir
             .join(defaults::WASM_TARGET)
