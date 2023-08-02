@@ -20,8 +20,6 @@ env:
   IS_MASTER: ${{ github.head_ref == 'master' || github.ref_name == 'master' }}
   IS_DEVELOP: ${{ github.head_ref == 'develop' || github.ref_name == 'develop' }}
   IS_RELEASE: ${{ github.event_name == 'release' && github.event.action == 'published' }}
-  IS_RELEASE_OR_MASTER: >-
-    ${{ (github.event_name == 'release' && github.event.action == 'published') || (github.head_ref == 'master' || github.ref_name == 'master') }}
 jobs:
   cancel-previous-runs:
     runs-on: ubuntu-latest
