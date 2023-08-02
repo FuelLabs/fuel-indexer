@@ -53,9 +53,13 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
     // Must be in the directory of the index being built
     let cargo_manifest_path = root_dir.join(defaults::CARGO_MANIFEST_FILE_NAME);
     if !cargo_manifest_path.exists() {
-        let manifest_path = cargo_manifest_path.into_os_string();
+        let cargo_manifest_dir = {
+            let mut path = cargo_manifest_path.clone();
+            path.pop();
+            path
+        };
         anyhow::bail!(
-            "❌ `forc index build` must be run from inside the directory of the index being built. Cargo manifest file expected at '{manifest_path:?}'",
+            "could not find `Cargo.toml` in `{}`", cargo_manifest_dir.display()
         );
     }
 
