@@ -7,9 +7,9 @@ use crate::{
     fully_qualified_namespace,
     graphql::{
         extract_foreign_key_info, field_id, field_type_name, is_list_type,
-        list_field_type_name, GraphQLSchema, GraphQLSchemaValidator, BASE_SCHEMA,
+        list_field_type_name, GraphQLSchema, GraphQLSchemaValidator, IdCol, BASE_SCHEMA,
     },
-    ExecutionSource,
+    join_table_name, ExecutionSource,
 };
 use async_graphql_parser::{
     parse_schema,
@@ -38,56 +38,100 @@ pub enum ParsedError {
     ListTypesUnsupported,
     #[error("Inconsistent use of virtual union types. {0:?}")]
     InconsistentVirtualUnion(String),
+    #[error("Union member not found in parsed TypeDefintions. {0:?}")]
+    UnionMemberNotFound(String),
 }
 
 /// Represents metadata related to a many-to-many relationship in the GraphQL schema.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct JoinTableMeta {
-    /// Name of the join table
-    pub table_name: String,
+    /// The `TypeDefinition` on which the `FieldDefinition` with a list type is defined.
+    parent: JoinTableRelation,
 
-    /// `TypeDefinition` name on which join relationship was found.
-    pub local_table_name: String,
+    /// The `TypeDefinition` who's inner content type is a list of foreign keys.
+    child: JoinTableRelation,
+}
 
-    /// Name of local column on which to join.
-    ///
-    /// This is always `id` for now.
+impl JoinTableMeta {
+    pub fn parent(&self) -> &JoinTableRelation {
+        &self.parent
+    }
+
+    pub fn child(&self) -> &JoinTableRelation {
+        &self.child
+    }
+}
+
+/// Represents a relationship between two `TypeDefinition`s in the GraphQL schema.
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct JoinTableRelation {
+    /// Whether this is the parent or the child in the join.
+    pub relation_type: JoinTableRelationType,
+
+    /// Name of the `TypeDefinition` associated with this join.
+    pub typedef_name: String,
+
+    /// Name of the column in the join table.
     pub column_name: String,
 
-    /// Type of the column on the local table on which to join.
-    ///
-    /// This is always `ColumnType::UInt8` for now.
-    pub column_type: String,
+    /// Position of the child in the join table.
+    pub child_position: Option<usize>,
+}
 
-    /// `TypeDefinition` name to which this join references.
-    pub ref_table_name: String,
+/// Type of join table relationship.
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub enum JoinTableRelationType {
+    /// `TypeDefinition` on which the list type is defined.
+    Parent,
 
-    /// Name of the column on the referenced table on which to join.
-    ///
-    /// This is always `id` for now.
-    pub ref_column_name: String,
-
-    /// Type of the column on the referenced table on which to join.
-    ///
-    /// This is always `ColumnType::UInt8` for now.
-    pub ref_column_type: String,
+    /// A `Child` in this case, is a `FieldDefinition` on a `TypeDefinition` that
+    /// contains a list type, whose inner content type is a foreign key reference.
+    Child,
 }
 
 impl JoinTableMeta {
     /// Create a new `JoinTableMeta`.
-    pub fn new(local_table_name: &str, ref_table_name: &str) -> Self {
-        let local_table_name = local_table_name.to_string().to_lowercase();
-        let ref_table_name = ref_table_name.to_string().to_lowercase();
-
+    pub fn new(
+        parent_typedef_name: &str,
+        parent_column_name: &str,
+        child_typedef_name: &str,
+        child_column_name: &str,
+        child_position: Option<usize>,
+    ) -> Self {
         Self {
-            table_name: format!("{local_table_name}s_{ref_table_name}s"),
-            local_table_name,
-            column_name: "id".to_string(),
-            column_type: "ID".to_string(),
-            ref_table_name,
-            ref_column_name: "id".to_string(),
-            ref_column_type: "ID".to_string(),
+            parent: JoinTableRelation {
+                relation_type: JoinTableRelationType::Parent,
+                typedef_name: parent_typedef_name.to_string(),
+                column_name: parent_column_name.to_string(),
+                child_position,
+            },
+            child: JoinTableRelation {
+                relation_type: JoinTableRelationType::Child,
+                typedef_name: child_typedef_name.to_string(),
+                column_name: child_column_name.to_string(),
+                child_position: None,
+            },
         }
+    }
+
+    pub fn table_name(&self) -> String {
+        join_table_name(&self.parent_table_name(), &self.child_table_name())
+    }
+
+    pub fn parent_table_name(&self) -> String {
+        self.parent.typedef_name.to_lowercase()
+    }
+
+    pub fn parent_column_name(&self) -> String {
+        self.parent.column_name.clone()
+    }
+
+    pub fn child_table_name(&self) -> String {
+        self.child.typedef_name.to_lowercase()
+    }
+
+    pub fn child_column_name(&self) -> String {
+        self.child.column_name.clone()
     }
 }
 
@@ -124,12 +168,16 @@ pub fn build_schema_types_set(
     (types, directives)
 }
 
+/// A wrapper object used to keep track of the order of a `FieldDefinition` in an object ` TypeDefinition`.
+#[derive(Debug, Clone)]
+pub struct OrderedField(pub FieldDefinition, pub usize);
+
 /// A wrapper object used to encapsulate a lot of the boilerplate logic related
 /// to parsing schema, creating mappings of types, fields, objects, etc.
-//
-// Ideally `ParsedGraphQLSchema` prevents from having to manually parse `async_graphql_parser`
-// `TypeDefinition`s in order to get metadata on the types (e.g., Is a foreign key? is a virtual type?
-// and so on).
+///
+/// Ideally `ParsedGraphQLSchema` prevents from having to manually parse `async_graphql_parser`
+/// `TypeDefinition`s in order to get metadata on the types (e.g., Is a foreign key? is a virtual type?
+/// and so on).
 #[derive(Debug, Clone)]
 pub struct ParsedGraphQLSchema {
     /// Namespace of the indexer.
@@ -145,7 +193,8 @@ pub struct ParsedGraphQLSchema {
     type_names: HashSet<String>,
 
     /// Mapping of lowercase `TypeDefinition` names to their actual `TypeDefinition` names.
-    // Used to refer to top-level entities in GraphQL queries.
+    ///
+    /// Used to refer to top-level entities in GraphQL queries.
     typedef_names_to_types: HashMap<String, String>,
 
     /// Mapping of object names to objects.
@@ -182,8 +231,8 @@ pub struct ParsedGraphQLSchema {
     ast: ServiceDocument,
 
     /// Mapping of fully qualified field names to their `FieldDefinition` and `TypeDefinition` name.
-    //
-    // We keep the `TypeDefinition` name so that we can know what type of object the field belongs to.
+    ///
+    /// We keep the `TypeDefinition` name so that we can know what type of object the field belongs to.
     field_defs: HashMap<String, (FieldDefinition, String)>,
 
     /// Raw GraphQL schema content.
@@ -205,7 +254,16 @@ pub struct ParsedGraphQLSchema {
     ///
     /// Many-to-many (m2m) relationships are created when a `FieldDefinition` contains a
     /// list type, whose inner content type is a foreign key reference to another `TypeDefinition`.
-    join_table_meta: HashMap<String, JoinTableMeta>,
+    join_table_meta: HashMap<String, Vec<JoinTableMeta>>,
+
+    /// A mapping of object `TypeDefinition` names, and their respective `FieldDefinition`s - including
+    /// the order of that `FieldDefinition` in the object.
+    ///
+    /// When creating these derived object `TypeDefinition`s from the members of a union `TypeDefinition`, we
+    /// need to preserve the order of the fields as they appear in their original object `TypeDefinitions`.
+    /// This allows us to create SQL tables where the columns are ordered - mirroring the order of the fields
+    /// on the object `TypeDefinition` derived from a union.
+    object_ordered_fields: HashMap<String, Vec<OrderedField>>,
 }
 
 impl Default for ParsedGraphQLSchema {
@@ -238,6 +296,7 @@ impl Default for ParsedGraphQLSchema {
             list_type_defs: HashMap::new(),
             unions: HashMap::new(),
             join_table_meta: HashMap::new(),
+            object_ordered_fields: HashMap::new(),
         }
     }
 }
@@ -271,6 +330,7 @@ impl ParsedGraphQLSchema {
         let mut list_type_defs = HashMap::new();
         let mut unions = HashMap::new();
         let mut join_table_meta = HashMap::new();
+        let mut object_ordered_fields = HashMap::new();
 
         // Parse _everything_ in the GraphQL schema
         if let Some(schema) = schema {
@@ -289,10 +349,15 @@ impl ParsedGraphQLSchema {
                             parsed_typedef_names.insert(t.node.name.to_string());
 
                             let mut field_mapping = BTreeMap::new();
-                            for field in &o.fields {
+                            for (i, field) in o.fields.iter().enumerate() {
                                 let field_name = field.node.name.to_string();
                                 let field_typ_name = field.node.ty.to_string();
                                 let fid = field_id(&obj_name, &field_name);
+
+                                object_ordered_fields
+                                    .entry(obj_name.clone())
+                                    .or_insert_with(Vec::new)
+                                    .push(OrderedField(field.node.clone(), i));
 
                                 if is_list_type(&field.node) {
                                     list_field_types
@@ -326,10 +391,19 @@ impl ParsedGraphQLSchema {
                                             &field_type_mappings,
                                         );
 
-                                    join_table_meta.insert(
-                                        obj_name.clone(),
-                                        JoinTableMeta::new(&obj_name, &ref_tablename),
-                                    );
+                                    if is_list_type(&field.node) {
+                                        join_table_meta
+                                            .entry(obj_name.clone())
+                                            .or_insert_with(Vec::new)
+                                            .push(JoinTableMeta::new(
+                                                &obj_name.to_lowercase(),
+                                                // The parent join column is _always_ `id: ID!`
+                                                IdCol::to_lowercase_str(),
+                                                &ref_tablename,
+                                                &ref_colname,
+                                                Some(i),
+                                            ));
+                                    }
 
                                     let fk = foreign_key_mappings
                                         .get_mut(&t.node.name.to_string().to_lowercase());
@@ -404,11 +478,73 @@ impl ParsedGraphQLSchema {
                                 &mut virtual_type_names,
                             );
 
+                            // Ensure we're not creating duplicate join table metadata, else we'll
+                            // have issues trying to create duplicate `TypeIds` when constructing SQL tables.
+                            let mut processed_fields = HashSet::new();
+
+                            // Child position in the union is different than child position in the object.
+                            // In the object, you simply count the fields. However, in a union, you have to
+                            // count the distinct fields across all members of the union.
+                            let mut child_position = 0;
+
                             u.members.iter().for_each(|m| {
                                 let member_name = m.node.to_string();
                                 if let Some(name) = virtual_type_names.get(&member_name) {
                                     virtual_type_names.insert(name.to_owned());
                                 }
+
+                                // Don't create many-to-many relationships for `TypeDefintions` that are themselves
+                                // members of union `TypeDefinition`s.
+                                if join_table_meta.contains_key(&member_name) {
+                                    join_table_meta.remove(&member_name);
+                                }
+
+                                // Parse the many-to-many relationship metadata the same as we do for
+                                // `TypeKind::Object` above, just using each union member's fields.
+                                let member_obj = objects.get(&member_name).expect(
+                                    "Union member not found in parsed TypeDefinitions.",
+                                );
+
+                                member_obj.fields.iter().for_each(|f| {
+                                    let ftype = field_type_name(&f.node);
+                                    let field_id =
+                                        field_id(&union_name, &f.node.name.to_string());
+
+                                    if processed_fields.contains(&field_id) {
+                                        return;
+                                    }
+
+                                    processed_fields.insert(field_id);
+
+                                    // Manual foreign key check, same as above
+                                    if parsed_typedef_names.contains(&ftype)
+                                        && !scalar_names.contains(&ftype)
+                                        && !enum_names.contains(&ftype)
+                                        && !virtual_type_names.contains(&ftype)
+                                    {
+                                        let (_ref_coltype, ref_colname, ref_tablename) =
+                                            extract_foreign_key_info(
+                                                &f.node,
+                                                &field_type_mappings,
+                                            );
+
+                                        if is_list_type(&f.node) {
+                                            join_table_meta
+                                                .entry(union_name.clone())
+                                                .or_insert_with(Vec::new)
+                                                .push(JoinTableMeta::new(
+                                                    &union_name.to_lowercase(),
+                                                    // The parent join column is _always_ `id: ID!`
+                                                    IdCol::to_lowercase_str(),
+                                                    &ref_tablename,
+                                                    &ref_colname,
+                                                    Some(child_position),
+                                                ));
+                                        }
+                                    }
+
+                                    child_position += 1;
+                                });
                             });
 
                             // These member fields are already cached under their respective object names, but
@@ -482,6 +618,7 @@ impl ParsedGraphQLSchema {
             unions,
             join_table_meta,
             typedef_names_to_types,
+            object_ordered_fields,
         })
     }
 
@@ -548,8 +685,12 @@ impl ParsedGraphQLSchema {
     }
 
     /// Metadata related to many-to-many relationships in the GraphQL schema.
-    pub fn join_table_meta(&self) -> &HashMap<String, JoinTableMeta> {
+    pub fn join_table_meta(&self) -> &HashMap<String, Vec<JoinTableMeta>> {
         &self.join_table_meta
+    }
+
+    pub fn object_ordered_fields(&self) -> &HashMap<String, Vec<OrderedField>> {
+        &self.object_ordered_fields
     }
 
     /// Return the base scalar type for a given `FieldDefinition`.
@@ -654,9 +795,10 @@ impl ParsedGraphQLSchema {
     }
 
     /// Return the GraphQL type for a given `FieldDefinition` or `TypeDefinition` name.
-    // This serves as a convenience function so that the caller doesn't have to
-    // worry about handling the case in which `cond` is not present; for example,
-    // `cond` is None when retrieving the type for a top-level entity in a query.
+    ///
+    /// This serves as a convenience function so that the caller doesn't have to
+    /// worry about handling the case in which `cond` is not present; for example,
+    /// `cond` is None when retrieving the type for a top-level entity in a query.
     pub fn graphql_type(&self, cond: Option<&String>, name: &str) -> Option<&String> {
         match cond {
             Some(c) => self.field_type(c, name),
@@ -669,7 +811,7 @@ impl ParsedGraphQLSchema {
         self.type_names.contains(name)
     }
 
-    /// Fully qualified GraphQL namespace for indexer.
+    /// Fully qualified namespace for the indexer.
     pub fn fully_qualified_namespace(&self) -> String {
         fully_qualified_namespace(&self.namespace, &self.identifier)
     }
@@ -710,6 +852,25 @@ type Metadata {
 }
 
 union Person = User | Loser
+
+
+type Wallet {
+    id: ID!
+    accounts: [Account!]!
+}
+
+type Safe {
+    id: ID!
+    account: [Account!]!
+}
+
+type Vault {
+    id: ID!
+    label: Charfield!
+    user: [User!]!
+}
+
+union Storage = Safe | Vault
 "#;
 
         let parsed = ParsedGraphQLSchema::new(
@@ -723,6 +884,7 @@ union Person = User | Loser
 
         let parsed = parsed.unwrap();
 
+        // Basic stuff
         assert!(parsed.has_type("Account"));
         assert!(parsed.has_type("User"));
         assert!(parsed.is_possible_foreign_key("Account"));
@@ -733,5 +895,27 @@ union Person = User | Loser
             .contains_key("Account.label"));
 
         assert!(parsed.is_union_typedef("Person"));
+
+        // Many to many for objects
+        assert!(parsed.is_list_typedef("Wallet"));
+        assert_eq!(parsed.join_table_meta().len(), 2);
+        assert_eq!(
+            parsed.join_table_meta().get("Wallet").unwrap()[0],
+            JoinTableMeta::new("wallet", "id", "account", "id", Some(1))
+        );
+
+        // Many to many for unions
+        assert!(!parsed.join_table_meta().contains_key("Safe"));
+        assert!(!parsed.join_table_meta().contains_key("Vault"));
+        assert!(parsed.join_table_meta().contains_key("Storage"));
+        assert!(parsed.join_table_meta().get("Storage").unwrap().len() == 2);
+        assert_eq!(
+            parsed.join_table_meta().get("Storage").unwrap()[0],
+            JoinTableMeta::new("storage", "id", "account", "id", Some(1))
+        );
+        assert_eq!(
+            parsed.join_table_meta().get("Storage").unwrap()[1],
+            JoinTableMeta::new("storage", "id", "user", "id", Some(3))
+        );
     }
 }

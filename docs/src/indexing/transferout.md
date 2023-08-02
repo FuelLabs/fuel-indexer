@@ -14,7 +14,7 @@ pub struct TransferOut {
 
 - A `TransferOut` receipt is generated when coins are transferred to an address rather than a contract.
 - Every other field of the receipt works the same way as it does in the `Transfer` receipt.
-- [Read more about `TransferOut` in the Fuel protocol ABI spec](https://github.com/FuelLabs/fuel-specs/blob/master/src/protocol/abi/receipts.md#transferout-receipt)
+- [Read more about `TransferOut` in the Fuel protocol ABI spec](https://specs.fuel.network/master/abi/receipts.html#transferout-receipt)
 
 You can handle functions that produce a `TransferOut` receipt type by adding a parameter with the type `TransferOut`.
 

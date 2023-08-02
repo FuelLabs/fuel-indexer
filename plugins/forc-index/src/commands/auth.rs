@@ -19,7 +19,7 @@ pub struct Command {
     pub verbose: bool,
 }
 
-pub fn exec(command: Command) -> Result<()> {
-    forc_index_auth::init(command)?;
+pub async fn exec(command: Command) -> Result<()> {
+    forc_index_auth::init(command).await?;
     Ok(())
 }

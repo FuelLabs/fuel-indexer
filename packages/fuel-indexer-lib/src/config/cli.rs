@@ -14,7 +14,7 @@ use std::path::PathBuf;
 #[derive(Debug, Parser, Clone)]
 #[clap(
     name = "Indexer Service",
-    about = "Standalone binary for the fuel indexer service.",
+    about = "Standalone binary for the Fuel indexer service",
     version
 )]
 pub struct IndexerArgs {
@@ -177,9 +177,20 @@ pub struct IndexerArgs {
     )]
     pub replace_indexer: bool,
 
+    /// When replacing an indexer, also remove the indexed data.
+    #[clap(
+        long,
+        help = "When replacing an indexer, also remove the indexed data."
+    )]
+    pub remove_data: bool,
+
     /// Allow the web API to accept raw SQL queries.
     #[clap(long, help = "Allow the web API to accept raw SQL queries.")]
     pub accept_sql_queries: bool,
+
+    /// Amount of blocks to return in a request to a Fuel node.
+    #[clap(long, help = "Amount of blocks to return in a request to a Fuel node.", default_value_t = defaults::NODE_BLOCK_PAGE_SIZE)]
+    pub block_page_size: usize,
 }
 
 #[derive(Debug, Parser, Clone)]

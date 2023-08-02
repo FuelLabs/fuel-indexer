@@ -1,5 +1,5 @@
 use fuel_indexer_lib::defaults;
-use fuel_indexer_schema::FtColumn;
+use fuel_indexer_schema::{join::RawQuery, FtColumn};
 use fuel_indexer_types::ffi::{
     LOG_LEVEL_DEBUG, LOG_LEVEL_ERROR, LOG_LEVEL_INFO, LOG_LEVEL_TRACE, LOG_LEVEL_WARN,
 };
@@ -119,7 +119,7 @@ fn get_object(
         WasmPtr::<u32>::new(len_ptr)
             .deref(&mem)
             .write(size)
-            .unwrap();
+            .expect("Failed to write length to memory.");
 
         unsafe {
             mem.data_unchecked_mut()[range].copy_from_slice(&bytes);
@@ -168,14 +168,50 @@ fn put_object(mut env: FunctionEnvMut<IndexEnv>, type_id: i64, ptr: u32, len: u3
     });
 }
 
+fn put_many_to_many_record(mut env: FunctionEnvMut<IndexEnv>, ptr: u32, len: u32) {
+    let (idx_env, store) = env.data_and_store_mut();
+    let mem = idx_env
+        .memory
+        .as_mut()
+        .expect("Memory unitialized")
+        .view(&store);
+
+    let mut bytes = Vec::with_capacity(len as usize);
+    let range = ptr as usize..ptr as usize + len as usize;
+
+    unsafe {
+        bytes.extend_from_slice(&mem.data_unchecked()[range]);
+    }
+
+    let queries: Vec<RawQuery> =
+        bincode::deserialize(&bytes).expect("Failed to deserialize queries");
+    let queries = queries.iter().map(|q| q.to_string()).collect::<Vec<_>>();
+    let rt = tokio::runtime::Handle::current();
+    rt.block_on(async {
+        idx_env
+            .db
+            .lock()
+            .await
+            .put_many_to_many_record(queries)
+            .await
+    });
+}
+
 pub fn get_exports(store: &mut Store, env: &wasmer::FunctionEnv<IndexEnv>) -> Exports {
     let mut exports = Exports::new();
 
     let f_get_obj = Function::new_typed_with_env(store, env, get_object);
     let f_put_obj = Function::new_typed_with_env(store, env, put_object);
     let f_log_data = Function::new_typed_with_env(store, env, log_data);
+    let f_put_many_to_many_record =
+        Function::new_typed_with_env(store, env, put_many_to_many_record);
+
     exports.insert("ff_get_object".to_string(), f_get_obj);
     exports.insert("ff_put_object".to_string(), f_put_obj);
+    exports.insert(
+        "ff_put_many_to_many_record".to_string(),
+        f_put_many_to_many_record,
+    );
     exports.insert("ff_log_data".to_string(), f_log_data);
 
     exports

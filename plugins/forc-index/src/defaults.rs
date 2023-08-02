@@ -8,11 +8,8 @@ pub const INDEXER_BINARY_FILENAME: &str = "main.rs";
 pub const CARGO_CONFIG_DIR_NAME: &str = ".cargo";
 pub const CARGO_CONFIG_FILENAME: &str = "config";
 pub const INDEXER_SERVICE_HOST: &str = "http://127.0.0.1:29987";
-pub const WEB_API_HOST: &str = defaults::WEB_API_HOST;
 pub const WEB_API_PORT: &str = defaults::WEB_API_PORT;
 pub const WASM_TARGET: &str = "wasm32-unknown-unknown";
-pub const INDEXER_TARGET: &str = "wasm32-unknown-unknown";
-pub const BUILD_RELEASE_PROFILE: &str = "true";
 pub const MESSAGE_PADDING: usize = 55;
 pub const SUCCESS_EMOJI_PADDING: usize = 3;
 pub const FAIL_EMOJI_PADDING: usize = 6;
@@ -32,8 +29,8 @@ path = "src/main.rs"
 
 [dependencies]
 async-trait = {{ version = "0.1" }}
-fuel-indexer = {{ version = "0.18", default-features = false }}
-fuel-indexer-utils = {{ version = "0.18", features = ["native-execution"] }}
+fuel-indexer = {{ version = "0.19", default-features = false }}
+fuel-indexer-utils = {{ version = "0.19", features = ["native-execution"] }}
 fuels = {{ version = "0.43", default-features = false, features = ["std"] }}
 serde = {{ version = "1.0", default-features = false, features = ["derive"] }}
 "#
@@ -52,7 +49,7 @@ publish = false
 crate-type = ['cdylib']
 
 [dependencies]
-fuel-indexer-utils = {{ version = "0.18" }}
+fuel-indexer-utils = {{ version = "0.19" }}
 fuels = {{ version = "0.43", default-features = false }}
 serde = {{ version = "1.0", default-features = false, features = ["derive"] }}
 "#

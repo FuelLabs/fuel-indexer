@@ -2730,7 +2730,7 @@ checksum = "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1"
 
 [[package]]
 name = "forc-index"
-version = "0.18.5"
+version = "0.19.0"
 dependencies = [
  "actix-web",
  "anyhow",
@@ -2756,11 +2756,12 @@ dependencies = [
  "toml",
  "tracing",
  "walkdir",
+ "whoami",
 ]
 
 [[package]]
 name = "forc-postgres"
-version = "0.18.5"
+version = "0.19.0"
 dependencies = [
  "anyhow",
  "clap 3.2.25",
@@ -3352,7 +3353,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer"
-version = "0.18.5"
+version = "0.19.0"
 dependencies = [
  "anyhow",
  "async-std",
@@ -3385,7 +3386,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-api-server"
-version = "0.18.5"
+version = "0.19.0"
 dependencies = [
  "anyhow",
  "async-graphql 5.0.10",
@@ -3399,6 +3400,7 @@ dependencies = [
  "fuel-indexer-lib",
  "fuel-indexer-metrics",
  "fuel-indexer-schema",
+ "futures",
  "futures-util",
  "hex",
  "http",
@@ -3434,7 +3436,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-database"
-version = "0.18.5"
+version = "0.19.0"
 dependencies = [
  "fuel-indexer-database-types",
  "fuel-indexer-lib",
@@ -3446,20 +3448,19 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-database-types"
-version = "0.18.5"
+version = "0.19.0"
 dependencies = [
  "async-graphql-parser 5.0.10",
  "async-graphql-value 5.0.10",
  "chrono",
  "fuel-indexer-lib",
- "linked_hash_set",
  "serde",
  "strum 0.24.1",
 ]
 
 [[package]]
 name = "fuel-indexer-graphql"
-version = "0.18.5"
+version = "0.19.0"
 dependencies = [
  "async-graphql 5.0.10",
  "async-graphql-parser 5.0.10",
@@ -3477,12 +3478,13 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-lib"
-version = "0.18.5"
+version = "0.19.0"
 dependencies = [
  "anyhow",
  "async-graphql-parser 5.0.10",
  "bincode",
  "clap 3.2.25",
+ "futures",
  "http",
  "lazy_static",
  "proc-macro2",
@@ -3501,7 +3503,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-macro-utils"
-version = "0.18.5"
+version = "0.19.0"
 dependencies = [
  "proc-macro-error",
  "proc-macro2",
@@ -3511,7 +3513,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-macros"
-version = "0.18.5"
+version = "0.19.0"
 dependencies = [
  "async-graphql-parser 5.0.10",
  "async-graphql-value 5.0.10",
@@ -3526,7 +3528,6 @@ dependencies = [
  "fuels-macros 0.43.0",
  "fuels-types 0.42.0",
  "lazy_static",
- "linked_hash_set",
  "proc-macro-error",
  "proc-macro2",
  "quote",
@@ -3539,7 +3540,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-metrics"
-version = "0.18.5"
+version = "0.19.0"
 dependencies = [
  "axum 0.6.19",
  "lazy_static",
@@ -3549,7 +3550,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-plugin"
-version = "0.18.5"
+version = "0.19.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -3571,7 +3572,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-postgres"
-version = "0.18.5"
+version = "0.19.0"
 dependencies = [
  "bigdecimal",
  "chrono",
@@ -3586,7 +3587,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-schema"
-version = "0.18.5"
+version = "0.19.0"
 dependencies = [
  "async-graphql-parser 5.0.10",
  "fuel-indexer-database",
@@ -3653,7 +3654,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-types"
-version = "0.18.5"
+version = "0.19.0"
 dependencies = [
  "bincode",
  "bytes 1.4.0",
@@ -3668,7 +3669,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-utils"
-version = "0.18.5"
+version = "0.19.0"
 dependencies = [
  "fuel-indexer-macros",
  "fuel-indexer-plugin",
@@ -5369,15 +5370,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0717cef1bc8b636c6e1c1bbdefc09e6322da8a9321966e8928ef80d20f7f770f"
 
 [[package]]
-name = "linked_hash_set"
-version = "0.1.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "47186c6da4d81ca383c7c47c1bfc80f4b95f4720514d860a5407aaf4233f9588"
-dependencies = [
- "linked-hash-map",
-]
-
-[[package]]
 name = "linux-raw-sys"
 version = "0.3.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6769,10 +6761,12 @@ dependencies = [
  "tokio 1.29.1",
  "tokio-native-tls",
  "tokio-rustls 0.24.1",
+ "tokio-util 0.7.8",
  "tower-service",
  "url",
  "wasm-bindgen",
  "wasm-bindgen-futures",
+ "wasm-streams",
  "web-sys",
  "webpki-roots 0.22.6",
  "winreg 0.10.1",
@@ -8901,6 +8895,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "06a3d1b4a575ffb873679402b2aedb3117555eb65c27b1b86c8a91e574bc2a2a"
 dependencies = [
  "leb128",
+]
+
+[[package]]
+name = "wasm-streams"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6bbae3363c08332cadccd13b67db371814cd214c2524020932f0804b8cf7c078"
+dependencies = [
+ "futures-util",
+ "js-sys",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
 ]
 
 [[package]]

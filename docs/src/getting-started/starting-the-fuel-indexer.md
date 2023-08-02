@@ -18,6 +18,9 @@ OPTIONS:
         --auth-strategy <AUTH_STRATEGY>
             Authentication scheme used.
 
+        --block-page-size <BLOCK_PAGE_SIZE>
+            Amount of blocks to return in a request to a Fuel node. [default: 10]
+
     -c, --config <FILE>
             Indexer service config file.
 

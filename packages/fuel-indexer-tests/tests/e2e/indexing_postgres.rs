@@ -1,16 +1,17 @@
 use bigdecimal::ToPrimitive;
 use fuel_indexer::IndexerConfig;
+use fuel_indexer_lib::defaults;
 use fuel_indexer_tests::fixtures::{
     mock_request, setup_indexing_test_components, IndexingTestComponents,
 };
 use fuel_indexer_types::prelude::*;
 use serde::{Deserialize, Serialize};
 use sqlx::{types::BigDecimal, Row};
-use std::str::FromStr;
+use std::{collections::HashSet, str::FromStr};
 
 const REVERT_VM_CODE: u64 = 0x0004;
 const EXPECTED_CONTRACT_ID: &str =
-    "a8892fdc1ba52ca37c41e41a00cc7ddb7cf6e6edb46398fc775f8c7a57a430bb";
+    "164c38e3cf312b346e51a6a928cb0beefe3cd0a1efd461f24b1fc2c9c957e613";
 const TRANSFER_BASE_ASSET_ID: &str =
     "0000000000000000000000000000000000000000000000000000000000000000";
 
@@ -364,8 +365,8 @@ async fn test_can_index_metadata_when_indexer_macro_is_called_postgres() {
             .await
             .unwrap();
 
-    assert!(row.get::<BigDecimal, usize>(0).to_u64().unwrap() >= 1);
-    assert!(row.get::<BigDecimal, usize>(1).to_u64().unwrap() >= 1);
+    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 0);
+    assert_eq!(row.get::<BigDecimal, usize>(1).to_u64().unwrap(), 0);
 }
 
 #[actix_web::test]
@@ -552,7 +553,9 @@ async fn test_redeploying_an_already_active_indexer_returns_error_when_replace_i
     node.abort();
 
     // Attempt to re-register the indexer
-    let result = service.register_indexer_from_manifest(manifest).await;
+    let result = service
+        .register_indexer_from_manifest(manifest, defaults::REPLACE_INDEXER)
+        .await;
 
     assert!(result.is_err());
 
@@ -584,7 +587,7 @@ async fn test_redeploying_an_already_active_indexer_works_when_replace_indexer_i
 
     // Re-register the indexer
     service
-        .register_indexer_from_manifest(manifest)
+        .register_indexer_from_manifest(manifest, defaults::REPLACE_INDEXER)
         .await
         .unwrap();
 
@@ -629,10 +632,10 @@ async fn test_can_trigger_and_index_union_types() {
     .unwrap();
 
     // Fields are in a different order for these union types
-    assert_eq!(row.get::<BigDecimal, usize>(3).to_u64().unwrap(), 1);
-    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 5);
-    assert_eq!(row.get::<BigDecimal, usize>(1).to_u64().unwrap(), 10);
-    assert_eq!(row.get::<&str, usize>(4), "UnionType::A");
+    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 1);
+    assert_eq!(row.get::<BigDecimal, usize>(1).to_u64().unwrap(), 5);
+    assert_eq!(row.get::<&str, usize>(2), "UnionType::A");
+    assert_eq!(row.get::<BigDecimal, usize>(3).to_u64().unwrap(), 10);
 
     let row = sqlx::query(
         "SELECT * FROM fuel_indexer_test_index1.virtualunioncontainerentity LIMIT 1",
@@ -725,4 +728,30 @@ async fn test_can_trigger_and_index_list_types() {
             .collect::<Vec<Option<VirtualEntity>>>(),
         expected_virtual_optional_inner
     );
+
+    // Check that data is in M2M table
+    let row =
+        sqlx::query("SELECT * FROM fuel_indexer_test_index1.listtypeentitys_listfktypes")
+            .fetch_all(&mut conn)
+            .await
+            .unwrap();
+    assert_eq!(row.len(), 3);
+
+    // Should all have the same parent ID
+    let parent_ids = row
+        .iter()
+        .map(|x| x.get::<BigDecimal, usize>(0).to_u64().unwrap())
+        .collect::<HashSet<u64>>();
+    assert_eq!(parent_ids.len(), 1);
+    assert!(parent_ids.contains(&1));
+
+    // Should have 3 unique child IDs
+    let child_ids = row
+        .iter()
+        .map(|x| x.get::<BigDecimal, usize>(1).to_u64().unwrap())
+        .collect::<HashSet<u64>>();
+    assert_eq!(child_ids.len(), 3);
+    assert!(child_ids.contains(&1));
+    assert!(child_ids.contains(&2));
+    assert!(child_ids.contains(&3));
 }

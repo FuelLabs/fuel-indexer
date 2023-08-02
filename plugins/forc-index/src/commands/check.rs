@@ -1,19 +1,13 @@
-use crate::{defaults, ops::forc_index_check};
+use crate::ops::forc_index_check;
 use anyhow::Result;
 use clap::Parser;
 
-/// Get status checks on all indexer components.
+// Command has to be created in order for the help
+// message to be shown in the primary help output
+/// Check for Fuel indexer components
 #[derive(Debug, Parser)]
-pub struct Command {
-    /// URL at which to find indexer service.
-    #[clap(long, default_value = defaults::INDEXER_SERVICE_HOST, help = "URL at which to find indexer service.")]
-    pub url: String,
+pub struct Command {}
 
-    /// Port at which to detect indexer service API is running.
-    #[clap(long, default_value = defaults::WEB_API_PORT, help = "Port at which to detect indexer service API is running.")]
-    pub graphql_api_port: String,
-}
-
-pub async fn exec(command: Command) -> Result<()> {
-    forc_index_check::init(command).await
+pub async fn exec() -> Result<()> {
+    forc_index_check::init().await
 }

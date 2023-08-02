@@ -339,10 +339,11 @@ pub async fn remove_indexer(
     conn: &mut IndexerConnection,
     namespace: &str,
     identifier: &str,
+    remove_data: bool,
 ) -> sqlx::Result<()> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
-            postgres::remove_indexer(c, namespace, identifier).await
+            postgres::remove_indexer(c, namespace, identifier, remove_data).await
         }
     }
 }
@@ -402,6 +403,17 @@ pub async fn indexer_owned_by(
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
             postgres::indexer_owned_by(c, namespace, identifier, pubkey).await
+        }
+    }
+}
+
+pub async fn put_many_to_many_record(
+    conn: &mut IndexerConnection,
+    query: String,
+) -> sqlx::Result<()> {
+    match conn {
+        IndexerConnection::Postgres(ref mut c) => {
+            postgres::put_many_to_many_record(c, query).await
         }
     }
 }

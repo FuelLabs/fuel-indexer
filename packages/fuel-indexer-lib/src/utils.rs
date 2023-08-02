@@ -81,8 +81,14 @@ pub struct ReloadRequest {
 /// Sent from API server to indexer service.
 #[derive(Debug)]
 pub struct StopRequest {
+    /// The namespace of the indexer being removed.
     pub namespace: String,
+    /// The identifier of the indexer being removed.
     pub identifier: String,
+    /// The requestor has an option to additonally request to be notified that
+    /// an indexer whose kill swich has been flipped has stopped execution. We
+    /// use this when replacing an indexer.
+    pub notify: Option<futures::channel::oneshot::Sender<()>>,
 }
 
 /// A general request sent from the API server to the indexer service.
@@ -239,4 +245,9 @@ pub async fn init_logging(config: &IndexerConfig) -> anyhow::Result<()> {
             .init();
     }
     Ok(())
+}
+
+/// Format a SQL query for logging.
+pub fn format_sql_query(s: String) -> String {
+    s.replace('\n', " ")
 }

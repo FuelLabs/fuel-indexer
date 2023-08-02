@@ -101,6 +101,8 @@ pub enum ApiError {
     BoxError(#[from] axum::BoxError),
     #[error("Sql validator error: {0:?}")]
     SqlValidator(#[from] crate::sql::SqlValidatorError),
+    #[error("Other error: {0}")]
+    OtherError(String),
 }
 
 impl Default for ApiError {
@@ -202,6 +204,7 @@ impl WebApi {
         if config.accept_sql_queries {
             sql_routes = Router::new()
                 .route("/:namespace/:identifier", post(sql_query))
+                .layer(AuthenticationMiddleware::from(&config))
                 .layer(Extension(pool.clone()))
                 .layer(RequestBodyLimitLayer::new(max_body_size));
         }

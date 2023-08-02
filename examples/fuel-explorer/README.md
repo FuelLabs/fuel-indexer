@@ -19,10 +19,7 @@ docker compose up --build
 ### Deploy the indexer
 
 ```bash
-forc index deploy \
-   --path fuel-explorer \
-   --target-dir $PWD/../../ \
-   --url http://0.0.0.0:29987
+forc index deploy --path hello-indexer --target-dir ../../ --url http://0.0.0.0:29987
 ```
 
 ### Interact

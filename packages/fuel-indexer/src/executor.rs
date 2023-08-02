@@ -66,8 +66,8 @@ impl ExecutorSource {
     }
 }
 
-// Run the executor task until the kill switch is flipped, or until some other
-// stop criteria is met.
+/// Run the executor task until the kill switch is flipped, or until some other
+/// stop criteria is met.
 //
 // In general the logic in this function isn't very idiomatic, but that's because
 // types in `fuel_core_client` don't compile to WASM.
@@ -76,6 +76,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
     manifest: &Manifest,
     mut executor: T,
     kill_switch: Arc<AtomicBool>,
+    kill_confirm_trigger: futures::channel::oneshot::Sender<()>,
 ) -> impl Future<Output = ()> {
     // TODO: https://github.com/FuelLabs/fuel-indexer/issues/286
 
@@ -96,6 +97,8 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
     } else {
         config.fuel_node.to_string()
     };
+
+    let node_block_page_size = config.node_block_page_size;
 
     let mut next_cursor = if start_block > 1 {
         let decremented = start_block - 1;
@@ -126,20 +129,26 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
         let mut num_empty_block_reqs = 0;
 
         loop {
+            if kill_switch.load(Ordering::SeqCst) {
+                info!("Kill switch flipped, stopping Indexer({indexer_uid}). <('.')>");
+                if kill_confirm_trigger.send(()).is_err() {
+                    error!("Unable to notifty listeners that Indexer({indexer_uid}) has stopped.");
+                };
+                break;
+            }
+
             let (block_info, cursor) = match retrieve_blocks_from_node(
                 &client,
-                NODE_GRAPHQL_PAGE_SIZE,
+                node_block_page_size,
                 &next_cursor,
                 end_block,
+                &indexer_uid,
             )
             .await
             {
                 Ok((block_info, cursor)) => (block_info, cursor),
-                Err(_e) => {
-                    info!(
-                        "Stopping indexer at the specified end_block: {}",
-                        end_block.unwrap()
-                    );
+                Err(e) => {
+                    error!("Fetching blocks failed: {e:?}",);
                     break;
                 }
             };
@@ -149,10 +158,10 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
             if let Err(e) = result {
                 // Run time metering is deterministic. There is no point in retrying.
                 if let IndexerError::RunTimeLimitExceededError = e {
-                    error!("Indexer executor run time limit exceeded. Giving up. <('.')>. Consider increasing metering points");
+                    error!("Indexer({indexer_uid}) executor run time limit exceeded. Giving up. <('.')>. Consider increasing metering points");
                     break;
                 }
-                error!("Indexer executor failed {e:?}, retrying.");
+                error!("Indexer({indexer_uid}) executor failed {e:?}, retrying.");
                 match e {
                     IndexerError::SqlxError(sqlx::Error::Database(inner)) => {
                         // sqlx v0.7 let's you determine if this was specifically a unique constraint violation
@@ -162,10 +171,12 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                         if inner.constraint().is_some() {
                             // Just bump the cursor and keep going
                             warn!("Constraint violation. Continuing...");
-                            next_cursor = cursor;
+
+                            // Try to fetch the page again using same cursor.
                             continue;
                         } else {
                             error!("Database error: {inner}.");
+                            sleep(Duration::from_secs(DELAY_FOR_SERVICE_ERROR)).await;
                             retry_count += 1;
                         }
                     }
@@ -177,6 +188,8 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
 
                 if retry_count < INDEXER_FAILED_CALLS {
                     warn!("Indexer({indexer_uid}) retrying handler after {retry_count} failed attempts.");
+
+                    // Try to fetch the page again using same cursor.
                     continue;
                 } else {
                     error!(
@@ -187,10 +200,12 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
             }
 
             if cursor.is_none() {
-                info!("No new blocks to process, sleeping.");
-                sleep(Duration::from_secs(DELAY_FOR_EMPTY_PAGE)).await;
-
                 num_empty_block_reqs += 1;
+
+                info!(
+                    "Indexer({indexer_uid}) has no new blocks to process, sleeping. zzZZ"
+                );
+                sleep(Duration::from_secs(DELAY_FOR_EMPTY_PAGE)).await;
 
                 if num_empty_block_reqs == max_empty_block_reqs {
                     error!("No blocks being produced, Indexer({indexer_uid}) giving up. <('.')>");
@@ -201,17 +216,13 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                 num_empty_block_reqs = 0;
             }
 
-            if kill_switch.load(Ordering::SeqCst) {
-                info!("Kill switch flipped, stopping Indexer({indexer_uid}). <('.')>");
-                break;
-            }
-
             retry_count = 0;
         }
     }
 }
 
 /// Retrieve blocks from a client node.
+///
 // This was abstracted out of `run_executor` in order to allow for
 // use in the benchmarking suite to give consistent timings.
 pub async fn retrieve_blocks_from_node(
@@ -219,6 +230,7 @@ pub async fn retrieve_blocks_from_node(
     block_page_size: usize,
     next_cursor: &Option<String>,
     end_block: Option<u64>,
+    indexer_uid: &str,
 ) -> IndexerResult<(Vec<BlockData>, Option<String>)> {
     debug!("Fetching paginated results from {next_cursor:?}");
 
@@ -232,7 +244,7 @@ pub async fn retrieve_blocks_from_node(
         })
         .await
         .unwrap_or_else(|e| {
-            error!("Failed to retrieve blocks: {e}");
+            error!("Indexer({indexer_uid}) Failed to retrieve blocks: {e}");
             PaginatedResult {
                 cursor: None,
                 results: vec![],
@@ -482,8 +494,9 @@ impl IndexEnv {
     pub async fn new(
         pool: IndexerConnectionPool,
         manifest: &Manifest,
+        config: &IndexerConfig,
     ) -> IndexerResult<IndexEnv> {
-        let db = Database::new(pool, manifest).await;
+        let db = Database::new(pool, manifest, config).await;
         Ok(IndexEnv {
             memory: None,
             alloc: None,
@@ -493,7 +506,7 @@ impl IndexEnv {
     }
 }
 
-// TODO: Use mutex
+// TODO: https://github.com/FuelLabs/fuel-indexer/issues/1139
 unsafe impl<F: Future<Output = IndexerResult<()>> + Send> Sync
     for NativeIndexExecutor<F>
 {
@@ -517,12 +530,14 @@ impl<F> NativeIndexExecutor<F>
 where
     F: Future<Output = IndexerResult<()>> + Send,
 {
+    /// Create a new `NativeIndexExecutor`.
     pub async fn new(
         manifest: &Manifest,
         pool: IndexerConnectionPool,
+        config: &IndexerConfig,
         handle_events_fn: fn(Vec<BlockData>, Arc<Mutex<Database>>) -> F,
     ) -> IndexerResult<Self> {
-        let mut db = Database::new(pool.clone(), manifest).await;
+        let mut db = Database::new(pool.clone(), manifest, config).await;
         let mut conn = pool.acquire().await?;
         let version = fuel_indexer_database::queries::type_id_latest(
             &mut conn,
@@ -538,21 +553,30 @@ where
         })
     }
 
+    /// Create a new `NativeIndexExecutor`.
     pub async fn create<T: Future<Output = IndexerResult<()>> + Send + 'static>(
         config: &IndexerConfig,
         manifest: &Manifest,
         pool: IndexerConnectionPool,
         handle_events: fn(Vec<BlockData>, Arc<Mutex<Database>>) -> T,
-    ) -> IndexerResult<(JoinHandle<()>, ExecutorSource, Arc<AtomicBool>)> {
-        let executor = NativeIndexExecutor::new(manifest, pool, handle_events).await?;
+    ) -> IndexerResult<(
+        JoinHandle<()>,
+        ExecutorSource,
+        Arc<AtomicBool>,
+        futures::channel::oneshot::Receiver<()>,
+    )> {
+        let executor =
+            NativeIndexExecutor::new(manifest, pool, config, handle_events).await?;
         let kill_switch = Arc::new(AtomicBool::new(false));
+        let (kill_confirm_trigger, kill_confirm) = futures::channel::oneshot::channel();
         let handle = tokio::spawn(run_executor(
             config,
             manifest,
             executor,
             kill_switch.clone(),
+            kill_confirm_trigger,
         ));
-        Ok((handle, ExecutorSource::Manifest, kill_switch))
+        Ok((handle, ExecutorSource::Manifest, kill_switch, kill_confirm))
     }
 }
 
@@ -564,8 +588,9 @@ where
     async fn handle_events(&mut self, blocks: Vec<BlockData>) -> IndexerResult<()> {
         self.db.lock().await.start_transaction().await?;
         let res = (self.handle_events_fn)(blocks, self.db.clone()).await;
+        let uid = self.manifest.uid();
         if let Err(e) = res {
-            error!("NativeIndexExecutor handle_events failed: {e}.");
+            error!("NativeIndexExecutor({uid}) handle_events failed: {e}.");
             self.db.lock().await.revert_transaction().await?;
             return Err(IndexerError::NativeExecutionRuntimeError);
         } else {
@@ -583,9 +608,11 @@ pub struct WasmIndexExecutor {
     store: Arc<Mutex<Store>>,
     db: Arc<Mutex<Database>>,
     metering_points: Option<u64>,
+    manifest: Manifest,
 }
 
 impl WasmIndexExecutor {
+    /// Create a new `WasmIndexExecutor`.
     pub async fn new(
         config: &IndexerConfig,
         manifest: &Manifest,
@@ -604,7 +631,7 @@ impl WasmIndexExecutor {
             compiler_config.push_middleware(metering);
         }
 
-        let idx_env = IndexEnv::new(pool, manifest).await?;
+        let idx_env = IndexEnv::new(pool, manifest, config).await?;
         let db: Arc<Mutex<Database>> = idx_env.db.clone();
 
         let mut store = Store::new(compiler_config);
@@ -655,6 +682,7 @@ impl WasmIndexExecutor {
             store: Arc::new(Mutex::new(store)),
             db: db.clone(),
             metering_points: config.metering_points,
+            manifest: manifest.clone(),
         })
     }
 
@@ -670,13 +698,20 @@ impl WasmIndexExecutor {
         Self::new(&config, &manifest, bytes, pool).await
     }
 
+    /// Create a new `WasmIndexExecutor`.
     pub async fn create(
         config: &IndexerConfig,
         manifest: &Manifest,
         exec_source: ExecutorSource,
         pool: IndexerConnectionPool,
-    ) -> IndexerResult<(JoinHandle<()>, ExecutorSource, Arc<AtomicBool>)> {
+    ) -> IndexerResult<(
+        JoinHandle<()>,
+        ExecutorSource,
+        Arc<AtomicBool>,
+        futures::channel::oneshot::Receiver<()>,
+    )> {
         let killer = Arc::new(AtomicBool::new(false));
+        let (kill_confirm_trigger, kill_confirm) = futures::channel::oneshot::channel();
 
         match &exec_source {
             ExecutorSource::Manifest => match manifest.module() {
@@ -693,9 +728,15 @@ impl WasmIndexExecutor {
                         manifest,
                         executor,
                         killer.clone(),
+                        kill_confirm_trigger,
                     ));
 
-                    Ok((handle, ExecutorSource::Registry(bytes), killer))
+                    Ok((
+                        handle,
+                        ExecutorSource::Registry(bytes),
+                        killer,
+                        kill_confirm,
+                    ))
                 }
                 crate::Module::Native => {
                     Err(IndexerError::NativeExecutionInstantiationError)
@@ -709,9 +750,10 @@ impl WasmIndexExecutor {
                     manifest,
                     executor,
                     killer.clone(),
+                    kill_confirm_trigger,
                 ));
 
-                Ok((handle, exec_source, killer))
+                Ok((handle, exec_source, killer, kill_confirm))
             }
         }
     }
@@ -732,8 +774,7 @@ impl WasmIndexExecutor {
         }
     }
 
-    // Returns remaining metering points if metering is enabled. Otherwise,
-    // returns None.
+    /// Returns remaining metering points if metering is enabled. Otherwise, returns None.
     pub async fn get_remaining_metering_points(&self) -> Option<MeteringPoints> {
         if self.metering_enabled() {
             let mut store_guard = self.store.lock().await;
@@ -747,6 +788,7 @@ impl WasmIndexExecutor {
         }
     }
 
+    /// Sets the remaining metering points if metering is enabled. Otherwise, returns an error.
     pub async fn set_metering_points(&self, metering_points: u64) -> IndexerResult<()> {
         if self.metering_enabled() {
             let mut store_guard = self.store.lock().await;
@@ -807,12 +849,14 @@ impl Executor for WasmIndexExecutor {
         })
         .await?;
 
+        let uid = self.manifest.uid();
+
         if let Err(e) = res {
             if self.metering_points_exhausted().await {
                 self.db.lock().await.revert_transaction().await?;
                 return Err(IndexerError::RunTimeLimitExceededError);
             } else {
-                error!("WasmIndexExecutor WASM execution failed: {e:?}.");
+                error!("WasmIndexExecutor({uid}) WASM execution failed: {e:?}.");
                 self.db.lock().await.revert_transaction().await?;
                 return Err(IndexerError::from(e));
             }

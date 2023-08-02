@@ -4,14 +4,6 @@ A `forc` plugin for basic Fuel Indexer interaction.
 
 ## Commands
 
-### `forc index init`
-
-Create a new indexer project at the provided path. If no path is provided the current working directory will be used.
-
-```bash
-forc index init --namespace fuel
-```
-
 ### `forc index new`
 
 Create new indexer project at the provided path.
@@ -33,7 +25,7 @@ forc index start
 Deploy a given indexer project to a particular endpoint
 
 ```bash
-forc index deploy --url https://indexer.fuel.network
+forc index deploy --url https://beta-3-indexer.fuel.network
 ```
 
 ### `forc index remove`
@@ -41,7 +33,7 @@ forc index deploy --url https://indexer.fuel.network
 Kill a running indexer
 
 ```bash
-forc index remove --url https://indexer.fuel.network
+forc index remove --url https://beta-3-indexer.fuel.network
 ```
 
 ### `forc index check`

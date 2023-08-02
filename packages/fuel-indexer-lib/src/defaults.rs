@@ -91,8 +91,8 @@ pub const VERBOSE_LOGGING: bool = false;
 /// Verbose output for database operations.
 pub const VERBOSE_DB_LOGGING: &str = "false";
 
-/// Amount of blocks to return in a GraphQL page.
-pub const NODE_GRAPHQL_PAGE_SIZE: usize = 10;
+/// Amount of blocks to return in a request to a Fuel node.
+pub const NODE_BLOCK_PAGE_SIZE: usize = 10;
 
 /// Start a local Fuel node.
 pub const LOCAL_FUEL_NODE: bool = false;
@@ -119,6 +119,9 @@ pub const METERING_POINTS: u64 = 30_000_000_000;
 ///
 /// If this is disabled, then an HTTP 409 Conflict will be returned if an indexer with the same name already exists.
 pub const REPLACE_INDEXER: bool = false;
+
+/// Whether to remove the indexed data when replacing an indexer.
+pub const REMOVE_DATA: bool = false;
 
 /// Allow the web API to accept raw SQL queries.
 pub const ACCEPT_SQL: bool = false;

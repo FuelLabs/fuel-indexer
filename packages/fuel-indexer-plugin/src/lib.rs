@@ -4,10 +4,11 @@
 pub mod native;
 pub mod wasm;
 
-extern crate alloc;
-
 pub mod types {
-    pub use fuel_indexer_schema::FtColumn;
+    pub use fuel_indexer_schema::{
+        join::{JoinMetadata, RawQuery},
+        FtColumn,
+    };
     pub use fuel_indexer_types::fuel::{BlockData, TxId};
 
     // Traits needed to access client type fields. Could also include this as a sub-module
@@ -25,7 +26,10 @@ pub mod utils {
 }
 
 pub use bincode;
-pub use fuel_indexer_lib::utils::{deserialize, serialize};
+pub use fuel_indexer_lib::{
+    graphql::MAX_FOREIGN_KEY_LIST_FIELDS,
+    utils::{deserialize, serialize},
+};
 
 // Specifically we import `serde` here for the `Serialize` and `Deserialize` traits
 // else the user would have to explicity import these in their indexer modules.
@@ -37,6 +41,7 @@ pub use serde_json;
 pub mod prelude {
     pub use super::{
         bincode, deserialize, serde, serde_json, serialize, types::*, utils::*,
+        MAX_FOREIGN_KEY_LIST_FIELDS,
     };
     pub use crate::{debug, error, info, trace, warn};
 }

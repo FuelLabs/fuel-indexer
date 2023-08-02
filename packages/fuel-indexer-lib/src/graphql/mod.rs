@@ -12,6 +12,10 @@ use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 use types::IdCol;
 
+/// Maximum amount of foreign key list fields that can exist on a `TypeDefinition`
+pub const MAX_FOREIGN_KEY_LIST_FIELDS: usize = 10;
+
+/// Base GraphQL schema containing base scalars.
 pub const BASE_SCHEMA: &str = include_str!("./base.graphql");
 
 /// Derive version of GraphQL schema content via SHA256.

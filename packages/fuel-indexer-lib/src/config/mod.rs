@@ -104,7 +104,9 @@ impl Default for IndexerArgs {
             rate_limit_request_count: Some(defaults::RATE_LIMIT_REQUEST_COUNT),
             rate_limit_window_size: Some(defaults::RATE_LIMIT_WINDOW_SIZE),
             replace_indexer: defaults::REPLACE_INDEXER,
+            remove_data: defaults::REMOVE_DATA,
             accept_sql_queries: defaults::ACCEPT_SQL,
+            block_page_size: defaults::NODE_BLOCK_PAGE_SIZE,
         }
     }
 }
@@ -133,6 +135,7 @@ pub struct IndexerConfig {
     pub rate_limit: RateLimitConfig,
     pub replace_indexer: bool,
     pub accept_sql_queries: bool,
+    pub node_block_page_size: usize,
 }
 
 impl Default for IndexerConfig {
@@ -153,6 +156,7 @@ impl Default for IndexerConfig {
             rate_limit: RateLimitConfig::default(),
             replace_indexer: defaults::REPLACE_INDEXER,
             accept_sql_queries: defaults::ACCEPT_SQL,
+            node_block_page_size: defaults::NODE_BLOCK_PAGE_SIZE,
         }
     }
 }
@@ -233,6 +237,7 @@ impl From<IndexerArgs> for IndexerConfig {
             },
             replace_indexer: args.replace_indexer,
             accept_sql_queries: args.accept_sql_queries,
+            node_block_page_size: args.block_page_size,
         };
 
         config
@@ -319,6 +324,7 @@ impl From<ApiServerArgs> for IndexerConfig {
             },
             replace_indexer: defaults::REPLACE_INDEXER,
             accept_sql_queries: args.accept_sql_queries,
+            node_block_page_size: defaults::NODE_BLOCK_PAGE_SIZE,
         };
 
         config
@@ -354,6 +360,9 @@ impl IndexerConfig {
 
         let accept_sql_config_key =
             serde_yaml::Value::String("accept_sql_queries".into());
+
+        let node_block_page_size_key =
+            serde_yaml::Value::String("block_page_size".into());
 
         if let Some(accept_sql_queries) = content.get(accept_sql_config_key) {
             config.accept_sql_queries = accept_sql_queries.as_bool().unwrap();
@@ -393,6 +402,10 @@ impl IndexerConfig {
 
         if let Some(indexer_net_config) = content.get(indexer_net_config_key) {
             config.indexer_net_config = indexer_net_config.as_bool().unwrap();
+        }
+
+        if let Some(node_block_page_size) = content.get(node_block_page_size_key) {
+            config.node_block_page_size = node_block_page_size.as_u64().unwrap() as usize;
         }
 
         let fuel_config_key = serde_yaml::Value::String("fuel_node".into());

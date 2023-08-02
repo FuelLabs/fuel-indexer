@@ -1,8 +1,14 @@
 extern crate alloc;
 
 use alloc::vec::Vec;
-use fuel_indexer_lib::utils::{deserialize, serialize};
-use fuel_indexer_schema::FtColumn;
+use fuel_indexer_lib::{
+    graphql::MAX_FOREIGN_KEY_LIST_FIELDS,
+    utils::{deserialize, serialize},
+};
+use fuel_indexer_schema::{
+    join::{JoinMetadata, RawQuery},
+    FtColumn,
+};
 use fuel_indexer_types::ffi::*;
 
 pub use bincode;
@@ -14,6 +20,7 @@ extern "C" {
     // TODO: error codes? or just panic and let the runtime handle it?
     fn ff_get_object(type_id: i64, ptr: *const u8, len: *mut u8) -> *mut u8;
     fn ff_put_object(type_id: i64, ptr: *const u8, len: u32);
+    fn ff_put_many_to_many_record(ptr: *const u8, len: u32);
     fn ff_log_data(ptr: *const u8, len: u32, log_level: u32);
 }
 
@@ -42,8 +49,9 @@ impl Logger {
     }
 }
 
-pub trait Entity: Sized + PartialEq + Eq + std::fmt::Debug {
+pub trait Entity<'a>: Sized + PartialEq + Eq + std::fmt::Debug {
     const TYPE_ID: i64;
+    const JOIN_METADATA: Option<[Option<JoinMetadata<'a>>; MAX_FOREIGN_KEY_LIST_FIELDS]>;
 
     fn from_row(vec: Vec<FtColumn>) -> Self;
 
@@ -51,6 +59,20 @@ pub trait Entity: Sized + PartialEq + Eq + std::fmt::Debug {
 
     fn type_id(&self) -> i64 {
         Self::TYPE_ID
+    }
+
+    fn save_many_to_many(&self) {
+        if let Some(meta) = Self::JOIN_METADATA {
+            let items = meta.iter().filter_map(|x| x.clone()).collect::<Vec<_>>();
+            let row = self.to_row();
+            let queries = items
+                .iter()
+                .map(|item| RawQuery::from_metadata(item, &row))
+                .filter(|query| !query.is_empty())
+                .collect::<Vec<_>>();
+            let bytes = serialize(&queries);
+            unsafe { ff_put_many_to_many_record(bytes.as_ptr(), bytes.len() as u32) }
+        }
     }
 
     fn load(id: u64) -> Option<Self> {
@@ -65,10 +87,10 @@ pub trait Entity: Sized + PartialEq + Eq + std::fmt::Debug {
                 let bytes = Vec::from_raw_parts(ptr, len, len);
                 let vec = deserialize(&bytes).expect("Bad serialization.");
 
-                Some(Self::from_row(vec))
-            } else {
-                None
+                return Some(Self::from_row(vec));
             }
+
+            None
         }
     }
 
@@ -77,6 +99,8 @@ pub trait Entity: Sized + PartialEq + Eq + std::fmt::Debug {
             let buf = serialize(&self.to_row());
             ff_put_object(Self::TYPE_ID, buf.as_ptr(), buf.len() as u32)
         }
+
+        self.save_many_to_many();
     }
 }
 

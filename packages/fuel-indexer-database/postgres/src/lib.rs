@@ -24,7 +24,8 @@ use fuel_indexer_macro_utils::metrics;
 
 use chrono::{DateTime, NaiveDateTime, Utc};
 
-const NONCE_EXPIRY: u64 = 3600; // 1 hour
+/// The nonce expiry time in seconds.
+const NONCE_EXPIRY_SECS: u64 = 3600;
 
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn put_object(
@@ -67,7 +68,10 @@ pub async fn run_query(
         .fetch_all(conn)
         .await?
         .iter()
-        .map(|r| r.get::<JsonValue, usize>(0))
+        .filter_map(|r| match r.try_get::<JsonValue, usize>(0) {
+            Ok(v) => Some(v),
+            Err(_e) => None,
+        })
         .collect())
 }
 
@@ -571,8 +575,9 @@ pub async fn register_indexer_asset(
         .await?;
 
     info!(
-        "Registered Asset({:?}) to Indexer({}).",
+        "Registered Asset({:?}) with Version({}) to Indexer({}).",
         asset_type,
+        digest,
         index.uid()
     );
 
@@ -771,6 +776,7 @@ pub async fn remove_indexer(
     conn: &mut PoolConnection<Postgres>,
     namespace: &str,
     identifier: &str,
+    remove_data: bool,
 ) -> sqlx::Result<()> {
     execute_query(
         conn,
@@ -795,16 +801,6 @@ pub async fn remove_indexer(
     execute_query(
         conn,
         format!(
-            "DELETE FROM index_asset_registry_schema WHERE index_id IN
-            (SELECT id FROM index_registry
-                WHERE namespace = '{namespace}' AND identifier = '{identifier}')"
-        ),
-    )
-    .await?;
-
-    execute_query(
-        conn,
-        format!(
             "DELETE FROM index_registry WHERE id IN
             (SELECT id FROM index_registry
                 WHERE namespace = '{namespace}' AND identifier = '{identifier}')"
@@ -815,40 +811,52 @@ pub async fn remove_indexer(
     execute_query(
         conn,
         format!(
-            "DELETE FROM graph_registry_columns WHERE type_id IN (SELECT id FROM graph_registry_type_ids WHERE schema_name = '{namespace}' AND schema_identifier = '{identifier}');"
+            "DELETE FROM index_asset_registry_schema WHERE index_id IN
+            (SELECT id FROM index_registry
+                WHERE namespace = '{namespace}' AND identifier = '{identifier}')"
         ),
     )
     .await?;
 
-    execute_query(
-        conn,
-        format!(
-            "DELETE FROM graph_registry_type_ids WHERE schema_name = '{namespace}' AND schema_identifier = '{identifier}';"
-        ),
-    )
-    .await?;
+    if remove_data {
+        execute_query(
+            conn,
+            format!(
+                "DELETE FROM graph_registry_columns WHERE type_id IN (SELECT id FROM graph_registry_type_ids WHERE schema_name = '{namespace}' AND schema_identifier = '{identifier}');"
+            ),
+        )
+        .await?;
 
-    execute_query(
-        conn,
-        format!(
-            "DELETE FROM graph_registry_root_columns WHERE root_id = (SELECT id FROM graph_registry_graph_root WHERE schema_name = '{namespace}' AND schema_identifier = '{identifier}');"
-        ),
-    )
-    .await?;
+        execute_query(
+            conn,
+            format!(
+                "DELETE FROM graph_registry_type_ids WHERE schema_name = '{namespace}' AND schema_identifier = '{identifier}';"
+            ),
+        )
+        .await?;
 
-    execute_query(
-        conn,
-        format!(
-            "DELETE FROM graph_registry_graph_root WHERE schema_name = '{namespace}' AND schema_identifier = '{identifier}';"
-        ),
-    )
-    .await?;
+        execute_query(
+            conn,
+            format!(
+                "DELETE FROM graph_registry_root_columns WHERE root_id = (SELECT id FROM graph_registry_graph_root WHERE schema_name = '{namespace}' AND schema_identifier = '{identifier}');"
+            ),
+        )
+        .await?;
 
-    execute_query(
-        conn,
-        format!("DROP SCHEMA {namespace}_{identifier} CASCADE"),
-    )
-    .await?;
+        execute_query(
+            conn,
+            format!(
+                "DELETE FROM graph_registry_graph_root WHERE schema_name = '{namespace}' AND schema_identifier = '{identifier}';"
+            ),
+        )
+        .await?;
+
+        execute_query(
+            conn,
+            format!("DROP SCHEMA {namespace}_{identifier} CASCADE"),
+        )
+        .await?;
+    }
 
     Ok(())
 }
@@ -882,7 +890,7 @@ pub async fn create_nonce(conn: &mut PoolConnection<Postgres>) -> sqlx::Result<N
         .unwrap()
         .as_secs();
 
-    let expiry = now + NONCE_EXPIRY;
+    let expiry = now + NONCE_EXPIRY_SECS;
 
     let row = sqlx::QueryBuilder::new(&format!(
         "INSERT INTO nonce (uid, expiry) VALUES ('{uid}', {expiry}) RETURNING *"
@@ -971,4 +979,13 @@ pub async fn indexer_owned_by(
     }
 
     Err(sqlx::Error::RowNotFound)
+}
+
+#[cfg_attr(feature = "metrics", metrics)]
+pub async fn put_many_to_many_record(
+    conn: &mut PoolConnection<Postgres>,
+    query: String,
+) -> sqlx::Result<()> {
+    execute_query(conn, query).await?;
+    Ok(())
 }

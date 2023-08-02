@@ -1,6 +1,8 @@
-use crate::{IndexerResult, Manifest};
+use crate::{IndexerConfig, IndexerResult, Manifest};
 use fuel_indexer_database::{queries, IndexerConnection, IndexerConnectionPool};
-use fuel_indexer_lib::{fully_qualified_namespace, graphql::types::IdCol};
+use fuel_indexer_lib::{
+    fully_qualified_namespace, graphql::types::IdCol, utils::format_sql_query,
+};
 use fuel_indexer_schema::FtColumn;
 use std::collections::HashMap;
 use tracing::{debug, error, info};
@@ -8,26 +10,47 @@ use tracing::{debug, error, info};
 /// Database for an executor instance, with schema info.
 #[derive(Debug)]
 pub struct Database {
+    /// Connection pool for the database.
     pool: IndexerConnectionPool,
+
+    /// Stashed connection for the current transaction.
     stashed: Option<IndexerConnection>,
-    pub namespace: String,
-    pub identifier: String,
-    pub version: String,
-    pub schema: HashMap<String, Vec<String>>,
-    pub tables: HashMap<i64, String>,
+
+    /// Namespace of the indexer.
+    namespace: String,
+
+    /// Identifier of the indexer.
+    identifier: String,
+
+    /// Version of the indexer.
+    version: String,
+
+    /// Table schema for the indexer.
+    schema: HashMap<String, Vec<String>>,
+
+    /// Mapping of `TypeId`s to tables.
+    tables: HashMap<i64, String>,
+
+    /// Indexer configuration.
+    config: IndexerConfig,
 }
 
-// TODO: Use mutex
+// TODO: https://github.com/FuelLabs/fuel-indexer/issues/1139
 unsafe impl Sync for Database {}
 unsafe impl Send for Database {}
 
+/// Check if the upsert query is for an ID column only.
 fn is_id_only_upsert(columns: &[String]) -> bool {
     columns.len() == 2 && columns[0] == IdCol::to_lowercase_string()
 }
 
 impl Database {
     /// Create a new `Database`.
-    pub async fn new(pool: IndexerConnectionPool, manifest: &Manifest) -> Database {
+    pub async fn new(
+        pool: IndexerConnectionPool,
+        manifest: &Manifest,
+        config: &IndexerConfig,
+    ) -> Database {
         Database {
             pool,
             stashed: None,
@@ -36,6 +59,7 @@ impl Database {
             version: Default::default(),
             schema: Default::default(),
             tables: Default::default(),
+            config: config.clone(),
         }
     }
 
@@ -81,24 +105,14 @@ impl Database {
     ) -> String {
         if is_id_only_upsert(columns) {
             format!(
-                "INSERT INTO {}
-                    ({})
-                 VALUES
-                    ({}, $1::bytea)
-                 ON CONFLICT(id)
-                 DO NOTHING",
+                "INSERT INTO {} ({}) VALUES ({}, $1::bytea) ON CONFLICT(id) DO NOTHING",
                 table,
                 columns.join(", "),
                 inserts.join(", "),
             )
         } else {
             format!(
-                "INSERT INTO {}
-                    ({})
-                 VALUES
-                    ({}, $1::bytea)
-                 ON CONFLICT(id)
-                 DO UPDATE SET {}",
+                "INSERT INTO {} ({}) VALUES ({}, $1::bytea) ON CONFLICT(id) DO UPDATE SET {}",
                 table,
                 columns.join(", "),
                 inserts.join(", "),
@@ -109,7 +123,11 @@ impl Database {
 
     /// Return a query to get an object from the database.
     fn get_query(&self, table: &str, object_id: u64) -> String {
-        format!("SELECT object from {table} where id = {object_id}")
+        let q = format!("SELECT object from {table} where id = {object_id}");
+        if self.config.verbose {
+            info!("{q}");
+        }
+        q
     }
 
     /// Put an object into the database.
@@ -123,14 +141,14 @@ impl Database {
             Some(t) => t,
             None => {
                 error!(
-                    r#"TypeId({}) not found in tables: {:?}. 
+                    r#"TypeId({type_id}) not found in tables: {:?}. 
 
 Does the schema version in SchemaManager::new_schema match the schema version in Database::load_schema?
 
 Do your WASM modules need to be rebuilt?
 
 "#,
-                    type_id, self.tables,
+                    self.tables,
                 );
                 return;
             }
@@ -140,20 +158,25 @@ Do your WASM modules need to be rebuilt?
         let updates: Vec<_> = self.schema[table]
             .iter()
             .zip(columns.iter())
-            .map(|(colname, value)| format!("{} = {}", colname, value.query_fragment()))
+            .map(|(colname, value)| format!("{colname} = {}", value.query_fragment()))
             .collect();
 
         let columns = self.schema[table].clone();
 
-        let query_text = self.upsert_query(table, &columns, inserts, updates);
+        let query_text =
+            format_sql_query(self.upsert_query(table, &columns, inserts, updates));
 
         let conn = self
             .stashed
             .as_mut()
             .expect("No stashed connection for put. Was a transaction started?");
 
+        if self.config.verbose {
+            info!("{query_text}");
+        }
+
         if let Err(e) = queries::put_object(conn, query_text, bytes).await {
-            error!("Failed to put object: {:?}", e);
+            error!("Failed to put_object: {e:?}");
         }
     }
 
@@ -172,15 +195,14 @@ Do your WASM modules need to be rebuilt?
                 if let sqlx::Error::RowNotFound = e {
                     debug!("Row not found for object ID: {object_id}");
                 } else {
-                    error!("Failed to get object: {:?}", e);
+                    error!("Failed to get_object: {e:?}");
                 }
                 None
             }
         }
     }
 
-    /// Load the schema for this indexer from the database, and build a mapping of `TypeId`s to
-    /// tables.
+    /// Load the schema for this indexer from the database, and build a mapping of `TypeId`s to tables.
     pub async fn load_schema(&mut self, version: String) -> IndexerResult<()> {
         self.version = version;
 
@@ -218,5 +240,44 @@ Do your WASM modules need to be rebuilt?
         }
 
         Ok(())
+    }
+
+    pub fn namespace(&self) -> &str {
+        &self.namespace
+    }
+
+    pub fn version(&self) -> &str {
+        &self.version
+    }
+
+    pub fn schema(&self) -> &HashMap<String, Vec<String>> {
+        &self.schema
+    }
+
+    /// Put a record into the database.
+    ///
+    /// Specifically for many-to-many relationships.
+    ///
+    /// Since many-to-many relationships can _only_ ever reference certain `ID` fields
+    /// on `TypeDefinition`s, we don't need to save any `FtColumn::Object` columns, which means
+    /// we can simplify the `INSERT` into a simple string.
+    ///
+    /// There are multiple queries here because a single parent `TypeDefinition` can have several
+    /// many-to-many relationships with children `TypeDefinition`s.
+    pub async fn put_many_to_many_record(&mut self, queries: Vec<String>) {
+        let conn = self
+            .stashed
+            .as_mut()
+            .expect("No stashed connection for put. Was a transaction started?");
+
+        for query in queries {
+            if self.config.verbose {
+                info!("{query}");
+            }
+
+            if let Err(e) = queries::put_many_to_many_record(conn, query).await {
+                error!("Failed to put_many_to_many_record: {e:?}");
+            }
+        }
     }
 }
