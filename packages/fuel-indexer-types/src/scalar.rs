@@ -1,8 +1,8 @@
 use bytes::Bytes;
 pub use fuel_types::{
-    Address, AssetId, Bytes32, Bytes4, Bytes64, Bytes8, ContractId, MessageId, Salt, Word,
+    Address, AssetId, BlockHeight, Bytes32, Bytes4, Bytes64, Bytes8, ContractId,
+    MessageId, Nonce, Salt, Word,
 };
-pub use fuel_types::{BlockHeight, Nonce};
 pub use fuels::{
     core::codec::try_from_bytes,
     types::{
