@@ -965,22 +965,29 @@ impl Table {
                             return;
                         }
 
+                        let has_index = f
+                            .node
+                            .directives
+                            .iter()
+                            .any(|d| d.node.name.to_string() == "index" || d.node.name.to_string() == "unique");
+
                         let has_unique = f
                             .node
                             .directives
                             .iter()
                             .any(|d| d.node.name.to_string() == "unique");
 
-                        if has_unique {
+                        if has_index {
                             constraints.push(Constraint::Index(SqlIndex {
                                 db_type: DbType::Postgres,
                                 table_name: typ.name.to_string().to_lowercase(),
                                 namespace: parsed.fully_qualified_namespace(),
-                                unique: true,
+                                unique: has_unique,
                                 column_name: f.node.name.to_string(),
                                 ..SqlIndex::default()
                             }));
                         }
+
 
                         let field_typ = f.node.ty.node.to_string().replace(['[', ']', '!'], "");
                         if parsed.is_possible_foreign_key(&field_typ) {
@@ -999,16 +1006,6 @@ impl Table {
                                 ref_colname,
                                 ref_coltype,
                                 ..ForeignKey::default()
-                            }));
-
-                            // Support quick lookup of foreign key constraints
-                            constraints.push(Constraint::Index(SqlIndex {
-                                db_type: DbType::Postgres,
-                                table_name: typ.name.to_string().to_lowercase(),
-                                namespace: parsed.fully_qualified_namespace(),
-                                unique: false,
-                                column_name: f.node.name.to_string(),
-                                ..SqlIndex::default()
                             }));
                         }
                 });

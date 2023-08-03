@@ -1,4 +1,4 @@
-use crate::{constants::*, helpers::*};
+use crate::{helpers::*};
 use async_graphql_parser::types::{
     FieldDefinition, ObjectType, TypeDefinition, TypeKind,
 };
@@ -77,6 +77,7 @@ impl Decoder for ImplementationDecoder {
         match &typ.kind {
             TypeKind::Object(o) => {
                 let obj_name = typ.name.to_string();
+
                 let mut struct_fields = quote! {};
                 let mut parameters = quote! {};
                 let mut hasher = quote! { Sha256::new() };
@@ -118,7 +119,7 @@ impl Decoder for ImplementationDecoder {
                     let to_bytes =
                         to_bytes_tokens(field_typ_name, &processed_type_result);
 
-                    if can_derive_id(&obj_field_names, field_name, &obj_name) {
+                    if can_derive_id(&obj_field_names, field_name) {
                         parameters = parameters_tokens(
                             &parameters,
                             &field_name_ident,
@@ -288,10 +289,6 @@ impl From<ImplementationDecoder> for TokenStream {
                     .iter()
                     .map(|f| f.node.name.to_string())
                     .collect::<HashSet<String>>();
-
-                if INTERNAL_INDEXER_ENTITIES.contains(typdef_name.as_str()) {
-                    return quote! {};
-                }
 
                 if !field_set.contains(IdCol::to_lowercase_str()) {
                     return quote! {};

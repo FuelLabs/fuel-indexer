@@ -123,7 +123,7 @@ lazy_static! {
     /// so that they do not appear in the generated documentation. This is done
     /// to hide internal Fuel indexer entity types.
     static ref IGNORED_ENTITY_TYPES: HashSet<&'static str> =
-        HashSet::from(["IndexMetadataEntity"]);
+        HashSet::from(["IndexMetadataEntity", "BlockMetadataEntity", "HeaderMetadataEntity"]);
 
     /// Entity fields that should be ignored when building the dynamic schema,
     /// so that they do not appear in the generated documentation. This is done

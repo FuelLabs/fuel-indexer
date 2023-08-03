@@ -23,32 +23,85 @@ pub fn schema_version(schema: &str) -> String {
     format!("{:x}", Sha256::digest(schema.as_bytes()))
 }
 
+pub trait TypeDefinitionFragment {
+    fn typdef_frag() -> &'static str;
+}
+
 /// Native GraphQL `TypeDefinition` used to keep track of chain metadata.
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct IndexMetadata {
     /// Metadata identifier.
     pub id: u64,
 
-    /// Block height of metadata.
+    /// `BlockMetadata` id.
+    pub block: u64,
+
+    /// `HeaderMetadata` id.
+    pub header: u64,
+}
+
+/// Metadata pertaining to blocks.
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct BlockMetadata {
+    /// Metadata identifier.
+    pub id: u64,
+
+    /// Block height of block metadata.
     pub block_height: u32,
 
     /// Block ID.
     pub block_id: String,
-
-    /// Time of metadata.
-    pub time: u64,
 }
 
-impl IndexMetadata {
+impl TypeDefinitionFragment for BlockMetadata {
+    /// Return the GraphQL schema fragment for the `BlockMetadata` type.
+    fn typdef_frag() -> &'static str {
+        r#"
+
+type BlockMetadataEntity {
+    id: ID!
+    block_id: Bytes32!
+    block_height: UInt8!
+}
+        "#
+    }
+}
+
+/// Metadata pertaining to block headers.
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct HeaderMetadata {
+    /// Metadata identifier.
+    pub id: u64,
+
+    /// Block height of header metadata.
+    pub block_height: u32,
+
+    /// Block ID.
+    pub block_id: String,
+}
+
+impl TypeDefinitionFragment for HeaderMetadata {
+    /// Return the GraphQL schema fragment for the `HeaderMetadata` type.
+    fn typdef_frag() -> &'static str {
+        r#"
+
+type HeaderMetadataEntity {
+    id: ID!
+    block_id: Bytes32!
+    block_height: UInt8!
+}
+        "#
+    }
+}
+impl TypeDefinitionFragment for IndexMetadata {
     /// Return the GraphQL schema fragment for the `IndexMetadata` type.
-    pub fn schema_fragment() -> &'static str {
+    fn typdef_frag() -> &'static str {
         r#"
 
 type IndexMetadataEntity {
     id: ID!
-    time: UInt8!
-    block_id: Bytes32!
-    block_height: UInt8!
+    block: BlockMetadataEntity!
+    header: HeaderMetadataEntity!
 }
 "#
     }
@@ -56,7 +109,13 @@ type IndexMetadataEntity {
 
 /// Inject native entities into the GraphQL schema.
 fn inject_native_entities_into_schema(schema: &str) -> String {
-    format!("{}{}", schema, IndexMetadata::schema_fragment())
+    format!(
+        "{}{}{}{}",
+        schema,
+        BlockMetadata::typdef_frag(),
+        HeaderMetadata::typdef_frag(),
+        IndexMetadata::typdef_frag()
+    )
 }
 
 /// Wrapper for GraphQL schema content.
