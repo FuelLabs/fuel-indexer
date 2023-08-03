@@ -19,7 +19,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 criterion = { version = "0.5.1", features = ["html_reports", "async_tokio"] }
-fuel-core-client = "0.17.2"
+fuel-core-client = "0.20"
 fuel-indexer = { workspace = true }
 fuel-indexer-database = { workspace = true }
 fuel-indexer-graphql = { workspace = true }
