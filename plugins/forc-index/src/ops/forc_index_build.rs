@@ -59,7 +59,8 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
             path
         };
         anyhow::bail!(
-            "could not find `Cargo.toml` in `{}`", cargo_manifest_dir.display()
+            "could not find `Cargo.toml` in `{}`",
+            cargo_manifest_dir.display()
         );
     }
 
