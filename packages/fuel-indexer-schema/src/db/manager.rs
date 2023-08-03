@@ -32,7 +32,7 @@ impl SchemaManager {
         let version = schema.version();
 
         if !queries::schema_exists(conn, namespace, identifier, version).await? {
-            info!("Creating schema for Indexer({namespace}.{identifier}) with Version({version}).");
+            info!("SchemaManager creating schema for Indexer({namespace}.{identifier}) with Version({version}).");
             let _ = IndexerSchema::new(
                 namespace,
                 identifier,
@@ -53,6 +53,7 @@ impl SchemaManager {
         identifier: &str,
     ) -> IndexerSchemaDbResult<IndexerSchema> {
         // TODO: might be nice to cache this data in server?
+        info!("SchemaManager loading schema for Indexer({namespace}.{identifier}).");
         IndexerSchema::load(&self.pool, namespace, identifier).await
     }
 }

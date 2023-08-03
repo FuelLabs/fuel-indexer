@@ -26,7 +26,7 @@ contract_id: ~
 
 # The graphql_schema field contains the file path that points to the GraphQL schema for the
 # given index.
-graphql_schema: examples/fuel-explorer/fuel-explorer/schema/fuel_explorer.schema.graphql
+graphql_schema:  examples/fuel-explorer/fuel-explorer/schema/fuel_explorer.schema.graphql
 
 # The module field contains a file path that points to code that will be run as an executor inside
 # of the indexer.

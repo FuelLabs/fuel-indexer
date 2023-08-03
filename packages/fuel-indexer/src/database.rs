@@ -207,7 +207,7 @@ Do your WASM modules need to be rebuilt?
         self.version = version;
 
         info!(
-            "Loading schema for Indexer({}.{}) with Version({}).",
+            "Database loading schema for Indexer({}.{}) with Version({}).",
             self.namespace, self.identifier, self.version
         );
 

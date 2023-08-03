@@ -953,15 +953,16 @@ impl Table {
                     })
                     .collect::<Vec<Column>>();
 
-                let constraints = o
-                    .fields
+                let mut constraints = Vec::new();
+
+                o.fields
                     .iter()
-                    .filter_map(|f| {
+                    .for_each(|f| {
 
                         // Can't create constraints on array fields. We should have already validated the 
                         // GraphQL schema to ensure this isn't possible, but this check doesn't hurt.
                         if is_list_type(&f.node) {
-                            return None;
+                            return;
                         }
 
                         let has_unique = f
@@ -971,7 +972,7 @@ impl Table {
                             .any(|d| d.node.name.to_string() == "unique");
 
                         if has_unique {
-                            return Some(Constraint::Index(SqlIndex {
+                            constraints.push(Constraint::Index(SqlIndex {
                                 db_type: DbType::Postgres,
                                 table_name: typ.name.to_string().to_lowercase(),
                                 namespace: parsed.fully_qualified_namespace(),
@@ -989,7 +990,7 @@ impl Table {
                                     parsed.field_type_mappings(),
                                 );
 
-                            return Some(Constraint::Fk(ForeignKey {
+                            constraints.push(Constraint::Fk(ForeignKey {
                                 db_type: DbType::Postgres,
                                 namespace: parsed.fully_qualified_namespace(),
                                 table_name: typ.name.to_string().to_lowercase(),
@@ -999,11 +1000,18 @@ impl Table {
                                 ref_coltype,
                                 ..ForeignKey::default()
                             }));
-                        }
 
-                        None
-                    })
-                    .collect::<Vec<Constraint>>();
+                            // Support quick lookup of foreign key constraints
+                            constraints.push(Constraint::Index(SqlIndex {
+                                db_type: DbType::Postgres,
+                                table_name: typ.name.to_string().to_lowercase(),
+                                namespace: parsed.fully_qualified_namespace(),
+                                unique: false,
+                                column_name: f.node.name.to_string(),
+                                ..SqlIndex::default()
+                            }));
+                        }
+                });
 
                 // `Object` columns contain the `FtColumn` bytes for each
                 // column in the object. This column shouldn't really be public
@@ -1179,6 +1187,31 @@ impl Table {
                     format!("{}_{}", item.parent_table_name(), item.parent_column_name()),
                     format!("{}_{}", item.child_table_name(), item.child_column_name()),
                 ],
+            }),
+            // Support quick lookups on either side of the join.
+            Constraint::Index(SqlIndex {
+                db_type: DbType::Postgres,
+                table_name: item.table_name(),
+                namespace: parsed.fully_qualified_namespace(),
+                unique: false,
+                column_name: format!(
+                    "{}_{}",
+                    item.parent_table_name(),
+                    item.parent_column_name()
+                ),
+                ..SqlIndex::default()
+            }),
+            Constraint::Index(SqlIndex {
+                db_type: DbType::Postgres,
+                table_name: item.table_name(),
+                namespace: parsed.fully_qualified_namespace(),
+                unique: false,
+                column_name: format!(
+                    "{}_{}",
+                    item.child_table_name(),
+                    item.child_column_name()
+                ),
+                ..SqlIndex::default()
             }),
         ];
 

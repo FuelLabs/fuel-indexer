@@ -26,7 +26,7 @@ contract_id: fuel18hchrf7f4hnpkl84sqf8k0sk8gcauzeemzwgweea8dgr7eachv4s86r9t9
 
 # The graphql_schema field contains the file path that points to the GraphQL schema for the
 # given index.
-graphql_schema:  examples/hello-world/hello-indexer/schema/hello_indexer.schema.graphql
+graphql_schema: examples/hello-world/hello-indexer/schema/hello_indexer.schema.graphql
 
 # The module field contains a file path that points to code that will be run as an executor inside
 # of the indexer.
