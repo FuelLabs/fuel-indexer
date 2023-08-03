@@ -579,13 +579,8 @@ fn process_fn_items(
                 }
                 decoder.dispatch()#awaitness;
 
-                let block_meta = BlockMetadataEntity::new(block.id, block.header.height);
-                let header_meta = HeaderMetadataEntity::new(block.id, block.header.height);
-                let index_meta = IndexMetadataEntity::new(block_meta.id, header_meta.id);
-
-                block_meta.save()#awaitness;
-                header_meta.save()#awaitness;
-                index_meta.save()#awaitness;
+                let metadata = IndexMetadataEntity{ id: block.height as u64, time: block.time as u64, block_height: block.height };
+                metadata.save()#awaitness;
             }
         },
         quote! {

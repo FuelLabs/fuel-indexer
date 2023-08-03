@@ -6,8 +6,6 @@ lazy_static! {
     /// Set of internal indexer entities.
     pub static ref INTERNAL_INDEXER_ENTITIES: HashSet<&'static str> = HashSet::from([
         "IndexMetadataEntity",
-        "BlockMetadataEntity",
-        "HeaderMetadataEntity",
     ]);
 
     /// Set of types that implement `AsRef<[u8]>`.
