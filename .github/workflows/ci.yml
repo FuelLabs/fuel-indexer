@@ -353,7 +353,7 @@ jobs:
             type=ref,event=tag
             type=semver,pattern={{raw}}
           flavor: |
-            latest=${{ github.ref == 'refs/heads/master' }}
+            latest=${{ env.IS_MASTER || env.IS_RELEASE }}
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
       - name: Log in to the ghcr.io registry
