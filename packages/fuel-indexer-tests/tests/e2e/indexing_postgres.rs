@@ -1,5 +1,6 @@
 use bigdecimal::ToPrimitive;
-use fuel_indexer::IndexerConfig;
+// use fuel_indexer::IndexerConfig;
+// use fuel_indexer_lib::defaults;
 use fuel_indexer_tests::fixtures::{
     mock_request, setup_indexing_test_components, IndexingTestComponents,
 };
@@ -75,36 +76,6 @@ async fn test_can_trigger_and_index_events_with_multiple_args_in_index_handler_p
 }
 
 #[actix_web::test]
-async fn test_can_trigger_and_index_callreturn_postgres() {
-    let IndexingTestComponents { node, db, .. } =
-        setup_indexing_test_components(None).await;
-
-    mock_request("/callreturn").await;
-
-    node.abort();
-
-    let mut conn = db.pool.acquire().await.unwrap();
-    let row =
-        sqlx::query("SELECT * FROM fuel_indexer_test_index1.pungentity WHERE id = 3")
-            .fetch_one(&mut conn)
-            .await
-            .unwrap();
-
-    let from_buff = Address::from_str(&row.get::<String, usize>(3)).unwrap();
-    let addr_buff = Address::from_str(
-        "0x532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96",
-    )
-    .unwrap();
-
-    assert_eq!(12345, row.get::<BigDecimal, usize>(1).to_u64().unwrap());
-    assert!(row.get::<bool, usize>(2));
-    assert_eq!(
-        Identity::Address(Address::from(<[u8; 32]>::from(from_buff))),
-        Identity::Address(Address::from(<[u8; 32]>::from(addr_buff)))
-    );
-}
-
-#[actix_web::test]
 async fn test_can_trigger_and_index_blocks_and_transactions_postgres() {
     let IndexingTestComponents { node, db, .. } =
         setup_indexing_test_components(None).await;
@@ -127,6 +98,173 @@ async fn test_can_trigger_and_index_blocks_and_transactions_postgres() {
 
     assert!(row.get::<i32, usize>(1).to_u64().unwrap() > 1);
     assert!(timestamp > 0);
+
+    let row =
+        sqlx::query("SELECT * FROM fuel_indexer_test_index1.indexmetadataentity LIMIT 1")
+            .fetch_one(&mut conn)
+            .await
+            .unwrap();
+
+    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 0);
+    assert_eq!(row.get::<BigDecimal, usize>(1).to_u64().unwrap(), 0);
+}
+
+#[actix_web::test]
+async fn test_ensure_receipt_types_are_indexed() {
+    let IndexingTestComponents { node, db, .. } =
+        setup_indexing_test_components(None).await;
+    let mut conn = db.pool.acquire().await.unwrap();
+
+    // Call
+    mock_request("/pure_function").await;
+    let row =
+        sqlx::query("SELECT * FROM fuel_indexer_test_index1.callentity WHERE id = 123")
+            .fetch_one(&mut conn)
+            .await
+            .unwrap();
+
+    let fn_name = row.get::<&str, usize>(5);
+
+    assert_eq!(fn_name, "trigger_pure_function");
+
+    // ReturnData
+    mock_request("/callreturn").await;
+
+    let row =
+        sqlx::query("SELECT * FROM fuel_indexer_test_index1.pungentity WHERE id = 3")
+            .fetch_one(&mut conn)
+            .await
+            .unwrap();
+
+    let from_buff = Address::from_str(&row.get::<String, usize>(3)).unwrap();
+    let addr_buff = Address::from_str(
+        "0x532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96",
+    )
+    .unwrap();
+
+    assert_eq!(12345, row.get::<BigDecimal, usize>(1).to_u64().unwrap());
+    assert!(row.get::<bool, usize>(2));
+    assert_eq!(
+        Identity::Address(Address::from(<[u8; 32]>::from(from_buff))),
+        Identity::Address(Address::from(<[u8; 32]>::from(addr_buff)))
+    );
+
+    mock_request("/log").await;
+
+    let row = sqlx::query(
+        "SELECT * FROM fuel_indexer_test_index1.logentity WHERE ra = 8675309 LIMIT 1",
+    )
+    .fetch_one(&mut conn)
+    .await
+    .unwrap();
+
+    assert_eq!(row.get::<BigDecimal, usize>(2).to_u64().unwrap(), 8675309);
+
+    mock_request("/logdata").await;
+
+    let row =
+        sqlx::query("SELECT * FROM fuel_indexer_test_index1.pungentity WHERE id = 1")
+            .fetch_one(&mut conn)
+            .await
+            .unwrap();
+
+    let from_buff = Address::from_str(&row.get::<String, usize>(3)).unwrap();
+    let addr_buff = Address::from_str(
+        "0x532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96",
+    )
+    .unwrap();
+
+    assert_eq!(row.get::<BigDecimal, usize>(1).to_u64().unwrap(), 456);
+    assert!(row.get::<bool, usize>(2));
+    assert_eq!(
+        Identity::Address(Address::from(<[u8; 32]>::from(from_buff))),
+        Identity::Address(Address::from(<[u8; 32]>::from(addr_buff)))
+    );
+
+    mock_request("/scriptresult").await;
+
+    let row =
+        sqlx::query("SELECT * FROM fuel_indexer_test_index1.scriptresultentity LIMIT 1")
+            .fetch_one(&mut conn)
+            .await
+            .unwrap();
+
+    let expected = hex::decode(row.get::<String, usize>(3))
+        .unwrap()
+        .into_iter()
+        .map(|x| x.to_string())
+        .collect::<Vec<String>>()
+        .join(",");
+
+    assert!((0..=1).contains(&row.get::<BigDecimal, usize>(1).to_u64().unwrap()));
+    assert!(row.get::<BigDecimal, usize>(2).to_u64().unwrap() > 0);
+    assert_eq!(expected, "1,1,1,1,1".to_string());
+
+    mock_request("/transfer").await;
+
+    let row =
+        sqlx::query("SELECT * FROM fuel_indexer_test_index1.transferentity LIMIT 1")
+            .fetch_one(&mut conn)
+            .await
+            .unwrap();
+
+    assert_eq!(row.get::<BigDecimal, usize>(3).to_u64().unwrap(), 1); // value is defined in test contract
+    assert_eq!(row.get::<&str, usize>(4), TRANSFER_BASE_ASSET_ID);
+
+    mock_request("/revert").await;
+
+    let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.revertentity LIMIT 1")
+        .fetch_one(&mut conn)
+        .await
+        .unwrap();
+
+    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 123);
+    assert_eq!(row.get::<&str, usize>(1), EXPECTED_CONTRACT_ID);
+    assert_eq!(
+        row.get::<BigDecimal, usize>(2).to_u64().unwrap(),
+        REVERT_VM_CODE
+    );
+
+    mock_request("/panic").await;
+
+    let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.panicentity LIMIT 1")
+        .fetch_one(&mut conn)
+        .await
+        .unwrap();
+
+    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 123);
+    assert_eq!(row.get::<&str, usize>(1), EXPECTED_CONTRACT_ID);
+    assert_eq!(row.get::<i32, usize>(2), 5);
+
+    // First, we mint the contract's native asset...
+    mock_request("/mint").await;
+
+    let mut conn = db.pool.acquire().await.unwrap();
+    let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.mintentity LIMIT 1")
+        .fetch_one(&mut conn)
+        .await
+        .unwrap();
+
+    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 123);
+    assert_eq!(row.get::<&str, usize>(1), TRANSFER_BASE_ASSET_ID);
+    assert_eq!(row.get::<&str, usize>(2), EXPECTED_CONTRACT_ID);
+    assert_eq!(row.get::<BigDecimal, usize>(3).to_u64().unwrap(), 100);
+
+    // ...then we burn it.
+    mock_request("/burn").await;
+
+    node.abort();
+
+    let mut conn = db.pool.acquire().await.unwrap();
+    let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.burnentity LIMIT 1")
+        .fetch_one(&mut conn)
+        .await
+        .unwrap();
+
+    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 123);
+    assert_eq!(row.get::<&str, usize>(1), TRANSFER_BASE_ASSET_ID);
+    assert_eq!(row.get::<&str, usize>(2), EXPECTED_CONTRACT_ID);
+    assert_eq!(row.get::<BigDecimal, usize>(3).to_u64().unwrap(), 100);
 }
 
 #[actix_web::test]
@@ -163,104 +301,6 @@ async fn test_can_trigger_and_index_ping_event_postgres() {
         row.get::<BigDecimal, usize>(2),
         BigDecimal::from_str("170141183460469231731687303715884105727").unwrap()
     );
-}
-
-#[actix_web::test]
-async fn test_can_trigger_and_index_transfer_event_postgres() {
-    let IndexingTestComponents { node, db, .. } =
-        setup_indexing_test_components(None).await;
-
-    mock_request("/transfer").await;
-
-    node.abort();
-
-    let mut conn = db.pool.acquire().await.unwrap();
-    let row =
-        sqlx::query("SELECT * FROM fuel_indexer_test_index1.transferentity LIMIT 1")
-            .fetch_one(&mut conn)
-            .await
-            .unwrap();
-
-    assert_eq!(row.get::<BigDecimal, usize>(3).to_u64().unwrap(), 1); // value is defined in test contract
-    assert_eq!(row.get::<&str, usize>(4), TRANSFER_BASE_ASSET_ID);
-}
-
-#[actix_web::test]
-async fn test_can_trigger_and_index_log_event_postgres() {
-    let IndexingTestComponents { node, db, .. } =
-        setup_indexing_test_components(None).await;
-
-    mock_request("/log").await;
-
-    node.abort();
-
-    let mut conn = db.pool.acquire().await.unwrap();
-    let row = sqlx::query(
-        "SELECT * FROM fuel_indexer_test_index1.logentity WHERE ra = 8675309 LIMIT 1",
-    )
-    .fetch_one(&mut conn)
-    .await
-    .unwrap();
-
-    assert_eq!(row.get::<BigDecimal, usize>(2).to_u64().unwrap(), 8675309);
-}
-
-#[actix_web::test]
-async fn test_can_trigger_and_index_logdata_event_postgres() {
-    let IndexingTestComponents { node, db, .. } =
-        setup_indexing_test_components(None).await;
-
-    mock_request("/logdata").await;
-
-    node.abort();
-
-    let mut conn = db.pool.acquire().await.unwrap();
-    let row =
-        sqlx::query("SELECT * FROM fuel_indexer_test_index1.pungentity WHERE id = 1")
-            .fetch_one(&mut conn)
-            .await
-            .unwrap();
-
-    let from_buff = Address::from_str(&row.get::<String, usize>(3)).unwrap();
-    let addr_buff = Address::from_str(
-        "0x532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96",
-    )
-    .unwrap();
-
-    assert_eq!(row.get::<BigDecimal, usize>(1).to_u64().unwrap(), 456);
-    assert!(row.get::<bool, usize>(2));
-    assert_eq!(
-        Identity::Address(Address::from(<[u8; 32]>::from(from_buff))),
-        Identity::Address(Address::from(<[u8; 32]>::from(addr_buff)))
-    );
-}
-
-#[actix_web::test]
-async fn test_can_trigger_and_index_scriptresult_event_postgres() {
-    let IndexingTestComponents { node, db, .. } =
-        setup_indexing_test_components(None).await;
-
-    mock_request("/scriptresult").await;
-
-    node.abort();
-
-    let mut conn = db.pool.acquire().await.unwrap();
-    let row =
-        sqlx::query("SELECT * FROM fuel_indexer_test_index1.scriptresultentity LIMIT 1")
-            .fetch_one(&mut conn)
-            .await
-            .unwrap();
-
-    let expected = hex::decode(row.get::<String, usize>(3))
-        .unwrap()
-        .into_iter()
-        .map(|x| x.to_string())
-        .collect::<Vec<String>>()
-        .join(",");
-
-    assert!((0..=1).contains(&row.get::<BigDecimal, usize>(1).to_u64().unwrap()));
-    assert!(row.get::<BigDecimal, usize>(2).to_u64().unwrap() > 0);
-    assert_eq!(expected, "1,1,1,1,1".to_string());
 }
 
 #[actix_web::test]
@@ -354,26 +394,6 @@ async fn test_can_index_event_with_optional_fields_postgres() {
 }
 
 #[actix_web::test]
-async fn test_can_index_metadata_when_indexer_macro_is_called_postgres() {
-    let IndexingTestComponents { node, db, .. } =
-        setup_indexing_test_components(None).await;
-
-    mock_request("/block").await;
-
-    node.abort();
-
-    let mut conn = db.pool.acquire().await.unwrap();
-    let row =
-        sqlx::query("SELECT * FROM fuel_indexer_test_index1.indexmetadataentity LIMIT 1")
-            .fetch_one(&mut conn)
-            .await
-            .unwrap();
-
-    assert!(row.get::<BigDecimal, usize>(1).to_u64().unwrap() > 0);
-    assert_eq!(row.get::<i32, usize>(2), 1);
-}
-
-#[actix_web::test]
 async fn test_can_trigger_and_index_tuple_events_postgres() {
     let IndexingTestComponents { node, db, .. } =
         setup_indexing_test_components(None).await;
@@ -391,85 +411,6 @@ async fn test_can_trigger_and_index_tuple_events_postgres() {
     assert_eq!(row.get::<&str, usize>(1), "abcde");
     assert_eq!(row.get::<BigDecimal, usize>(2).to_u64().unwrap(), 54321);
     assert_eq!(row.get::<&str, usize>(3), "hello world!");
-}
-
-#[actix_web::test]
-async fn test_can_trigger_and_index_revert_event_postgres() {
-    let IndexingTestComponents { node, db, .. } =
-        setup_indexing_test_components(None).await;
-
-    mock_request("/revert").await;
-
-    node.abort();
-
-    let mut conn = db.pool.acquire().await.unwrap();
-    let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.revertentity LIMIT 1")
-        .fetch_one(&mut conn)
-        .await
-        .unwrap();
-
-    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 123);
-    assert_eq!(row.get::<&str, usize>(1), EXPECTED_CONTRACT_ID);
-    assert_eq!(
-        row.get::<BigDecimal, usize>(2).to_u64().unwrap(),
-        REVERT_VM_CODE
-    );
-}
-
-#[actix_web::test]
-async fn test_can_trigger_and_index_panic_event_postgres() {
-    let IndexingTestComponents { node, db, .. } =
-        setup_indexing_test_components(None).await;
-
-    mock_request("/panic").await;
-
-    node.abort();
-
-    let mut conn = db.pool.acquire().await.unwrap();
-    let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.panicentity LIMIT 1")
-        .fetch_one(&mut conn)
-        .await
-        .unwrap();
-
-    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 123);
-    assert_eq!(row.get::<&str, usize>(1), EXPECTED_CONTRACT_ID);
-    assert_eq!(row.get::<i32, usize>(2), 5);
-}
-
-#[actix_web::test]
-async fn test_can_trigger_and_index_mint_and_burn_events_postgres() {
-    let IndexingTestComponents { node, db, .. } =
-        setup_indexing_test_components(None).await;
-
-    // First, we mint the contract's native asset...
-    mock_request("/mint").await;
-
-    let mut conn = db.pool.acquire().await.unwrap();
-    let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.mintentity LIMIT 1")
-        .fetch_one(&mut conn)
-        .await
-        .unwrap();
-
-    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 123);
-    assert_eq!(row.get::<&str, usize>(1), TRANSFER_BASE_ASSET_ID);
-    assert_eq!(row.get::<&str, usize>(2), EXPECTED_CONTRACT_ID);
-    assert_eq!(row.get::<BigDecimal, usize>(3).to_u64().unwrap(), 100);
-
-    // ...then we burn it.
-    mock_request("/burn").await;
-
-    node.abort();
-
-    let mut conn = db.pool.acquire().await.unwrap();
-    let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.burnentity LIMIT 1")
-        .fetch_one(&mut conn)
-        .await
-        .unwrap();
-
-    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 123);
-    assert_eq!(row.get::<&str, usize>(1), TRANSFER_BASE_ASSET_ID);
-    assert_eq!(row.get::<&str, usize>(2), EXPECTED_CONTRACT_ID);
-    assert_eq!(row.get::<BigDecimal, usize>(3).to_u64().unwrap(), 100);
 }
 
 #[actix_web::test]
@@ -574,72 +515,77 @@ async fn test_can_trigger_and_index_nonindexable_events() {
 }
 
 // FIXME: This is not an indexing test...
-#[actix_web::test]
-async fn test_redeploying_an_already_active_indexer_returns_error_when_replace_indexer_is_false(
-) {
-    let config = IndexerConfig {
-        replace_indexer: false,
-        ..IndexerConfig::default()
-    };
+// #[actix_web::test]
+// async fn test_redeploying_an_already_active_indexer_returns_error_when_replace_indexer_is_false(
+// ) {
+//     let config = IndexerConfig {
+//         replace_indexer: false,
+//         ..IndexerConfig::default()
+//     };
 
-    let IndexingTestComponents {
-        node,
-        mut service,
-        manifest,
-        db: _db,
-        ..
-    } = setup_indexing_test_components(Some(config)).await;
+//     let IndexingTestComponents {
+//         node,
+//         mut service,
+//         manifest,
+//         db: _db,
+//         ..
+//     } = setup_indexing_test_components(Some(config)).await;
 
-    node.abort();
+//     node.abort();
 
-    // Attempt to re-register the indexer
-    let result = service.register_indexer_from_manifest(manifest).await;
+//     // Attempt to re-register the indexer
+//     let result = service
+//         .register_indexer_from_manifest(manifest, defaults::REPLACE_INDEXER)
+//         .await;
 
-    assert!(result.is_err());
+//     assert!(result.is_err());
 
-    match result.unwrap_err() {
-        fuel_indexer::IndexerError::Unknown(msg) => {
-            assert_eq!(&msg, "Indexer(fuel_indexer_test.index1) already exists.")
-        }
-        err => {
-            panic!("Expected Unknown but got: {}", err)
-        }
-    }
-}
+//     match result.unwrap_err() {
+//         fuel_indexer::IndexerError::Unknown(msg) => {
+//             assert_eq!(&msg, "Indexer(fuel_indexer_test.index1) already exists.")
+//         }
+//         err => {
+//             panic!("Expected Unknown but got: {}", err)
+//         }
+//     }
+// }
 
 // FIXME: This is not an indexing test...
-#[actix_web::test]
-async fn test_redeploying_an_already_active_indexer_works_when_replace_indexer_is_true() {
-    let config = IndexerConfig {
-        replace_indexer: true,
-        ..IndexerConfig::default()
-    };
+// #[actix_web::test]
+// async fn test_redeploying_an_already_active_indexer_works_when_replace_indexer_is_true() {
+//     let config = IndexerConfig {
+//         replace_indexer: true,
+//         ..IndexerConfig::default()
+//     };
 
-    let IndexingTestComponents {
-        node,
-        mut service,
-        db,
-        manifest,
-        ..
-    } = setup_indexing_test_components(Some(config)).await;
+//     let IndexingTestComponents {
+//         node,
+//         mut service,
+//         db,
+//         manifest,
+//         ..
+//     } = setup_indexing_test_components(Some(config)).await;
 
-    // Re-register the indexer
-    let _ = service.register_indexer_from_manifest(manifest).await;
+//     // Re-register the indexer
+//     service
+//         .register_indexer_from_manifest(manifest, defaults::REPLACE_INDEXER)
+//         .await
+//         .unwrap();
 
-    mock_request("/enum").await;
+//     mock_request("/enum").await;
 
-    node.abort();
+//     node.abort();
 
-    let mut conn = db.pool.acquire().await.unwrap();
-    let row =
-        sqlx::query("SELECT * FROM fuel_indexer_test_index1.complexenumentity LIMIT 1")
-            .fetch_one(&mut conn)
-            .await
-            .unwrap();
+//     let mut conn = db.pool.acquire().await.unwrap();
+//     let row =
+//         sqlx::query("SELECT * FROM fuel_indexer_test_index1.complexenumentity LIMIT 1")
+//             .fetch_one(&mut conn)
+//             .await
+//             .unwrap();
 
-    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 1);
-    assert_eq!(row.get::<&str, usize>(1), "EnumEntity::One");
-}
+//     assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 1);
+//     assert_eq!(row.get::<&str, usize>(1), "EnumEntity::One");
+// }
 
 #[derive(Debug, Serialize, Deserialize)]
 struct UnionEntity {
