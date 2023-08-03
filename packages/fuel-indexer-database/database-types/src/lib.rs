@@ -969,7 +969,7 @@ impl Table {
                             .node
                             .directives
                             .iter()
-                            .any(|d| d.node.name.to_string() == "index" || d.node.name.to_string() == "unique");
+                            .any(|d| d.node.name.to_string() == "indexed" || d.node.name.to_string() == "unique");
 
                         let has_unique = f
                             .node

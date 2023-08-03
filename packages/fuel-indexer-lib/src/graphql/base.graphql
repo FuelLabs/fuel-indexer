@@ -38,7 +38,7 @@ enum IndexType {
     Hash,
 }
 
-directive @indexed(type: IndexType = BTree) on FIELD_DEFINITION | ENUM_VALUE
+directive @index(type: IndexType = BTree) on FIELD_DEFINITION | ENUM_VALUE
 
 directive @join(on: String) on OBJECT
 

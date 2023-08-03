@@ -173,7 +173,7 @@ type Library {
 type Book {
     id: ID!
     name: Charfield!
-    author: Author! @index
+    author: Author! @indexed
     library: Library!
     genre: Genre!
 }

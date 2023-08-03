@@ -251,11 +251,6 @@ pub async fn retrieve_blocks_from_node(
                 has_previous_page: false,
             }
         });
-    info!(
-        "Fetched {} results using cursor: {:?}",
-        results.len(),
-        cursor
-    );
 
     let mut block_info = Vec::new();
     for block in results.into_iter() {

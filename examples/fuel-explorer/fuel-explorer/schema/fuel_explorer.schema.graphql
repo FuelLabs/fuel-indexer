@@ -121,12 +121,12 @@ type DryRun {
 
 type TransactionIdFragment {
   id: ID!
-  hash: Bytes32! @index
+  hash: Bytes32! @indexed
 }
 
 type UtxoId {
   id: ID!
-  tx_id: TxId! @index
+  tx_id: TxId! @indexed
   output_index: UInt4!
 }
 
@@ -138,12 +138,12 @@ type TxPointer {
 
 type ContractIdFragment {
   id: ID!
-  hash: Bytes32! @index
+  hash: Bytes32! @indexed
 }
 
 type BlockIdFragment {
   id: ID!
-  hash: Bytes32! @index
+  hash: Bytes32! @indexed
 }
 
 type Genesis {
@@ -160,7 +160,7 @@ type PoA {
   id: ID!
   # TODO: Is this important? The fact that signature is different
   # on almost every `PoA` implies that this type might be virtual?
-  signature: Signature! @index
+  signature: Signature! @indexed
   is_poa: Boolean!
   label: ConsensusLabel!
 }
@@ -175,10 +175,10 @@ union Consensus = Genesis | PoA | Unknown
 
 type InputCoin {
   id: ID!
-  utxo_id: UtxoId! @index
-  owner: Address! @index
+  utxo_id: UtxoId! @indexed
+  owner: Address! @indexed
   amount: UInt8!
-  asset_id: AssetId! @index
+  asset_id: AssetId! @indexed
   tx_pointer: TxPointer!
   witness_index: Int8!
   maturity: UInt8!
@@ -190,19 +190,19 @@ type InputCoin {
 
 type InputContract {
   id: ID!
-  utxo_id: UtxoId! @index
+  utxo_id: UtxoId! @indexed
   balance_root: Bytes32!
   state_root: Bytes32!
   tx_pointer: TxPointer!
-  contract: ContractIdFragment! @index
+  contract: ContractIdFragment! @indexed
   label: InputLabel!
   is_contract: Boolean!
 }
 
 type InputMessage {
   id: ID!
-  sender: Address! @index
-  recipient: Address! @index
+  sender: Address! @indexed
+  recipient: Address! @indexed
   amount: UInt8!
   nonce: Nonce!
   witness_index: Int8!
@@ -374,9 +374,9 @@ union Receipt =
 type VariableOutput {
   id: ID!
   # `to` is a reserved keyword in PostgreSQL.
-  recipient: Address! @index
+  recipient: Address! @indexed
   amount: UInt8!
-  asset_id: AssetId! @index
+  asset_id: AssetId! @indexed
   is_variable: Boolean!
   label: OutputLabel!
 }
@@ -384,9 +384,9 @@ type VariableOutput {
 type ChangeOutput {
   id: ID!
   # `to` is a reserved keyword in PostgreSQL.
-  recipient: Address! @index
+  recipient: Address! @indexed
   amount: UInt8!
-  asset_id: AssetId! @index
+  asset_id: AssetId! @indexed
   is_change: Boolean!
   label: OutputLabel!
 }
@@ -403,9 +403,9 @@ type ContractOutput {
 type CoinOutput {
   id: ID!
   # `to` is a reserved keyword in PostgreSQL.
-  recipient: Address! @index
+  recipient: Address! @indexed
   amount: UInt8!
-  asset_id: AssetId! @index
+  asset_id: AssetId! @indexed
   is_coin: Boolean!
   label: OutputLabel!
 }
@@ -418,7 +418,7 @@ type UnknownOutput {
 
 type ContractCreated {
   id: ID!
-  contract: ContractIdFragment! @index
+  contract: ContractIdFragment! @indexed
   state_root: Bytes32!
   is_contract_created: Boolean!
   label: OutputLabel!
@@ -427,7 +427,7 @@ type ContractCreated {
 type MessageOutput {
   id: ID!
   amount: UInt8!
-  recipient: Address! @index
+  recipient: Address! @indexed
 }
 
 union Output =
@@ -456,7 +456,7 @@ type CreateTransaction {
   metadata: Json
   is_create: Boolean!
   receipts: [Receipt!]
-  status: TransactionStatus! @index
+  status: TransactionStatus! @indexed
   label: TransactionLabel!
 }
 
@@ -474,7 +474,7 @@ type ScriptTransaction {
   metadata: Json
   is_script: Boolean!
   receipts: [Receipt!]
-  status: TransactionStatus! @index
+  status: TransactionStatus! @indexed
   label: TransactionLabel!
 }
 
@@ -485,7 +485,7 @@ type MintTransaction {
   metadata: Json
   is_mint: Boolean!
   receipts: [Receipt!]
-  status: TransactionStatus! @index
+  status: TransactionStatus! @indexed
   label: TransactionLabel!
 }
 
@@ -556,8 +556,8 @@ type Header {
 
 type Block {
   id: ID!
-  block_id: BlockId! @index
-  header: Header! @index
+  block_id: BlockId! @indexed
+  header: Header! @indexed
   consensus: Consensus!
   transactions: [TransactionIdFragment!]
 }
@@ -602,24 +602,24 @@ type Coin {
   id: ID!
   amount: UInt8!
   block_created: UInt4!
-  asset_id: AssetId! @index
-  utxo_id: UtxoId! @index
+  asset_id: AssetId! @indexed
+  utxo_id: UtxoId! @indexed
   maturity: UInt4!
-  owner: Address! @index
+  owner: Address! @indexed
 }
 
 type MessageCoin {
   id: ID!
   amount: UInt8!
-  sender: Address! @index
-  recipient: Address! @index
+  sender: Address! @indexed
+  recipient: Address! @indexed
   nonce: Nonce!
   da_height: UInt8!
 }
 
 type Contract {
   id: ID!
-  contract_id: ContractId! @index
+  contract_id: ContractId! @indexed
   bytecode: HexString!
   salt: Salt!
 }
