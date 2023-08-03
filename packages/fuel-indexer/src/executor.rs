@@ -66,12 +66,6 @@ impl ExecutorSource {
     }
 }
 
-#[derive(Debug)]
-pub enum HandleEventsResult {
-    Retry,
-    Pass,
-}
-
 /// Run the executor task until the kill switch is flipped, or until some other
 /// stop criteria is met.
 //
@@ -202,13 +196,6 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                     );
                     break;
                 }
-            }
-
-            if let Ok(HandleEventsResult::Retry) = result {
-                warn!("Indexer({indexer_uid}) retrying handler after retry request.");
-
-                // Try to fetch the page again using same cursor.
-                continue;
             }
 
             if cursor.is_none() {
@@ -476,10 +463,7 @@ pub trait Executor
 where
     Self: Sized,
 {
-    async fn handle_events(
-        &mut self,
-        blocks: Vec<BlockData>,
-    ) -> IndexerResult<HandleEventsResult>;
+    async fn handle_events(&mut self, blocks: Vec<BlockData>) -> IndexerResult<()>;
 }
 
 #[derive(Error, Debug)]
@@ -592,10 +576,7 @@ impl<F> Executor for NativeIndexExecutor<F>
 where
     F: Future<Output = IndexerResult<()>> + Send,
 {
-    async fn handle_events(
-        &mut self,
-        blocks: Vec<BlockData>,
-    ) -> IndexerResult<HandleEventsResult> {
+    async fn handle_events(&mut self, blocks: Vec<BlockData>) -> IndexerResult<()> {
         self.db.lock().await.start_transaction().await?;
         let res = (self.handle_events_fn)(blocks, self.db.clone()).await;
         let uid = self.manifest.uid();
@@ -606,7 +587,7 @@ where
         } else {
             self.db.lock().await.commit_transaction().await?;
         }
-        Ok(HandleEventsResult::Pass)
+        Ok(())
     }
 }
 
@@ -823,12 +804,9 @@ impl WasmIndexExecutor {
 #[async_trait]
 impl Executor for WasmIndexExecutor {
     /// Trigger a WASM event handler, passing in a serialized event struct.
-    async fn handle_events(
-        &mut self,
-        blocks: Vec<BlockData>,
-    ) -> IndexerResult<HandleEventsResult> {
+    async fn handle_events(&mut self, blocks: Vec<BlockData>) -> IndexerResult<()> {
         if blocks.is_empty() {
-            return Ok(HandleEventsResult::Pass);
+            return Ok(());
         }
 
         if let Some(metering_points) = self.metering_points {
@@ -886,6 +864,6 @@ impl Executor for WasmIndexExecutor {
         let mut store_guard = self.store.lock().await;
         arg.drop(&mut store_guard);
 
-        Ok(HandleEventsResult::Pass)
+        Ok(())
     }
 }
