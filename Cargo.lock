@@ -3843,6 +3843,7 @@ dependencies = [
  "fuel-indexer-schema",
  "fuel-indexer-types",
  "fuels 0.44.0",
+ "fuels-code-gen 0.44.0",
  "fuels-macros 0.44.0",
  "lazy_static",
  "proc-macro-error",
