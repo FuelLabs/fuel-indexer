@@ -489,7 +489,7 @@ mod fuel_indexer_test {
 
         let sponsor1 = Sponsor {
             id: 1,
-            name: "Fuel Labss".to_string(),
+            name: "Fuel Labs".to_string(),
             amount: 100,
             representative: person1.id,
         };
