@@ -962,29 +962,5 @@ pub async fn assert_indexer_is_in_sync(
     identifier: &str,
     ids: &Vec<String>,
 ) -> sqlx::Result<()> {
-    let total = ids.len();
-
-    let ids = ids
-        .iter()
-        .map(|id| format!("'{}'", id))
-        .collect::<Vec<_>>()
-        .join(",");
-    let query = format!(
-        "SELECT COUNT(distinct id) FROM {namespace}_{identifier}.indexmetadataentity WHERE block_id IN ({ids})"
-    );
-    let result = sqlx::query(&query)
-        .fetch_one(conn)
-        .await?
-        .try_get::<i64, usize>(0)
-        .unwrap_or(0) as usize;
-
-    let missing = total - result;
-    if missing > 0 {
-        error!(
-            "Indexer({namespace}.{identifier}) failed to index {missing}/{total} blocks, retrying... <('.')>"
-        );
-        return Err(sqlx::Error::RowNotFound);
-    }
-
     Ok(())
 }

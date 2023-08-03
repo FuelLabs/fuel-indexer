@@ -264,6 +264,11 @@ pub async fn retrieve_blocks_from_node(
                 has_previous_page: false,
             }
         });
+    info!(
+        "Fetched {} results using cursor: {:?}",
+        results.len(),
+        cursor
+    );
 
     let mut block_info = Vec::new();
     for block in results.into_iter() {
@@ -275,7 +280,7 @@ pub async fn retrieve_blocks_from_node(
 
         let producer = block
             .block_producer()
-            .map(|pk| Bytes32::from(<[u8; 32]>::try_from(pk.hash()).unwrap()));
+            .map(|pk| Bytes32::from(<[u8; 32]>::from(pk.hash())));
 
         let mut transactions = Vec::new();
 
@@ -380,20 +385,14 @@ pub async fn retrieve_blocks_from_node(
                         .storage_slots()
                         .iter()
                         .map(|x| StorageSlot {
-                            key: <[u8; 32]>::try_from(*x.key())
-                                .expect("Could not convert key to bytes")
-                                .into(),
-                            value: <[u8; 32]>::try_from(*x.value())
-                                .expect("Could not convert key to bytes")
-                                .into(),
+                            key: <[u8; 32]>::from(*x.key()).into(),
+                            value: <[u8; 32]>::from(*x.value()).into(),
                         })
                         .collect(),
                     inputs: tx.inputs().iter().map(|i| i.to_owned().into()).collect(),
                     outputs: tx.outputs().iter().map(|o| o.to_owned().into()).collect(),
                     witnesses: tx.witnesses().to_vec(),
-                    salt: <[u8; 32]>::try_from(*tx.salt())
-                        .expect("Could not convert key to bytes")
-                        .into(),
+                    salt: <[u8; 32]>::from(*tx.salt()).into(),
                     metadata: None,
                 }),
                 _ => Transaction::default(),
@@ -421,55 +420,47 @@ pub async fn retrieve_blocks_from_node(
                 } = g.to_owned();
 
                 Consensus::Genesis(Genesis {
-                    chain_config_hash: <[u8; 32]>::try_from(
+                    chain_config_hash: <[u8; 32]>::from(
                         chain_config_hash.to_owned().0 .0,
                     )
-                    .unwrap()
                     .into(),
-                    coins_root: <[u8; 32]>::try_from(coins_root.0 .0.to_owned())
-                        .unwrap()
+                    coins_root: <[u8; 32]>::from(coins_root.0 .0.to_owned()).into(),
+                    contracts_root: <[u8; 32]>::from(contracts_root.0 .0.to_owned())
                         .into(),
-                    contracts_root: <[u8; 32]>::try_from(contracts_root.0 .0.to_owned())
-                        .unwrap()
-                        .into(),
-                    messages_root: <[u8; 32]>::try_from(messages_root.0 .0.to_owned())
-                        .unwrap()
-                        .into(),
+                    messages_root: <[u8; 32]>::from(messages_root.0 .0.to_owned()).into(),
                 })
             }
             ClientConsensus::PoAConsensus(poa) => Consensus::PoA(PoA {
-                signature: <[u8; 64]>::try_from(poa.signature.0 .0.to_owned())
-                    .unwrap()
-                    .into(),
+                signature: <[u8; 64]>::from(poa.signature.0 .0.to_owned()).into(),
             }),
         };
 
         // TODO: https://github.com/FuelLabs/fuel-indexer/issues/286
         let block = BlockData {
             height: block.header.height.clone().into(),
-            id: Bytes32::from(<[u8; 32]>::try_from(block.id.0 .0).unwrap()),
+            id: Bytes32::from(<[u8; 32]>::from(block.id.0 .0)),
             producer,
             time: block.header.time.0.to_unix(),
             consensus,
             header: Header {
-                id: Bytes32::from(<[u8; 32]>::try_from(block.header.id.0 .0).unwrap()),
+                id: Bytes32::from(<[u8; 32]>::from(block.header.id.0 .0)),
                 da_height: block.header.da_height.0,
                 transactions_count: block.header.transactions_count.0,
                 output_messages_count: block.header.output_messages_count.0,
-                transactions_root: Bytes32::from(
-                    <[u8; 32]>::try_from(block.header.transactions_root.0 .0).unwrap(),
-                ),
-                output_messages_root: Bytes32::from(
-                    <[u8; 32]>::try_from(block.header.output_messages_root.0 .0).unwrap(),
-                ),
+                transactions_root: Bytes32::from(<[u8; 32]>::from(
+                    block.header.transactions_root.0 .0,
+                )),
+                output_messages_root: Bytes32::from(<[u8; 32]>::from(
+                    block.header.output_messages_root.0 .0,
+                )),
+
                 height: block.header.height.0,
-                prev_root: Bytes32::from(
-                    <[u8; 32]>::try_from(block.header.prev_root.0 .0).unwrap(),
-                ),
+                prev_root: Bytes32::from(<[u8; 32]>::from(block.header.prev_root.0 .0)),
+
                 time: block.header.time.0.to_unix(),
-                application_hash: Bytes32::from(
-                    <[u8; 32]>::try_from(block.header.application_hash.0 .0).unwrap(),
-                ),
+                application_hash: Bytes32::from(<[u8; 32]>::from(
+                    block.header.application_hash.0 .0,
+                )),
             },
             transactions,
         };
@@ -836,6 +827,10 @@ impl Executor for WasmIndexExecutor {
         &mut self,
         blocks: Vec<BlockData>,
     ) -> IndexerResult<HandleEventsResult> {
+        if blocks.is_empty() {
+            return Ok(HandleEventsResult::Pass);
+        }
+
         if let Some(metering_points) = self.metering_points {
             self.set_metering_points(metering_points).await?
         }
@@ -882,7 +877,7 @@ impl Executor for WasmIndexExecutor {
                 self.db.lock().await.revert_transaction().await?;
                 return Err(IndexerError::RunTimeLimitExceededError);
             } else {
-                error!("WasmIndexExecutor({uid}) WASM execution failed: {e:?}.");
+                error!("WasmIndexExecutor({uid}) WASM execution failed: {e}.");
                 self.db.lock().await.revert_transaction().await?;
                 return Err(IndexerError::from(e));
             }
@@ -904,7 +899,6 @@ impl Executor for WasmIndexExecutor {
                 )
                 .await
             {
-                error!("Indexer({uid}) failed to determine number of blocks processed in most recent call: {e}.");
                 return Ok(HandleEventsResult::Retry);
             }
         }
