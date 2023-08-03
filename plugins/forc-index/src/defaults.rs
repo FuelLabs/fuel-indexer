@@ -124,11 +124,6 @@ report_metrics: true
 # The resumable field contains a boolean that specifies whether or not the indexer should, synchronise
 # with the latest block if it has fallen out of sync.
 resumable: true
-
-# Whether or not indexers should continue indexing Block(n) if any blocks in range Block(n-1) .. Block(1) 
-# haven't already been indexed. When set to `false`, indexers that encounter a non-linear block history will
-# pause indexing until the missing blocks are indexed.
-skip_missing_blocks: false
 "#
     )
 }

@@ -421,21 +421,3 @@ pub async fn put_many_to_many_record(
         }
     }
 }
-
-/// Given a set of block IDs, return an indication of how many of these expected
-/// block IDs were inserted into the database.
-///
-/// This count will be used to determine whether or not an indexer executor should refetch
-/// a page of blocks due to all blocks in the previously fetched page not being indexed.
-pub async fn assert_indexer_is_in_sync(
-    conn: &mut IndexerConnection,
-    namespace: &str,
-    identifier: &str,
-    ids: &Vec<String>,
-) -> sqlx::Result<()> {
-    match conn {
-        IndexerConnection::Postgres(ref mut c) => {
-            postgres::assert_indexer_is_in_sync(c, namespace, identifier, ids).await
-        }
-    }
-}

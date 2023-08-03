@@ -836,8 +836,6 @@ impl Executor for WasmIndexExecutor {
         }
         let bytes = serialize(&blocks);
         let uid = self.manifest.uid();
-        let skip_missing_blocks = self.manifest.skip_missing_blocks().unwrap_or(false);
-        let block_ids = blocks.iter().map(|b| b.id.to_string()).collect_vec();
 
         let mut arg = {
             let mut store_guard = self.store.lock().await;
@@ -883,24 +881,6 @@ impl Executor for WasmIndexExecutor {
             }
         } else {
             let _ = self.db.lock().await.commit_transaction().await?;
-        }
-
-        // IMPORTANT: We should never continue to index blocks without a linear history, unless the creator
-        // of the indexer specifies such.
-        if !skip_missing_blocks {
-            if let Err(e) = self
-                .db
-                .lock()
-                .await
-                .assert_indexer_is_in_sync(
-                    self.manifest.namespace(),
-                    self.manifest.identifier(),
-                    &block_ids,
-                )
-                .await
-            {
-                return Ok(HandleEventsResult::Retry);
-            }
         }
 
         let mut store_guard = self.store.lock().await;

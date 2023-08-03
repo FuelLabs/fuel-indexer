@@ -11,7 +11,7 @@ use sqlx::{
 };
 use std::str::FromStr;
 use std::time::{SystemTime, UNIX_EPOCH};
-use tracing::{error, info};
+use tracing::info;
 
 #[cfg(feature = "metrics")]
 use std::time::Instant;
@@ -948,19 +948,5 @@ pub async fn put_many_to_many_record(
     query: String,
 ) -> sqlx::Result<()> {
     execute_query(conn, query).await?;
-    Ok(())
-}
-
-/// Given a set of block IDs, return an indication of how many of these expected
-/// block IDs were inserted into the database.
-///
-/// This count will be used to determine whether or not an indexer executor should refetch
-/// a page of blocks due to all blocks in the previously fetched page not being indexed
-pub async fn assert_indexer_is_in_sync(
-    conn: &mut PoolConnection<Postgres>,
-    namespace: &str,
-    identifier: &str,
-    ids: &Vec<String>,
-) -> sqlx::Result<()> {
     Ok(())
 }
