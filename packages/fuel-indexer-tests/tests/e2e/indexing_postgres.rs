@@ -364,7 +364,10 @@ async fn test_can_index_metadata_when_indexer_macro_is_called_postgres() {
             .await
             .unwrap();
 
-    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 0);
+    assert_eq!(
+        row.get::<BigDecimal, usize>(0).to_u64().unwrap(),
+        11557898405596845040
+    );
     assert_eq!(row.get::<BigDecimal, usize>(1).to_u64().unwrap(), 0);
 }
 
