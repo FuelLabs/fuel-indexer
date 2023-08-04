@@ -44,7 +44,7 @@ impl IndexMetadata {
     pub fn schema_fragment() -> &'static str {
         r#"
 
-type IndexMetadataEntity {
+type IndexMetadataEntity @entity {
     id: ID!
     time: UInt8!
     block_height: UInt8!

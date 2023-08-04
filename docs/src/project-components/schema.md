@@ -5,12 +5,12 @@ The GraphQL schema is a required component of the Fuel indexer. When data is ind
 In its most basic form, a Fuel indexer GraphQL schema should have a `schema` definition that contains a defined query root. The rest of the implementation is up to you. Here's an example of a well-formed schema:
 
 ```graphql
-type FirstThing {
+type FirstThing @entity {
     id: ID!
     value: UInt8!
 }
 
-type SecondThing {
+type SecondThing @entity {
     id: ID!
     optional_value: UInt8
     timestamp: Timestamp!

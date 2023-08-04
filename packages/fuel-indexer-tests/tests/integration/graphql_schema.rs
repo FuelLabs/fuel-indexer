@@ -10,13 +10,13 @@ use std::collections::HashMap;
 
 fn generate_schema() -> IndexerSchema {
     let schema = r#"
-type Thing1 {
+type Thing1 @entity {
     id: ID!
     account: Address!
     huge_number: UInt16!
 }
 
-type Thing2 {
+type Thing2 @entity {
     id: ID!
     account: Address!
     hash: Bytes32!
