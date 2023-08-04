@@ -177,13 +177,6 @@ pub struct IndexerArgs {
     )]
     pub replace_indexer: bool,
 
-    /// When replacing an indexer, also remove the indexed data.
-    #[clap(
-        long,
-        help = "When replacing an indexer, also remove the indexed data."
-    )]
-    pub remove_data: bool,
-
     /// Allow the web API to accept raw SQL queries.
     #[clap(long, help = "Allow the web API to accept raw SQL queries.")]
     pub accept_sql_queries: bool,
