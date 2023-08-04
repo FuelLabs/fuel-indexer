@@ -1,6 +1,4 @@
 use bigdecimal::ToPrimitive;
-// use fuel_indexer::IndexerConfig;
-// use fuel_indexer_lib::defaults;
 use fuel_indexer_tests::fixtures::{
     mock_request, setup_indexing_test_components, IndexingTestComponents,
 };
@@ -433,8 +431,28 @@ async fn test_can_trigger_and_index_enum_error_function_postgres() {
     assert_eq!(row.get::<BigDecimal, usize>(2).to_u64().unwrap(), 0);
 }
 
+#[derive(Serialize, Deserialize, sqlx::FromRow, sqlx::Decode, Debug, Eq, PartialEq)]
+struct VirtualEntity {
+    name: Option<String>,
+    size: i8,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct UnionEntity {
+    a: Option<u64>,
+    b: Option<u64>,
+    c: Option<u64>,
+    union_type: String,
+}
+
+#[derive(sqlx::FromRow, sqlx::Type)]
+struct ListFKType {
+    id: BigDecimal,
+    value: BigDecimal,
+}
+
 #[actix_web::test]
-async fn test_can_trigger_and_index_block_explorer_types_postgres() {
+async fn test_index_types_for_block_explorer() {
     let IndexingTestComponents { node, db, .. } =
         setup_indexing_test_components(None).await;
 
@@ -460,44 +478,8 @@ async fn test_can_trigger_and_index_block_explorer_types_postgres() {
     let hexstring = hex::decode(hexstring).unwrap();
 
     assert_eq!(hexstring, HexString::from("hello world!"));
-}
 
-#[actix_web::test]
-async fn test_can_trigger_and_index_enum_types_postgres() {
-    let IndexingTestComponents { node, db, .. } =
-        setup_indexing_test_components(None).await;
-
-    mock_request("/enum").await;
-
-    node.abort();
-
-    let mut conn = db.pool.acquire().await.unwrap();
-    let row =
-        sqlx::query("SELECT * FROM fuel_indexer_test_index1.complexenumentity LIMIT 1")
-            .fetch_one(&mut conn)
-            .await
-            .unwrap();
-
-    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 1);
-    assert_eq!(row.get::<&str, usize>(1), "EnumEntity::One");
-}
-
-#[derive(Serialize, Deserialize, sqlx::FromRow, sqlx::Decode, Debug, Eq, PartialEq)]
-struct VirtualEntity {
-    name: Option<String>,
-    size: i8,
-}
-
-#[actix_web::test]
-async fn test_can_trigger_and_index_nonindexable_events() {
-    let IndexingTestComponents { node, db, .. } =
-        setup_indexing_test_components(None).await;
-
-    mock_request("/block").await;
-
-    node.abort();
-
-    let mut conn = db.pool.acquire().await.unwrap();
+    // Non-indexable types
     let row =
         sqlx::query("SELECT * FROM fuel_indexer_test_index1.usesvirtualentity LIMIT 1")
             .fetch_one(&mut conn)
@@ -512,99 +494,8 @@ async fn test_can_trigger_and_index_nonindexable_events() {
 
     assert_eq!(entity.name, Some("virtual".to_string()));
     assert_eq!(entity.size, 1);
-}
 
-// FIXME: This is not an indexing test...
-// #[actix_web::test]
-// async fn test_redeploying_an_already_active_indexer_returns_error_when_replace_indexer_is_false(
-// ) {
-//     let config = IndexerConfig {
-//         replace_indexer: false,
-//         ..IndexerConfig::default()
-//     };
-
-//     let IndexingTestComponents {
-//         node,
-//         mut service,
-//         manifest,
-//         db: _db,
-//         ..
-//     } = setup_indexing_test_components(Some(config)).await;
-
-//     node.abort();
-
-//     // Attempt to re-register the indexer
-//     let result = service
-//         .register_indexer_from_manifest(manifest, defaults::REPLACE_INDEXER)
-//         .await;
-
-//     assert!(result.is_err());
-
-//     match result.unwrap_err() {
-//         fuel_indexer::IndexerError::Unknown(msg) => {
-//             assert_eq!(&msg, "Indexer(fuel_indexer_test.index1) already exists.")
-//         }
-//         err => {
-//             panic!("Expected Unknown but got: {}", err)
-//         }
-//     }
-// }
-
-// FIXME: This is not an indexing test...
-// #[actix_web::test]
-// async fn test_redeploying_an_already_active_indexer_works_when_replace_indexer_is_true() {
-//     let config = IndexerConfig {
-//         replace_indexer: true,
-//         ..IndexerConfig::default()
-//     };
-
-//     let IndexingTestComponents {
-//         node,
-//         mut service,
-//         db,
-//         manifest,
-//         ..
-//     } = setup_indexing_test_components(Some(config)).await;
-
-//     // Re-register the indexer
-//     service
-//         .register_indexer_from_manifest(manifest, defaults::REPLACE_INDEXER)
-//         .await
-//         .unwrap();
-
-//     mock_request("/enum").await;
-
-//     node.abort();
-
-//     let mut conn = db.pool.acquire().await.unwrap();
-//     let row =
-//         sqlx::query("SELECT * FROM fuel_indexer_test_index1.complexenumentity LIMIT 1")
-//             .fetch_one(&mut conn)
-//             .await
-//             .unwrap();
-
-//     assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 1);
-//     assert_eq!(row.get::<&str, usize>(1), "EnumEntity::One");
-// }
-
-#[derive(Debug, Serialize, Deserialize)]
-struct UnionEntity {
-    a: Option<u64>,
-    b: Option<u64>,
-    c: Option<u64>,
-    union_type: String,
-}
-
-#[actix_web::test]
-async fn test_can_trigger_and_index_union_types() {
-    let IndexingTestComponents { node, db, .. } =
-        setup_indexing_test_components(None).await;
-
-    mock_request("/block").await;
-
-    node.abort();
-
-    let mut conn = db.pool.acquire().await.unwrap();
+    // Union types
     let row = sqlx::query(
         "SELECT * FROM fuel_indexer_test_index1.indexableunionentity LIMIT 1",
     )
@@ -633,24 +524,8 @@ async fn test_can_trigger_and_index_union_types() {
     assert_eq!(entity.a.unwrap(), 2);
     assert!(entity.b.is_none());
     assert_eq!(entity.c.unwrap(), 6);
-}
 
-#[derive(sqlx::FromRow, sqlx::Type)]
-struct ListFKType {
-    id: BigDecimal,
-    value: BigDecimal,
-}
-
-#[actix_web::test]
-async fn test_can_trigger_and_index_list_types() {
-    let IndexingTestComponents { node, db, .. } =
-        setup_indexing_test_components(None).await;
-
-    mock_request("/block").await;
-
-    node.abort();
-
-    let mut conn = db.pool.acquire().await.unwrap();
+    // List types
     let row =
         sqlx::query("SELECT * FROM fuel_indexer_test_index1.listtypeentity LIMIT 1")
             .fetch_one(&mut conn)
@@ -736,3 +611,96 @@ async fn test_can_trigger_and_index_list_types() {
     assert!(child_ids.contains(&2));
     assert!(child_ids.contains(&3));
 }
+
+#[actix_web::test]
+async fn test_can_trigger_and_index_enum_types_postgres() {
+    let IndexingTestComponents { node, db, .. } =
+        setup_indexing_test_components(None).await;
+
+    mock_request("/enum").await;
+
+    node.abort();
+
+    let mut conn = db.pool.acquire().await.unwrap();
+    let row =
+        sqlx::query("SELECT * FROM fuel_indexer_test_index1.complexenumentity LIMIT 1")
+            .fetch_one(&mut conn)
+            .await
+            .unwrap();
+
+    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 1);
+    assert_eq!(row.get::<&str, usize>(1), "EnumEntity::One");
+}
+
+// FIXME: This is not an indexing test...
+// #[actix_web::test]
+// async fn test_redeploying_an_already_active_indexer_returns_error_when_replace_indexer_is_false(
+// ) {
+//     let config = IndexerConfig {
+//         replace_indexer: false,
+//         ..IndexerConfig::default()
+//     };
+
+//     let IndexingTestComponents {
+//         node,
+//         mut service,
+//         manifest,
+//         db: _db,
+//         ..
+//     } = setup_indexing_test_components(Some(config)).await;
+
+//     node.abort();
+
+//     // Attempt to re-register the indexer
+//     let result = service
+//         .register_indexer_from_manifest(manifest, defaults::REPLACE_INDEXER)
+//         .await;
+
+//     assert!(result.is_err());
+
+//     match result.unwrap_err() {
+//         fuel_indexer::IndexerError::Unknown(msg) => {
+//             assert_eq!(&msg, "Indexer(fuel_indexer_test.index1) already exists.")
+//         }
+//         err => {
+//             panic!("Expected Unknown but got: {}", err)
+//         }
+//     }
+// }
+
+// FIXME: This is not an indexing test...
+// #[actix_web::test]
+// async fn test_redeploying_an_already_active_indexer_works_when_replace_indexer_is_true() {
+//     let config = IndexerConfig {
+//         replace_indexer: true,
+//         ..IndexerConfig::default()
+//     };
+
+//     let IndexingTestComponents {
+//         node,
+//         mut service,
+//         db,
+//         manifest,
+//         ..
+//     } = setup_indexing_test_components(Some(config)).await;
+
+//     // Re-register the indexer
+//     service
+//         .register_indexer_from_manifest(manifest, defaults::REPLACE_INDEXER)
+//         .await
+//         .unwrap();
+
+//     mock_request("/enum").await;
+
+//     node.abort();
+
+//     let mut conn = db.pool.acquire().await.unwrap();
+//     let row =
+//         sqlx::query("SELECT * FROM fuel_indexer_test_index1.complexenumentity LIMIT 1")
+//             .fetch_one(&mut conn)
+//             .await
+//             .unwrap();
+
+//     assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 1);
+//     assert_eq!(row.get::<&str, usize>(1), "EnumEntity::One");
+// }
