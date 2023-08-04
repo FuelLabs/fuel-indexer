@@ -682,6 +682,7 @@ impl WasmIndexExecutor {
         manifest: &Manifest,
         exec_source: ExecutorSource,
         pool: IndexerConnectionPool,
+        schema_version: String,
     ) -> IndexerResult<(JoinHandle<()>, ExecutorSource, Arc<AtomicBool>)> {
         let killer = Arc::new(AtomicBool::new(false));
 
@@ -691,9 +692,6 @@ impl WasmIndexExecutor {
                     let mut bytes = Vec::<u8>::new();
                     let mut file = File::open(module).await?;
                     file.read_to_end(&mut bytes).await?;
-
-                    let schema_version =
-                        manifest.graphql_schema_content()?.version().to_string();
 
                     let executor = WasmIndexExecutor::new(
                         config,
@@ -717,9 +715,6 @@ impl WasmIndexExecutor {
                 }
             },
             ExecutorSource::Registry(bytes) => {
-                let schema_version =
-                    manifest.graphql_schema_content()?.version().to_string();
-
                 let executor =
                     WasmIndexExecutor::new(config, manifest, bytes, pool, schema_version)
                         .await?;
