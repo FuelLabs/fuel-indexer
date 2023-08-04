@@ -14,7 +14,7 @@ use quote::quote;
 use sha2::{Digest, Sha256};
 
 /// Max size of Postgres array types.
-pub const MAX_ARRAY_LENGTH: usize = 2500;
+pub const MAX_ARRAY_LENGTH: usize = 5000;
 
 /// The source of execution for the indexer.
 #[derive(Default, Clone, Debug)]
