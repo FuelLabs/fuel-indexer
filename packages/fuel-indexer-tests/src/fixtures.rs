@@ -821,7 +821,7 @@ pub mod test_web {
             //     web::post().to(fuel_indexer_test_transferout),
             // )
             // .route("/messageout", web::post().to(fuel_indexer_test_messageout))
-            .route("/callreturn", web::post().to(fuel_indexer_test_callreturn))
+            .route("/returndata", web::post().to(fuel_indexer_test_callreturn))
             .route("/multiarg", web::post().to(fuel_indexer_test_multiargs))
             .route(
                 "/optionals",
@@ -844,10 +844,7 @@ pub mod test_web {
             )
             .route("/vec_calldata", web::post().to(fuel_indexer_vec_calldata))
             .route("/vec_logdata", web::post().to(fuel_indexer_vec_logdata))
-            .route(
-                "/pure_function",
-                web::post().to(fuel_indexer_test_pure_function),
-            )
+            .route("/call", web::post().to(fuel_indexer_test_pure_function))
             .route("/panic", web::post().to(fuel_indexer_test_trigger_panic))
             .route("/revert", web::post().to(fuel_indexer_test_trigger_revert))
             .route(

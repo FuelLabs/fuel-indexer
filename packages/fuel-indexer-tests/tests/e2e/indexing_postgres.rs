@@ -97,6 +97,7 @@ async fn test_can_trigger_and_index_blocks_and_transactions_postgres() {
     assert!(row.get::<i32, usize>(1).to_u64().unwrap() > 1);
     assert!(timestamp > 0);
 
+    // Check for IndexMetadata
     let row =
         sqlx::query("SELECT * FROM fuel_indexer_test_index1.indexmetadataentity LIMIT 1")
             .fetch_one(&mut conn)
@@ -113,8 +114,8 @@ async fn test_ensure_receipt_types_are_indexed() {
         setup_indexing_test_components(None).await;
     let mut conn = db.pool.acquire().await.unwrap();
 
-    // Call
-    mock_request("/pure_function").await;
+    mock_request("/call").await;
+
     let row =
         sqlx::query("SELECT * FROM fuel_indexer_test_index1.callentity WHERE id = 123")
             .fetch_one(&mut conn)
@@ -125,8 +126,7 @@ async fn test_ensure_receipt_types_are_indexed() {
 
     assert_eq!(fn_name, "trigger_pure_function");
 
-    // ReturnData
-    mock_request("/callreturn").await;
+    mock_request("/returndata").await;
 
     let row =
         sqlx::query("SELECT * FROM fuel_indexer_test_index1.pungentity WHERE id = 3")
@@ -299,6 +299,24 @@ async fn test_can_trigger_and_index_ping_event_postgres() {
         row.get::<BigDecimal, usize>(2),
         BigDecimal::from_str("170141183460469231731687303715884105727").unwrap()
     );
+
+    // Check for optionals
+    let row = sqlx::query(
+        "SELECT * FROM fuel_indexer_test_index1.optionentity WHERE id = 8675309",
+    )
+    .fetch_one(&mut conn)
+    .await
+    .unwrap();
+
+    let opt_int = row.get::<Option<BigDecimal>, usize>(2);
+
+    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 8675309);
+    assert_eq!(row.get::<BigDecimal, usize>(1).to_u64().unwrap(), 100);
+    assert!(opt_int.is_some());
+
+    assert_eq!(opt_int.unwrap().to_u64().unwrap(), 999);
+
+    assert!(row.get::<Option<&str>, usize>(3).is_none());
 }
 
 #[actix_web::test]
@@ -361,34 +379,6 @@ async fn test_can_trigger_and_index_messageout_event_postgres() {
         row.get::<&str, usize>(1),
         "abcdefghijklmnopqrstuvwxyz123456"
     );
-}
-
-#[actix_web::test]
-async fn test_can_index_event_with_optional_fields_postgres() {
-    let IndexingTestComponents { node, db, .. } =
-        setup_indexing_test_components(None).await;
-
-    mock_request("/optionals").await;
-
-    node.abort();
-
-    let mut conn = db.pool.acquire().await.unwrap();
-    let row = sqlx::query(
-        "SELECT * FROM fuel_indexer_test_index1.optionentity WHERE id = 8675309",
-    )
-    .fetch_one(&mut conn)
-    .await
-    .unwrap();
-
-    let opt_int = row.get::<Option<BigDecimal>, usize>(2);
-
-    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 8675309);
-    assert_eq!(row.get::<BigDecimal, usize>(1).to_u64().unwrap(), 100);
-    assert!(opt_int.is_some());
-
-    assert_eq!(opt_int.unwrap().to_u64().unwrap(), 999);
-
-    assert!(row.get::<Option<&str>, usize>(3).is_none());
 }
 
 #[actix_web::test]
