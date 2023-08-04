@@ -87,7 +87,7 @@ pub async fn setup_indexing_test_components(
     let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
     update_test_manifest_asset_paths(&mut manifest);
 
-    service
+    let _ = service
         .register_indexer_from_manifest(manifest.clone())
         .await
         .unwrap();
@@ -110,7 +110,7 @@ pub async fn setup_web_test_components(
     let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
     update_test_manifest_asset_paths(&mut manifest);
 
-    service
+    let _ = service
         .register_indexer_from_manifest(manifest.clone())
         .await
         .unwrap();
