@@ -344,7 +344,7 @@ impl ParsedGraphQLSchema {
                         TypeKind::Object(o) => {
                             let obj_name = t.node.name.to_string();
 
-                            // Only parsed `TypeDefinition`s with the `@entity` directive.
+                            // Only parse `TypeDefinition`s with the `@entity` directive.
                             let is_entity = t
                                 .node
                                 .directives
@@ -383,7 +383,7 @@ impl ParsedGraphQLSchema {
                                     .directives
                                     .iter()
                                     .flat_map(|d| d.node.arguments.clone())
-                                    .any(|t| t.0.node.to_string() == "virtual");
+                                    .any(|t| t.0.node == "virtual");
 
                                 if *is_virtual {
                                     virtual_type_names.insert(obj_name.clone());
