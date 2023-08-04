@@ -41,13 +41,17 @@ async fn setup_wasm_executor(
     pool: IndexerConnectionPool,
 ) -> Result<WasmIndexExecutor, ()> {
     config.database = DatabaseConfig::from_str(&db_url).unwrap();
-    let schema_version = manifest.graphql_schema_content().unwrap().version().to_string();
+    let schema_version = manifest
+        .graphql_schema_content()
+        .unwrap()
+        .version()
+        .to_string();
     let executor = WasmIndexExecutor::new(
         &config,
         &manifest,
         manifest.module_bytes().unwrap(),
         pool,
-        schema_version
+        schema_version,
     )
     .await
     .expect("Could not setup WASM executor");
