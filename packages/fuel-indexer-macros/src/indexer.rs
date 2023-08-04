@@ -397,15 +397,21 @@ fn process_fn_items(
                 }
             }
 
-            fn compute_message_id(&self, sender: &Address, recipient: &Address, nonce: Nonce, amount: Word, data: &[u8]) -> MessageId {
+            fn compute_message_id(&self, sender: &Address, recipient: &Address, nonce: Nonce, amount: Word, data: Option<Vec<u8>>) -> MessageId {
 
-                let raw_message_id = Sha256::new()
+                let mut raw_message_id = Sha256::new()
                     .chain_update(sender)
                     .chain_update(recipient)
                     .chain_update(nonce)
-                    .chain_update(amount.to_be_bytes())
-                    .chain_update(data)
-                    .finalize();
+                    .chain_update(amount.to_be_bytes());
+
+                let raw_message_id = if let Some(buffer) = data {
+                    raw_message_id
+                        .chain_update(&buffer[..])
+                        .finalize()
+                } else {
+                    raw_message_id.finalize()
+                };
 
                 let message_id = <[u8; 32]>::try_from(&raw_message_id[..]).expect("Could not calculate message ID from receipt fields");
 
@@ -489,8 +495,7 @@ fn process_fn_items(
                             }
                             fuel::Receipt::LogData { rb, data, ptr, len, id, .. } => {
                                 #check_if_subscribed_to_contract
-                                decoder.decode_logdata(rb as usize, data);
-
+                                decoder.decode_logdata(rb as usize, data.unwrap_or(Vec::<u8>::new()));
                             }
                             fuel::Receipt::Return { id, val, pc, is } => {
                                 #check_if_subscribed_to_contract
@@ -504,29 +509,25 @@ fn process_fn_items(
                                 #check_if_subscribed_to_contract
                                 if callees.contains(&id) {
                                     let selector = return_types.pop().expect("No return type available. <('-'<)");
-                                    decoder.decode_return_type(selector, data);
+                                    decoder.decode_return_type(selector, data.unwrap_or(Vec::<u8>::new()));
                                 }
                             }
                             fuel::Receipt::MessageOut { sender, recipient, amount, nonce, len, digest, data, .. } => {
-                                let message_id = decoder.compute_message_id(&sender, &recipient, nonce, amount, &data[..]);
+                                let message_id = decoder.compute_message_id(&sender, &recipient, nonce, amount, data.clone());
 
                                 // It's possible that the data field was generated from an empty Sway `Bytes` array
                                 // in the send_message() instruction in which case the data field in the receipt will
                                 // have no type information or data to decode, so we decode an empty vector to a unit struct
-                                let type_id = data
-                                    .get(..8)
-                                    .map(|buffer| {
-                                        u64::from_be_bytes(
-                                            <[u8; 8]>::try_from(&buffer[..])
-                                                .expect("Could not get type ID for data in MessageOut receipt"),
-                                        )
-                                    })
-                                    .unwrap_or(u64::MAX);
-
-                                let data = data
-                                    .get(8..)
-                                    .map(|buffer| buffer.to_vec())
-                                    .unwrap_or(Vec::<u8>::new());
+                                let (type_id, data) = data
+                                    .map_or((u64::MAX, Vec::<u8>::new()), |buffer| {
+                                        let (type_id_bytes, data_bytes) = buffer.split_at(8);
+                                        let type_id = u64::from_be_bytes(
+                                            <[u8; 8]>::try_from(type_id_bytes)
+                                            .expect("Could not get type ID for data in MessageOut receipt")
+                                        );
+                                        let data = data_bytes.to_vec();
+                                        (type_id, data)
+                                    });
 
                                 decoder.decode_messagedata(type_id, data.clone());
 

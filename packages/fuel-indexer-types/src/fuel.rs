@@ -163,10 +163,10 @@ pub struct Header {
     pub id: Bytes32,
     pub da_height: u64,
     pub transactions_count: u64,
-    pub output_messages_count: u64,
+    pub message_receipt_count: u64,
     pub transactions_root: Bytes32,
-    pub output_messages_root: Bytes32,
-    pub height: u64,
+    pub message_receipt_root: Bytes32,
+    pub height: u32,
     pub prev_root: Bytes32,
     pub time: i64,
     pub application_hash: Bytes32,
@@ -174,7 +174,7 @@ pub struct Header {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BlockData {
-    pub height: u64,
+    pub height: u32,
     pub id: Bytes32,
     pub header: Header,
     pub producer: Option<Bytes32>,

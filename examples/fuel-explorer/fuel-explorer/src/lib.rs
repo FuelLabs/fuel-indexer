@@ -26,7 +26,6 @@ impl From<fuel::ProgramState> for ProgramState {
 impl From<fuel::ClientPanicReason> for PanicReason {
     fn from(reason: fuel::ClientPanicReason) -> Self {
         match reason {
-            fuel::ClientPanicReason::Success => PanicReason::Success,
             fuel::ClientPanicReason::Revert => PanicReason::Revert,
             fuel::ClientPanicReason::OutOfGas => PanicReason::OutOfGas,
             fuel::ClientPanicReason::TransactionValidity => {
@@ -133,7 +132,7 @@ impl From<fuel::TxPointer> for TxPointer {
             block_height,
             tx_index,
         } = tx_pointer;
-        Self::new(block_height, tx_index).get_or_create()
+        Self::new(*block_height, tx_index).get_or_create()
     }
 }
 
@@ -230,7 +229,7 @@ impl From<fuel::Input> for Input {
                     asset_id,
                     tx_pointer.id,
                     witness_index.into(),
-                    maturity,
+                    *maturity,
                     predicate.into(),
                     predicate_data.into(),
                     InputLabel::Coin.into(),
@@ -490,9 +489,7 @@ impl From<fuel::Receipt> for Receipt {
             } => {
                 let receipt = CallReceipt {
                     contract_id: <[u8; 32]>::from(contract_id).into(),
-                    recipient: Identity::ContractId(ContractId::from(<[u8; 32]>::from(
-                        recipient,
-                    ))),
+                    recipient: Identity::ContractId(<[u8; 32]>::from(recipient).into()),
                     amount,
                     asset_id: <[u8; 32]>::from(asset_id).into(),
                     gas,
@@ -537,7 +534,7 @@ impl From<fuel::Receipt> for Receipt {
                     ptr,
                     len,
                     digest: <[u8; 32]>::from(digest).into(),
-                    data: data.into(),
+                    data: data.map(|d| d.into()),
                     pc,
                     isr,
                     label: ReceiptLabel::ReturnData.into(),
@@ -632,7 +629,7 @@ impl From<fuel::Receipt> for Receipt {
                     ptr,
                     len,
                     digest: <[u8; 32]>::from(digest).into(),
-                    data: data.into(),
+                    data: data.map(|d| d.into()),
                     pc,
                     isr,
                     label: ReceiptLabel::LogData.into(),
@@ -651,9 +648,7 @@ impl From<fuel::Receipt> for Receipt {
             } => {
                 let receipt = TransferReceipt {
                     contract_id: <[u8; 32]>::from(contract_id).into(),
-                    recipient: Identity::ContractId(ContractId::from(<[u8; 32]>::from(
-                        recipient,
-                    ))),
+                    recipient: Identity::ContractId(<[u8; 32]>::from(recipient).into()),
                     amount,
                     asset_id: <[u8; 32]>::from(asset_id).into(),
                     pc,
@@ -674,9 +669,7 @@ impl From<fuel::Receipt> for Receipt {
             } => {
                 let receipt = TransferOutReceipt {
                     contract_id: <[u8; 32]>::from(contract_id).into(),
-                    recipient: Identity::Address(Address::from(<[u8; 32]>::from(
-                        recipient,
-                    ))),
+                    recipient: Identity::Address(<[u8; 32]>::from(recipient).into()),
                     amount,
                     asset_id: <[u8; 32]>::from(asset_id).into(),
                     pc,
@@ -709,14 +702,12 @@ impl From<fuel::Receipt> for Receipt {
             } => {
                 let receipt = MessageOutReceipt {
                     sender: <[u8; 32]>::from(sender).into(),
-                    recipient: Identity::Address(Address::from(<[u8; 32]>::from(
-                        recipient,
-                    ))),
+                    recipient: Identity::Address(<[u8; 32]>::from(recipient).into()),
                     amount,
                     nonce: <[u8; 32]>::from(nonce).into(),
                     len,
                     digest: <[u8; 32]>::from(digest).into(),
-                    data: data.into(),
+                    data: data.map(|d| d.into()),
                     label: ReceiptLabel::MessageOut.into(),
                     is_message_out: true,
                 };
@@ -768,7 +759,7 @@ impl From<fuel::TransactionData> for Transaction {
                 let script_tx = ScriptTransaction::new(
                     gas_limit,
                     gas_price,
-                    maturity.clone(),
+                    *maturity,
                     script.to_owned().into(),
                     script_data.to_owned().into(),
                     Some(inputs),
@@ -827,7 +818,7 @@ impl From<fuel::TransactionData> for Transaction {
                 let create_tx = CreateTransaction::new(
                     gas_limit,
                     gas_price,
-                    maturity.clone(),
+                    *maturity,
                     bytecode_length,
                     bytecode_witness_index,
                     Some(storage_slots),
@@ -885,9 +876,9 @@ pub mod explorer_index {
             block_data.header.id,
             block_data.header.da_height,
             block_data.header.transactions_count,
-            block_data.header.output_messages_count,
+            block_data.header.message_receipt_count,
             block_data.header.transactions_root,
-            block_data.header.output_messages_root,
+            block_data.header.message_receipt_root,
             block_data.header.height,
             block_data.header.prev_root,
             block_data.header.time,

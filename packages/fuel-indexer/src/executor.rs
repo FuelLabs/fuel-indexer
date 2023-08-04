@@ -10,9 +10,10 @@ use async_std::{
 };
 use async_trait::async_trait;
 use fuel_core_client::client::{
+    pagination::{PageDirection, PaginatedResult, PaginationRequest},
     schema::block::{Consensus as ClientConsensus, Genesis as ClientGenesis},
     types::TransactionStatus as ClientTransactionStatus,
-    FuelClient, PageDirection, PaginatedResult, PaginationRequest,
+    FuelClient,
 };
 use fuel_indexer_database::IndexerConnectionPool;
 use fuel_indexer_lib::{defaults::*, manifest::Manifest, utils::serialize};
@@ -248,7 +249,7 @@ pub async fn retrieve_blocks_from_node(
     client: &FuelClient,
     block_page_size: usize,
     cursor: &Option<String>,
-    end_block: Option<u64>,
+    end_block: Option<u32>,
     indexer_uid: &str,
 ) -> IndexerResult<(Vec<BlockData>, Option<String>, bool)> {
     debug!("Fetching paginated results from {cursor:?}");
@@ -284,9 +285,7 @@ pub async fn retrieve_blocks_from_node(
             }
         }
 
-        let producer = block
-            .block_producer()
-            .map(|pk| Bytes32::from(<[u8; 32]>::from(pk.hash())));
+        let producer: Option<Bytes32> = block.block_producer().map(|pk| pk.hash().into());
 
         let mut transactions = Vec::new();
 
@@ -374,11 +373,12 @@ pub async fn retrieve_blocks_from_node(
                 }
             };
 
-            let transaction =
+            let transaction: fuel_tx::Transaction =
                 fuel_tx::Transaction::from_bytes(trans.raw_payload.0 .0.as_slice())
                     .expect("Bad transaction.");
 
-            let id = transaction.id();
+            let chain_id = client.chain_info().await?.consensus_parameters.chain_id;
+            let id = transaction.id(&chain_id);
 
             let transaction = match transaction {
                 ClientTransaction::Create(tx) => Transaction::Create(Create {
@@ -449,24 +449,16 @@ pub async fn retrieve_blocks_from_node(
             time: block.header.time.0.to_unix(),
             consensus,
             header: Header {
-                id: Bytes32::from(<[u8; 32]>::from(block.header.id.0 .0)),
+                id: block.header.id.into(),
                 da_height: block.header.da_height.0,
-                transactions_count: block.header.transactions_count.0,
-                output_messages_count: block.header.output_messages_count.0,
-                transactions_root: Bytes32::from(<[u8; 32]>::from(
-                    block.header.transactions_root.0 .0,
-                )),
-                output_messages_root: Bytes32::from(<[u8; 32]>::from(
-                    block.header.output_messages_root.0 .0,
-                )),
-
-                height: block.header.height.0,
-                prev_root: Bytes32::from(<[u8; 32]>::from(block.header.prev_root.0 .0)),
-
+                transactions_count: block.header.transactions_count.into(),
+                message_receipt_count: block.header.message_receipt_count.into(),
+                transactions_root: block.header.transactions_root.into(),
+                message_receipt_root: block.header.message_receipt_root.into(),
+                height: block.header.height.into(),
+                prev_root: block.header.prev_root.into(),
                 time: block.header.time.0.to_unix(),
-                application_hash: Bytes32::from(<[u8; 32]>::from(
-                    block.header.application_hash.0 .0,
-                )),
+                application_hash: block.header.application_hash.into(),
             },
             transactions,
         };
