@@ -27,3 +27,36 @@ pub fn cargo_target_dir(
 
     Ok(target_directory.into())
 }
+
+/// Set file's atime and mtime to now.
+pub fn touch_file(path: &Path) -> std::io::Result<()> {
+    let time = filetime::FileTime::now();
+    filetime::set_file_times(path, time, time)?;
+    Ok(())
+}
+
+/// Set src/lib.rs' atime and mtime to now.
+pub fn touch_lib_rs(project_dir: &Path, schema: &Path) -> std::io::Result<()> {
+    let schema_mtime = {
+        let metadata = std::fs::metadata(schema).unwrap();
+        filetime::FileTime::from_last_modification_time(&metadata)
+    };
+
+    let lib_rs = {
+        let mut path = project_dir.to_owned();
+        path.push("src");
+        path.push("lib.rs");
+        path
+    };
+
+    let lib_rs_mtime = {
+        let metadata = std::fs::metadata(lib_rs.as_path()).unwrap();
+        filetime::FileTime::from_last_modification_time(&metadata)
+    };
+
+    if schema_mtime > lib_rs_mtime {
+        touch_file(lib_rs.as_path())?;
+    }
+
+    Ok(())
+}

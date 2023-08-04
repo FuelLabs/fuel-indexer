@@ -50,6 +50,11 @@ pub async fn init(command: DeployCommand) -> anyhow::Result<()> {
 
     let path = path.unwrap_or(".".into());
 
+    crate::ops::utils::touch_lib_rs(
+        path.as_path(),
+        Path::new(manifest.graphql_schema()),
+    )?;
+
     let target_dir: std::path::PathBuf = {
         let mut target = crate::ops::utils::cargo_target_dir(path.as_path()).unwrap();
         target.pop();
