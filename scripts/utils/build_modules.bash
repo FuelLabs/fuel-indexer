@@ -29,4 +29,6 @@ bash scripts/stripper.bash hello_indexer.wasm
 cp hello_indexer.wasm target/wasm32-unknown-unknown/release/
 rm -fv hello_indexer.wasm
 
+cargo build -p hello_indexer_native --locked --release
+
 set +ex

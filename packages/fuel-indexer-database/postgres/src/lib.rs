@@ -27,6 +27,7 @@ use chrono::{DateTime, NaiveDateTime, Utc};
 /// The nonce expiry time in seconds.
 const NONCE_EXPIRY_SECS: u64 = 3600;
 
+/// Insert or update a blob of serialized `FtColumns` into the database.
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn put_object(
     conn: &mut PoolConnection<Postgres>,
@@ -40,6 +41,7 @@ pub async fn put_object(
     Ok(result.rows_affected() as usize)
 }
 
+/// Fetch a blob of serialized `FtColumns` from the database.
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn get_object(
     conn: &mut PoolConnection<Postgres>,
@@ -51,12 +53,17 @@ pub async fn get_object(
     Ok(row.get(0))
 }
 
+/// Run database migrations.
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn run_migration(conn: &mut PoolConnection<Postgres>) -> sqlx::Result<()> {
     sqlx::migrate!().run(conn).await?;
     Ok(())
 }
 
+/// Run an arbitrary query and fetch all results.
+///
+/// Note that if the results of the query can't be converted to `JsonValue`, this function
+/// will return an empty results set.
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn run_query(
     conn: &mut PoolConnection<Postgres>,
@@ -75,6 +82,7 @@ pub async fn run_query(
         .collect())
 }
 
+/// Execute an arbitrary query using the `QueryBuilder`.
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn execute_query(
     conn: &mut PoolConnection<Postgres>,
@@ -86,6 +94,7 @@ pub async fn execute_query(
     Ok(result.rows_affected() as usize)
 }
 
+/// Return a set of `RootColumn`s associated with a given `GraphRoot`.
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn root_columns_list_by_id(
     conn: &mut PoolConnection<Postgres>,
@@ -113,6 +122,7 @@ pub async fn root_columns_list_by_id(
     )
 }
 
+/// Persist a set of new `RootColumn`s associated with a given `GraphRoot`, to the database.
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn new_root_columns(
     conn: &mut PoolConnection<Postgres>,
@@ -134,6 +144,7 @@ pub async fn new_root_columns(
     Ok(result.rows_affected() as usize)
 }
 
+/// Persist a new `GraphRoot` to the database.
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn new_graph_root(
     conn: &mut PoolConnection<Postgres>,
@@ -155,6 +166,7 @@ pub async fn new_graph_root(
     Ok(result.rows_affected() as usize)
 }
 
+/// Return the latest `GraphRoot` for a given indexer.
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn graph_root_latest(
     conn: &mut PoolConnection<Postgres>,
@@ -185,6 +197,7 @@ pub async fn graph_root_latest(
     })
 }
 
+/// Return the set of `TypeIds` associated with the given indexer.
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn type_id_list_by_name(
     conn: &mut PoolConnection<Postgres>,
@@ -224,6 +237,7 @@ pub async fn type_id_list_by_name(
     .collect::<Vec<TypeId>>())
 }
 
+/// Return the latest schema version for a given indexer.
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn type_id_latest(
     conn: &mut PoolConnection<Postgres>,
@@ -246,6 +260,7 @@ pub async fn type_id_latest(
     Ok(schema_version)
 }
 
+/// Persist a set of new `TypeIds` to the database.
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn type_id_insert(
     conn: &mut PoolConnection<Postgres>,
@@ -267,6 +282,7 @@ pub async fn type_id_insert(
     Ok(result.rows_affected() as usize)
 }
 
+/// Indicate whether or not a given schema has been persisted to the database.
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn schema_exists(
     conn: &mut PoolConnection<Postgres>,
@@ -291,6 +307,7 @@ pub async fn schema_exists(
     Ok(count > 0)
 }
 
+/// Persist a set of new `Columns` to the database.
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn new_column_insert(
     conn: &mut PoolConnection<Postgres>,
@@ -316,6 +333,7 @@ pub async fn new_column_insert(
     Ok(result.rows_affected() as usize)
 }
 
+/// Return the set of `Columns` associated with a given `TypeId`.
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn list_column_by_id(
     conn: &mut PoolConnection<Postgres>,
@@ -357,6 +375,7 @@ pub async fn list_column_by_id(
     )
 }
 
+/// Return a set of graph registry metadata (`ColumnInfo`) for a given indexer.
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn columns_get_schema(
     conn: &mut PoolConnection<Postgres>,
@@ -402,6 +421,7 @@ pub async fn columns_get_schema(
     .collect::<Vec<ColumnInfo>>())
 }
 
+/// Return the given indexer if it's already been registered.
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn get_indexer(
     conn: &mut PoolConnection<Postgres>,
@@ -436,6 +456,9 @@ pub async fn get_indexer(
     }
 }
 
+/// Register the given indexer's metadata.
+///
+/// Note that this only reigsters the indexer's metadata. Indexer assets are registered separately.
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn register_indexer(
     conn: &mut PoolConnection<Postgres>,
@@ -478,6 +501,7 @@ pub async fn register_indexer(
     })
 }
 
+/// Return all indexers registered to this indexer serivce.
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn all_registered_indexers(
     conn: &mut PoolConnection<Postgres>,
@@ -528,6 +552,7 @@ pub async fn indexer_asset_version(
     }
 }
 
+/// Register a single indexer asset.
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn register_indexer_asset(
     conn: &mut PoolConnection<Postgres>,
@@ -596,6 +621,7 @@ pub async fn register_indexer_asset(
     })
 }
 
+/// Return the latest version for a given indexer asset type.
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn latest_asset_for_indexer(
     conn: &mut PoolConnection<Postgres>,
@@ -625,6 +651,7 @@ pub async fn latest_asset_for_indexer(
     })
 }
 
+/// Return the latest version for every indexer asset type.
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn latest_assets_for_indexer(
     conn: &mut PoolConnection<Postgres>,
@@ -643,6 +670,7 @@ pub async fn latest_assets_for_indexer(
     })
 }
 
+/// Return the last block height that the given indexer has indexed.
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn last_block_height_for_indexer(
     conn: &mut PoolConnection<Postgres>,
@@ -698,6 +726,7 @@ pub async fn asset_already_exists(
     }
 }
 
+/// Return the database ID for a given indexer.
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn get_indexer_id(
     conn: &mut PoolConnection<Postgres>,
@@ -719,37 +748,7 @@ pub async fn get_indexer_id(
     Ok(id)
 }
 
-#[cfg_attr(feature = "metrics", metrics)]
-pub async fn penultimate_asset_for_indexer(
-    conn: &mut PoolConnection<Postgres>,
-    namespace: &str,
-    identifier: &str,
-    asset_type: IndexerAssetType,
-) -> sqlx::Result<IndexerAsset> {
-    let index_id = get_indexer_id(conn, namespace, identifier).await?;
-    let query = format!(
-        "SELECT * FROM index_asset_registry_{}
-        WHERE index_id = {} ORDER BY id DESC LIMIT 1 OFFSET 1",
-        asset_type.as_ref(),
-        index_id
-    );
-    let row = sqlx::query(&query).fetch_one(conn).await?;
-
-    let id = row.get(0);
-    let index_id = row.get(1);
-    let version = row.get(2);
-    let digest = row.get(3);
-    let bytes = row.get(4);
-
-    Ok(IndexerAsset {
-        id,
-        index_id,
-        version,
-        digest,
-        bytes,
-    })
-}
-
+/// Open a database transaction.
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn start_transaction(
     conn: &mut PoolConnection<Postgres>,
@@ -757,6 +756,7 @@ pub async fn start_transaction(
     execute_query(conn, "BEGIN".into()).await
 }
 
+/// Commit a database transaction.
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn commit_transaction(
     conn: &mut PoolConnection<Postgres>,
@@ -764,6 +764,7 @@ pub async fn commit_transaction(
     execute_query(conn, "COMMIT".into()).await
 }
 
+/// Revert a database transaction.
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn revert_transaction(
     conn: &mut PoolConnection<Postgres>,
@@ -771,6 +772,9 @@ pub async fn revert_transaction(
     execute_query(conn, "ROLLBACK".into()).await
 }
 
+/// Remove a given indexer.
+///
+/// This will also remove the given indexer's data if the caller specifies such.
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn remove_indexer(
     conn: &mut PoolConnection<Postgres>,
@@ -858,27 +862,7 @@ pub async fn remove_indexer(
     Ok(())
 }
 
-#[cfg_attr(feature = "metrics", metrics)]
-pub async fn remove_asset_by_version(
-    conn: &mut PoolConnection<Postgres>,
-    index_id: &i64,
-    version: &i32,
-    asset_type: IndexerAssetType,
-) -> sqlx::Result<()> {
-    execute_query(
-        conn,
-        format!(
-            "DELETE FROM index_asset_registry_{0} WHERE index_id = {1} AND version = '{2}'",
-            asset_type.as_ref(),
-            index_id,
-            version
-        ),
-    )
-    .await?;
-
-    Ok(())
-}
-
+/// Create a new nonce for a requesting user's authentication.
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn create_nonce(conn: &mut PoolConnection<Postgres>) -> sqlx::Result<Nonce> {
     let uid = uuid::Uuid::new_v4().as_simple().to_string();
@@ -902,18 +886,7 @@ pub async fn create_nonce(conn: &mut PoolConnection<Postgres>) -> sqlx::Result<N
     Ok(Nonce { uid, expiry })
 }
 
-#[cfg_attr(feature = "metrics", metrics)]
-pub async fn delete_nonce(
-    conn: &mut PoolConnection<Postgres>,
-    nonce: &Nonce,
-) -> sqlx::Result<()> {
-    let _ = sqlx::query(&format!("DELETE FROM nonce WHERE uid = '{}'", nonce.uid))
-        .execute(conn)
-        .await?;
-
-    Ok(())
-}
-
+/// Return the specified nonce of a requesting user's authentication.
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn get_nonce(
     conn: &mut PoolConnection<Postgres>,
@@ -929,36 +902,22 @@ pub async fn get_nonce(
     Ok(Nonce { uid, expiry })
 }
 
+/// Delete the specified nonce for a requesting user's authentication.
+///
+/// Happens after the user successfully authenticates.
 #[cfg_attr(feature = "metrics", metrics)]
-pub async fn remove_latest_assets_for_indexer(
+pub async fn delete_nonce(
     conn: &mut PoolConnection<Postgres>,
-    namespace: &str,
-    identifier: &str,
+    nonce: &Nonce,
 ) -> sqlx::Result<()> {
-    let indexer_id = get_indexer_id(conn, namespace, identifier).await?;
-
-    let wasm =
-        latest_asset_for_indexer(conn, &indexer_id, IndexerAssetType::Wasm).await?;
-    let manifest =
-        latest_asset_for_indexer(conn, &indexer_id, IndexerAssetType::Manifest).await?;
-    let schema =
-        latest_asset_for_indexer(conn, &indexer_id, IndexerAssetType::Schema).await?;
-
-    remove_asset_by_version(conn, &indexer_id, &wasm.version, IndexerAssetType::Wasm)
-        .await?;
-    remove_asset_by_version(
-        conn,
-        &indexer_id,
-        &manifest.version,
-        IndexerAssetType::Manifest,
-    )
-    .await?;
-    remove_asset_by_version(conn, &indexer_id, &schema.version, IndexerAssetType::Schema)
+    let _ = sqlx::query(&format!("DELETE FROM nonce WHERE uid = '{}'", nonce.uid))
+        .execute(conn)
         .await?;
 
     Ok(())
 }
 
+/// Return whether or not the given user (identified by a public key) owns the given indexer.
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn indexer_owned_by(
     conn: &mut PoolConnection<Postgres>,
@@ -978,6 +937,8 @@ pub async fn indexer_owned_by(
     Err(sqlx::Error::RowNotFound)
 }
 
+/// Execute an arbitrary `INSERT` query where the content of the query includes
+/// data for a many-to-many relationship.
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn put_many_to_many_record(
     conn: &mut PoolConnection<Postgres>,

@@ -33,7 +33,7 @@ cargo run -p hello-world-data --bin hello-world-data -- --host 0.0.0.0:4000
 ### Validate
 
 Ensure that test data was indexed via a GraphQL query:
-  1. Open this GraphQL playground link http://192.168.1.34:29987/api/playground/fuel_examples/hello_indexer
+  1. Open this GraphQL playground link http://192.168.1.34:29987/api/playground/fuellabs/hello_indexer
   2. Submit the following query
 
 ```graphql

@@ -39,7 +39,7 @@
 # accept_sql_queries: true
 
 # # Amount of blocks to return in a request to a Fuel node.
-# block_page_size: 10
+# block_page_size: 20
 
 # # ***********************
 # # Fuel Node configuration

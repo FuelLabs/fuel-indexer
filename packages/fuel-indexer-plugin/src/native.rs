@@ -19,7 +19,10 @@ pub use fuel_indexer_lib::{
     utils::{init_logging, ServiceRequest},
 };
 pub use sha2::{Digest, Sha256};
-pub use std::collections::{HashMap, HashSet};
+pub use std::{
+    collections::{HashMap, HashSet},
+    str::FromStr,
+};
 pub use tokio;
 pub use tokio::sync::mpsc::channel;
 pub use tracing_subscriber;
