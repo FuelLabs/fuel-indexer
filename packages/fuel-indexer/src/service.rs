@@ -364,10 +364,12 @@ async fn create_service_task(
                         killer.store(true, Ordering::SeqCst);
                         // If requester wants to be notified
                         if let Some(notify) = request.notify {
-                            // Wait for the indexer to stop
-                            kill_confirm.await.unwrap();
-                            // And send the notification
-                            notify.send(()).unwrap();
+                            tokio::spawn(async {
+                                // Wait for the indexer to stop
+                                kill_confirm.await.unwrap();
+                                // And send the notification
+                                notify.send(()).unwrap();
+                            });
                         }
                     } else {
                         warn!("Stop Indexer: No indexer with the name Indexer({uid})");
