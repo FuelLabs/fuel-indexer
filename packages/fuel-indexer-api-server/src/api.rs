@@ -101,6 +101,8 @@ pub enum ApiError {
     BoxError(#[from] axum::BoxError),
     #[error("Sql validator error: {0:?}")]
     SqlValidator(#[from] crate::sql::SqlValidatorError),
+    #[error("ParseError: {0:?}")]
+    ParseError(#[from] strum::ParseError),
 }
 
 impl Default for ApiError {
@@ -159,6 +161,11 @@ impl IntoResponse for ApiError {
                 error!("SqlValidatorError: {e:?}");
                 (StatusCode::BAD_REQUEST, format!("Error: {e}"))
             }
+            ApiError::ParseError(e) => {
+                error!("ParseError: {e:?}");
+                // This is currently the only type of ParseError on the web server
+                (StatusCode::BAD_REQUEST, format!("Invalid asset type: {e}"))
+            }
             _ => (StatusCode::INTERNAL_SERVER_ERROR, generic_details),
         };
 
@@ -189,7 +196,11 @@ impl WebApi {
         let schema_manager = Arc::new(RwLock::new(sm));
         let max_body_size = config.web_api.max_body_size;
         let start_time = Arc::new(Instant::now());
-        let log_level = Level::from_str(config.log_level.as_ref()).unwrap();
+
+        // NOTE: We never expect to panic here, and if we do panic,
+        // the panic is on service start, so will be found immediately
+        let log_level =
+            Level::from_str(config.log_level.as_ref()).expect("Invalid log level.");
 
         let mut graph_routes = Router::new()
             .route("/:namespace/:identifier", post(query_graph))
