@@ -232,62 +232,25 @@ pub(crate) async fn register_indexer_assets(
             }
         }
 
-        while let Some(field) = multipart.next_field().await.unwrap() {
+        while let Ok(Some(field)) = multipart.next_field().await {
             let name = field.name().unwrap_or("").to_string();
             let data = field.bytes().await.unwrap_or_default();
-            let asset_type =
-                IndexerAssetType::from_str(&name).expect("Invalid asset type.");
 
-            match asset_type {
-                IndexerAssetType::Wasm | IndexerAssetType::Manifest => {
-                    match queries::register_indexer_asset(
-                        &mut conn,
-                        &namespace,
-                        &identifier,
-                        data.to_vec(),
-                        asset_type,
-                        Some(claims.sub()),
-                    )
-                    .await
-                    {
-                        Ok(result) => {
-                            assets.push(result);
-                        }
-                        Err(e) => {
-                            let _res = queries::revert_transaction(&mut conn).await?;
-                            return Err(e.into());
-                        }
-                    }
-                }
-                IndexerAssetType::Schema => {
-                    match queries::register_indexer_asset(
-                        &mut conn,
-                        &namespace,
-                        &identifier,
-                        data.to_vec(),
-                        IndexerAssetType::Schema,
-                        Some(claims.sub()),
-                    )
-                    .await
-                    {
-                        Ok(result) => {
-                            let schema = GraphQLSchema::new(
-                                String::from_utf8_lossy(&data).to_string(),
-                            );
-                            match schema_manager
-                                .write()
-                                .await
-                                .new_schema(
-                                    &namespace,
-                                    &identifier,
-                                    schema,
-                                    // Only WASM can be sent over the web.
-                                    ExecutionSource::Wasm,
-                                    &mut conn,
-                                )
-                                .await
+            match IndexerAssetType::from_str(&name) {
+                Ok(asset_type) => {
+                    match asset_type {
+                        IndexerAssetType::Wasm | IndexerAssetType::Manifest => {
+                            match queries::register_indexer_asset(
+                                &mut conn,
+                                &namespace,
+                                &identifier,
+                                data.to_vec(),
+                                asset_type,
+                                Some(claims.sub()),
+                            )
+                            .await
                             {
-                                Ok(_) => {
+                                Ok(result) => {
                                     assets.push(result);
                                 }
                                 Err(e) => {
@@ -297,11 +260,57 @@ pub(crate) async fn register_indexer_assets(
                                 }
                             }
                         }
-                        Err(e) => {
-                            let _res = queries::revert_transaction(&mut conn).await?;
-                            return Err(e.into());
+                        IndexerAssetType::Schema => {
+                            match queries::register_indexer_asset(
+                                &mut conn,
+                                &namespace,
+                                &identifier,
+                                data.to_vec(),
+                                IndexerAssetType::Schema,
+                                Some(claims.sub()),
+                            )
+                            .await
+                            {
+                                Ok(result) => {
+                                    let schema = GraphQLSchema::new(
+                                        String::from_utf8_lossy(&data).to_string(),
+                                    );
+                                    match schema_manager
+                                        .write()
+                                        .await
+                                        .new_schema(
+                                            &namespace,
+                                            &identifier,
+                                            schema,
+                                            // Only WASM can be sent over the web.
+                                            ExecutionSource::Wasm,
+                                            &mut conn,
+                                        )
+                                        .await
+                                    {
+                                        Ok(_) => {
+                                            assets.push(result);
+                                        }
+                                        Err(e) => {
+                                            let _res =
+                                                queries::revert_transaction(&mut conn)
+                                                    .await?;
+                                            return Err(e.into());
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    let _res =
+                                        queries::revert_transaction(&mut conn).await?;
+                                    return Err(e.into());
+                                }
+                            }
                         }
                     }
+                }
+                Err(e) => {
+                    let _res = queries::revert_transaction(&mut conn).await?;
+                    return Err(e.into());
                 }
             }
         }
