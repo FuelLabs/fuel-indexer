@@ -36,6 +36,7 @@ serde = { features = ["derive"], workspace = true }
 serde_json = { workspace = true, features = ["raw_value"] }
 sqlparser = { version = "0.35" }
 sqlx = { version = "0.6", features = ["postgres", "runtime-tokio-rustls", "bigdecimal"] }
+strum = { version = "0.24", default-features = false, features = ["derive"] }
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 tower = { version = "0.4", features = ["limit", "buffer"] }
