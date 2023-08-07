@@ -42,13 +42,6 @@ pub struct Command {
     #[clap(long, help = "Building for native execution.")]
     pub native: bool,
 
-    /// Directory for all generated artifacts and intermediate files.
-    #[clap(
-        long,
-        help = "Directory for all generated artifacts and intermediate files."
-    )]
-    pub target_dir: Option<PathBuf>,
-
     /// Enable verbose logging.
     #[clap(short, long, help = "Enable verbose logging.")]
     pub verbose: bool,
@@ -70,7 +63,6 @@ impl Default for Command {
             locked: false,
             native: false,
             skip_build: false,
-            target_dir: Some(std::path::PathBuf::from(".")),
         }
     }
 }

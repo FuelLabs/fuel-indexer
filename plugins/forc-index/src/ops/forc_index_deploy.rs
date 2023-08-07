@@ -26,7 +26,6 @@ pub async fn init(command: DeployCommand) -> anyhow::Result<()> {
         debug,
         locked,
         native,
-        target_dir,
         verbose,
         skip_build,
     } = command;
@@ -39,7 +38,6 @@ pub async fn init(command: DeployCommand) -> anyhow::Result<()> {
             verbose,
             locked,
             native,
-            target_dir: target_dir.clone(),
         })?;
     }
 
@@ -48,21 +46,23 @@ pub async fn init(command: DeployCommand) -> anyhow::Result<()> {
 
     let mut manifest = Manifest::from_file(&manifest_path)?;
 
-    if path.is_some() {
-        if let Some(t) = target_dir {
-            manifest.set_graphql_schema(
-                Path::new(&t)
-                    .join(manifest.graphql_schema())
-                    .to_str()
-                    .unwrap()
-                    .to_string(),
-            );
+    let path = path.unwrap_or(".".into());
 
-            manifest.set_module(Path::new(&t).join(manifest.module()).into());
-        } else {
-            anyhow::bail!("--target-dir must be specified when --path is specified.");
-        }
-    }
+    let target_dir: std::path::PathBuf = {
+        let mut target = crate::ops::utils::cargo_target_dir(path.as_path()).unwrap();
+        target.pop();
+        target
+    };
+
+    manifest.set_graphql_schema(
+        Path::new(&target_dir)
+            .join(manifest.graphql_schema())
+            .to_str()
+            .unwrap()
+            .to_string(),
+    );
+
+    manifest.set_module(target_dir.join(manifest.module()).into());
 
     let form = Form::new()
         .part("manifest", file_part(&manifest_path).await?)

@@ -19,7 +19,6 @@ OPTIONS:
         --native                     Building for native execution.
     -p, --path <PATH>                Path to the indexer project.
         --skip-build                 Do not build before deploying.
-        --target-dir <TARGET_DIR>    Directory for all generated artifacts and intermediate files.
         --url <URL>                  URL at which to deploy indexer assets. [default:
                                      http://127.0.0.1:29987]
     -v, --verbose                    Enable verbose logging.
