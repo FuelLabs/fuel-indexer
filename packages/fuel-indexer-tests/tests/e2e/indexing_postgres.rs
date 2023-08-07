@@ -4,6 +4,7 @@ use fuel_indexer_tests::fixtures::{
     mock_request, setup_indexing_test_components, IndexingTestComponents,
 };
 use fuel_indexer_types::prelude::*;
+use hex::FromHex;
 use serde::{Deserialize, Serialize};
 use sqlx::{types::BigDecimal, Row};
 use std::{collections::HashSet, str::FromStr};
@@ -61,16 +62,18 @@ async fn test_can_trigger_and_index_events_with_multiple_args_in_index_handler_p
             .await
             .unwrap();
 
-    let from_buff = ContractId::from_str(&pung_row.get::<String, usize>(3)).unwrap();
+    let from_buff_str = pung_row.get::<&str, usize>(3);
+    let from_buff = <[u8; 32]>::from_hex(hex::decode(from_buff_str).unwrap()).unwrap();
 
-    let contract_buff = ContractId::from_str(
-        "0x322ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96",
+    let contract_buff = <[u8; 32]>::from_hex(
+        hex::decode("0x322ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96")
+            .unwrap(),
     )
     .unwrap();
 
     assert_eq!(
-        Identity::ContractId(from_buff),
-        Identity::ContractId(contract_buff),
+        Identity::ContractId(from_buff.into()),
+        Identity::ContractId(contract_buff.into()),
     );
 }
 
@@ -90,16 +93,21 @@ async fn test_can_trigger_and_index_callreturn_postgres() {
             .await
             .unwrap();
 
-    let from_buff = Address::from_str(&row.get::<String, usize>(3)).unwrap();
+    let from_buff =
+        <[u8; 32]>::from_hex(hex::decode(row.get::<&str, usize>(3)).unwrap()).unwrap();
 
-    let addr_buff = Address::from_str(
-        "0x532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96",
+    let addr_buff = <[u8; 32]>::from_hex(
+        hex::decode("0x532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96")
+            .unwrap(),
     )
     .unwrap();
 
     assert_eq!(12345, row.get::<BigDecimal, usize>(1).to_u64().unwrap());
     assert!(row.get::<bool, usize>(2));
-    assert_eq!(Identity::Address(from_buff), Identity::Address(addr_buff));
+    assert_eq!(
+        Identity::Address(from_buff.into()),
+        Identity::Address(addr_buff.into())
+    );
 }
 
 #[actix_web::test]
@@ -219,15 +227,21 @@ async fn test_can_trigger_and_index_logdata_event_postgres() {
             .await
             .unwrap();
 
-    let from_buff = Address::from_str(&row.get::<String, usize>(3)).unwrap();
-    let addr_buff = Address::from_str(
-        "0x532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96",
+    let from_buff =
+        <[u8; 32]>::from_hex(hex::decode(row.get::<&str, usize>(3)).unwrap()).unwrap();
+
+    let addr_buff = <[u8; 32]>::from_hex(
+        hex::decode("0x532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96")
+            .unwrap(),
     )
     .unwrap();
 
     assert_eq!(row.get::<BigDecimal, usize>(1).to_u64().unwrap(), 456);
     assert!(row.get::<bool, usize>(2));
-    assert_eq!(Identity::Address(from_buff), Identity::Address(addr_buff));
+    assert_eq!(
+        Identity::Address(from_buff.into()),
+        Identity::Address(addr_buff.into())
+    );
 }
 
 #[actix_web::test]
