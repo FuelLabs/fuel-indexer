@@ -344,6 +344,17 @@ impl ParsedGraphQLSchema {
                         TypeKind::Object(o) => {
                             let obj_name = t.node.name.to_string();
 
+                            // Only parse `TypeDefinition`s with the `@entity` directive.
+                            let is_entity = t
+                                .node
+                                .directives
+                                .iter()
+                                .any(|d| d.node.name.to_string() == "entity");
+
+                            if !is_entity {
+                                continue;
+                            }
+
                             type_defs.insert(obj_name.clone(), t.node.clone());
                             objects.insert(obj_name.clone(), o.clone());
                             parsed_typedef_names.insert(t.node.name.to_string());
@@ -367,13 +378,14 @@ impl ParsedGraphQLSchema {
                                         .insert(obj_name.clone(), t.node.clone());
                                 }
 
-                                let is_virtual = field
+                                let is_virtual = &t
                                     .node
                                     .directives
                                     .iter()
-                                    .any(|d| d.node.name.to_string() == "virtual");
+                                    .flat_map(|d| d.node.arguments.clone())
+                                    .any(|t| t.0.node == "virtual");
 
-                                if is_virtual {
+                                if *is_virtual {
                                     virtual_type_names.insert(obj_name.clone());
                                 }
 
@@ -829,42 +841,42 @@ enum AccountLabel {
     SECONDARY
 }
 
-type Account {
+type Account @entity {
     id: ID!
     address: Address!
     label: AccountLabel
 }
 
-type User {
+type User @entity {
     id: ID!
     account: Account!
     username: Charfield!
 }
 
-type Loser {
+type Loser @entity {
     id: ID!
     account: Account!
     age: UInt8!
 }
 
-type Metadata {
-    count: UInt8! @virtual
+type Metadata @entity(virtual: true) {
+    count: UInt8!
 }
 
 union Person = User | Loser
 
 
-type Wallet {
+type Wallet @entity {
     id: ID!
     accounts: [Account!]!
 }
 
-type Safe {
+type Safe @entity {
     id: ID!
     account: [Account!]!
 }
 
-type Vault {
+type Vault @entity {
     id: ID!
     label: Charfield!
     user: [User!]!

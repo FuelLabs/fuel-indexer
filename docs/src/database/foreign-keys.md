@@ -18,12 +18,12 @@ Let's learn how to use each foreign key type by looking at some GraphQL schema e
 ### Implicit foreign keys
 
 ```graphql
-type Book {
+type Book @entity {
     id: ID!
     name: Bytes8!
 }
 
-type Library {
+type Library @entity {
     id: ID!
     book: Book!
 }
@@ -36,12 +36,12 @@ Given the above schema, two entities will be created: a `Book` entity, and a `Li
 ### Explicit foreign keys
 
 ```graphql
-type Book {
+type Book @entity {
     id: ID!
     name: Bytes8! @unique
 }
 
-type Library {
+type Library @entity {
     id: ID!
     book: Book! @join(on:name)
 }

@@ -88,24 +88,24 @@ Essentially, it's the same as the basic query example with an added sub-block to
 We'll start with the following example schema:
 
 ```graphql
-type City {
+type City @entity {
     id: ID!
     name: Charfield!
 }
 
-type Library {
+type Library @entity {
     id: ID!
     name: Charfield!
     city: City!
 }
 
-type Book {
+type Book @entity {
     id: ID!
     title: Charfield!
     library: Library!
 }
 
-type Character {
+type Character @entity {
     id: ID!
     name: Charfield!
     book: Book!

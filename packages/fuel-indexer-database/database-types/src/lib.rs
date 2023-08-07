@@ -1267,7 +1267,7 @@ mod tests {
     #[test]
     fn test_can_create_well_formed_table_and_table_components_when_passed_typedef() {
         let schema = r#"
-type Person {
+type Person @entity {
     id: ID!
     name: Charfield! @unique
     age: UInt1!
@@ -1345,7 +1345,7 @@ type Person {
     #[test]
     fn test_can_create_well_formed_column_from_field_defintion() {
         let schema = r#"
-type Person {
+type Person @entity {
     id: ID!
     name: Charfield! @unique
     age: UInt1!
@@ -1397,12 +1397,12 @@ type Person {
     #[test]
     fn test_can_create_well_formed_join_table_from_m2m_relationship() {
         let schema = r#"
-type Account {
+type Account @entity {
     id: ID!
     index: UInt8!
 }
 
-type Wallet {
+type Wallet @entity {
     id: ID!
     account: [Account!]!
 }

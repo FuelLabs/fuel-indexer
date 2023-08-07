@@ -1,10 +1,10 @@
-type Thing1 {
-    id: ID!
-    account: Address!
+type Thing1 @entity {
+  id: ID!
+  account: Address!
 }
 
-type Thing2 {
-    id: ID!
-    account: Address! @indexed
-    hash: Bytes32! @indexed
+type Thing2 @entity {
+  id: ID!
+  account: Address! @indexed
+  hash: Bytes32! @indexed
 }
