@@ -41,7 +41,6 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
         debug,
         locked,
         manifest,
-        target_dir,
         verbose,
         ..
     } = command;
@@ -54,9 +53,14 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
     // Must be in the directory of the index being built
     let cargo_manifest_path = root_dir.join(defaults::CARGO_MANIFEST_FILE_NAME);
     if !cargo_manifest_path.exists() {
-        let manifest_path = cargo_manifest_path.into_os_string();
+        let cargo_manifest_dir = {
+            let mut path = cargo_manifest_path.clone();
+            path.pop();
+            path
+        };
         anyhow::bail!(
-            "❌ `forc index build` must be run from inside the directory of the index being built. Cargo manifest file expected at '{manifest_path:?}'",
+            "could not find `Cargo.toml` in `{}`",
+            cargo_manifest_dir.display()
         );
     }
 
@@ -166,7 +170,10 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
         let binary = format!("{}.wasm", config.package.name);
         let profile = if release { "release" } else { "debug" };
 
-        let target_dir = target_dir.unwrap_or(".".into()).join("target");
+        let target_dir: std::path::PathBuf =
+            crate::ops::utils::cargo_target_dir(path.unwrap_or(".".into()).as_path())
+                .unwrap();
+
         let abs_artifact_path = target_dir
             .join(defaults::WASM_TARGET)
             .join(profile)
