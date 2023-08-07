@@ -63,7 +63,6 @@ repository = "https://github.com/FuelLabs/fuel-indexer"
 rust-version = "1.69.0"
 version = "0.19.2"
 
-
 [workspace.dependencies]
 async-graphql-parser = "5.0"
 async-graphql-value = "5.0"
