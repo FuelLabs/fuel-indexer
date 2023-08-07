@@ -200,7 +200,7 @@
 }
 </code></pre>
 <p>The corresponding GraphQL schema to mirror this <code>Event</code> struct would resemble:</p>
-<pre><code class="language-graphql">type Event {
+<pre><code class="language-graphql">type Event @entity {
     id: ID!
     account: Address!
     block_height: UInt8!

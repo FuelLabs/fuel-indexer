@@ -456,22 +456,22 @@ impl Greet for Contract {
 }</code></pre>
 <p>We can define our schema like this in the schema file:</p>
 <pre><code class="language-graphql"># Calling this `Greeter` so as to not clash with `Person` in the contract
-type Greeter {
-    id: ID!
-    name: Charfield!
-    first_seen: UInt8!
-    last_seen: UInt8!
-    visits: Blob!
+type Greeter @entity {
+  id: ID!
+  name: Charfield!
+  first_seen: UInt8!
+  last_seen: UInt8!
+  visits: Blob!
 }
 
 # Calling this `Salutation` so as to not clash with `Greeting` in the contract
-type Salutation {
-    id: ID!
-    message_hash: Bytes32!
-    message: Charfield!
-    greeter: Greeter!
-    first_seen: UInt8!
-    last_seen: UInt8!
+type Salutation @entity {
+  id: ID!
+  message_hash: Bytes32!
+  message: Charfield!
+  greeter: Greeter!
+  first_seen: UInt8!
+  last_seen: UInt8!
 }
 </code></pre>
 <p>Now that our schema is defined, here is how we can implement the WASM module in our <code>lib.rs</code> file:</p>
@@ -704,7 +704,7 @@ OPTIONS:
 # accept_sql_queries: true
 
 # # Amount of blocks to return in a request to a Fuel node.
-# block_page_size: 10
+# block_page_size: 20
 
 # # ***********************
 # # Fuel Node configuration
@@ -890,12 +890,12 @@ report_metrics: true
 <div style="break-before: page; page-break-before: always;"></div><h1 id="graphql-schema"><a class="header" href="#graphql-schema">GraphQL Schema</a></h1>
 <p>The GraphQL schema is a required component of the Fuel indexer. When data is indexed into the database, the actual values that are persisted to the database will be values created using the data structures defined in the schema.</p>
 <p>In its most basic form, a Fuel indexer GraphQL schema should have a <code>schema</code> definition that contains a defined query root. The rest of the implementation is up to you. Here's an example of a well-formed schema:</p>
-<pre><code class="language-graphql">type FirstThing {
+<pre><code class="language-graphql">type FirstThing @entity {
     id: ID!
     value: UInt8!
 }
 
-type SecondThing {
+type SecondThing @entity {
     id: ID!
     optional_value: UInt8
     timestamp: Timestamp!
@@ -1277,7 +1277,7 @@ pub struct TransferOut {
 }
 </code></pre>
 <p>The corresponding GraphQL schema to mirror this <code>Event</code> struct would resemble:</p>
-<pre><code class="language-graphql">type Event {
+<pre><code class="language-graphql">type Event @entity {
     id: ID!
     account: Address!
     block_height: UInt8!
@@ -1339,12 +1339,12 @@ Access method: heap
 </ul>
 <h2 id="indexed"><a class="header" href="#indexed"><code>@indexed</code></a></h2>
 <p>The <code>@indexed</code> directive adds a <a href="https://www.postgresql.org/docs/current/indexes-intro.html">database index</a> to the underlying column for the indicated field of that type. Generally, a database index is a data structure that allows you to quickly locate data without having to search each row in a database table.</p>
-<pre><code class="language-graphql">type Book {
+<pre><code class="language-graphql">type Book @entity {
     id: ID!
     name: Bytes8! @indexed
 }
 
-type Library {
+type Library @entity {
     id: ID!
     book: Book!
 }
@@ -1355,12 +1355,12 @@ type Library {
 </blockquote>
 <h2 id="unique"><a class="header" href="#unique"><code>@unique</code></a></h2>
 <p>The <code>@unique</code> directive adds a <code>UNIQUE</code> database constraint to the underlying database column for the indicated field of that type. A constraint specifies a rule for the data in a table and can be used to limit the type of data that can be placed in the table. In the case of a column with a <code>UNIQUE</code> constraint, all values in the column must be different.</p>
-<pre><code class="language-graphql">type Book {
+<pre><code class="language-graphql">type Book @entity {
     id: ID!
     name: Bytes8! @unique
 }
 
-type Library {
+type Library @entity {
     id: ID!
     book: Book!
 }
@@ -1371,12 +1371,12 @@ type Library {
 </blockquote>
 <h2 id="join"><a class="header" href="#join"><code>@join</code></a></h2>
 <p>The <code>@join</code> directive is used to relate a field in one type to others by referencing fields in another type. You can think of it as a link between two tables in your database. The field in the referenced type is called a <em>foreign key</em> and it is <strong>required</strong> to be unique.</p>
-<pre><code class="language-graphql">type Book {
+<pre><code class="language-graphql">type Book @entity {
     id: ID!
     name: Charfield! @unique
 }
 
-type Library {
+type Library @entity {
     id: ID!
     book: Book! @join(on:name)
 }
@@ -1384,11 +1384,11 @@ type Library {
 <p>A foreign key constraint will be created on <code>library.book</code> that references <code>book.name</code>, which relates the <code>Book</code>s in a <code>Library</code> to the underlying <code>Book</code> table.</p>
 <h2 id="virtual"><a class="header" href="#virtual"><code>@virtual</code></a></h2>
 <p>The <code>@virtual</code> directive instructs the indexer's SQL schema builder to <em>not</em> build SQL tables from types that include this directive on any field.</p>
-<pre><code class="language-graphql">type Title {
+<pre><code class="language-graphql">type Title @entity {
     name: CharField! @virtual
 }
 
-type Book {
+type Book @entity {
     id: ID!
     title: Title!
 }
@@ -1564,24 +1564,24 @@ OPTIONS:
 <p>Important: There is no limit to how deeply nested your entities and queries can be. However, every nested reference <em><strong>will</strong></em> add computation and latency to your query as the information will have to be retrieved from different tables in your storage backend. Please exercise caution in your entity design and try to minimize nesting as much as possible.</p>
 </blockquote>
 <p>We'll start with the following example schema:</p>
-<pre><code class="language-graphql">type City {
+<pre><code class="language-graphql">type City @entity {
     id: ID!
     name: Charfield!
 }
 
-type Library {
+type Library @entity {
     id: ID!
     name: Charfield!
     city: City!
 }
 
-type Book {
+type Book @entity {
     id: ID!
     title: Charfield!
     library: Library!
 }
 
-type Character {
+type Character @entity {
     id: ID!
     name: Charfield!
     book: Book!
@@ -2100,12 +2100,12 @@ type Character {
 <p>Let's learn how to use each foreign key type by looking at some GraphQL schema examples.</p>
 <h2 id="usage-3"><a class="header" href="#usage-3">Usage</a></h2>
 <h3 id="implicit-foreign-keys"><a class="header" href="#implicit-foreign-keys">Implicit foreign keys</a></h3>
-<pre><code class="language-graphql">type Book {
+<pre><code class="language-graphql">type Book @entity {
     id: ID!
     name: Bytes8!
 }
 
-type Library {
+type Library @entity {
     id: ID!
     book: Book!
 }
@@ -2113,12 +2113,12 @@ type Library {
 <h4 id="implicit-foreign-key-breakdown"><a class="header" href="#implicit-foreign-key-breakdown">Implicit foreign key breakdown</a></h4>
 <p>Given the above schema, two entities will be created: a <code>Book</code> entity, and a <code>Library</code> entity. As you can see, we add the <code>Book</code> entity as an attribute on the <code>Library</code> entity, thus conveying that we want a one-to-many or one-to-one relationship between <code>Library</code> and <code>Book</code>. This means that for a given <code>Library</code>, we may also fetch one or many <code>Book</code> entities. It also means that the column <code>library.book</code> will be an integer type that references <code>book.id</code>.</p>
 <h3 id="explicit-foreign-keys"><a class="header" href="#explicit-foreign-keys">Explicit foreign keys</a></h3>
-<pre><code class="language-graphql">type Book {
+<pre><code class="language-graphql">type Book @entity {
     id: ID!
     name: Bytes8! @unique
 }
 
-type Library {
+type Library @entity {
     id: ID!
     book: Book! @join(on:name)
 }
@@ -2225,7 +2225,6 @@ OPTIONS:
     -m, --manifest &lt;MANIFEST&gt;        Manifest file name of indexer being built.
         --native                     Building for native execution.
     -p, --path &lt;PATH&gt;                Path to the indexer project.
-        --target-dir &lt;TARGET_DIR&gt;    Directory for all generated artifacts and intermediate files.
     -v, --verbose                    Enable verbose output.
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="forc-index-start"><a class="header" href="#forc-index-start"><code>forc index start</code></a></h1>
@@ -2362,7 +2361,6 @@ OPTIONS:
         --native                     Building for native execution.
     -p, --path &lt;PATH&gt;                Path to the indexer project.
         --skip-build                 Do not build before deploying.
-        --target-dir &lt;TARGET_DIR&gt;    Directory for all generated artifacts and intermediate files.
         --url &lt;URL&gt;                  URL at which to deploy indexer assets. [default:
                                      http://127.0.0.1:29987]
     -v, --verbose                    Enable verbose logging.

@@ -241,24 +241,24 @@
 <p>Important: There is no limit to how deeply nested your entities and queries can be. However, every nested reference <em><strong>will</strong></em> add computation and latency to your query as the information will have to be retrieved from different tables in your storage backend. Please exercise caution in your entity design and try to minimize nesting as much as possible.</p>
 </blockquote>
 <p>We'll start with the following example schema:</p>
-<pre><code class="language-graphql">type City {
+<pre><code class="language-graphql">type City @entity {
     id: ID!
     name: Charfield!
 }
 
-type Library {
+type Library @entity {
     id: ID!
     name: Charfield!
     city: City!
 }
 
-type Book {
+type Book @entity {
     id: ID!
     title: Charfield!
     library: Library!
 }
 
-type Character {
+type Character @entity {
     id: ID!
     name: Charfield!
     book: Book!

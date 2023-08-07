@@ -196,22 +196,22 @@ impl Greet for Contract {
 }</code></pre>
 <p>We can define our schema like this in the schema file:</p>
 <pre><code class="language-graphql"># Calling this `Greeter` so as to not clash with `Person` in the contract
-type Greeter {
-    id: ID!
-    name: Charfield!
-    first_seen: UInt8!
-    last_seen: UInt8!
-    visits: Blob!
+type Greeter @entity {
+  id: ID!
+  name: Charfield!
+  first_seen: UInt8!
+  last_seen: UInt8!
+  visits: Blob!
 }
 
 # Calling this `Salutation` so as to not clash with `Greeting` in the contract
-type Salutation {
-    id: ID!
-    message_hash: Bytes32!
-    message: Charfield!
-    greeter: Greeter!
-    first_seen: UInt8!
-    last_seen: UInt8!
+type Salutation @entity {
+  id: ID!
+  message_hash: Bytes32!
+  message: Charfield!
+  greeter: Greeter!
+  first_seen: UInt8!
+  last_seen: UInt8!
 }
 </code></pre>
 <p>Now that our schema is defined, here is how we can implement the WASM module in our <code>lib.rs</code> file:</p>

@@ -182,12 +182,12 @@
 </ul>
 <h2 id="indexed"><a class="header" href="#indexed"><code>@indexed</code></a></h2>
 <p>The <code>@indexed</code> directive adds a <a href="https://www.postgresql.org/docs/current/indexes-intro.html">database index</a> to the underlying column for the indicated field of that type. Generally, a database index is a data structure that allows you to quickly locate data without having to search each row in a database table.</p>
-<pre><code class="language-graphql">type Book {
+<pre><code class="language-graphql">type Book @entity {
     id: ID!
     name: Bytes8! @indexed
 }
 
-type Library {
+type Library @entity {
     id: ID!
     book: Book!
 }
@@ -198,12 +198,12 @@ type Library {
 </blockquote>
 <h2 id="unique"><a class="header" href="#unique"><code>@unique</code></a></h2>
 <p>The <code>@unique</code> directive adds a <code>UNIQUE</code> database constraint to the underlying database column for the indicated field of that type. A constraint specifies a rule for the data in a table and can be used to limit the type of data that can be placed in the table. In the case of a column with a <code>UNIQUE</code> constraint, all values in the column must be different.</p>
-<pre><code class="language-graphql">type Book {
+<pre><code class="language-graphql">type Book @entity {
     id: ID!
     name: Bytes8! @unique
 }
 
-type Library {
+type Library @entity {
     id: ID!
     book: Book!
 }
@@ -214,12 +214,12 @@ type Library {
 </blockquote>
 <h2 id="join"><a class="header" href="#join"><code>@join</code></a></h2>
 <p>The <code>@join</code> directive is used to relate a field in one type to others by referencing fields in another type. You can think of it as a link between two tables in your database. The field in the referenced type is called a <em>foreign key</em> and it is <strong>required</strong> to be unique.</p>
-<pre><code class="language-graphql">type Book {
+<pre><code class="language-graphql">type Book @entity {
     id: ID!
     name: Charfield! @unique
 }
 
-type Library {
+type Library @entity {
     id: ID!
     book: Book! @join(on:name)
 }
@@ -227,11 +227,11 @@ type Library {
 <p>A foreign key constraint will be created on <code>library.book</code> that references <code>book.name</code>, which relates the <code>Book</code>s in a <code>Library</code> to the underlying <code>Book</code> table.</p>
 <h2 id="virtual"><a class="header" href="#virtual"><code>@virtual</code></a></h2>
 <p>The <code>@virtual</code> directive instructs the indexer's SQL schema builder to <em>not</em> build SQL tables from types that include this directive on any field.</p>
-<pre><code class="language-graphql">type Title {
+<pre><code class="language-graphql">type Title @entity {
     name: CharField! @virtual
 }
 
-type Book {
+type Book @entity {
     id: ID!
     title: Title!
 }
