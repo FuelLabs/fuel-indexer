@@ -170,8 +170,16 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
         let binary = format!("{}.wasm", config.package.name);
         let profile = if release { "release" } else { "debug" };
 
+        let path = path.unwrap_or(".".into());
+
+        // Rebuild the WASM module even if only the schema has changed.
+        crate::ops::utils::ensure_rebuild_if_schema_changed(
+            path.as_path(),
+            Path::new(manifest.graphql_schema()),
+        )?;
+
         let target_dir: std::path::PathBuf =
-            crate::ops::utils::cargo_target_dir(path.unwrap_or(".".into()).as_path())
+            crate::ops::utils::cargo_target_dir(path.as_path())
                 .unwrap();
 
         let abs_artifact_path = target_dir

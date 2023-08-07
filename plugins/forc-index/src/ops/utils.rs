@@ -4,12 +4,12 @@ use std::path::Path;
 /// Given a path to a directory in which `Cargo.toml` is located, find the
 /// `target` directory using `cargo metadata`.
 pub fn cargo_target_dir(
-    cargo_manifest_path: &Path,
+    cargo_manifest_dir: &Path,
 ) -> anyhow::Result<std::path::PathBuf> {
     let output = std::process::Command::new("cargo")
         .arg("metadata")
         .arg("--manifest-path")
-        .arg(cargo_manifest_path.join("Cargo.toml").as_path())
+        .arg(cargo_manifest_dir.join("Cargo.toml").as_path())
         .output()
         .expect("Failed to execute command");
 
