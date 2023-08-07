@@ -1,5 +1,4 @@
 use std::path::Path;
-use tracing::info;
 
 /// Given a path to a directory in which `Cargo.toml` is located, extract Cargo
 /// metadata.
