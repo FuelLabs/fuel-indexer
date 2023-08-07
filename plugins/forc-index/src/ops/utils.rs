@@ -3,9 +3,7 @@ use std::path::Path;
 
 /// Given a path to a directory in which `Cargo.toml` is located, find the
 /// `target` directory using `cargo metadata`.
-pub fn cargo_target_dir(
-    cargo_manifest_dir: &Path,
-) -> anyhow::Result<std::path::PathBuf> {
+pub fn cargo_target_dir(cargo_manifest_dir: &Path) -> anyhow::Result<std::path::PathBuf> {
     let output = std::process::Command::new("cargo")
         .arg("metadata")
         .arg("--manifest-path")
@@ -39,7 +37,10 @@ pub fn touch_file(path: &Path) -> std::io::Result<()> {
 
 /// Set src/lib.rs' atime and mtime to now and thus ensure the WASM module is
 /// rebuilt if schema file has changed.
-pub fn ensure_rebuild_if_schema_changed(project_dir: &Path, schema: &Path) -> std::io::Result<()> {
+pub fn ensure_rebuild_if_schema_changed(
+    project_dir: &Path,
+    schema: &Path,
+) -> std::io::Result<()> {
     let schema_mtime = {
         let metadata = std::fs::metadata(schema).unwrap();
         filetime::FileTime::from_last_modification_time(&metadata)
