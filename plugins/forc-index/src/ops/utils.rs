@@ -1,9 +1,9 @@
-use serde_yaml::Value;
 use std::path::Path;
+use tracing::info;
 
-/// Given a path to a directory in which `Cargo.toml` is located, find the
-/// `target` directory using `cargo metadata`.
-pub fn cargo_target_dir(cargo_manifest_dir: &Path) -> anyhow::Result<std::path::PathBuf> {
+/// Given a path to a directory in which `Cargo.toml` is located, extract Cargo
+/// metadata.
+pub fn cargo_metadata(cargo_manifest_dir: &Path) -> anyhow::Result<serde_json::Value> {
     let output = std::process::Command::new("cargo")
         .arg("metadata")
         .arg("--manifest-path")
@@ -17,11 +17,31 @@ pub fn cargo_target_dir(cargo_manifest_dir: &Path) -> anyhow::Result<std::path::
 
     let output_str = String::from_utf8_lossy(&output.stdout);
 
-    let metadata_json: Value =
-        serde_json::from_str(&output_str).expect("Failed to parse JSON");
+    Ok(serde_json::from_str(&output_str).expect("Failed to parse JSON"))
+}
+
+/// Given a path to a directory in which `Cargo.toml` is located, find the
+/// `target` directory using `cargo metadata`.
+pub fn cargo_target_dir(cargo_manifest_dir: &Path) -> anyhow::Result<std::path::PathBuf> {
+    let metadata_json = cargo_metadata(cargo_manifest_dir)?;
 
     // Use serde to extract the "target_directory" field
     let target_directory = metadata_json["target_directory"]
+        .as_str()
+        .expect("target_directory not found or invalid");
+
+    Ok(target_directory.into())
+}
+
+/// Given a path to a directory in which `Cargo.toml` is located, find the
+/// `workspace_root` directory using `cargo metadata`.
+pub fn cargo_workspace_root_dir(
+    cargo_manifest_dir: &Path,
+) -> anyhow::Result<std::path::PathBuf> {
+    let metadata_json = cargo_metadata(cargo_manifest_dir)?;
+
+    // Use serde to extract the "target_directory" field
+    let target_directory = metadata_json["workspace_root"]
         .as_str()
         .expect("target_directory not found or invalid");
 
