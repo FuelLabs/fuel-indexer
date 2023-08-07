@@ -72,6 +72,12 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
     let indexer_manifest_path = root_dir.join(manifest);
     let mut manifest = Manifest::from_file(&indexer_manifest_path)?;
 
+    // Rebuild the WASM module even if only the schema has changed.
+    crate::ops::utils::ensure_rebuild_if_schema_changed(
+        root_dir.as_path(),
+        Path::new(manifest.graphql_schema()),
+    )?;
+
     // Construct our build command
     //
     // https://doc.rust-lang.org/cargo/commands/cargo-build.html
@@ -172,15 +178,8 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
 
         let path = path.unwrap_or(".".into());
 
-        // Rebuild the WASM module even if only the schema has changed.
-        crate::ops::utils::ensure_rebuild_if_schema_changed(
-            path.as_path(),
-            Path::new(manifest.graphql_schema()),
-        )?;
-
         let target_dir: std::path::PathBuf =
-            crate::ops::utils::cargo_target_dir(path.as_path())
-                .unwrap();
+            crate::ops::utils::cargo_target_dir(path.as_path()).unwrap();
 
         let abs_artifact_path = target_dir
             .join(defaults::WASM_TARGET)
