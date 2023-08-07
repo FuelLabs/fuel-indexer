@@ -285,7 +285,7 @@ pub async fn retrieve_blocks_from_node(
             }
         }
 
-        let producer: Option<Bytes32> = block.block_producer().map(|pk| pk.hash().into());
+        let producer: Option<Bytes32> = block.block_producer().map(|pk| pk.hash());
 
         let mut transactions = Vec::new();
 

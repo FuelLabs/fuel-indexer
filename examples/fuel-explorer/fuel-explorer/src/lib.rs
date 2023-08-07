@@ -714,6 +714,7 @@ impl From<fuel::Receipt> for Receipt {
 
                 Self::from(receipt)
             }
+            fuel::Receipt::Mint { .. } | fuel::Receipt::Burn { .. } => todo!(),
         }
     }
 }
