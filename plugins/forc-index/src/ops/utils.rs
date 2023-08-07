@@ -1,6 +1,8 @@
 use serde_yaml::Value;
 use std::path::Path;
 
+/// Given a path to a directory in which `Cargo.toml` is located, find the
+/// `target` directory using `cargo metadata`.
 pub fn cargo_target_dir(
     cargo_manifest_path: &Path,
 ) -> anyhow::Result<std::path::PathBuf> {
@@ -35,8 +37,9 @@ pub fn touch_file(path: &Path) -> std::io::Result<()> {
     Ok(())
 }
 
-/// Set src/lib.rs' atime and mtime to now.
-pub fn touch_lib_rs(project_dir: &Path, schema: &Path) -> std::io::Result<()> {
+/// Set src/lib.rs' atime and mtime to now and thus ensure the WASM module is
+/// rebuilt if schema file has changed.
+pub fn ensure_rebuild_if_schema_changed(project_dir: &Path, schema: &Path) -> std::io::Result<()> {
     let schema_mtime = {
         let metadata = std::fs::metadata(schema).unwrap();
         filetime::FileTime::from_last_modification_time(&metadata)
