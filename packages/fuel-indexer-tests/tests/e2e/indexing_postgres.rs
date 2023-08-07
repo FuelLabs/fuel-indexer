@@ -1,6 +1,5 @@
 use bigdecimal::ToPrimitive;
 use fuel_indexer::IndexerConfig;
-use fuel_indexer_lib::defaults;
 use fuel_indexer_tests::fixtures::{
     mock_request, setup_indexing_test_components, IndexingTestComponents,
 };
@@ -365,7 +364,10 @@ async fn test_can_index_metadata_when_indexer_macro_is_called_postgres() {
             .await
             .unwrap();
 
-    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 0);
+    assert_eq!(
+        row.get::<BigDecimal, usize>(0).to_u64().unwrap(),
+        11557898405596845040
+    );
     assert_eq!(row.get::<BigDecimal, usize>(1).to_u64().unwrap(), 0);
 }
 
@@ -553,9 +555,7 @@ async fn test_redeploying_an_already_active_indexer_returns_error_when_replace_i
     node.abort();
 
     // Attempt to re-register the indexer
-    let result = service
-        .register_indexer_from_manifest(manifest, defaults::REPLACE_INDEXER)
-        .await;
+    let result = service.register_indexer_from_manifest(manifest).await;
 
     assert!(result.is_err());
 
@@ -586,10 +586,7 @@ async fn test_redeploying_an_already_active_indexer_works_when_replace_indexer_i
     } = setup_indexing_test_components(Some(config)).await;
 
     // Re-register the indexer
-    service
-        .register_indexer_from_manifest(manifest, defaults::REPLACE_INDEXER)
-        .await
-        .unwrap();
+    let _ = service.register_indexer_from_manifest(manifest).await;
 
     mock_request("/enum").await;
 

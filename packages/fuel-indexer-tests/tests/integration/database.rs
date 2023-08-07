@@ -16,7 +16,7 @@ const SIMPLE_WASM_GRAPHQL_SCHEMA: &str =
     include_str!("./../../components/indices/simple-wasm/schema/simple_wasm.graphql");
 const SIMPLE_WASM_WASM: &[u8] =
     include_bytes!("./../../components/indices/simple-wasm/simple_wasm.wasm");
-const TEST_COLUMNS: [(&str, i32, &str); 11] = [
+const TEST_COLUMNS: [(&str, i32, &str); 12] = [
     ("thing2", 0, "id"),
     ("thing2", 1, "account"),
     ("thing2", 2, "hash"),
@@ -24,7 +24,8 @@ const TEST_COLUMNS: [(&str, i32, &str); 11] = [
     ("indexmetadataentity", 0, "id"),
     ("indexmetadataentity", 1, "time"),
     ("indexmetadataentity", 2, "block_height"),
-    ("indexmetadataentity", 3, "object"),
+    ("indexmetadataentity", 3, "block_id"),
+    ("indexmetadataentity", 4, "object"),
     ("thing1", 0, "id"),
     ("thing1", 1, "account"),
     ("thing1", 2, "object"),

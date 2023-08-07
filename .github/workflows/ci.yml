@@ -353,7 +353,7 @@ jobs:
             type=ref,event=tag
             type=semver,pattern={{raw}}
           flavor: |
-            latest=${{ github.ref == 'refs/heads/master' }}
+            latest=${{ env.IS_MASTER || env.IS_RELEASE }}
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
       - name: Log in to the ghcr.io registry
@@ -620,7 +620,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
-      - uses: actions/checkout@v3
       - name: Install toolchain
         uses: dtolnay/rust-toolchain@stable
         with:

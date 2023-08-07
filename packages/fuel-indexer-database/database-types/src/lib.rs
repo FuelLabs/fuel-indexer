@@ -536,6 +536,8 @@ impl TypeId {
 }
 
 /// `ColumnInfo` is a derived version of `Column` that is only for `queries::columns_get_schema`.
+///
+/// It includes various pieces of metadata that aren't found on a single data model.
 #[derive(Debug)]
 pub struct ColumnInfo {
     pub type_id: i64,
@@ -951,16 +953,23 @@ impl Table {
                     })
                     .collect::<Vec<Column>>();
 
-                let constraints = o
-                    .fields
+                let mut constraints = Vec::new();
+
+                o.fields
                     .iter()
-                    .filter_map(|f| {
+                    .for_each(|f| {
 
                         // Can't create constraints on array fields. We should have already validated the 
                         // GraphQL schema to ensure this isn't possible, but this check doesn't hurt.
                         if is_list_type(&f.node) {
-                            return None;
+                            return;
                         }
+
+                        let has_index = f
+                            .node
+                            .directives
+                            .iter()
+                            .any(|d| d.node.name.to_string() == "indexed" || d.node.name.to_string() == "unique");
 
                         let has_unique = f
                             .node
@@ -968,16 +977,17 @@ impl Table {
                             .iter()
                             .any(|d| d.node.name.to_string() == "unique");
 
-                        if has_unique {
-                            return Some(Constraint::Index(SqlIndex {
+                        if has_index {
+                            constraints.push(Constraint::Index(SqlIndex {
                                 db_type: DbType::Postgres,
                                 table_name: typ.name.to_string().to_lowercase(),
                                 namespace: parsed.fully_qualified_namespace(),
-                                unique: true,
+                                unique: has_unique,
                                 column_name: f.node.name.to_string(),
                                 ..SqlIndex::default()
                             }));
                         }
+
 
                         let field_typ = f.node.ty.node.to_string().replace(['[', ']', '!'], "");
                         if parsed.is_possible_foreign_key(&field_typ) {
@@ -987,7 +997,7 @@ impl Table {
                                     parsed.field_type_mappings(),
                                 );
 
-                            return Some(Constraint::Fk(ForeignKey {
+                            constraints.push(Constraint::Fk(ForeignKey {
                                 db_type: DbType::Postgres,
                                 namespace: parsed.fully_qualified_namespace(),
                                 table_name: typ.name.to_string().to_lowercase(),
@@ -998,10 +1008,7 @@ impl Table {
                                 ..ForeignKey::default()
                             }));
                         }
-
-                        None
-                    })
-                    .collect::<Vec<Constraint>>();
+                });
 
                 // `Object` columns contain the `FtColumn` bytes for each
                 // column in the object. This column shouldn't really be public
@@ -1177,6 +1184,31 @@ impl Table {
                     format!("{}_{}", item.parent_table_name(), item.parent_column_name()),
                     format!("{}_{}", item.child_table_name(), item.child_column_name()),
                 ],
+            }),
+            // Support quick lookups on either side of the join.
+            Constraint::Index(SqlIndex {
+                db_type: DbType::Postgres,
+                table_name: item.table_name(),
+                namespace: parsed.fully_qualified_namespace(),
+                unique: false,
+                column_name: format!(
+                    "{}_{}",
+                    item.parent_table_name(),
+                    item.parent_column_name()
+                ),
+                ..SqlIndex::default()
+            }),
+            Constraint::Index(SqlIndex {
+                db_type: DbType::Postgres,
+                table_name: item.table_name(),
+                namespace: parsed.fully_qualified_namespace(),
+                unique: false,
+                column_name: format!(
+                    "{}_{}",
+                    item.child_table_name(),
+                    item.child_column_name()
+                ),
+                ..SqlIndex::default()
             }),
         ];
 

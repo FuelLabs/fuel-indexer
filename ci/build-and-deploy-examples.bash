@@ -59,6 +59,8 @@ sleep 2
 
 # TODO: https://github.com/FuelLabs/fuel-indexer/issues/1069
 
+cargo build -p hello_indexer_native --locked --release
+
 # ********************************
 # examples/fuel-explorer
 # ********************************
