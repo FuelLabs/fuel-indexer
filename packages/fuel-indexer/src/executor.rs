@@ -869,7 +869,7 @@ impl Executor for WasmIndexExecutor {
                 let ptr = arg.get_ptr();
                 let len = arg.get_len();
 
-                fun.call(&mut arg.store, ptr, len)
+                fun.call(&mut arg.store(), ptr, len)
             }
         })
         .await?;

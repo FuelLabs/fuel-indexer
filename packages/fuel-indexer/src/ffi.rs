@@ -17,6 +17,10 @@ use wasmer_middlewares::metering::{
 use crate::{IndexEnv, IndexerResult};
 pub const MODULE_ENTRYPOINT: &str = "handle_events";
 
+
+type FFIResult<T> = Result<T, FFIError>;
+
+/// Error type returned by FFI operations.
 #[derive(Debug, Error)]
 pub enum FFIError {
     #[error("Invalid memory access")]
@@ -29,10 +33,11 @@ pub enum FFIError {
     None(String),
 }
 
+/// Get the version of the indexer schema stored in the WASM instance.
 pub fn get_version(
     store: &mut StoreMut,
     instance: &Instance,
-) -> Result<String, FFIError> {
+) -> FFIResult<String> {
     let exports = &instance.exports;
 
     let ptr = exports.get_function("get_version_ptr")?.call(store, &[])?[0]
@@ -49,20 +54,22 @@ pub fn get_version(
     Ok(version)
 }
 
-fn get_string(mem: &MemoryView, ptr: u32, len: u32) -> Result<String, FFIError> {
+/// Fetch the string at the given pointer from memory.
+fn get_string(mem: &MemoryView, ptr: u32, len: u32) -> FFIResult<String> {
     let result = WasmPtr::<u8>::new(ptr)
         .read_utf8_string(mem, len)
         .or(Err(FFIError::MemoryBound))?;
     Ok(result)
 }
 
-fn get_object_id(mem: &MemoryView, ptr: u32) -> u64 {
-    WasmPtr::<u64>::new(ptr)
-        .deref(mem)
-        .read()
-        .expect("Could not read object ID")
+/// Fetch the object ID at the given pointer from memory.
+fn get_object_id(mem: &MemoryView, ptr: u32) -> FFIResult<String> {
+    WasmPtr::<u8>::new(ptr)
+        .read_utf8_string(mem, ptr + 32)
+        .or(Err(FFIError::MemoryBound))
 }
 
+/// Log the string at the given pointer to stdout.
 fn log_data(mut env: FunctionEnvMut<IndexEnv>, ptr: u32, len: u32, log_level: u32) {
     let (idx_env, store) = env.data_and_store_mut();
     let mem = idx_env
@@ -84,6 +91,9 @@ fn log_data(mut env: FunctionEnvMut<IndexEnv>, ptr: u32, len: u32, log_level: u3
     }
 }
 
+/// Fetch the given type at the given pointer from memory.
+///
+/// This function is fallible, and will panic if the type cannot be fetched.
 fn get_object(
     mut env: FunctionEnvMut<IndexEnv>,
     type_id: i64,
@@ -92,14 +102,13 @@ fn get_object(
 ) -> u32 {
     let (idx_env, mut store) = env.data_and_store_mut();
 
-    let id = {
-        let mem = idx_env
-            .memory
-            .as_mut()
-            .expect("Memory unitialized.")
-            .view(&store);
-        get_object_id(&mem, ptr)
-    };
+    let mem = idx_env
+        .memory
+        .as_mut()
+        .expect("Memory unitialized.")
+        .view(&store);
+
+    let id = get_object_id(&mem, ptr).unwrap();
 
     let rt = tokio::runtime::Handle::current();
     let bytes =
@@ -132,6 +141,9 @@ fn get_object(
     }
 }
 
+/// Put the given type at the given pointer into memory.
+///
+/// This function is fallible, and will panic if the type cannot be saved.
 fn put_object(mut env: FunctionEnvMut<IndexEnv>, type_id: i64, ptr: u32, len: u32) {
     let (idx_env, store) = env.data_and_store_mut();
     let mem = idx_env
@@ -169,6 +181,9 @@ fn put_object(mut env: FunctionEnvMut<IndexEnv>, type_id: i64, ptr: u32, len: u3
     });
 }
 
+/// Execute the arbitrary query at the given pointer.
+///
+/// This function is fallible, and will panic if the query cannot be executed.
 fn put_many_to_many_record(mut env: FunctionEnvMut<IndexEnv>, ptr: u32, len: u32) {
     let (idx_env, store) = env.data_and_store_mut();
     let mem = idx_env
@@ -198,6 +213,7 @@ fn put_many_to_many_record(mut env: FunctionEnvMut<IndexEnv>, ptr: u32, len: u32
     });
 }
 
+/// Get the exports for the given store and environment.
 pub fn get_exports(store: &mut Store, env: &wasmer::FunctionEnv<IndexEnv>) -> Exports {
     let mut exports = Exports::new();
 
@@ -221,14 +237,26 @@ pub fn get_exports(store: &mut Store, env: &wasmer::FunctionEnv<IndexEnv>) -> Ex
 /// Holds on to a byte blob that has been copied into WASM memory until
 /// it's not needed anymore, then tells WASM to deallocate.
 pub(crate) struct WasmArg<'a> {
-    pub store: MutexGuard<'a, Store>,
+
+    /// WASM store.
+    store: MutexGuard<'a, Store>,
+
+    /// The WASM instance.
     instance: Instance,
+
+    /// Pointer to the start of the byte blob in WASM memory.
     ptr: u32,
+
+    /// Length of the byte blob.
     len: u32,
+
+    /// Whether metering is enabled.
     metering_enabled: bool,
 }
 
 impl<'a> WasmArg<'a> {
+
+    /// Create a new `WasmArg` from the given bytes.
     #[allow(clippy::result_large_err)]
     pub fn new(
         mut store: MutexGuard<'a, Store>,
@@ -258,22 +286,30 @@ impl<'a> WasmArg<'a> {
         })
     }
 
+    pub fn store(&mut self) -> &mut Store {
+        &mut self.store
+    }
+
+    /// Get the pointer to the start of the byte blob in WASM memory.
     pub fn get_ptr(&self) -> u32 {
         self.ptr
     }
 
+    /// Get the length of the byte blob.
     pub fn get_len(&self) -> u32 {
         self.len
     }
 }
 
 impl<'a> Drop for WasmArg<'a> {
+    /// Drop the byte blob from WASM memory.
     fn drop(&mut self) {
         let dealloc_fn = self
             .instance
             .exports
             .get_typed_function::<(u32, u32), ()>(&self.store, "dealloc_fn")
             .expect("No dealloc fn");
+
         // Need to track whether metering is enabled or otherwise getting or setting points will panic
         if self.metering_enabled {
             let pts = match get_remaining_points(&mut self.store, &self.instance) {
