@@ -260,8 +260,8 @@ fn process_fn_items(
                 .iter()
                 .map(|id| {
                     quote! {
-                        Bech32ContractId::from_str(#id)
-                            .expect("Failed to parse manifest 'contract_id' as Bech32ContractId")
+                        let id_bytes = <[u8; 32]>::try_from(#id).expect("Could not convert contract ID into bytes");
+                        Bech32ContractId::new("fuel", id_bytes)
                     }
                 })
                 .collect::<Vec<proc_macro2::TokenStream>>();
@@ -276,7 +276,8 @@ fn process_fn_items(
         ContractIds::Single(contract_id) => match contract_id {
             Some(contract_id) => {
                 quote! {
-                    let bech32_id = Bech32ContractId::from(id);
+                    let id_bytes = <[u8; 32]>::try_from(id).expect("Could not convert contract ID into bytes");
+                    let bech32_id = Bech32ContractId::new("fuel", id_bytes);
                     let manifest_contract_id = Bech32ContractId::from_str(#contract_id).expect("Failed to parse manifest 'contract_id' as Bech32ContractId");
                     if bech32_id != manifest_contract_id {
                         debug!("Not subscribed to this contract. Will skip this receipt event. <('-'<)");
@@ -288,7 +289,8 @@ fn process_fn_items(
         },
         ContractIds::Multiple(_) => {
             quote! {
-                let bech32_id = Bech32ContractId::from(id);
+                let id_bytes = <[u8; 32]>::try_from(id).expect("Could not convert contract ID into bytes");
+                let bech32_id = Bech32ContractId::new("fuel", id_bytes);
 
                 if !contract_ids.contains(&bech32_id) {
                     debug!("Not subscribed to this contract. Will skip this receipt event. <('-'<)");
