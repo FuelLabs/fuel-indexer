@@ -76,7 +76,6 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
     manifest: &Manifest,
     mut executor: T,
     kill_switch: Arc<AtomicBool>,
-    kill_confirm_trigger: futures::channel::oneshot::Sender<()>,
 ) -> impl Future<Output = ()> {
     // TODO: https://github.com/FuelLabs/fuel-indexer/issues/286
 
@@ -88,6 +87,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
         warn!("No end_block specified in manifest. Indexer will run forever.");
     }
     let stop_idle_indexers = config.stop_idle_indexers;
+    let indexer_uid = manifest.uid();
 
     let fuel_node_addr = if config.indexer_net_config {
         manifest
@@ -106,8 +106,6 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
     } else {
         None
     };
-
-    let indexer_uid = manifest.uid();
 
     info!("Indexer({indexer_uid}) subscribing to Fuel node at {fuel_node_addr}");
 
@@ -131,9 +129,6 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
         loop {
             if kill_switch.load(Ordering::SeqCst) {
                 info!("Kill switch flipped, stopping Indexer({indexer_uid}). <('.')>");
-                if kill_confirm_trigger.send(()).is_err() {
-                    error!("Unable to notifty listeners that Indexer({indexer_uid}) has stopped.");
-                };
                 break;
             }
 
@@ -216,6 +211,11 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                 num_empty_block_reqs = 0;
             }
 
+            if kill_switch.load(Ordering::SeqCst) {
+                info!("Kill switch flipped, stopping Indexer({indexer_uid}). <('.')>");
+                break;
+            }
+
             retry_count = 0;
         }
     }
@@ -263,7 +263,7 @@ pub async fn retrieve_blocks_from_node(
 
         let producer = block
             .block_producer()
-            .map(|pk| Bytes32::from(<[u8; 32]>::try_from(pk.hash()).unwrap()));
+            .map(|pk| Bytes32::from(<[u8; 32]>::from(pk.hash())));
 
         let mut transactions = Vec::new();
 
@@ -368,20 +368,14 @@ pub async fn retrieve_blocks_from_node(
                         .storage_slots()
                         .iter()
                         .map(|x| StorageSlot {
-                            key: <[u8; 32]>::try_from(*x.key())
-                                .expect("Could not convert key to bytes")
-                                .into(),
-                            value: <[u8; 32]>::try_from(*x.value())
-                                .expect("Could not convert key to bytes")
-                                .into(),
+                            key: <[u8; 32]>::from(*x.key()).into(),
+                            value: <[u8; 32]>::from(*x.value()).into(),
                         })
                         .collect(),
                     inputs: tx.inputs().iter().map(|i| i.to_owned().into()).collect(),
                     outputs: tx.outputs().iter().map(|o| o.to_owned().into()).collect(),
                     witnesses: tx.witnesses().to_vec(),
-                    salt: <[u8; 32]>::try_from(*tx.salt())
-                        .expect("Could not convert key to bytes")
-                        .into(),
+                    salt: <[u8; 32]>::from(*tx.salt()).into(),
                     metadata: None,
                 }),
                 _ => Transaction::default(),
@@ -409,55 +403,47 @@ pub async fn retrieve_blocks_from_node(
                 } = g.to_owned();
 
                 Consensus::Genesis(Genesis {
-                    chain_config_hash: <[u8; 32]>::try_from(
+                    chain_config_hash: <[u8; 32]>::from(
                         chain_config_hash.to_owned().0 .0,
                     )
-                    .unwrap()
                     .into(),
-                    coins_root: <[u8; 32]>::try_from(coins_root.0 .0.to_owned())
-                        .unwrap()
+                    coins_root: <[u8; 32]>::from(coins_root.0 .0.to_owned()).into(),
+                    contracts_root: <[u8; 32]>::from(contracts_root.0 .0.to_owned())
                         .into(),
-                    contracts_root: <[u8; 32]>::try_from(contracts_root.0 .0.to_owned())
-                        .unwrap()
-                        .into(),
-                    messages_root: <[u8; 32]>::try_from(messages_root.0 .0.to_owned())
-                        .unwrap()
-                        .into(),
+                    messages_root: <[u8; 32]>::from(messages_root.0 .0.to_owned()).into(),
                 })
             }
             ClientConsensus::PoAConsensus(poa) => Consensus::PoA(PoA {
-                signature: <[u8; 64]>::try_from(poa.signature.0 .0.to_owned())
-                    .unwrap()
-                    .into(),
+                signature: <[u8; 64]>::from(poa.signature.0 .0.to_owned()).into(),
             }),
         };
 
         // TODO: https://github.com/FuelLabs/fuel-indexer/issues/286
         let block = BlockData {
             height: block.header.height.clone().into(),
-            id: Bytes32::from(<[u8; 32]>::try_from(block.id.0 .0).unwrap()),
+            id: Bytes32::from(<[u8; 32]>::from(block.id.0 .0)),
             producer,
             time: block.header.time.0.to_unix(),
             consensus,
             header: Header {
-                id: Bytes32::from(<[u8; 32]>::try_from(block.header.id.0 .0).unwrap()),
+                id: Bytes32::from(<[u8; 32]>::from(block.header.id.0 .0)),
                 da_height: block.header.da_height.0,
                 transactions_count: block.header.transactions_count.0,
                 output_messages_count: block.header.output_messages_count.0,
-                transactions_root: Bytes32::from(
-                    <[u8; 32]>::try_from(block.header.transactions_root.0 .0).unwrap(),
-                ),
-                output_messages_root: Bytes32::from(
-                    <[u8; 32]>::try_from(block.header.output_messages_root.0 .0).unwrap(),
-                ),
+                transactions_root: Bytes32::from(<[u8; 32]>::from(
+                    block.header.transactions_root.0 .0,
+                )),
+                output_messages_root: Bytes32::from(<[u8; 32]>::from(
+                    block.header.output_messages_root.0 .0,
+                )),
+
                 height: block.header.height.0,
-                prev_root: Bytes32::from(
-                    <[u8; 32]>::try_from(block.header.prev_root.0 .0).unwrap(),
-                ),
+                prev_root: Bytes32::from(<[u8; 32]>::from(block.header.prev_root.0 .0)),
+
                 time: block.header.time.0.to_unix(),
-                application_hash: Bytes32::from(
-                    <[u8; 32]>::try_from(block.header.application_hash.0 .0).unwrap(),
-                ),
+                application_hash: Bytes32::from(<[u8; 32]>::from(
+                    block.header.application_hash.0 .0,
+                )),
             },
             transactions,
         };
@@ -559,24 +545,18 @@ where
         manifest: &Manifest,
         pool: IndexerConnectionPool,
         handle_events: fn(Vec<BlockData>, Arc<Mutex<Database>>) -> T,
-    ) -> IndexerResult<(
-        JoinHandle<()>,
-        ExecutorSource,
-        Arc<AtomicBool>,
-        futures::channel::oneshot::Receiver<()>,
-    )> {
+    ) -> IndexerResult<(JoinHandle<()>, ExecutorSource, Arc<AtomicBool>)> {
         let executor =
-            NativeIndexExecutor::new(manifest, pool, config, handle_events).await?;
+            NativeIndexExecutor::new(manifest, pool.clone(), config, handle_events)
+                .await?;
         let kill_switch = Arc::new(AtomicBool::new(false));
-        let (kill_confirm_trigger, kill_confirm) = futures::channel::oneshot::channel();
         let handle = tokio::spawn(run_executor(
             config,
             manifest,
             executor,
             kill_switch.clone(),
-            kill_confirm_trigger,
         ));
-        Ok((handle, ExecutorSource::Manifest, kill_switch, kill_confirm))
+        Ok((handle, ExecutorSource::Manifest, kill_switch))
     }
 }
 
@@ -624,8 +604,7 @@ impl WasmIndexExecutor {
         if let Some(metering_points) = config.metering_points {
             // `Metering` needs to be configured with a limit and a cost
             // function. For each `Operator`, the metering middleware will call
-            // the cost function and subtract the cost from the remaining
-            // points.
+            // the cost function and subtract the cost from the remaining points.
             let metering =
                 Arc::new(wasmer_middlewares::Metering::new(metering_points, |_| 1));
             compiler_config.push_middleware(metering);
@@ -704,14 +683,8 @@ impl WasmIndexExecutor {
         manifest: &Manifest,
         exec_source: ExecutorSource,
         pool: IndexerConnectionPool,
-    ) -> IndexerResult<(
-        JoinHandle<()>,
-        ExecutorSource,
-        Arc<AtomicBool>,
-        futures::channel::oneshot::Receiver<()>,
-    )> {
+    ) -> IndexerResult<(JoinHandle<()>, ExecutorSource, Arc<AtomicBool>)> {
         let killer = Arc::new(AtomicBool::new(false));
-        let (kill_confirm_trigger, kill_confirm) = futures::channel::oneshot::channel();
 
         match &exec_source {
             ExecutorSource::Manifest => match manifest.module() {
@@ -720,23 +693,21 @@ impl WasmIndexExecutor {
                     let mut file = File::open(module).await?;
                     file.read_to_end(&mut bytes).await?;
 
-                    let executor =
-                        WasmIndexExecutor::new(config, manifest, bytes.clone(), pool)
-                            .await?;
+                    let executor = WasmIndexExecutor::new(
+                        config,
+                        manifest,
+                        bytes.clone(),
+                        pool.clone(),
+                    )
+                    .await?;
                     let handle = tokio::spawn(run_executor(
                         config,
                         manifest,
                         executor,
                         killer.clone(),
-                        kill_confirm_trigger,
                     ));
 
-                    Ok((
-                        handle,
-                        ExecutorSource::Registry(bytes),
-                        killer,
-                        kill_confirm,
-                    ))
+                    Ok((handle, ExecutorSource::Registry(bytes), killer))
                 }
                 crate::Module::Native => {
                     Err(IndexerError::NativeExecutionInstantiationError)
@@ -750,10 +721,9 @@ impl WasmIndexExecutor {
                     manifest,
                     executor,
                     killer.clone(),
-                    kill_confirm_trigger,
                 ));
 
-                Ok((handle, exec_source, killer, kill_confirm))
+                Ok((handle, exec_source, killer))
             }
         }
     }
@@ -811,10 +781,15 @@ impl WasmIndexExecutor {
 impl Executor for WasmIndexExecutor {
     /// Trigger a WASM event handler, passing in a serialized event struct.
     async fn handle_events(&mut self, blocks: Vec<BlockData>) -> IndexerResult<()> {
+        if blocks.is_empty() {
+            return Ok(());
+        }
+
         if let Some(metering_points) = self.metering_points {
             self.set_metering_points(metering_points).await?
         }
         let bytes = serialize(&blocks);
+        let uid = self.manifest.uid();
 
         let mut arg = {
             let mut store_guard = self.store.lock().await;
@@ -849,14 +824,12 @@ impl Executor for WasmIndexExecutor {
         })
         .await?;
 
-        let uid = self.manifest.uid();
-
         if let Err(e) = res {
             if self.metering_points_exhausted().await {
                 self.db.lock().await.revert_transaction().await?;
                 return Err(IndexerError::RunTimeLimitExceededError);
             } else {
-                error!("WasmIndexExecutor({uid}) WASM execution failed: {e:?}.");
+                error!("WasmIndexExecutor({uid}) WASM execution failed: {e}.");
                 self.db.lock().await.revert_transaction().await?;
                 return Err(IndexerError::from(e));
             }

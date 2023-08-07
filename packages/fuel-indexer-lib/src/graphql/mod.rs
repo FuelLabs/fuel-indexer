@@ -29,11 +29,14 @@ pub struct IndexMetadata {
     /// Metadata identifier.
     pub id: u64,
 
+    /// Time of metadata.
+    pub time: u64,
+
     /// Block height of metadata.
     pub block_height: u32,
 
-    /// Time of metadata.
-    pub time: u64,
+    /// Block ID of metadata.
+    pub block_id: String,
 }
 
 impl IndexMetadata {
@@ -45,6 +48,7 @@ type IndexMetadataEntity {
     id: ID!
     time: UInt8!
     block_height: UInt8!
+    block_id: Bytes32!
 }
 "#
     }

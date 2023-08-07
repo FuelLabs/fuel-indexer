@@ -27,8 +27,6 @@ pub async fn init(command: DeployCommand) -> anyhow::Result<()> {
         locked,
         native,
         verbose,
-        replace_indexer,
-        remove_data,
         skip_build,
     } = command;
 
@@ -67,8 +65,6 @@ pub async fn init(command: DeployCommand) -> anyhow::Result<()> {
     manifest.set_module(target_dir.join(manifest.module()).into());
 
     let form = Form::new()
-        .text("replace_indexer", replace_indexer.to_string())
-        .text("remove_data", remove_data.to_string())
         .part("manifest", file_part(&manifest_path).await?)
         .part("schema", file_part(manifest.graphql_schema()).await?)
         .part("wasm", file_part(manifest.module().to_string()).await?);

@@ -29,7 +29,7 @@ Since this example does not require a smart contract, we don't need any type of 
 ### Validate
 
 Ensure that test data was indexed via a GraphQL query:
-  1. Open this GraphQL playground link http://192.168.1.34:29987/api/playground/fuel/explorer
+  1. Open this GraphQL playground link http://192.168.1.34:29987/api/playground/fuellabs/explorer
   2. Submit the following query
 
 ```graphql

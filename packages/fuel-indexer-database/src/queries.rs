@@ -5,6 +5,7 @@ use sqlx::types::{
     JsonValue,
 };
 
+/// Return the latest `GraphRoot` for a given indexer.
 pub async fn graph_root_latest(
     conn: &mut IndexerConnection,
     namespace: &str,
@@ -17,6 +18,7 @@ pub async fn graph_root_latest(
     }
 }
 
+/// Persist a new `GraphRoot` to the database.
 pub async fn new_graph_root(
     conn: &mut IndexerConnection,
     root: GraphRoot,
@@ -26,6 +28,7 @@ pub async fn new_graph_root(
     }
 }
 
+/// Return the set of `TypeIds` associated with the given indexer.
 pub async fn type_id_list_by_name(
     conn: &mut IndexerConnection,
     name: &str,
@@ -39,6 +42,7 @@ pub async fn type_id_list_by_name(
     }
 }
 
+/// Return the latest schema version for a given indexer.
 pub async fn type_id_latest(
     conn: &mut IndexerConnection,
     schema_name: &str,
@@ -51,6 +55,7 @@ pub async fn type_id_latest(
     }
 }
 
+/// Persist a set of new `TypeIds` to the database.
 pub async fn type_id_insert(
     conn: &mut IndexerConnection,
     type_ids: Vec<TypeId>,
@@ -62,6 +67,7 @@ pub async fn type_id_insert(
     }
 }
 
+/// Indicate whether or not a given schema has been persisted to the database.
 pub async fn schema_exists(
     conn: &mut IndexerConnection,
     namespace: &str,
@@ -75,6 +81,7 @@ pub async fn schema_exists(
     }
 }
 
+/// Persist a set of new `Columns` to the database.
 pub async fn new_column_insert(
     conn: &mut IndexerConnection,
     cols: Vec<Column>,
@@ -86,6 +93,7 @@ pub async fn new_column_insert(
     }
 }
 
+/// Return the set of `Columns` associated with a given `TypeId`.
 pub async fn list_column_by_id(
     conn: &mut IndexerConnection,
     col_id: i64,
@@ -97,6 +105,7 @@ pub async fn list_column_by_id(
     }
 }
 
+/// Return a set of graph registry metadata (`ColumnInfo`) for a given indexer.
 pub async fn columns_get_schema(
     conn: &mut IndexerConnection,
     name: &str,
@@ -110,6 +119,7 @@ pub async fn columns_get_schema(
     }
 }
 
+/// Insert or update a blob of serialized `FtColumns` into the database.
 pub async fn put_object(
     conn: &mut IndexerConnection,
     query: String,
@@ -122,6 +132,7 @@ pub async fn put_object(
     }
 }
 
+/// Fetch a blob of serialized `FtColumns` from the database.
 pub async fn get_object(
     conn: &mut IndexerConnection,
     query: String,
@@ -131,6 +142,10 @@ pub async fn get_object(
     }
 }
 
+/// Run an arbitrary query and fetch all results.
+///
+/// Note that if the results of the query can't be converted to `JsonValue`, this function
+/// will return an empty results set.
 pub async fn run_query(
     conn: &mut IndexerConnection,
     query: String,
@@ -140,6 +155,7 @@ pub async fn run_query(
     }
 }
 
+/// Execute an arbitrary query using the `QueryBuilder`.
 pub async fn execute_query(
     conn: &mut IndexerConnection,
     query: String,
@@ -149,6 +165,7 @@ pub async fn execute_query(
     }
 }
 
+/// Return a set of `RootColumn`s associated with a given `GraphRoot`.
 pub async fn root_columns_list_by_id(
     conn: &mut IndexerConnection,
     root_id: i64,
@@ -160,6 +177,7 @@ pub async fn root_columns_list_by_id(
     }
 }
 
+/// Persist a set of new `RootColumn`s associated with a given `GraphRoot`, to the database.
 pub async fn new_root_columns(
     conn: &mut IndexerConnection,
     cols: Vec<RootColumn>,
@@ -171,6 +189,7 @@ pub async fn new_root_columns(
     }
 }
 
+/// Return the given indexer if it's already been registered.
 pub async fn get_indexer(
     conn: &mut IndexerConnection,
     namespace: &str,
@@ -183,6 +202,9 @@ pub async fn get_indexer(
     }
 }
 
+/// Register the given indexer's metadata.
+///
+/// Note that this only reigsters the indexer's metadata. Indexer assets are registered separately.
 pub async fn register_indexer(
     conn: &mut IndexerConnection,
     namespace: &str,
@@ -197,6 +219,7 @@ pub async fn register_indexer(
     }
 }
 
+/// Return all indexers registered to this indexer serivce.
 pub async fn all_registered_indexers(
     conn: &mut IndexerConnection,
 ) -> sqlx::Result<Vec<RegisteredIndexer>> {
@@ -219,6 +242,7 @@ pub async fn indexer_asset_version(
     }
 }
 
+/// Register a single indexer asset.
 pub async fn register_indexer_asset(
     conn: &mut IndexerConnection,
     namespace: &str,
@@ -237,6 +261,7 @@ pub async fn register_indexer_asset(
     }
 }
 
+/// Return the latest version for a given indexer asset type.
 pub async fn latest_asset_for_indexer(
     conn: &mut IndexerConnection,
     index_id: &i64,
@@ -249,6 +274,7 @@ pub async fn latest_asset_for_indexer(
     }
 }
 
+/// Return the latest version for every indexer asset type.
 pub async fn latest_assets_for_indexer(
     conn: &mut IndexerConnection,
     index_id: &i64,
@@ -260,6 +286,7 @@ pub async fn latest_assets_for_indexer(
     }
 }
 
+/// Return the last block height that the given indexer has indexed.
 pub async fn last_block_height_for_indexer(
     conn: &mut IndexerConnection,
     namespace: &str,
@@ -285,6 +312,7 @@ pub async fn asset_already_exists(
     }
 }
 
+/// Return the database ID for a given indexer.
 pub async fn get_indexer_id(
     conn: &mut IndexerConnection,
     namespace: &str,
@@ -297,94 +325,66 @@ pub async fn get_indexer_id(
     }
 }
 
-pub async fn penultimate_asset_for_indexer(
-    conn: &mut IndexerConnection,
-    namespace: &str,
-    identifier: &str,
-    asset_type: IndexerAssetType,
-) -> sqlx::Result<IndexerAsset> {
-    match conn {
-        IndexerConnection::Postgres(ref mut c) => {
-            postgres::penultimate_asset_for_indexer(c, namespace, identifier, asset_type)
-                .await
-        }
-    }
-}
-
+/// Open a database transaction.
 pub async fn start_transaction(conn: &mut IndexerConnection) -> sqlx::Result<usize> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => postgres::start_transaction(c).await,
     }
 }
 
+/// Commit a database transaction.
 pub async fn commit_transaction(conn: &mut IndexerConnection) -> sqlx::Result<usize> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => postgres::commit_transaction(c).await,
     }
 }
 
+/// Revert a database transaction.
 pub async fn revert_transaction(conn: &mut IndexerConnection) -> sqlx::Result<usize> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => postgres::revert_transaction(c).await,
     }
 }
 
+/// Run database migrations.
 pub async fn run_migration(conn: &mut IndexerConnection) -> sqlx::Result<()> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => postgres::run_migration(c).await,
     }
 }
 
+/// Remove a given indexer.
+///
+/// This will also remove the given indexer's data if the caller specifies such.
 pub async fn remove_indexer(
     conn: &mut IndexerConnection,
     namespace: &str,
     identifier: &str,
-    remove_data: bool,
 ) -> sqlx::Result<()> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
-            postgres::remove_indexer(c, namespace, identifier, remove_data).await
+            postgres::remove_indexer(c, namespace, identifier).await
         }
     }
 }
 
-pub async fn remove_latest_assets_for_indexer(
-    conn: &mut IndexerConnection,
-    namespace: &str,
-    identifier: &str,
-) -> sqlx::Result<()> {
-    match conn {
-        IndexerConnection::Postgres(ref mut c) => {
-            postgres::remove_latest_assets_for_indexer(c, namespace, identifier).await
-        }
-    }
-}
-
-pub async fn remove_asset_by_version(
-    conn: &mut IndexerConnection,
-    index_id: &i64,
-    version: &i32,
-    asset_type: IndexerAssetType,
-) -> sqlx::Result<()> {
-    match conn {
-        IndexerConnection::Postgres(ref mut c) => {
-            postgres::remove_asset_by_version(c, index_id, version, asset_type).await
-        }
-    }
-}
-
+/// Create a new nonce for a requesting user's authentication.
 pub async fn create_nonce(conn: &mut IndexerConnection) -> sqlx::Result<Nonce> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => postgres::create_nonce(c).await,
     }
 }
 
+/// Return the specified nonce for a requesting user's authentication.
 pub async fn get_nonce(conn: &mut IndexerConnection, uid: &str) -> sqlx::Result<Nonce> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => postgres::get_nonce(c, uid).await,
     }
 }
 
+/// Delete the specified nonce for a requesting user's authentication.
+///
+/// Happens after the user successfully authenticates.
 pub async fn delete_nonce(
     conn: &mut IndexerConnection,
     nonce: &Nonce,
@@ -394,6 +394,7 @@ pub async fn delete_nonce(
     }
 }
 
+/// Return whether or not the given user (identified by a public key) owns the given indexer.
 pub async fn indexer_owned_by(
     conn: &mut IndexerConnection,
     namespace: &str,
@@ -407,6 +408,8 @@ pub async fn indexer_owned_by(
     }
 }
 
+/// Execute an arbitrary `INSERT` query where the content of the query includes
+/// data for a many-to-many relationship.
 pub async fn put_many_to_many_record(
     conn: &mut IndexerConnection,
     query: String,
