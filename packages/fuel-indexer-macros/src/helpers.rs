@@ -616,12 +616,23 @@ pub fn hasher_tokens(
     match base_type {
         FieldBaseType::Named => {
             let ident = format_ident! {"{field_name}"};
-            if !NON_DIGESTIBLE_FIELD_TYPES.contains(field_type_scalar_name) {
-                return Some(
-                    quote! { #hasher.chain_update(#ident #clone #unwrap_or_default #to_bytes) },
-                );
+
+            if NON_DIGESTIBLE_FIELD_TYPES.contains(field_type_scalar_name) {
+                return None;
             }
-            None
+
+            match field_type_scalar_name {
+                "String64" => {
+                    return Some(
+                        quote! { #hasher.chain_update(#ident #unwrap_or_default .to_string() #to_bytes) },
+                    );
+                }
+                _ => {
+                    return Some(
+                        quote! { #hasher.chain_update(#ident #clone #unwrap_or_default #to_bytes) },
+                    );
+                }
+            }
         }
         FieldBaseType::List => None,
     }

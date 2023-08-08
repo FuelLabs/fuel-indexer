@@ -83,6 +83,7 @@ pub enum ColumnType {
     Virtual = 33,
     BlockId = 34,
     Array = 35,
+    String64 = 36,
 }
 
 impl From<ColumnType> for i32 {
@@ -124,6 +125,7 @@ impl From<ColumnType> for i32 {
             ColumnType::Virtual => 33,
             ColumnType::BlockId => 34,
             ColumnType::Array => 35,
+            ColumnType::String64 => 36,
         }
     }
 }
@@ -180,6 +182,7 @@ impl From<i32> for ColumnType {
             33 => ColumnType::Virtual,
             34 => ColumnType::BlockId,
             35 => ColumnType::Array,
+            36 => ColumnType::String64,
             _ => unimplemented!("Invalid ColumnType: {num}."),
         }
     }
@@ -224,6 +227,7 @@ impl From<&str> for ColumnType {
             "Virtual" => ColumnType::Virtual,
             "BlockId" => ColumnType::BlockId,
             "Array" => ColumnType::Array,
+            "String64" => ColumnType::String64,
             _ => unimplemented!("Invalid ColumnType: '{name}'."),
         }
     }
@@ -405,6 +409,7 @@ impl Column {
             ColumnType::UInt4 => "integer".to_string(),
             ColumnType::UInt8 => "numeric(20, 0)".to_string(),
             ColumnType::Virtual => "json".to_string(),
+            ColumnType::String64 => "varchar(64)".to_string(),
             ColumnType::Array => {
                 let t = match self.array_coltype.expect(
                     "Column.array_coltype cannot be None when using `ColumnType::Array`.",
@@ -434,7 +439,8 @@ impl Column {
                     | ColumnType::HexString
                     | ColumnType::TxId
                     | ColumnType::BlockId
-                    | ColumnType::ID => "varchar(64)",
+                    | ColumnType::ID
+                    | ColumnType::String64 => "varchar(64)",
                     ColumnType::Blob => "bytea",
                     ColumnType::Json | ColumnType::Virtual => "json",
                     _ => unimplemented!(),
@@ -1123,8 +1129,8 @@ impl Table {
                     item.parent_table_name(),
                     item.parent_column_name()
                 ),
-                graphql_type: ColumnType::Charfield.to_string(),
-                coltype: ColumnType::Charfield,
+                graphql_type: ColumnType::String64.to_string(),
+                coltype: ColumnType::String64,
                 position: 0,
                 unique: false,
                 nullable: false,
@@ -1134,8 +1140,8 @@ impl Table {
             Column {
                 type_id: ty_id,
                 name: format!("{}_{}", item.child_table_name(), item.child_column_name()),
-                graphql_type: ColumnType::Charfield.to_string(),
-                coltype: ColumnType::Charfield,
+                graphql_type: ColumnType::String64.to_string(),
+                coltype: ColumnType::String64,
                 position: 1,
                 unique: false,
                 nullable: false,
@@ -1157,7 +1163,7 @@ impl Table {
                 ref_tablename: item.parent_table_name(),
                 ref_colname: item.parent_column_name(),
                 // Join table's _always_ reference `ID` columns only.
-                ref_coltype: ColumnType::Charfield.to_string(),
+                ref_coltype: ColumnType::String64.to_string(),
                 ..ForeignKey::default()
             }),
             Constraint::Fk(ForeignKey {
@@ -1172,7 +1178,7 @@ impl Table {
                 ref_tablename: item.child_table_name(),
                 ref_colname: item.child_column_name(),
                 // Join table's _always_ reference `ID` columns only.
-                ref_coltype: ColumnType::Charfield.to_string(),
+                ref_coltype: ColumnType::String64.to_string(),
                 ..ForeignKey::default()
             }),
             // Prevent duplicate rows in the join table.

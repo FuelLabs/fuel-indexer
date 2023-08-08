@@ -8,7 +8,11 @@
 extern crate alloc;
 
 use fuel_indexer_lib::MAX_ARRAY_LENGTH;
+<<<<<<< HEAD
 use fuel_indexer_types::{fuel::*, Identity, SizedAsciiString};
+=======
+use fuel_indexer_types::{fuel::*, Identity};
+>>>>>>> 1c106cbb (stuck on sizedascii serde)
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
