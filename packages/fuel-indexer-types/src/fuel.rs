@@ -210,8 +210,8 @@ impl From<ClientInput> for Input {
         match input {
             ClientInput::MessageDataSigned(message_signed) => {
                 Input::Message(InputMessage {
-                    sender: message_signed.sender,
-                    recipient: message_signed.recipient,
+                    sender: Address::from(<[u8; 32]>::from(message_signed.sender)),
+                    recipient: Address::from(<[u8; 32]>::from(message_signed.recipient)),
                     amount: message_signed.amount,
                     nonce: message_signed.nonce,
                     witness_index: message_signed.witness_index,
@@ -222,8 +222,10 @@ impl From<ClientInput> for Input {
             }
             ClientInput::MessageDataPredicate(message_predicate) => {
                 Input::Message(InputMessage {
-                    sender: message_predicate.sender,
-                    recipient: message_predicate.recipient,
+                    sender: Address::from(<[u8; 32]>::from(message_predicate.sender)),
+                    recipient: Address::from(<[u8; 32]>::from(
+                        message_predicate.recipient,
+                    )),
                     amount: message_predicate.amount,
                     nonce: message_predicate.nonce,
                     witness_index: 0,
@@ -234,7 +236,7 @@ impl From<ClientInput> for Input {
             }
             ClientInput::CoinSigned(coin_signed) => Input::Coin(InputCoin {
                 utxo_id: coin_signed.utxo_id,
-                owner: coin_signed.owner,
+                owner: Address::from(<[u8; 32]>::from(coin_signed.owner)),
                 amount: coin_signed.amount,
                 asset_id: coin_signed.asset_id,
                 tx_pointer: coin_signed.tx_pointer.into(),
@@ -245,7 +247,7 @@ impl From<ClientInput> for Input {
             }),
             ClientInput::CoinPredicate(coin_predicate) => Input::Coin(InputCoin {
                 utxo_id: coin_predicate.utxo_id,
-                owner: coin_predicate.owner,
+                owner: Address::from(<[u8; 32]>::from(coin_predicate.owner)),
                 amount: coin_predicate.amount,
                 asset_id: coin_predicate.asset_id,
                 tx_pointer: coin_predicate.tx_pointer.into(),
@@ -259,12 +261,12 @@ impl From<ClientInput> for Input {
                 balance_root: contract.balance_root,
                 state_root: contract.state_root,
                 tx_pointer: contract.tx_pointer.into(),
-                contract_id: contract.contract_id,
+                contract_id: ContractId::from(<[u8; 32]>::from(contract.contract_id)),
             }),
             ClientInput::MessageCoinSigned(message_coin) => {
                 Input::Message(InputMessage {
-                    sender: message_coin.sender,
-                    recipient: message_coin.recipient,
+                    sender: Address::from(<[u8; 32]>::from(message_coin.sender)),
+                    recipient: Address::from(<[u8; 32]>::from(message_coin.recipient)),
                     amount: message_coin.amount,
                     nonce: message_coin.nonce,
                     witness_index: message_coin.witness_index,
@@ -275,8 +277,8 @@ impl From<ClientInput> for Input {
             }
             ClientInput::MessageCoinPredicate(message_coin) => {
                 Input::Message(InputMessage {
-                    sender: message_coin.sender,
-                    recipient: message_coin.recipient,
+                    sender: Address::from(<[u8; 32]>::from(message_coin.sender)),
+                    recipient: Address::from(<[u8; 32]>::from(message_coin.recipient)),
                     amount: message_coin.amount,
                     nonce: message_coin.nonce,
                     witness_index: 0,
