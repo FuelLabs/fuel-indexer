@@ -754,13 +754,13 @@ mod tests {
         };
 
         let schema = r#"
-type Block {
+type Block @entity {
     id: ID!
     height: UInt8!
     timestamp: Int8!
 }
 
-type Tx {
+type Tx @entity {
     id: ID!
     timestamp: Int8!
     block: Block

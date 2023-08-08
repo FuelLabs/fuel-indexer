@@ -167,8 +167,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                             // Just bump the cursor and keep going
                             warn!("Constraint violation. Continuing...");
 
-                            // Try to fetch the page again using same cursor.
-                            continue;
+                            next_cursor = cursor;
                         } else {
                             error!("Database error: {inner}.");
                             sleep(Duration::from_secs(DELAY_FOR_SERVICE_ERROR)).await;

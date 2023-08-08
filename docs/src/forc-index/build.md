@@ -17,6 +17,5 @@ OPTIONS:
     -m, --manifest <MANIFEST>        Manifest file name of indexer being built.
         --native                     Building for native execution.
     -p, --path <PATH>                Path to the indexer project.
-        --target-dir <TARGET_DIR>    Directory for all generated artifacts and intermediate files.
     -v, --verbose                    Enable verbose output.
 ```

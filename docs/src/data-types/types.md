@@ -37,7 +37,7 @@ struct Event {
 The corresponding GraphQL schema to mirror this `Event` struct would resemble:
 
 ```graphql
-type Event {
+type Event @entity {
     id: ID!
     account: Address!
     block_height: UInt8!
