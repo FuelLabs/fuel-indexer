@@ -15,6 +15,7 @@ pub const SUCCESS_EMOJI_PADDING: usize = 3;
 pub const FAIL_EMOJI_PADDING: usize = 6;
 pub const HEADER_PADDING: usize = 20;
 
+/// Generate default cargo manifest for native indexer.
 pub fn default_native_indexer_cargo_toml(indexer_name: &str) -> String {
     format!(
         r#"[package]
@@ -37,6 +38,7 @@ serde = {{ version = "1.0", default-features = false, features = ["derive"] }}
     )
 }
 
+/// Generate default cargo manifest for wasm indexer.
 pub fn default_indexer_cargo_toml(indexer_name: &str) -> String {
     format!(
         r#"[package]
@@ -57,6 +59,7 @@ serde = {{ version = "1.0", default-features = false, features = ["derive"] }}
     )
 }
 
+/// Generate default cargo manifest for indexer.
 pub fn default_indexer_manifest(
     namespace: &str,
     schema_filename: &str,
@@ -129,6 +132,7 @@ resumable: true
     )
 }
 
+/// Generate default lib module for wasm indexer.
 pub fn default_indexer_lib(
     indexer_name: &str,
     manifest_filename: &str,
@@ -166,6 +170,7 @@ pub mod {indexer_name}_index_mod {{
     )
 }
 
+/// Generate default binary module for native indexer.
 pub fn default_indexer_binary(
     indexer_name: &str,
     manifest_filename: &str,
@@ -186,14 +191,15 @@ use fuel_indexer_utils::prelude::*;
 pub mod {indexer_name}_index_mod {{
 
     async fn {indexer_name}_handler(block_data: BlockData) {{
-        info!("Processing Block#{{}}. (>'.')>", block_data.height);
-
-        let block_id = id8(block_data.id);
-        let block = Block{{ id: block_id, height: block_data.height, hash: block_data.id }};
+        if block_data.height % 1000 == 0 {{
+            info!("Processing Block#{{}}. (>'.')>", height);
+        }}
+        
+        let block = Block::new(block_data.height, block_data.id);
         block.save().await;
 
         for transaction in block_data.transactions.iter() {{
-            let tx = Transaction{{ id: id8(transaction.id), block: block_data.id, hash: Bytes32::from(<[u8; 32]>::from(transaction.id)) }};
+            let tx = Transaction::new(block_data.id, Bytes32::from(<[u8; 32]>::from(transaction.id)));
             tx.save().await;
         }}
     }}
@@ -202,6 +208,7 @@ pub mod {indexer_name}_index_mod {{
     )
 }
 
+/// Generate default schema for indexer.
 pub fn default_indexer_schema() -> String {
     r#"type Block @entity {
     id: ID!
@@ -219,6 +226,7 @@ type Transaction @entity {
     .to_string()
 }
 
+/// Generate default cargo config for indexer.
 pub fn default_cargo_config() -> String {
     r#"[build]
 target = "wasm32-unknown-unknown"
