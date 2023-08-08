@@ -280,10 +280,18 @@ async fn register_indexer_assets_transaction(
                     // The schema must be the same. This query returns an asset
                     // if the bytes match. If it returns None (and the indexer
                     // exists), it means that its schema is different.
+                    let schema = {
+                        let content = String::from_utf8(data.to_vec())
+                            .map_err(|e| {
+                                ApiError::OtherError(format!("Invalid schema: {}", e))
+                            })?
+                            .to_string();
+                        GraphQLSchema::new(content)
+                    };
                     if queries::asset_already_exists(
                         conn,
                         &IndexerAssetType::Schema,
-                        &data.to_vec(),
+                        &Vec::<u8>::from(&schema),
                         &indexer_id,
                     )
                     .await?
