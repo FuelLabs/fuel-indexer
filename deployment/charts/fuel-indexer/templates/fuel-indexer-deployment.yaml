@@ -60,7 +60,7 @@ spec:
             - "--replace-indexer"
             - "--accept-sql-queries"
             - "--block-page-size"
-            - "25"
+            - "10"
           env:
           - name: POSTGRES_PASSWORD
             valueFrom:

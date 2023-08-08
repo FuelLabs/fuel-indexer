@@ -100,53 +100,53 @@ enum OutputLabel {
   Unknown
 }
 
-type Witness {
-  data: Blob! @virtual
+type Witness @entity(virtual: true) {
+  data: Blob!
 }
 
-type InstructionResult {
-  reason: PanicReason! @virtual
+type InstructionResult @entity(virtual: true) {
+  reason: PanicReason!
   instruction: UInt4!
 }
 
-type ProgramState {
-  return_type: ReturnType! @virtual
+type ProgramState @entity(virtual: true) {
+  return_type: ReturnType!
   data: HexString!
 }
 
-type DryRun {
-  tx: HexString! @virtual
+type DryRun @entity(virtual: true) {
+  tx: HexString!
   utxo_validation: Boolean
 }
 
-type TransactionIdFragment {
+type TransactionIdFragment @entity {
   id: ID!
   hash: Bytes32! @indexed
 }
 
-type UtxoId {
+type UtxoId @entity {
   id: ID!
   tx_id: TxId! @indexed
   output_index: UInt4!
 }
 
-type TxPointer {
+type TxPointer @entity {
   id: ID!
   block_height: BlockHeight!
   tx_index: UInt8!
 }
 
-type ContractIdFragment {
+type ContractIdFragment @entity {
   id: ID!
   hash: Bytes32! @indexed
 }
 
-type BlockIdFragment {
+type BlockIdFragment @entity {
   id: ID!
   hash: Bytes32! @indexed
 }
 
-type Genesis {
+type Genesis @entity {
   id: ID!
   chain_config_hash: Bytes32!
   coins_root: Bytes32!
@@ -156,7 +156,7 @@ type Genesis {
   label: ConsensusLabel!
 }
 
-type PoA {
+type PoA @entity {
   id: ID!
   # TODO: Is this important? The fact that signature is different
   # on almost every `PoA` implies that this type might be virtual?
@@ -165,7 +165,7 @@ type PoA {
   label: ConsensusLabel!
 }
 
-type Unknown {
+type Unknown @entity {
   id: ID!
   is_unknown: Boolean!
   label: ConsensusLabel!
@@ -173,7 +173,7 @@ type Unknown {
 
 union Consensus = Genesis | PoA | Unknown
 
-type InputCoin {
+type InputCoin @entity {
   id: ID!
   utxo_id: UtxoId! @indexed
   owner: Address! @indexed
@@ -188,7 +188,7 @@ type InputCoin {
   is_coin: Boolean!
 }
 
-type InputContract {
+type InputContract @entity {
   id: ID!
   utxo_id: UtxoId! @indexed
   balance_root: Bytes32!
@@ -199,7 +199,7 @@ type InputContract {
   is_contract: Boolean!
 }
 
-type InputMessage {
+type InputMessage @entity {
   id: ID!
   sender: Address! @indexed
   recipient: Address! @indexed
@@ -215,14 +215,14 @@ type InputMessage {
 
 union Input = InputCoin | InputContract | InputMessage
 
-type StorageSlot {
+type StorageSlot @entity {
   id: ID!
   key: Bytes32!
   value: Bytes32!
 }
 
-type CallReceipt {
-  contract_id: ContractId! @virtual
+type CallReceipt @entity(virtual: true) {
+  contract_id: ContractId!
   # `recipient` has a different type of different `Reciept` members, so
   # we make it something more generic: `Identity`.
   recipient: Identity!
@@ -238,8 +238,8 @@ type CallReceipt {
   is_call: Boolean!
 }
 
-type ReturnDataReceipt {
-  contract_id: ContractId! @virtual
+type ReturnDataReceipt @entity(virtual: true) {
+  contract_id: ContractId!
   ptr: UInt8!
   len: UInt8!
   digest: Bytes32!
@@ -251,8 +251,8 @@ type ReturnDataReceipt {
   is_return_data: Boolean!
 }
 
-type PanicReceipt {
-  contract_id: ContractId @virtual
+type PanicReceipt @entity(virtual: true) {
+  contract_id: ContractId
   reason: InstructionResult
   pc: UInt8!
   # `is` is a reserved keyword in PostgreSQL.
@@ -261,8 +261,8 @@ type PanicReceipt {
   is_panic: Boolean!
 }
 
-type RevertReceipt {
-  contract_id: ContractId! @virtual
+type RevertReceipt @entity(virtual: true) {
+  contract_id: ContractId!
   ra: UInt8!
   pc: UInt8!
   # `is` is a reserved keyword in PostgreSQL.
@@ -271,8 +271,8 @@ type RevertReceipt {
   is_revert: Boolean!
 }
 
-type LogReceipt {
-  contract_id: ContractId! @virtual
+type LogReceipt @entity(virtual: true) {
+  contract_id: ContractId!
   ra: UInt8!
   rb: UInt8!
   rc: UInt8!
@@ -284,8 +284,8 @@ type LogReceipt {
   is_log: Boolean!
 }
 
-type LogDataReceipt {
-  contract_id: ContractId! @virtual
+type LogDataReceipt @entity(virtual: true) {
+  contract_id: ContractId!
   ra: UInt8!
   rb: UInt8!
   ptr: UInt8!
@@ -299,8 +299,8 @@ type LogDataReceipt {
   is_log_data: Boolean!
 }
 
-type ReturnReceipt {
-  contract_id: ContractId! @virtual
+type ReturnReceipt @entity(virtual: true) {
+  contract_id: ContractId!
   val: UInt8!
   pc: UInt8!
   # `is` is a reserved keyword in PostgreSQL.
@@ -309,8 +309,8 @@ type ReturnReceipt {
   is_return: Boolean!
 }
 
-type TransferReceipt {
-  contract_id: ContractId! @virtual
+type TransferReceipt @entity(virtual: true) {
+  contract_id: ContractId!
   # `recipient` has a different type of different `Reciept` members, so
   # we make it something more generic: `Identity`.
   recipient: Identity!
@@ -323,8 +323,8 @@ type TransferReceipt {
   is_transfer: Boolean!
 }
 
-type TransferOutReceipt {
-  contract_id: ContractId! @virtual
+type TransferOutReceipt @entity(virtual: true) {
+  contract_id: ContractId!
   # `recipient` has a different type of different `Reciept` members, so
   # we make it something more generic: `Identity`.
   recipient: Identity!
@@ -337,15 +337,15 @@ type TransferOutReceipt {
   is_transfer_out: Boolean!
 }
 
-type ScriptResultReceipt {
-  result: ScriptExecutionResult! @virtual
+type ScriptResultReceipt @entity(virtual: true) {
+  result: ScriptExecutionResult!
   gas_used: UInt8!
   label: ReceiptLabel!
   is_script_result: Boolean!
 }
 
-type MessageOutReceipt {
-  sender: Address! @virtual
+type MessageOutReceipt @entity(virtual: true) {
+  sender: Address!
   # `recipient` has a different type of different `Reciept` members, so
   # we make it something more generic: `Identity`.
   recipient: Identity!
@@ -371,7 +371,7 @@ union Receipt =
   | ScriptResultReceipt
   | MessageOutReceipt
 
-type VariableOutput {
+type VariableOutput @entity {
   id: ID!
   # `to` is a reserved keyword in PostgreSQL.
   recipient: Address! @indexed
@@ -381,7 +381,7 @@ type VariableOutput {
   label: OutputLabel!
 }
 
-type ChangeOutput {
+type ChangeOutput @entity {
   id: ID!
   # `to` is a reserved keyword in PostgreSQL.
   recipient: Address! @indexed
@@ -391,7 +391,7 @@ type ChangeOutput {
   label: OutputLabel!
 }
 
-type ContractOutput {
+type ContractOutput @entity {
   id: ID!
   input_index: Int8!
   balance_root: Bytes32!
@@ -400,7 +400,7 @@ type ContractOutput {
   label: OutputLabel!
 }
 
-type CoinOutput {
+type CoinOutput @entity {
   id: ID!
   # `to` is a reserved keyword in PostgreSQL.
   recipient: Address! @indexed
@@ -410,13 +410,13 @@ type CoinOutput {
   label: OutputLabel!
 }
 
-type UnknownOutput {
+type UnknownOutput @entity {
   id: ID!
   is_unknown: Boolean!
   label: OutputLabel!
 }
 
-type ContractCreated {
+type ContractCreated @entity {
   id: ID!
   contract: ContractIdFragment! @indexed
   state_root: Bytes32!
@@ -424,7 +424,7 @@ type ContractCreated {
   label: OutputLabel!
 }
 
-type MessageOutput {
+type MessageOutput @entity {
   id: ID!
   amount: UInt8!
   recipient: Address! @indexed
@@ -441,7 +441,7 @@ union Output =
 
 # `Create` is a reserved word in SQL so we append the suffix `Transaction` to these
 # transaction type names.
-type CreateTransaction {
+type CreateTransaction @entity {
   id: ID!
   gas_price: UInt8!
   gas_limit: UInt8!
@@ -460,7 +460,7 @@ type CreateTransaction {
   label: TransactionLabel!
 }
 
-type ScriptTransaction {
+type ScriptTransaction @entity {
   id: ID!
   gas_price: UInt8!
   gas_limit: UInt8!
@@ -478,7 +478,7 @@ type ScriptTransaction {
   label: TransactionLabel!
 }
 
-type MintTransaction {
+type MintTransaction @entity {
   id: ID!
   tx_pointer: TxPointer!
   outputs: [Output!]
@@ -489,26 +489,23 @@ type MintTransaction {
   label: TransactionLabel!
 }
 
-union Transaction =
-    CreateTransaction
-  | ScriptTransaction
-  | MintTransaction
+union Transaction = CreateTransaction | ScriptTransaction | MintTransaction
 
-type SubmittedStatus {
+type SubmittedStatus @entity {
   id: ID!
   time: UInt8!
   label: TransactionStatusLabel!
   is_submitted: Boolean!
 }
 
-type SqueezedOutStatus {
+type SqueezedOutStatus @entity {
   id: ID!
   reason: Charfield!
   label: TransactionStatusLabel!
   is_squeezed_out: Boolean!
 }
 
-type FailureStatus {
+type FailureStatus @entity {
   id: ID!
   block: BlockIdFragment!
   time: UInt8!
@@ -518,7 +515,7 @@ type FailureStatus {
   is_failure: Boolean!
 }
 
-type SuccessStatus {
+type SuccessStatus @entity {
   id: ID!
   time: UInt8!
   block: BlockIdFragment!
@@ -527,7 +524,7 @@ type SuccessStatus {
   is_success: Boolean!
 }
 
-type UnknownStatus {
+type UnknownStatus @entity {
   id: ID!
   label: TransactionStatusLabel!
   is_unknown: Boolean!
@@ -540,7 +537,7 @@ union TransactionStatus =
   | SuccessStatus
   | UnknownStatus
 
-type Header {
+type Header @entity {
   id: ID!
   block_id: BlockId!
   da_height: UInt8!
@@ -554,7 +551,7 @@ type Header {
   application_hash: Bytes32!
 }
 
-type Block {
+type Block @entity {
   id: ID!
   block_id: BlockId! @indexed
   header: Header! @indexed
@@ -562,7 +559,7 @@ type Block {
   transactions: [TransactionIdFragment!]
 }
 
-type NodeInfo {
+type NodeInfo @entity {
   id: ID!
   utxo_validation: Boolean!
   vm_backtrace: Boolean!
@@ -572,7 +569,7 @@ type NodeInfo {
   node_version: Charfield!
 }
 
-type ConsensusParameters {
+type ConsensusParameters @entity {
   id: ID!
   contract_max_size: UInt8!
   max_inputs: UInt8!
@@ -589,7 +586,7 @@ type ConsensusParameters {
   chain_id: UInt8!
 }
 
-type ChainInfo {
+type ChainInfo @entity {
   id: ID!
   base_chain_height: UInt4!
   name: Charfield!
@@ -598,7 +595,7 @@ type ChainInfo {
   consensus_parameters: ConsensusParameters!
 }
 
-type Coin {
+type Coin @entity {
   id: ID!
   amount: UInt8!
   block_created: UInt4!
@@ -608,7 +605,7 @@ type Coin {
   owner: Address! @indexed
 }
 
-type MessageCoin {
+type MessageCoin @entity {
   id: ID!
   amount: UInt8!
   sender: Address! @indexed
@@ -617,7 +614,7 @@ type MessageCoin {
   da_height: UInt8!
 }
 
-type Contract {
+type Contract @entity {
   id: ID!
   contract_id: ContractId! @indexed
   bytecode: HexString!

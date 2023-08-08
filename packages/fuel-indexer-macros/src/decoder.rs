@@ -85,7 +85,7 @@ impl Decoder for ImplementationDecoder {
                 let obj_field_names = parsed
                     .object_field_mappings()
                     .get(&obj_name)
-                    .expect("TypeDefinition not found in parsed GraphQL schema.")
+                    .unwrap_or_else(|| panic!("TypeDefinition '{obj_name}' not found in parsed GraphQL schema."))
                     .iter()
                     .map(|(k, _v)| k.to_owned())
                     .collect::<HashSet<String>>();
@@ -960,13 +960,13 @@ impl From<EnumDecoder> for TokenStream {
 mod tests {
 
     use super::*;
-    use async_graphql_parser::types::{BaseType, ObjectType, Type};
+    use async_graphql_parser::types::{BaseType, ConstDirective, ObjectType, Type};
     use fuel_indexer_lib::graphql::GraphQLSchema;
 
     #[test]
     fn test_can_create_object_decoder_containing_expected_tokens_from_object_typedef() {
         let schema = r#"
-type Person {
+type Person @entity {
     id: ID!
     name: Charfield!
     age: UInt1!
@@ -1005,7 +1005,16 @@ type Person {
                 implements: vec![],
                 fields,
             }),
-            directives: vec![],
+            directives: vec![Positioned {
+                pos: Pos::default(),
+                node: ConstDirective {
+                    name: Positioned {
+                        pos: Pos::default(),
+                        node: Name::new("entity"),
+                    },
+                    arguments: vec![],
+                },
+            }],
         };
 
         let schema = ParsedGraphQLSchema::new(
@@ -1036,12 +1045,12 @@ type Person {
     fn test_can_create_object_decoder_containing_expected_tokens_from_object_typedef_containing_m2m_relationship(
     ) {
         let schema = r#"
-type Account {
+type Account @entity {
     id: ID!
     index: UInt8!
 }
 
-type Wallet {
+type Wallet @entity {
     id: ID!
     account: [Account!]!
 }
@@ -1102,7 +1111,16 @@ type Wallet {
                 implements: vec![],
                 fields,
             }),
-            directives: vec![],
+            directives: vec![Positioned {
+                pos: Pos::default(),
+                node: ConstDirective {
+                    name: Positioned {
+                        pos: Pos::default(),
+                        node: Name::new("entity"),
+                    },
+                    arguments: vec![],
+                },
+            }],
         };
 
         let schema = ParsedGraphQLSchema::new(
