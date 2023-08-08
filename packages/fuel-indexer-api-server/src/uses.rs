@@ -187,7 +187,6 @@ pub(crate) async fn remove_indexer(
     tx.send(ServiceRequest::Stop(StopRequest {
         namespace,
         identifier,
-        notify: None,
     }))
     .await?;
 
@@ -310,20 +309,11 @@ async fn register_indexer_assets_transaction(
         // --replace-indexer is only allowed if it has also been enabled at
         // the fuel-indexer service level
         if config.replace_indexer && replace_indexer {
-            let (sender, receiver) = futures::channel::oneshot::channel();
             tx.send(ServiceRequest::Stop(StopRequest {
                 namespace: namespace.to_owned(),
                 identifier: identifier.to_owned(),
-                notify: Some(sender),
             }))
             .await?;
-
-            // Since we remove and recreate indexer tables, we need to wait
-            // for the indexer to stop to ensure the old indexer does not
-            // write any data to the newly created tables.
-            if receiver.await.is_err() {
-                return Err(ApiError::Http(HttpError::InternalServer));
-            }
 
             queries::remove_indexer(conn, &namespace, &identifier, remove_data)
                 .await

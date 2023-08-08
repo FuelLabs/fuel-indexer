@@ -76,7 +76,6 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
     manifest: &Manifest,
     mut executor: T,
     kill_switch: Arc<AtomicBool>,
-    kill_confirm_trigger: futures::channel::oneshot::Sender<()>,
 ) -> impl Future<Output = ()> {
     // TODO: https://github.com/FuelLabs/fuel-indexer/issues/286
 
@@ -130,9 +129,6 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
         loop {
             if kill_switch.load(Ordering::SeqCst) {
                 info!("Kill switch flipped, stopping Indexer({indexer_uid}). <('.')>");
-                if kill_confirm_trigger.send(()).is_err() {
-                    error!("Unable to notifty listeners that Indexer({indexer_uid}) has stopped.");
-                };
                 break;
             }
 
@@ -548,21 +544,18 @@ where
         JoinHandle<()>,
         ExecutorSource,
         Arc<AtomicBool>,
-        futures::channel::oneshot::Receiver<()>,
     )> {
         let executor =
             NativeIndexExecutor::new(manifest, pool.clone(), config, handle_events)
                 .await?;
         let kill_switch = Arc::new(AtomicBool::new(false));
-        let (kill_confirm_trigger, kill_confirm) = futures::channel::oneshot::channel();
         let handle = tokio::spawn(run_executor(
             config,
             manifest,
             executor,
             kill_switch.clone(),
-            kill_confirm_trigger,
         ));
-        Ok((handle, ExecutorSource::Manifest, kill_switch, kill_confirm))
+        Ok((handle, ExecutorSource::Manifest, kill_switch))
     }
 }
 
@@ -693,10 +686,8 @@ impl WasmIndexExecutor {
         JoinHandle<()>,
         ExecutorSource,
         Arc<AtomicBool>,
-        futures::channel::oneshot::Receiver<()>,
     )> {
         let killer = Arc::new(AtomicBool::new(false));
-        let (kill_confirm_trigger, kill_confirm) = futures::channel::oneshot::channel();
 
         match &exec_source {
             ExecutorSource::Manifest => match manifest.module() {
@@ -717,14 +708,12 @@ impl WasmIndexExecutor {
                         manifest,
                         executor,
                         killer.clone(),
-                        kill_confirm_trigger,
                     ));
 
                     Ok((
                         handle,
                         ExecutorSource::Registry(bytes),
                         killer,
-                        kill_confirm,
                     ))
                 }
                 crate::Module::Native => {
@@ -739,10 +728,9 @@ impl WasmIndexExecutor {
                     manifest,
                     executor,
                     killer.clone(),
-                    kill_confirm_trigger,
                 ));
 
-                Ok((handle, exec_source, killer, kill_confirm))
+                Ok((handle, exec_source, killer))
             }
         }
     }
