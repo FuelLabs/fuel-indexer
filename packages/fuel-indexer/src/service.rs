@@ -185,14 +185,13 @@ impl IndexerService {
             let start_block = get_start_block(&mut conn, &manifest).await.unwrap_or(1);
             manifest.set_start_block(start_block);
 
-            let (handle, _module_bytes, killer) =
-                WasmIndexExecutor::create(
-                    &self.config,
-                    &manifest,
-                    ExecutorSource::Registry(assets.wasm.bytes),
-                    self.pool.clone(),
-                )
-                .await?;
+            let (handle, _module_bytes, killer) = WasmIndexExecutor::create(
+                &self.config,
+                &manifest,
+                ExecutorSource::Registry(assets.wasm.bytes),
+                self.pool.clone(),
+            )
+            .await?;
 
             info!("Registered Indexer({})", manifest.uid());
             self.handles.insert(manifest.uid(), handle);
@@ -233,14 +232,13 @@ impl IndexerService {
         manifest.set_start_block(start_block);
 
         let uid = manifest.uid();
-        let (handle, _module_bytes, killer) =
-            NativeIndexExecutor::<T>::create(
-                &self.config,
-                &manifest,
-                self.pool.clone(),
-                handle_events,
-            )
-            .await?;
+        let (handle, _module_bytes, killer) = NativeIndexExecutor::<T>::create(
+            &self.config,
+            &manifest,
+            self.pool.clone(),
+            handle_events,
+        )
+        .await?;
 
         info!("Registered NativeIndex({})", uid);
 

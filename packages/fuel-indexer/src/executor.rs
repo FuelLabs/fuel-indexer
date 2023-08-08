@@ -540,11 +540,7 @@ where
         manifest: &Manifest,
         pool: IndexerConnectionPool,
         handle_events: fn(Vec<BlockData>, Arc<Mutex<Database>>) -> T,
-    ) -> IndexerResult<(
-        JoinHandle<()>,
-        ExecutorSource,
-        Arc<AtomicBool>,
-    )> {
+    ) -> IndexerResult<(JoinHandle<()>, ExecutorSource, Arc<AtomicBool>)> {
         let executor =
             NativeIndexExecutor::new(manifest, pool.clone(), config, handle_events)
                 .await?;
@@ -682,11 +678,7 @@ impl WasmIndexExecutor {
         manifest: &Manifest,
         exec_source: ExecutorSource,
         pool: IndexerConnectionPool,
-    ) -> IndexerResult<(
-        JoinHandle<()>,
-        ExecutorSource,
-        Arc<AtomicBool>,
-    )> {
+    ) -> IndexerResult<(JoinHandle<()>, ExecutorSource, Arc<AtomicBool>)> {
         let killer = Arc::new(AtomicBool::new(false));
 
         match &exec_source {
@@ -710,11 +702,7 @@ impl WasmIndexExecutor {
                         killer.clone(),
                     ));
 
-                    Ok((
-                        handle,
-                        ExecutorSource::Registry(bytes),
-                        killer,
-                    ))
+                    Ok((handle, ExecutorSource::Registry(bytes), killer))
                 }
                 crate::Module::Native => {
                     Err(IndexerError::NativeExecutionInstantiationError)
