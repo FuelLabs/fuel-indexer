@@ -1,5 +1,6 @@
 use bigdecimal::ToPrimitive;
 use fuel_indexer::IndexerConfig;
+use fuel_indexer_lib::defaults;
 use fuel_indexer_tests::fixtures::{
     mock_request, setup_indexing_test_components, IndexingTestComponents,
 };
@@ -555,7 +556,9 @@ async fn test_redeploying_an_already_active_indexer_returns_error_when_replace_i
     node.abort();
 
     // Attempt to re-register the indexer
-    let result = service.register_indexer_from_manifest(manifest).await;
+    let result = service
+        .register_indexer_from_manifest(manifest, defaults::REPLACE_INDEXER)
+        .await;
 
     assert!(result.is_err());
 
@@ -586,7 +589,10 @@ async fn test_redeploying_an_already_active_indexer_works_when_replace_indexer_i
     } = setup_indexing_test_components(Some(config)).await;
 
     // Re-register the indexer
-    let _ = service.register_indexer_from_manifest(manifest).await;
+    service
+        .register_indexer_from_manifest(manifest, defaults::REPLACE_INDEXER)
+        .await
+        .unwrap();
 
     mock_request("/enum").await;
 

@@ -65,6 +65,7 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
         postgres_password,
         postgres_port,
         postgres_user,
+        remove_data,
         ..
     } = args.clone();
 
@@ -128,7 +129,9 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
             info!(
                     "✨ ✨ GraphQL Playground at: http://localhost:29987/api/playground/{}/{}", m.namespace(), m.identifier()
                 );
-            service.register_indexer_from_manifest(m).await?;
+            service
+                .register_indexer_from_manifest(m, remove_data)
+                .await?;
         }
         None => {
             service.register_indexers_from_registry().await?;

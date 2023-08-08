@@ -42,6 +42,10 @@ pub struct IndexerService {
 
     /// Killers used to stop the spawned indexers.
     killers: HashMap<String, Arc<AtomicBool>>,
+
+    /// When an indexer has stopped execution after kill was requested, the
+    /// notification will be received through this end of a channel.
+    kill_confirms: HashMap<String, futures::channel::oneshot::Receiver<()>>,
 }
 
 impl IndexerService {
@@ -59,6 +63,7 @@ impl IndexerService {
             manager,
             handles: HashMap::default(),
             killers: HashMap::default(),
+            kill_confirms: HashMap::default(),
             rx,
         })
     }
@@ -67,6 +72,7 @@ impl IndexerService {
     pub async fn register_indexer_from_manifest(
         &mut self,
         mut manifest: Manifest,
+        remove_data: bool,
     ) -> IndexerResult<()> {
         let mut conn = self.pool.acquire().await?;
 
@@ -88,6 +94,7 @@ impl IndexerService {
                 &mut conn,
                 manifest.namespace(),
                 manifest.identifier(),
+                remove_data,
             )
             .await
             {
@@ -125,7 +132,7 @@ impl IndexerService {
         let start_block = get_start_block(&mut conn, &manifest).await?;
         manifest.set_start_block(start_block);
 
-        let (handle, exec_source, killer) = WasmIndexExecutor::create(
+        let (handle, exec_source, killer, kill_confirm) = WasmIndexExecutor::create(
             &self.config,
             &manifest,
             ExecutorSource::Manifest,
@@ -168,6 +175,7 @@ impl IndexerService {
         );
         self.handles.insert(manifest.uid(), handle);
         self.killers.insert(manifest.uid(), killer);
+        self.kill_confirms.insert(manifest.uid(), kill_confirm);
 
         Ok(())
     }
@@ -183,17 +191,19 @@ impl IndexerService {
             let start_block = get_start_block(&mut conn, &manifest).await.unwrap_or(1);
             manifest.set_start_block(start_block);
 
-            let (handle, _module_bytes, killer) = WasmIndexExecutor::create(
-                &self.config,
-                &manifest,
-                ExecutorSource::Registry(assets.wasm.bytes),
-                self.pool.clone(),
-            )
-            .await?;
+            let (handle, _module_bytes, killer, kill_confirm) =
+                WasmIndexExecutor::create(
+                    &self.config,
+                    &manifest,
+                    ExecutorSource::Registry(assets.wasm.bytes),
+                    self.pool.clone(),
+                )
+                .await?;
 
             info!("Registered Indexer({})", manifest.uid());
             self.handles.insert(manifest.uid(), handle);
             self.killers.insert(manifest.uid(), killer);
+            self.kill_confirms.insert(manifest.uid(), kill_confirm);
         }
 
         Ok(())
@@ -230,18 +240,20 @@ impl IndexerService {
         manifest.set_start_block(start_block);
 
         let uid = manifest.uid();
-        let (handle, _module_bytes, killer) = NativeIndexExecutor::<T>::create(
-            &self.config,
-            &manifest,
-            self.pool.clone(),
-            handle_events,
-        )
-        .await?;
+        let (handle, _module_bytes, killer, kill_confirm) =
+            NativeIndexExecutor::<T>::create(
+                &self.config,
+                &manifest,
+                self.pool.clone(),
+                handle_events,
+            )
+            .await?;
 
         info!("Registered NativeIndex({})", uid);
 
         self.handles.insert(uid.clone(), handle);
         self.killers.insert(uid, killer);
+        self.kill_confirms.insert(manifest.uid(), kill_confirm);
         Ok(())
     }
 
@@ -253,6 +265,7 @@ impl IndexerService {
             pool,
             config,
             killers,
+            kill_confirms,
             ..
         } = self;
 
@@ -266,6 +279,7 @@ impl IndexerService {
             pool.clone(),
             futs.clone(),
             killers,
+            kill_confirms,
         ))
         .await
         .unwrap();
@@ -283,6 +297,7 @@ async fn create_service_task(
     pool: IndexerConnectionPool,
     futs: Arc<Mutex<FuturesUnordered<JoinHandle<()>>>>,
     mut killers: HashMap<String, Arc<AtomicBool>>,
+    mut kill_confirms: HashMap<String, futures::channel::oneshot::Receiver<()>>,
 ) -> IndexerResult<()> {
     loop {
         let futs = futs.lock().await;
@@ -309,7 +324,7 @@ async fn create_service_task(
                                 get_start_block(&mut conn, &manifest).await?;
                             manifest.set_start_block(start_block);
 
-                            let (handle, _module_bytes, killer) =
+                            let (handle, _module_bytes, killer, kill_confirm) =
                                 WasmIndexExecutor::create(
                                     &config,
                                     &manifest,
@@ -327,6 +342,8 @@ async fn create_service_task(
                                 info!("Indexer({uid}) was replaced. Stopping previous version of Indexer({uid}).");
                                 killer_for_prev_executor.store(true, Ordering::SeqCst);
                             }
+
+                            kill_confirms.insert(manifest.uid(), kill_confirm);
                         }
                         Err(e) => {
                             error!(
@@ -341,8 +358,17 @@ async fn create_service_task(
                 ServiceRequest::Stop(request) => {
                     let uid = format!("{}.{}", request.namespace, request.identifier);
 
-                    if let Some(killer) = killers.remove(&uid) {
+                    if let (Some(killer), Some(kill_confirm)) =
+                        (killers.remove(&uid), kill_confirms.remove(&uid))
+                    {
                         killer.store(true, Ordering::SeqCst);
+                        // If requester wants to be notified
+                        if let Some(notify) = request.notify {
+                            // Wait for the indexer to stop
+                            kill_confirm.await.unwrap();
+                            // And send the notification
+                            notify.send(()).unwrap();
+                        }
                     } else {
                         warn!("Stop Indexer: No indexer with the name Indexer({uid})");
                     }
