@@ -75,15 +75,15 @@ pub trait Entity<'a>: Sized + PartialEq + Eq + std::fmt::Debug {
         }
     }
 
-    fn load(id: u64) -> Option<Self> {
+    fn load(id: String) -> Option<Self> {
         unsafe {
-            let buf = id.to_le_bytes();
-            let mut buflen = (buf.len() as u32).to_le_bytes();
+            let mut buff = bincode::serialize(&id).unwrap();
+            let mut bufflen = (buff.len() as u32).to_le_bytes();
 
-            let ptr = ff_get_object(Self::TYPE_ID, buf.as_ptr(), buflen.as_mut_ptr());
+            let ptr = ff_get_object(Self::TYPE_ID, buff.as_ptr(), bufflen.as_mut_ptr());
 
             if !ptr.is_null() {
-                let len = u32::from_le_bytes(buflen) as usize;
+                let len = u32::from_le_bytes(bufflen) as usize;
                 let bytes = Vec::from_raw_parts(ptr, len, len);
                 let vec = deserialize(&bytes).expect("Bad serialization.");
 

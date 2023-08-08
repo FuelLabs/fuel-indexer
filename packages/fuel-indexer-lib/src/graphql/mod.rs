@@ -27,7 +27,7 @@ pub fn schema_version(schema: &str) -> String {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct IndexMetadata {
     /// Metadata identifier.
-    pub id: u64,
+    pub id: String,
 
     /// Time of metadata.
     pub time: u64,
@@ -153,7 +153,7 @@ pub fn extract_foreign_key_info(
             )
         })
         .unwrap_or((
-            "UInt8".to_string(),
+            "Charfield".to_string(),
             IdCol::to_lowercase_string(),
             field_type_name(f).to_lowercase(),
         ));

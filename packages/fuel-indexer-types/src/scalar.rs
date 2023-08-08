@@ -11,7 +11,7 @@ use tai64::Tai64;
 pub type String64 = SizedAsciiString<64>;
 
 /// Scalar for object IDs.
-pub type ID = String64;
+pub type ID = SizedAsciiString<64>;
 
 /// Scalar for 4-byte signed integers.
 pub type Int4 = i32;

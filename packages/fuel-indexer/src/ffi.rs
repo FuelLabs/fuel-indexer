@@ -17,7 +17,6 @@ use wasmer_middlewares::metering::{
 use crate::{IndexEnv, IndexerResult};
 pub const MODULE_ENTRYPOINT: &str = "handle_events";
 
-
 type FFIResult<T> = Result<T, FFIError>;
 
 /// Error type returned by FFI operations.
@@ -34,10 +33,7 @@ pub enum FFIError {
 }
 
 /// Get the version of the indexer schema stored in the WASM instance.
-pub fn get_version(
-    store: &mut StoreMut,
-    instance: &Instance,
-) -> FFIResult<String> {
+pub fn get_version(store: &mut StoreMut, instance: &Instance) -> FFIResult<String> {
     let exports = &instance.exports;
 
     let ptr = exports.get_function("get_version_ptr")?.call(store, &[])?[0]
@@ -255,7 +251,6 @@ pub(crate) struct WasmArg<'a> {
 }
 
 impl<'a> WasmArg<'a> {
-
     /// Create a new `WasmArg` from the given bytes.
     #[allow(clippy::result_large_err)]
     pub fn new(

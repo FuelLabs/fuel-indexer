@@ -297,14 +297,9 @@ impl From<ImplementationDecoder> for TokenStream {
                 quote! {
                     impl #ident {
                         pub fn new(#parameters) -> Self {
-                            let raw_bytes = #hasher.chain_update(#typdef_name).finalize();
-
-                            let id_bytes = <[u8; 8]>::try_from(&raw_bytes[..8]).expect("Could not calculate bytes for ID from struct fields");
-
-                            let id = u64::from_le_bytes(id_bytes);
-
+                            let hashed = #hasher.chain_update(#typdef_name).finalize();
                             Self {
-                                id,
+                                id: format!("{:x}", hashed),
                                 #struct_fields
                             }
                         }
@@ -845,7 +840,7 @@ impl From<ObjectDecoder> for TokenStream {
                         }
                     }
 
-                    async fn load(id: u64) -> Option<Self> {
+                    async fn load(id: String) -> Option<Self> {
                         unsafe {
                             match &db {
                                 Some(d) => {

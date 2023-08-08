@@ -68,8 +68,7 @@ pub fn get_json_abi(abi_path: Option<String>) -> Option<ProgramABI> {
                 Ok(parsed) => Some(parsed),
                 Err(e) => {
                     proc_macro_error::abort_call_site!(
-                        "Invalid JSON from ABI spec: {:?}.",
-                        e
+                        "Invalid JSON from ABI spec: {e:?}."
                     )
                 }
             }

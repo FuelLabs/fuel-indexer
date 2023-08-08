@@ -11,13 +11,13 @@ pub mod test_namespace {
         let AnotherEvent { hash, .. } = event2;
 
         let t1 = Thing1 {
-            id,
+            id: "1".to_string(),
             account: Address::from(account.0),
         };
         t1.save();
 
         let t2 = Thing2 {
-            id,
+            id: "2".to_string(),
             account: Address::from(account.0),
             hash: Bytes32::from(hash.0),
         };

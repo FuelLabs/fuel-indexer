@@ -67,7 +67,7 @@ pub trait Entity<'a>: Sized + PartialEq + Eq + std::fmt::Debug {
         Self::TYPE_ID
     }
 
-    async fn load(id: u64) -> Option<Self>;
+    async fn load(id: String) -> Option<Self>;
 
     async fn save(&self);
 }

@@ -1,3 +1,4 @@
+/// Utility functions for Fuel indexers.
 use fuel_indexer_plugin::prelude::sha256_digest;
 use fuel_indexer_plugin::types::{Bytes32, SizedAsciiString};
 
@@ -40,4 +41,9 @@ pub fn trim_sized_ascii_string<const LEN: usize>(s: &SizedAsciiString<LEN>) -> S
     let n = s.trim_end_matches(' ').len();
     s.truncate(n);
     s
+}
+
+/// Returns the thirty-two byte SHA256 hash of the input data as a `String`.
+pub fn sha2id(data: impl AsRef<[u8]>) -> SizedAsciiString<64> {
+    SizedAsciiString::<64>::new(sha256_digest(&data)).unwrap()
 }

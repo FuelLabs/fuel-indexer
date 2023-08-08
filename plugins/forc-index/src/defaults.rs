@@ -149,14 +149,15 @@ use fuel_indexer_utils::prelude::*;
 pub mod {indexer_name}_index_mod {{
 
     fn {indexer_name}_handler(block_data: BlockData) {{
-        info!("Processing Block#{{}}. (>'.')>", block_data.height);
-
-        let block_id = id8(block_data.id);
-        let block = Block{{ id: block_id, height: block_data.height, hash: block_data.id }};
+        if block_data.height % 1000 == 0 {{
+            info!("Processing Block#{{}}. (>'.')>", height);
+        }}
+        
+        let block = Block::new(block_data.height, block_data.id);
         block.save();
 
         for transaction in block_data.transactions.iter() {{
-            let tx = Transaction{{ id: id8(transaction.id), block: block_data.id, hash: Bytes32::from(<[u8; 32]>::from(transaction.id)) }};
+            let tx = Transaction::new(block_data.id, Bytes32::from(<[u8; 32]>::from(transaction.id)));
             tx.save();
         }}
     }}
