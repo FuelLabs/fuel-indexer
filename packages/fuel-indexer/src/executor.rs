@@ -83,34 +83,25 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
 ) -> impl Future<Output = ()> {
     // TODO: https://github.com/FuelLabs/fuel-indexer/issues/286
 
-    let start_block = manifest
-        .start_block()
-        .expect("Failed to detect start_block.");
     let end_block = manifest.end_block();
-    if end_block.is_none() {
-        warn!("No end_block specified in manifest. Indexer will run forever.");
-    }
     let stop_idle_indexers = config.stop_idle_indexers;
     let indexer_uid = manifest.uid();
-
-    let fuel_node_addr = if config.indexer_net_config {
-        manifest
-            .fuel_client()
-            .map(|x| x.to_string())
-            .unwrap_or(config.fuel_node.to_string())
-    } else {
-        config.fuel_node.to_string()
-    };
-
     let node_block_page_size = config.node_block_page_size;
 
+    let fuel_node_addr = manifest
+        .fuel_client()
+        .map(|x| x.to_string())
+        .unwrap_or(config.fuel_node.to_string());
+
     // Where should we initially start when fetching blocks from the client?
-    let mut cursor = if start_block > 1 {
-        let decremented = start_block - 1;
-        Some(decremented.to_string())
-    } else {
-        None
-    };
+    let mut cursor = manifest.start_block().map(|x| {
+        if x > 1 {
+            let decremented = x - 1;
+            decremented.to_string()
+        } else {
+            "0".to_string()
+        }
+    });
 
     info!("Indexer({indexer_uid}) subscribing to Fuel node at {fuel_node_addr}");
 
@@ -118,9 +109,13 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
         panic!("Indexer({indexer_uid}) client node connection failed: {e}.")
     });
 
+    if end_block.is_none() {
+        warn!("No end_block specified in manifest. Indexer will run forever.");
+    }
+
     async move {
         // If we reach an issue that continues to fail, we'll retry a few times before giving up, as
-        // we don't want to quit on the first error, but also don't want to waste CPU.
+        // we don't want to quit on the first error. But also don't want to waste CPU.
         //
         // Note that this count considers _consecutive_ failed calls.
         let mut retry_count = 0;
@@ -168,8 +163,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                     }
                 };
 
-            // If our block page request from the client returns empty, we sleep for a bit, update the number
-            // of empty block requests, and then continue.
+            // If our block page request from the client returns empty, we sleep for a bit, and then continue.
             if block_info.is_empty() {
                 num_empty_block_reqs += 1;
 
@@ -182,12 +176,12 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                     break;
                 }
 
-                // There is no work to do right now, so we sleep for a bit then continue.
+                // There is no work to do, so we sleep for a bit, then continue without updating our cursor.
                 sleep(Duration::from_secs(IDLE_SERVICE_WAIT_SECS)).await;
                 continue;
             }
 
-            // Do the actual indexing of the blocks.
+            // The client responded with actual blocks, so attempt to index them.
             let result = executor.handle_events(block_info).await;
 
             if let Err(e) = result {
@@ -197,7 +191,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                     break;
                 }
 
-                // We don't want to retry forever as that eats CPU.
+                // We don't want to retry forever as that eats resources.
                 if retry_count >= INDEXER_FAILED_CALLS {
                     error!(
                         "Indexer({indexer_uid}) failed after too many retries, giving up. <('.')>"
@@ -228,7 +222,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
             // If we get a non-empty response, we reset the counter.
             num_empty_block_reqs = 0;
 
-            // Always go to the next page regardless of whether or not we have blocks to process.
+            // If we make it this far, we always go to the next page.
             cursor = next_cursor;
 
             // Again, check if something else has signaled that this indexer should stop, then stop.
