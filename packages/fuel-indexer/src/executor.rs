@@ -638,10 +638,10 @@ impl WasmIndexExecutor {
             let mut env_mut = env.clone().into_mut(&mut store);
             let (data_mut, mut store_mut) = env_mut.data_and_store_mut();
 
-            let wasm_version = ffi::get_version(&mut store_mut, &instance)?;
+            let schema_version_from_wasm = ffi::get_version(&mut store_mut, &instance)?;
 
-            if wasm_version != schema_version {
-                return Err(IndexerError::Unknown(format!("WASM version {wasm_version} does not match schema version {schema_version}")));
+            if schema_version_from_wasm != schema_version {
+                return Err(IndexerError::Unknown(format!("Schema version from WASM {schema_version_from_wasm} does not match schema version {schema_version}")));
             }
 
             data_mut.memory = Some(instance.exports.get_memory("memory")?.clone());
