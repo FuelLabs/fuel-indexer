@@ -333,7 +333,7 @@ jobs:
   publish-docker-image:
     needs:
       - set-env-vars
-    if: needs.set-env-vars.outputs.IS_RELEASE == 'true' || needs.set-env-vars.outputs.IS_MASTER == 'true'
+    if: needs.set-env-vars.outputs.IS_RELEASE == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read

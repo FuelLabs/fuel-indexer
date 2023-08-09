@@ -381,6 +381,10 @@ async fn get_start_block(
             info!("{action} Indexer({}) from block {block}", manifest.uid());
             Ok(block)
         }
-        None => Ok(manifest.start_block().unwrap_or(1)),
+        None => {
+            let block = manifest.start_block().unwrap_or(1);
+            info!("Starting Indexer({}) from block {block}", manifest.uid());
+            Ok(block)
+        }
     }
 }
