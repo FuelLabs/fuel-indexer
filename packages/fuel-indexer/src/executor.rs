@@ -118,16 +118,16 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
         // we don't want to quit on the first error. But also don't want to waste CPU.
         //
         // Note that this count considers _consecutive_ failed calls.
-        let mut retry_count = 0;
+        let mut consecutive_retries = 0;
 
         // If we're testing or running on CI, we don't want indexers to run forever. But in production
         // let the indexer service operator decide if they want to stop idle indexers.
         //
-        // Maybe we can eventually make this MAX_EMPTY_BLOCK_REQUESTS value configurable
+        // Maybe we can eventually make this MAX_CONSECUTIVE_EMPTY_BLOCK_RESPONSES value configurable
         //
         // Also note that this count considers _consecutive_ empty block requests.
         let max_empty_block_reqs = if stop_idle_indexers {
-            MAX_EMPTY_BLOCK_REQUESTS
+            MAX_CONSECUTIVE_EMPTY_BLOCK_RESPONSES
         } else {
             usize::MAX
         };
@@ -192,7 +192,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                 }
 
                 // We don't want to retry forever as that eats resources.
-                if retry_count >= INDEXER_FAILED_CALLS {
+                if consecutive_retries >= INDEXER_FAILED_CALLS {
                     error!(
                         "Indexer({indexer_uid}) failed after too many retries, giving up. <('.')>"
                     );
@@ -210,9 +210,9 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                 }
 
                 // If we get here, this must be an error that allows us to retry.
-                warn!("Indexer({indexer_uid}) retrying handler after {retry_count}/{INDEXER_FAILED_CALLS} failed attempts.");
+                warn!("Indexer({indexer_uid}) retrying handler after {consecutive_retries}/{INDEXER_FAILED_CALLS} failed attempts.");
 
-                retry_count += 1;
+                consecutive_retries += 1;
 
                 // Since there was some type of error, we're gonna call `retrieve_blocks_from_node` again,
                 // with our same cursor.
@@ -232,7 +232,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
             }
 
             // Since we had successful call, we reset the retry count.
-            retry_count = 0;
+            consecutive_retries = 0;
         }
     }
 }
@@ -531,9 +531,9 @@ unsafe impl<F: Future<Output = IndexerResult<()>> + Send> Send
 {
 }
 
-/// Native executors differ from WASM executors in that they are not sandboxed - they are
-/// merely a set of native Rust functions that directly from the process running the indexer
-/// service.
+/// Native executors differ from WASM executors in that they are not sandboxed; they are merely a
+/// set of native Rust functions that (run/execute/are spawned) directly from the indexer service
+/// process.
 pub struct NativeIndexExecutor<F>
 where
     F: Future<Output = IndexerResult<()>> + Send,

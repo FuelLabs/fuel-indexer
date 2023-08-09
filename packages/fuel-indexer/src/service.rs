@@ -136,19 +136,18 @@ impl IndexerService {
         .await?;
 
         let mut items = vec![
-            (IndexerAssetType::Wasm, Vec::<u8>::from(exec_source)),
+            (IndexerAssetType::Wasm, exec_source.into()),
             (
                 IndexerAssetType::Manifest,
-                Manifest::try_into(manifest.clone())?,
+                manifest.clone().try_into().expect("Bad manifest."),
             ),
             (IndexerAssetType::Schema, schema_bytes),
         ];
 
         while let Some((asset_type, bytes)) = items.pop() {
             info!(
-                "Registering Asset({asset_type:?}) for Indexer({}.{})",
-                manifest.namespace(),
-                manifest.identifier()
+                "Registering Asset({asset_type:?}) for Indexer({})",
+                manifest.uid()
             );
 
             {
