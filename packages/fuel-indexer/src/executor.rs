@@ -794,7 +794,7 @@ impl Executor for WasmIndexExecutor {
             let mut store_guard = self.store.lock().await;
             ffi::WasmArg::new(
                 &mut store_guard,
-                &self.instance,
+                self.instance.clone(),
                 bytes,
                 self.metering_points.is_some(),
             )?
@@ -818,7 +818,9 @@ impl Executor for WasmIndexExecutor {
             move || {
                 let mut store_guard =
                     tokio::runtime::Handle::current().block_on(store.lock());
-                fun.call(&mut store_guard, ptr, len)
+                let result = fun.call(&mut store_guard, ptr, len);
+                arg.drop(&mut store_guard);
+                result
             }
         })
         .await?;
@@ -835,9 +837,6 @@ impl Executor for WasmIndexExecutor {
         } else {
             let _ = self.db.lock().await.commit_transaction().await?;
         }
-
-        let mut store_guard = self.store.lock().await;
-        arg.drop(&mut store_guard);
 
         Ok(())
     }
