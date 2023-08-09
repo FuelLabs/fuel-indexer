@@ -269,7 +269,7 @@ pub(crate) async fn register_indexer_assets(
                                 &mut conn,
                                 &namespace,
                                 &identifier,
-                                schema.to_string().as_bytes().to_vec(),
+                                (&schema).into(),
                                 IndexerAssetType::Schema,
                                 Some(claims.sub()),
                             )
