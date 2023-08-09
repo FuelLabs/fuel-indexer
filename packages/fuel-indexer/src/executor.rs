@@ -100,7 +100,8 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
 
     let node_block_page_size = config.node_block_page_size;
 
-    let mut next_cursor = if start_block > 1 {
+    // Where should we initially start when fetching blocks from the client?
+    let mut cursor = if start_block > 1 {
         let decremented = start_block - 1;
         Some(decremented.to_string())
     } else {
@@ -114,40 +115,75 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
     });
 
     async move {
+        // If we reach an issue that continues to fail, we'll retry a few times before giving up, as
+        // we don't want to quit on the first error, but also don't want to waste CPU.
+        //
+        // Note that this count considers _consecutive_ failed calls.
         let mut retry_count = 0;
 
         // If we're testing or running on CI, we don't want indexers to run forever. But in production
-        // let the index operators decide if they want to stop idle indexers. Maybe we can eventually
-        // make this MAX_EMPTY_BLOCK_REQUESTS value configurable
+        // let the indexer service operator decide if they want to stop idle indexers.
+        //
+        // Maybe we can eventually make this MAX_EMPTY_BLOCK_REQUESTS value configurable
+        //
+        // Also note that this count considers _consecutive_ empty block requests.
         let max_empty_block_reqs = if stop_idle_indexers {
             MAX_EMPTY_BLOCK_REQUESTS
         } else {
             usize::MAX
         };
+
+        // Keep track of how many empty pages we've received from the client.
         let mut num_empty_block_reqs = 0;
 
         loop {
+            // If something else has signaled that this indexer should stop, then stop.
             if kill_switch.load(Ordering::SeqCst) {
                 info!("Kill switch flipped, stopping Indexer({indexer_uid}). <('.')>");
                 break;
             }
 
-            let (block_info, cursor) = match retrieve_blocks_from_node(
-                &client,
-                node_block_page_size,
-                &next_cursor,
-                end_block,
-                &indexer_uid,
-            )
-            .await
-            {
-                Ok((block_info, cursor)) => (block_info, cursor),
-                Err(e) => {
-                    error!("Fetching blocks failed: {e:?}",);
+            // Fetch the next page of blocks, and the starting cursor for the subsequent page
+            let (block_info, next_cursor, _has_next_page) =
+                match retrieve_blocks_from_node(
+                    &client,
+                    node_block_page_size,
+                    &cursor,
+                    end_block,
+                    &indexer_uid,
+                )
+                .await
+                {
+                    Ok((block_info, next_cursor, has_next_page)) => {
+                        (block_info, next_cursor, has_next_page)
+                    }
+                    Err(e) => {
+                        error!("Indexer({indexer_uid}) failed to fetch blocks: {e:?}",);
+                        sleep(Duration::from_secs(DELAY_FOR_SERVICE_ERROR)).await;
+                        continue;
+                    }
+                };
+
+            // If our block page request from the client returns empty, we sleep for a bit, update the number
+            // of empty block requests, and then continue.
+            if block_info.is_empty() {
+                num_empty_block_reqs += 1;
+
+                info!(
+                    "Indexer({indexer_uid}) has no new blocks to process, sleeping zzZZ. (Empty response #{num_empty_block_reqs})"
+                );
+
+                if num_empty_block_reqs == max_empty_block_reqs {
+                    error!("No blocks being produced after {num_empty_block_reqs} empty responses. Indexer({indexer_uid}) giving up. <('.')>");
                     break;
                 }
-            };
 
+                // There is no work to do right now, so we sleep for a bit then continue.
+                sleep(Duration::from_secs(IDLE_SERVICE_WAIT_SECS)).await;
+                continue;
+            }
+
+            // Do the actual indexing of the blocks.
             let result = executor.handle_events(block_info).await;
 
             if let Err(e) = result {
@@ -156,65 +192,48 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                     error!("Indexer({indexer_uid}) executor run time limit exceeded. Giving up. <('.')>. Consider increasing metering points");
                     break;
                 }
-                error!("Indexer({indexer_uid}) executor failed {e:?}, retrying.");
-                match e {
-                    IndexerError::SqlxError(sqlx::Error::Database(inner)) => {
-                        // sqlx v0.7 let's you determine if this was specifically a unique constraint violation
-                        // but sqlx v0.6 does not so we use a best guess.
-                        //
-                        // TODO: https://github.com/FuelLabs/fuel-indexer/issues/1093
-                        if inner.constraint().is_some() {
-                            // Just bump the cursor and keep going
-                            warn!("Constraint violation. Continuing...");
 
-                            next_cursor = cursor;
-                        } else {
-                            error!("Database error: {inner}.");
-                            sleep(Duration::from_secs(DELAY_FOR_SERVICE_ERROR)).await;
-                            retry_count += 1;
-                        }
-                    }
-                    _ => {
-                        sleep(Duration::from_secs(DELAY_FOR_SERVICE_ERROR)).await;
-                        retry_count += 1;
-                    }
-                }
-
-                if retry_count < INDEXER_FAILED_CALLS {
-                    warn!("Indexer({indexer_uid}) retrying handler after {retry_count} failed attempts.");
-
-                    // Try to fetch the page again using same cursor.
-                    continue;
-                } else {
+                // We don't want to retry forever as that eats CPU.
+                if retry_count >= INDEXER_FAILED_CALLS {
                     error!(
-                        "Indexer({indexer_uid}) failed after retries, giving up. <('.')>"
+                        "Indexer({indexer_uid}) failed after too many retries, giving up. <('.')>"
                     );
                     break;
                 }
-            }
 
-            if cursor.is_none() {
-                num_empty_block_reqs += 1;
-
-                info!(
-                    "Indexer({indexer_uid}) has no new blocks to process, sleeping. zzZZ"
-                );
-                sleep(Duration::from_secs(DELAY_FOR_EMPTY_PAGE)).await;
-
-                if num_empty_block_reqs == max_empty_block_reqs {
-                    error!("No blocks being produced, Indexer({indexer_uid}) giving up. <('.')>");
-                    break;
+                if let IndexerError::SqlxError(sqlx::Error::Database(inner)) = e {
+                    // TODO: https://github.com/FuelLabs/fuel-indexer/issues/1093
+                    if inner.constraint().is_some() {
+                        // Just bump the cursor and keep going. These errors do not count towards `INDEXER_FAILED_CALLS`
+                        warn!("Constraint violation. This is not a retry-able error. Continuing...");
+                        cursor = next_cursor;
+                        continue;
+                    }
                 }
-            } else {
-                next_cursor = cursor;
-                num_empty_block_reqs = 0;
+
+                // If we get here, this must be an error that allows us to retry.
+                warn!("Indexer({indexer_uid}) retrying handler after {retry_count}/{INDEXER_FAILED_CALLS} failed attempts.");
+
+                retry_count += 1;
+
+                // Since there was some type of error, we're gonna call `retrieve_blocks_from_node` again,
+                // with our same cursor.
+                continue;
             }
 
+            // If we get a non-empty response, we reset the counter.
+            num_empty_block_reqs = 0;
+
+            // Always go to the next page regardless of whether or not we have blocks to process.
+            cursor = next_cursor;
+
+            // Again, check if something else has signaled that this indexer should stop, then stop.
             if kill_switch.load(Ordering::SeqCst) {
                 info!("Kill switch flipped, stopping Indexer({indexer_uid}). <('.')>");
                 break;
             }
 
+            // Since we had successful call, we reset the retry count.
             retry_count = 0;
         }
     }
@@ -222,28 +241,35 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
 
 /// Retrieve blocks from a client node.
 ///
-// This was abstracted out of `run_executor` in order to allow for
-// use in the benchmarking suite to give consistent timings.
+/// This was abstracted out of `run_executor` in order to allow for use in the benchmarking suite
+/// to give consistent timings.
+///
+/// If there is an issue fetching blocks, we return an empty cursor and an empty list of blocks, then
+/// run_executor will determine whether or not we should sleep for a bit and try again.
 pub async fn retrieve_blocks_from_node(
     client: &FuelClient,
     block_page_size: usize,
-    next_cursor: &Option<String>,
+    cursor: &Option<String>,
     end_block: Option<u64>,
     indexer_uid: &str,
-) -> IndexerResult<(Vec<BlockData>, Option<String>)> {
-    debug!("Fetching paginated results from {next_cursor:?}");
+) -> IndexerResult<(Vec<BlockData>, Option<String>, bool)> {
+    debug!("Fetching paginated results from {cursor:?}");
 
     let PaginatedResult {
-        cursor, results, ..
+        cursor,
+        results,
+        has_next_page,
+        ..
     } = client
         .full_blocks(PaginationRequest {
-            cursor: next_cursor.clone(),
+            cursor: cursor.clone(),
             results: block_page_size,
             direction: PageDirection::Forward,
         })
         .await
         .unwrap_or_else(|e| {
-            error!("Indexer({indexer_uid}) Failed to retrieve blocks: {e}");
+            error!("Indexer({indexer_uid}) failed to retrieve blocks: {e}");
+            // Setting an empty cursor will cause the indexer to sleep for a bit and try again.
             PaginatedResult {
                 cursor: None,
                 results: vec![],
@@ -450,7 +476,7 @@ pub async fn retrieve_blocks_from_node(
         block_info.push(block);
     }
 
-    Ok((block_info, cursor))
+    Ok((block_info, cursor, has_next_page))
 }
 
 #[async_trait]
@@ -631,7 +657,7 @@ impl WasmIndexExecutor {
             return Err(IndexerError::MissingHandler);
         }
 
-        // FunctionEnvMut and SotreMut must be scoped because they can't be used
+        // FunctionEnvMut and StoreMut must be scoped because they can't be used
         // across await
         let version = {
             let mut env_mut = env.clone().into_mut(&mut store);
