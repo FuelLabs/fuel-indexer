@@ -46,7 +46,9 @@ pub async fn init(command: DeployCommand) -> anyhow::Result<()> {
 
     let manifest = Manifest::from_file(&manifest_path)?;
 
-    let path = path.unwrap_or(".".into());
+    let current_dir = std::env::current_dir()?;
+
+    let path = path.unwrap_or(current_dir);
 
     let workspace_root =
         crate::ops::utils::cargo_workspace_root_dir(path.as_path()).unwrap();
