@@ -56,7 +56,11 @@ type IndexMetadataEntity @entity {
 
 /// Inject native entities into the GraphQL schema.
 fn inject_native_entities_into_schema(schema: &str) -> String {
-    format!("{}{}", schema, IndexMetadata::schema_fragment())
+    if !schema.contains("type IndexMetadataEntity") {
+        format!("{}{}", schema, IndexMetadata::schema_fragment())
+    } else {
+        schema.to_string()
+    }
 }
 
 /// Wrapper for GraphQL schema content.
