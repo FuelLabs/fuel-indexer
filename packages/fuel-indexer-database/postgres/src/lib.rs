@@ -947,3 +947,26 @@ pub async fn put_many_to_many_record(
     execute_query(conn, query).await?;
     Ok(())
 }
+
+/// Ensure the block IDs in the given history have been indexed
+pub async fn ensure_block_history(
+    conn: &mut PoolConnection<Postgres>,
+    block_ids: Vec<String>,
+) -> sqlx::Result<bool> {
+    let expected = block_ids.len();
+    let block_ids = block_ids
+        .into_iter()
+        .map(|id| format!("'{}'", id))
+        .collect::<Vec<String>>()
+        .join(",");
+
+    let actual = sqlx::query(&format!(
+        "SELECT COUNT(*) FROM block_history
+        WHERE block_id IN ({block_ids})"
+    ))
+    .fetch_one(conn)
+    .await?
+    .get::<i64, usize>(0) as usize;
+
+    Ok(expected == actual)
+}

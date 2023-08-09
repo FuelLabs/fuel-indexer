@@ -420,3 +420,15 @@ pub async fn put_many_to_many_record(
         }
     }
 }
+
+/// Ensure the block IDs in the given history have been indexed
+pub async fn ensure_block_history(
+    conn: &mut IndexerConnection,
+    block_ids: Vec<String>,
+) -> sqlx::Result<bool> {
+    match conn {
+        IndexerConnection::Postgres(ref mut c) => {
+            postgres::ensure_block_history(c, block_ids).await
+        }
+    }
+}

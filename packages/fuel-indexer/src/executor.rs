@@ -14,7 +14,7 @@ use fuel_core_client::client::{
     types::TransactionStatus as ClientTransactionStatus,
     FuelClient, PageDirection, PaginatedResult, PaginationRequest,
 };
-use fuel_indexer_database::IndexerConnectionPool;
+use fuel_indexer_database::{queries, IndexerConnectionPool};
 use fuel_indexer_lib::{defaults::*, manifest::Manifest, utils::serialize};
 use fuel_indexer_types::{
     fuel::{field::*, *},
@@ -70,6 +70,44 @@ impl From<ExecutorSource> for Vec<u8> {
     }
 }
 
+pub struct BlockHistory {
+    pages: Vec<Vec<String>>,
+    max_size: usize,
+    cursors: Vec<Option<String>>,
+}
+
+impl BlockHistory {
+    pub fn new() -> Self {
+        Self {
+            pages: Vec::new(),
+            max_size: 3,
+            cursors: Vec::new(),
+        }
+    }
+
+    pub fn push(&mut self, ids: Vec<String>, cursor: Option<String>) {
+        self.pages.push(ids);
+        self.cursors.push(cursor);
+
+        if self.is_full() {
+            self.pages.remove(0);
+            self.cursors.remove(0);
+        }
+    }
+
+    pub fn flatten_ids(&self) -> Vec<String> {
+        self.pages.iter().flatten().cloned().collect()
+    }
+
+    pub fn is_full(&self) -> bool {
+        self.pages.len() == self.max_size
+    }
+
+    pub fn oldest_cursor(&self) -> Option<String> {
+        self.cursors.first().cloned().unwrap()
+    }
+}
+
 /// Run the executor task until the kill switch is flipped, or until some other
 /// stop criteria is met.
 //
@@ -80,6 +118,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
     manifest: &Manifest,
     mut executor: T,
     kill_switch: Arc<AtomicBool>,
+    pool: IndexerConnectionPool,
 ) -> impl Future<Output = ()> {
     // TODO: https://github.com/FuelLabs/fuel-indexer/issues/286
 
@@ -112,6 +151,8 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
     if end_block.is_none() {
         warn!("No end_block specified in manifest. Indexer will run forever.");
     }
+
+    let history = Arc::new(Mutex::new(BlockHistory::new()));
 
     async move {
         // If we reach an issue that continues to fail, we'll retry a few times before giving up, as
@@ -181,6 +222,11 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                 continue;
             }
 
+            let block_ids = block_info
+                .iter()
+                .map(|b| b.id.to_string())
+                .collect::<Vec<_>>();
+
             // The client responded with actual blocks, so attempt to index them.
             let result = executor.handle_events(block_info).await;
 
@@ -217,6 +263,22 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                 // Since there was some type of error, we're gonna call `retrieve_blocks_from_node` again,
                 // with our same cursor.
                 continue;
+            }
+
+            let mut conn = pool.acquire().await.unwrap();
+
+            let mut hist = history.lock().await;
+            hist.push(block_ids, cursor.clone());
+            if hist.is_full() {
+                let in_sync =
+                    queries::ensure_block_history(&mut conn, hist.flatten_ids())
+                        .await
+                        .unwrap();
+                if !in_sync {
+                    error!("Indexer({indexer_uid}) is not in sync. Getting in sync....");
+                    cursor = hist.oldest_cursor();
+                    continue;
+                }
             }
 
             // If we get a non-empty response, we reset the counter.
@@ -592,6 +654,7 @@ where
             manifest,
             executor,
             kill_switch.clone(),
+            pool,
         ));
         Ok((handle, ExecutorSource::Manifest, kill_switch))
     }
@@ -757,6 +820,7 @@ impl WasmIndexExecutor {
                         manifest,
                         executor,
                         killer.clone(),
+                        pool.clone(),
                     ));
 
                     Ok((handle, ExecutorSource::Registry(bytes), killer))
@@ -767,12 +831,13 @@ impl WasmIndexExecutor {
             },
             ExecutorSource::Registry(bytes) => {
                 let executor =
-                    WasmIndexExecutor::new(config, manifest, bytes, pool).await?;
+                    WasmIndexExecutor::new(config, manifest, bytes, pool.clone()).await?;
                 let handle = tokio::spawn(run_executor(
                     config,
                     manifest,
                     executor,
                     killer.clone(),
+                    pool,
                 ));
 
                 Ok((handle, exec_source, killer))
