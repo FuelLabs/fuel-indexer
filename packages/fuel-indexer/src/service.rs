@@ -136,7 +136,7 @@ impl IndexerService {
         .await?;
 
         let mut items = vec![
-            (IndexerAssetType::Wasm, exec_source.to_vec()),
+            (IndexerAssetType::Wasm, Vec::<u8>::from(exec_source)),
             (
                 IndexerAssetType::Manifest,
                 Manifest::try_into(manifest.clone())?,

@@ -19,7 +19,7 @@ pub use service::IndexerService;
 use thiserror::Error;
 use wasmer::{ExportError, InstantiationError, RuntimeError};
 
-// required for vendored openssl
+// Required for vendored openssl
 use openssl as _;
 
 pub mod prelude {
@@ -55,8 +55,6 @@ pub enum IndexerError {
     FFIError(#[from] ffi::FFIError),
     #[error("Missing handler")]
     MissingHandler,
-    #[error("Indexer transaction error {0:?}")]
-    TxError(#[from] crate::executor::TxError),
     #[error("Database error {0:?}")]
     DatabaseError(#[from] IndexerDatabaseError),
     #[error("Invalid address {0:?}")]

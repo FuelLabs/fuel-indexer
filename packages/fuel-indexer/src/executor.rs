@@ -1,3 +1,4 @@
+/// Abstractions for indexer task execution.
 use crate::{
     database::Database, ffi, queries::ClientExt, IndexerConfig, IndexerError,
     IndexerResult,
@@ -30,21 +31,24 @@ use std::{
     str::FromStr,
     sync::atomic::{AtomicBool, Ordering},
 };
-use thiserror::Error;
 use tokio::{
     task::{spawn_blocking, JoinHandle},
     time::{sleep, Duration},
 };
 use tracing::{debug, error, info, warn};
 use wasmer::{
-    imports, CompilerConfig, Cranelift, FunctionEnv, Instance, Memory, Module,
-    RuntimeError, Store, TypedFunction,
+    imports, CompilerConfig, Cranelift, FunctionEnv, Instance, Memory, Module, Store,
+    TypedFunction,
 };
 use wasmer_middlewares::metering::MeteringPoints;
 
+/// Source of the indexer's execution.
 #[derive(Debug, Clone)]
 pub enum ExecutorSource {
+    /// The executor was created from a manifest file.
     Manifest,
+
+    /// The executor was created from indexer bytes stored in the database.
     Registry(Vec<u8>),
 }
 
@@ -57,9 +61,9 @@ impl AsRef<[u8]> for ExecutorSource {
     }
 }
 
-impl ExecutorSource {
-    pub fn to_vec(self) -> Vec<u8> {
-        match self {
+impl From<ExecutorSource> for Vec<u8> {
+    fn from(source: ExecutorSource) -> Self {
+        match source {
             ExecutorSource::Manifest => vec![],
             ExecutorSource::Registry(bytes) => bytes,
         }
@@ -479,6 +483,9 @@ pub async fn retrieve_blocks_from_node(
     Ok((block_info, cursor, has_next_page))
 }
 
+/// Executors are responsible for the actual indexing of data.
+///
+/// Executors can either be WASM modules or native Rust functions.
 #[async_trait]
 pub trait Executor
 where
@@ -487,21 +494,24 @@ where
     async fn handle_events(&mut self, blocks: Vec<BlockData>) -> IndexerResult<()>;
 }
 
-#[derive(Error, Debug)]
-pub enum TxError {
-    #[error("WASM Runtime Error {0:?}")]
-    WasmRuntimeError(#[from] RuntimeError),
-}
-
+/// WASM indexer runtime environment responsible for fetching/saving data to and from the database.
 #[derive(Clone)]
 pub struct IndexEnv {
+    /// Memory allocated to this runtime.
     pub memory: Option<Memory>,
+
+    /// Allocator function used to allocate memory for calls that fetch items from the database.
     pub alloc: Option<TypedFunction<u32, u32>>,
+
+    /// Deallocator function used to deallocate memory after the associated `WasmArg` is dropped.
     pub dealloc: Option<TypedFunction<(u32, u32), ()>>,
+
+    /// Reference to the connected database.
     pub db: Arc<Mutex<Database>>,
 }
 
 impl IndexEnv {
+    /// Create a new `IndexEnv`.
     pub async fn new(
         pool: IndexerConnectionPool,
         manifest: &Manifest,
@@ -527,13 +537,21 @@ unsafe impl<F: Future<Output = IndexerResult<()>> + Send> Send
 {
 }
 
+/// Native executors differ from WASM executors in that they are not sandboxed - they are
+/// merely a set of native Rust functions that directly from the process running the indexer
+/// service.
 pub struct NativeIndexExecutor<F>
 where
     F: Future<Output = IndexerResult<()>> + Send,
 {
+    /// Reference to the connected database.
     db: Arc<Mutex<Database>>,
+
+    /// Manifest of the indexer.
     #[allow(unused)]
     manifest: Manifest,
+
+    /// Function that handles events.
     handle_events_fn: fn(Vec<BlockData>, Arc<Mutex<Database>>) -> F,
 }
 
@@ -590,6 +608,7 @@ impl<F> Executor for NativeIndexExecutor<F>
 where
     F: Future<Output = IndexerResult<()>> + Send,
 {
+    /// Handle events for  native executor.
     async fn handle_events(&mut self, blocks: Vec<BlockData>) -> IndexerResult<()> {
         self.db.lock().await.start_transaction().await?;
         let res = (self.handle_events_fn)(blocks, self.db.clone()).await;
@@ -605,14 +624,29 @@ where
     }
 }
 
-/// Responsible for loading a single indexer module, triggering events.
+/// WASM executors are the primary means of execution.
+///
+/// WASM executors contain a WASM module that is instantiated and executed by the indexer service on a
+/// virtually infinite tokio task loop. These executors are responsible for allocating/deallocating their
+/// own memory for calls in and out of the runtime.
 #[derive(Debug)]
 pub struct WasmIndexExecutor {
+    /// Associated wasmer module instance.
     instance: Instance,
+
+    /// Associated wasmer module.
     _module: Module,
+
+    /// Associated wasmer store.
     store: Arc<Mutex<Store>>,
+
+    /// Reference to the connected database.
     db: Arc<Mutex<Database>>,
+
+    /// Number of metering points to use for this executor.
     metering_points: Option<u64>,
+
+    /// Manifest of the indexer.
     manifest: Manifest,
 }
 
