@@ -59,12 +59,12 @@ pub async fn init(command: DeployCommand) -> anyhow::Result<()> {
         .unwrap()
         .to_string();
 
-    let manifest_modulue_file = workspace_root.join(manifest.module());
+    let manifest_module_file = workspace_root.join(manifest.module());
 
     let form = Form::new()
         .part("manifest", file_part(&manifest_path).await?)
         .part("schema", file_part(manifest_schema_file).await?)
-        .part("wasm", file_part(manifest_modulue_file).await?);
+        .part("wasm", file_part(manifest_module_file).await?);
 
     let target = format!(
         "{url}/api/index/{}/{}",
