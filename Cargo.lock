@@ -2735,6 +2735,7 @@ dependencies = [
  "actix-web",
  "anyhow",
  "clap 3.2.25",
+ "filetime",
  "forc-postgres",
  "forc-tracing 0.31.3",
  "forc-util",

@@ -44,30 +44,27 @@ pub async fn init(command: DeployCommand) -> anyhow::Result<()> {
     let (_root_dir, manifest_path, _index_name) =
         project_dir_info(path.as_ref(), manifest.as_ref())?;
 
-    let mut manifest = Manifest::from_file(&manifest_path)?;
+    let manifest = Manifest::from_file(&manifest_path)?;
 
-    let path = path.unwrap_or(".".into());
+    let current_dir = std::env::current_dir()?;
 
-    let target_dir: std::path::PathBuf = {
-        let mut target = crate::ops::utils::cargo_target_dir(path.as_path()).unwrap();
-        target.pop();
-        target
-    };
+    let path = path.unwrap_or(current_dir);
 
-    manifest.set_graphql_schema(
-        Path::new(&target_dir)
-            .join(manifest.graphql_schema())
-            .to_str()
-            .unwrap()
-            .to_string(),
-    );
+    let workspace_root =
+        crate::ops::utils::cargo_workspace_root_dir(path.as_path()).unwrap();
 
-    manifest.set_module(target_dir.join(manifest.module()).into());
+    let manifest_schema_file = Path::new(&workspace_root)
+        .join(manifest.graphql_schema())
+        .to_str()
+        .unwrap()
+        .to_string();
+
+    let manifest_module_file = workspace_root.join(manifest.module());
 
     let form = Form::new()
         .part("manifest", file_part(&manifest_path).await?)
-        .part("schema", file_part(manifest.graphql_schema()).await?)
-        .part("wasm", file_part(manifest.module().to_string()).await?);
+        .part("schema", file_part(manifest_schema_file).await?)
+        .part("wasm", file_part(manifest_module_file).await?);
 
     let target = format!(
         "{url}/api/index/{}/{}",
