@@ -238,13 +238,13 @@ impl<'a> WasmArg<'a> {
     ) -> IndexerResult<WasmArg<'a>> {
         let alloc_fn = instance
             .exports
-            .get_typed_function::<u32, u32>(&mut store, "alloc_fn")?;
+            .get_typed_function::<u32, u32>(&store, "alloc_fn")?;
 
         let len = bytes.len() as u32;
         let ptr = alloc_fn.call(&mut store, len)?;
         let range = ptr as usize..(ptr + len) as usize;
 
-        let memory = instance.exports.get_memory("memory")?.view(&mut store);
+        let memory = instance.exports.get_memory("memory")?.view(&store);
         unsafe {
             memory.data_unchecked_mut()[range].copy_from_slice(&bytes);
         }
@@ -276,19 +276,19 @@ impl Drop for WasmArg<'_> {
             .expect("No dealloc fn");
         // Need to track whether metering is enabled or otherwise getting or setting points will panic
         if self.metering_enabled {
-            let pts = match get_remaining_points(&mut self.store, &self.instance) {
+            let pts = match get_remaining_points(&mut self.store, self.instance) {
                 MeteringPoints::Exhausted => 0,
                 MeteringPoints::Remaining(pts) => pts,
             };
             set_remaining_points(
                 &mut self.store,
-                &self.instance,
+                self.instance,
                 defaults::METERING_POINTS,
             );
             dealloc_fn
                 .call(&mut self.store, self.ptr, self.len)
                 .expect("Dealloc failed");
-            set_remaining_points(&mut self.store, &self.instance, pts);
+            set_remaining_points(&mut self.store, self.instance, pts);
         } else {
             dealloc_fn
                 .call(&mut self.store, self.ptr, self.len)
