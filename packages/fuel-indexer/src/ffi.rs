@@ -221,8 +221,8 @@ pub fn get_exports(store: &mut Store, env: &wasmer::FunctionEnv<IndexEnv>) -> Ex
 /// Holds on to a byte blob that has been copied into WASM memory until
 /// it's not needed anymore, then tells WASM to deallocate.
 pub(crate) struct WasmArg<'a> {
-    store: MutexGuard<'a, Store>,
-    instance: &'a Instance,
+    pub store: MutexGuard<'a, Store>,
+    instance: Instance,
     ptr: u32,
     len: u32,
     metering_enabled: bool,
@@ -232,7 +232,7 @@ impl<'a> WasmArg<'a> {
     #[allow(clippy::result_large_err)]
     pub fn new(
         mut store: MutexGuard<'a, Store>,
-        instance: &'a Instance,
+        instance: Instance,
         bytes: Vec<u8>,
         metering_enabled: bool,
     ) -> IndexerResult<WasmArg<'a>> {
@@ -267,7 +267,7 @@ impl<'a> WasmArg<'a> {
     }
 }
 
-impl Drop for WasmArg<'_> {
+impl<'a> Drop for WasmArg<'a> {
     fn drop(&mut self) {
         let dealloc_fn = self
             .instance
@@ -276,19 +276,19 @@ impl Drop for WasmArg<'_> {
             .expect("No dealloc fn");
         // Need to track whether metering is enabled or otherwise getting or setting points will panic
         if self.metering_enabled {
-            let pts = match get_remaining_points(&mut self.store, self.instance) {
+            let pts = match get_remaining_points(&mut self.store, &self.instance) {
                 MeteringPoints::Exhausted => 0,
                 MeteringPoints::Remaining(pts) => pts,
             };
             set_remaining_points(
                 &mut self.store,
-                self.instance,
+                &self.instance,
                 defaults::METERING_POINTS,
             );
             dealloc_fn
                 .call(&mut self.store, self.ptr, self.len)
                 .expect("Dealloc failed");
-            set_remaining_points(&mut self.store, self.instance, pts);
+            set_remaining_points(&mut self.store, &self.instance, pts);
         } else {
             dealloc_fn
                 .call(&mut self.store, self.ptr, self.len)
