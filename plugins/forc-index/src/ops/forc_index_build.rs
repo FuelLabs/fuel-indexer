@@ -64,7 +64,9 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
         );
     }
 
-    let path = path.unwrap_or(".".into());
+    let current_dir = std::env::current_dir()?;
+
+    let path = path.unwrap_or(current_dir);
 
     let mut file = File::open(&cargo_manifest_path)?;
     let mut content = String::new();
