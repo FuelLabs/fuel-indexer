@@ -104,6 +104,12 @@ impl From<&GraphQLSchema> for Vec<u8> {
     }
 }
 
+impl From<Vec<u8>> for GraphQLSchema {
+    fn from(value: Vec<u8>) -> Self {
+        GraphQLSchema::new(String::from_utf8_lossy(&value).to_string())
+    }
+}
+
 impl std::fmt::Display for GraphQLSchema {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.schema)
