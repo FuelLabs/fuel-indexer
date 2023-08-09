@@ -795,7 +795,7 @@ impl Executor for WasmIndexExecutor {
         let arg = {
             ffi::WasmArg::new(
                 store_guard,
-                self.instance.clone(),
+                &self.instance,
                 bytes,
                 self.metering_points.is_some(),
             )?

@@ -222,7 +222,7 @@ pub fn get_exports(store: &mut Store, env: &wasmer::FunctionEnv<IndexEnv>) -> Ex
 /// it's not needed anymore, then tells WASM to deallocate.
 pub(crate) struct WasmArg<'a> {
     store: MutexGuard<'a, Store>,
-    instance: Instance,
+    instance: &'a Instance,
     ptr: u32,
     len: u32,
     metering_enabled: bool,
@@ -232,7 +232,7 @@ impl<'a> WasmArg<'a> {
     #[allow(clippy::result_large_err)]
     pub fn new(
         mut store: MutexGuard<'a, Store>,
-        instance: Instance,
+        instance: &'a Instance,
         bytes: Vec<u8>,
         metering_enabled: bool,
     ) -> IndexerResult<WasmArg<'a>> {
