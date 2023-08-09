@@ -185,15 +185,14 @@ impl IndexerService {
             let start_block = get_start_block(&mut conn, &manifest).await.unwrap_or(1);
             manifest.set_start_block(start_block);
 
-            let (handle, _module_bytes, killer) =
-                WasmIndexExecutor::create(
-                    &self.config,
-                    &manifest,
-                    ExecutorSource::Registry(assets.wasm.bytes),
-                    self.pool.clone(),
-                    assets.schema.digest,
-                )
-                .await?;
+            let (handle, _module_bytes, killer) = WasmIndexExecutor::create(
+                &self.config,
+                &manifest,
+                ExecutorSource::Registry(assets.wasm.bytes),
+                self.pool.clone(),
+                assets.schema.digest,
+            )
+            .await?;
 
             info!("Registered Indexer({})", manifest.uid());
             self.handles.insert(manifest.uid(), handle);
