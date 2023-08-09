@@ -1,3 +1,4 @@
+use async_std::sync::MutexGuard;
 use fuel_indexer_lib::defaults;
 use fuel_indexer_schema::{join::RawQuery, FtColumn};
 use fuel_indexer_types::ffi::{
@@ -219,35 +220,37 @@ pub fn get_exports(store: &mut Store, env: &wasmer::FunctionEnv<IndexEnv>) -> Ex
 
 /// Holds on to a byte blob that has been copied into WASM memory until
 /// it's not needed anymore, then tells WASM to deallocate.
-pub(crate) struct WasmArg {
+pub(crate) struct WasmArg<'a> {
+    store: MutexGuard<'a, Store>,
     instance: Instance,
     ptr: u32,
     len: u32,
     metering_enabled: bool,
 }
 
-impl WasmArg {
+impl<'a> WasmArg<'a> {
     #[allow(clippy::result_large_err)]
     pub fn new(
-        store: &mut Store,
+        mut store: MutexGuard<'a, Store>,
         instance: Instance,
         bytes: Vec<u8>,
         metering_enabled: bool,
-    ) -> IndexerResult<WasmArg> {
+    ) -> IndexerResult<WasmArg<'a>> {
         let alloc_fn = instance
             .exports
-            .get_typed_function::<u32, u32>(store, "alloc_fn")?;
+            .get_typed_function::<u32, u32>(&mut store, "alloc_fn")?;
 
         let len = bytes.len() as u32;
-        let ptr = alloc_fn.call(store, len)?;
+        let ptr = alloc_fn.call(&mut store, len)?;
         let range = ptr as usize..(ptr + len) as usize;
 
-        let memory = instance.exports.get_memory("memory")?.view(store);
+        let memory = instance.exports.get_memory("memory")?.view(&mut store);
         unsafe {
             memory.data_unchecked_mut()[range].copy_from_slice(&bytes);
         }
 
         Ok(WasmArg {
+            store,
             instance,
             ptr,
             len,
@@ -262,27 +265,33 @@ impl WasmArg {
     pub fn get_len(&self) -> u32 {
         self.len
     }
+}
 
-    pub fn drop(&mut self, store: &mut Store) {
+impl Drop for WasmArg<'_> {
+    fn drop(&mut self) {
         let dealloc_fn = self
             .instance
             .exports
-            .get_typed_function::<(u32, u32), ()>(store, "dealloc_fn")
+            .get_typed_function::<(u32, u32), ()>(&self.store, "dealloc_fn")
             .expect("No dealloc fn");
         // Need to track whether metering is enabled or otherwise getting or setting points will panic
         if self.metering_enabled {
-            let pts = match get_remaining_points(store, &self.instance) {
+            let pts = match get_remaining_points(&mut self.store, &self.instance) {
                 MeteringPoints::Exhausted => 0,
                 MeteringPoints::Remaining(pts) => pts,
             };
-            set_remaining_points(store, &self.instance, defaults::METERING_POINTS);
+            set_remaining_points(
+                &mut self.store,
+                &self.instance,
+                defaults::METERING_POINTS,
+            );
             dealloc_fn
-                .call(store, self.ptr, self.len)
+                .call(&mut self.store, self.ptr, self.len)
                 .expect("Dealloc failed");
-            set_remaining_points(store, &self.instance, pts);
+            set_remaining_points(&mut self.store, &self.instance, pts);
         } else {
             dealloc_fn
-                .call(store, self.ptr, self.len)
+                .call(&mut self.store, self.ptr, self.len)
                 .expect("Dealloc failed");
         }
     }

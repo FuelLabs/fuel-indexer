@@ -790,10 +790,11 @@ impl Executor for WasmIndexExecutor {
         let bytes = serialize(&blocks);
         let uid = self.manifest.uid();
 
-        let mut arg = {
-            let mut store_guard = self.store.lock().await;
+        let store = self.store.clone();
+        let store_guard = store.lock().await;
+        let arg = {
             ffi::WasmArg::new(
-                &mut store_guard,
+                store_guard,
                 self.instance.clone(),
                 bytes,
                 self.metering_points.is_some(),
@@ -818,9 +819,7 @@ impl Executor for WasmIndexExecutor {
             move || {
                 let mut store_guard =
                     tokio::runtime::Handle::current().block_on(store.lock());
-                let result = fun.call(&mut store_guard, ptr, len);
-                arg.drop(&mut store_guard);
-                result
+                fun.call(&mut store_guard, ptr, len)
             }
         })
         .await?;
