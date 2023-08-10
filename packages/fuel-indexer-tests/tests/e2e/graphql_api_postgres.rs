@@ -11,6 +11,8 @@ async fn test_can_return_query_response_with_all_fields_required_postgres() {
         server, db: _db, ..
     } = setup_web_test_components(None).await;
 
+    mock_request("/block").await;
+
     let client = http_client();
     let resp = client
         .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
@@ -24,8 +26,8 @@ async fn test_can_return_query_response_with_all_fields_required_postgres() {
     let v: Value = serde_json::from_str(&body).unwrap();
     let data = v["data"].as_array().expect("data is not an array");
 
-    assert_eq!(data[0]["height"].as_u64().unwrap(), 0);
-    assert_eq!(data[0]["timestamp"].as_u64().unwrap(), 0);
+    assert_eq!(data[0]["height"].as_u64().unwrap(), 1);
+    assert!(data[0]["timestamp"].as_u64().unwrap() > 0);
 
     assert!(data[1]["height"].as_u64().unwrap() > 0);
     assert!(data[1]["timestamp"].as_u64().unwrap() > 0);

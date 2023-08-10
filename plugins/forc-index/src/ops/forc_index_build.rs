@@ -54,7 +54,7 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
     let cargo_manifest_path = root_dir.join(defaults::CARGO_MANIFEST_FILE_NAME);
     if !cargo_manifest_path.exists() {
         let cargo_manifest_dir = {
-            let mut path = cargo_manifest_path.clone();
+            let mut path = cargo_manifest_path;
             path.pop();
             path
         };

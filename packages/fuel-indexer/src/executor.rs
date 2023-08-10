@@ -1,3 +1,4 @@
+/// Abstractions for indexer task execution.
 use crate::{
     database::Database, ffi, queries::ClientExt, IndexerConfig, IndexerError,
     IndexerResult,
@@ -30,21 +31,24 @@ use std::{
     str::FromStr,
     sync::atomic::{AtomicBool, Ordering},
 };
-use thiserror::Error;
 use tokio::{
     task::{spawn_blocking, JoinHandle},
     time::{sleep, Duration},
 };
 use tracing::{debug, error, info, warn};
 use wasmer::{
-    imports, CompilerConfig, Cranelift, FunctionEnv, Instance, Memory, Module,
-    RuntimeError, Store, TypedFunction,
+    imports, CompilerConfig, Cranelift, FunctionEnv, Instance, Memory, Module, Store,
+    TypedFunction,
 };
 use wasmer_middlewares::metering::MeteringPoints;
 
+/// Source of the indexer's execution.
 #[derive(Debug, Clone)]
 pub enum ExecutorSource {
+    /// The executor was created from a manifest file.
     Manifest,
+
+    /// The executor was created from indexer bytes stored in the database.
     Registry(Vec<u8>),
 }
 
@@ -57,9 +61,9 @@ impl AsRef<[u8]> for ExecutorSource {
     }
 }
 
-impl ExecutorSource {
-    pub fn to_vec(self) -> Vec<u8> {
-        match self {
+impl From<ExecutorSource> for Vec<u8> {
+    fn from(source: ExecutorSource) -> Self {
+        match source {
             ExecutorSource::Manifest => vec![],
             ExecutorSource::Registry(bytes) => bytes,
         }
@@ -79,33 +83,25 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
 ) -> impl Future<Output = ()> {
     // TODO: https://github.com/FuelLabs/fuel-indexer/issues/286
 
-    let start_block = manifest
-        .start_block()
-        .expect("Failed to detect start_block.");
     let end_block = manifest.end_block();
-    if end_block.is_none() {
-        warn!("No end_block specified in manifest. Indexer will run forever.");
-    }
     let stop_idle_indexers = config.stop_idle_indexers;
     let indexer_uid = manifest.uid();
-
-    let fuel_node_addr = if config.indexer_net_config {
-        manifest
-            .fuel_client()
-            .map(|x| x.to_string())
-            .unwrap_or(config.fuel_node.to_string())
-    } else {
-        config.fuel_node.to_string()
-    };
-
     let node_block_page_size = config.node_block_page_size;
 
-    let mut next_cursor = if start_block > 1 {
-        let decremented = start_block - 1;
-        Some(decremented.to_string())
-    } else {
-        None
-    };
+    let fuel_node_addr = manifest
+        .fuel_client()
+        .map(|x| x.to_string())
+        .unwrap_or(config.fuel_node.to_string());
+
+    // Where should we initially start when fetching blocks from the client?
+    let mut cursor = manifest.start_block().map(|x| {
+        if x > 1 {
+            let decremented = x - 1;
+            decremented.to_string()
+        } else {
+            "0".to_string()
+        }
+    });
 
     info!("Indexer({indexer_uid}) subscribing to Fuel node at {fuel_node_addr}");
 
@@ -113,41 +109,79 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
         panic!("Indexer({indexer_uid}) client node connection failed: {e}.")
     });
 
+    if end_block.is_none() {
+        warn!("No end_block specified in manifest. Indexer will run forever.");
+    }
+
     async move {
-        let mut retry_count = 0;
+        // If we reach an issue that continues to fail, we'll retry a few times before giving up, as
+        // we don't want to quit on the first error. But also don't want to waste CPU.
+        //
+        // Note that this count considers _consecutive_ failed calls.
+        let mut consecutive_retries = 0;
 
         // If we're testing or running on CI, we don't want indexers to run forever. But in production
-        // let the index operators decide if they want to stop idle indexers. Maybe we can eventually
-        // make this MAX_EMPTY_BLOCK_REQUESTS value configurable
+        // let the indexer service operator decide if they want to stop idle indexers.
+        //
+        // Maybe we can eventually make this MAX_CONSECUTIVE_EMPTY_BLOCK_RESPONSES value configurable
+        //
+        // Also note that this count considers _consecutive_ empty block requests.
         let max_empty_block_reqs = if stop_idle_indexers {
-            MAX_EMPTY_BLOCK_REQUESTS
+            MAX_CONSECUTIVE_EMPTY_BLOCK_RESPONSES
         } else {
             usize::MAX
         };
+
+        // Keep track of how many empty pages we've received from the client.
         let mut num_empty_block_reqs = 0;
 
         loop {
+            // If something else has signaled that this indexer should stop, then stop.
             if kill_switch.load(Ordering::SeqCst) {
                 info!("Kill switch flipped, stopping Indexer({indexer_uid}). <('.')>");
                 break;
             }
 
-            let (block_info, cursor) = match retrieve_blocks_from_node(
-                &client,
-                node_block_page_size,
-                &next_cursor,
-                end_block,
-                &indexer_uid,
-            )
-            .await
-            {
-                Ok((block_info, cursor)) => (block_info, cursor),
-                Err(e) => {
-                    error!("Fetching blocks failed: {e:?}",);
+            // Fetch the next page of blocks, and the starting cursor for the subsequent page
+            let (block_info, next_cursor, _has_next_page) =
+                match retrieve_blocks_from_node(
+                    &client,
+                    node_block_page_size,
+                    &cursor,
+                    end_block,
+                    &indexer_uid,
+                )
+                .await
+                {
+                    Ok((block_info, next_cursor, has_next_page)) => {
+                        (block_info, next_cursor, has_next_page)
+                    }
+                    Err(e) => {
+                        error!("Indexer({indexer_uid}) failed to fetch blocks: {e:?}",);
+                        sleep(Duration::from_secs(DELAY_FOR_SERVICE_ERROR)).await;
+                        continue;
+                    }
+                };
+
+            // If our block page request from the client returns empty, we sleep for a bit, and then continue.
+            if block_info.is_empty() {
+                num_empty_block_reqs += 1;
+
+                info!(
+                    "Indexer({indexer_uid}) has no new blocks to process, sleeping zzZZ. (Empty response #{num_empty_block_reqs})"
+                );
+
+                if num_empty_block_reqs == max_empty_block_reqs {
+                    error!("No blocks being produced after {num_empty_block_reqs} empty responses. Indexer({indexer_uid}) giving up. <('.')>");
                     break;
                 }
-            };
 
+                // There is no work to do, so we sleep for a bit, then continue without updating our cursor.
+                sleep(Duration::from_secs(IDLE_SERVICE_WAIT_SECS)).await;
+                continue;
+            }
+
+            // The client responded with actual blocks, so attempt to index them.
             let result = executor.handle_events(block_info).await;
 
             if let Err(e) = result {
@@ -156,94 +190,84 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                     error!("Indexer({indexer_uid}) executor run time limit exceeded. Giving up. <('.')>. Consider increasing metering points");
                     break;
                 }
-                error!("Indexer({indexer_uid}) executor failed {e:?}, retrying.");
-                match e {
-                    IndexerError::SqlxError(sqlx::Error::Database(inner)) => {
-                        // sqlx v0.7 let's you determine if this was specifically a unique constraint violation
-                        // but sqlx v0.6 does not so we use a best guess.
-                        //
-                        // TODO: https://github.com/FuelLabs/fuel-indexer/issues/1093
-                        if inner.constraint().is_some() {
-                            // Just bump the cursor and keep going
-                            warn!("Constraint violation. Continuing...");
 
-                            next_cursor = cursor;
-                        } else {
-                            error!("Database error: {inner}.");
-                            sleep(Duration::from_secs(DELAY_FOR_SERVICE_ERROR)).await;
-                            retry_count += 1;
-                        }
-                    }
-                    _ => {
-                        sleep(Duration::from_secs(DELAY_FOR_SERVICE_ERROR)).await;
-                        retry_count += 1;
-                    }
-                }
-
-                if retry_count < INDEXER_FAILED_CALLS {
-                    warn!("Indexer({indexer_uid}) retrying handler after {retry_count} failed attempts.");
-
-                    // Try to fetch the page again using same cursor.
-                    continue;
-                } else {
+                // We don't want to retry forever as that eats resources.
+                if consecutive_retries >= INDEXER_FAILED_CALLS {
                     error!(
-                        "Indexer({indexer_uid}) failed after retries, giving up. <('.')>"
+                        "Indexer({indexer_uid}) failed after too many retries, giving up. <('.')>"
                     );
                     break;
                 }
-            }
 
-            if cursor.is_none() {
-                num_empty_block_reqs += 1;
-
-                info!(
-                    "Indexer({indexer_uid}) has no new blocks to process, sleeping. zzZZ"
-                );
-                sleep(Duration::from_secs(DELAY_FOR_EMPTY_PAGE)).await;
-
-                if num_empty_block_reqs == max_empty_block_reqs {
-                    error!("No blocks being produced, Indexer({indexer_uid}) giving up. <('.')>");
-                    break;
+                if let IndexerError::SqlxError(sqlx::Error::Database(inner)) = e {
+                    // TODO: https://github.com/FuelLabs/fuel-indexer/issues/1093
+                    if inner.constraint().is_some() {
+                        // Just bump the cursor and keep going. These errors do not count towards `INDEXER_FAILED_CALLS`
+                        warn!("Constraint violation. This is not a retry-able error. Continuing...");
+                        cursor = next_cursor;
+                        continue;
+                    }
                 }
-            } else {
-                next_cursor = cursor;
-                num_empty_block_reqs = 0;
+
+                // If we get here, this must be an error that allows us to retry.
+                warn!("Indexer({indexer_uid}) retrying handler after {consecutive_retries}/{INDEXER_FAILED_CALLS} failed attempts.");
+
+                consecutive_retries += 1;
+
+                // Since there was some type of error, we're gonna call `retrieve_blocks_from_node` again,
+                // with our same cursor.
+                continue;
             }
 
+            // If we get a non-empty response, we reset the counter.
+            num_empty_block_reqs = 0;
+
+            // If we make it this far, we always go to the next page.
+            cursor = next_cursor;
+
+            // Again, check if something else has signaled that this indexer should stop, then stop.
             if kill_switch.load(Ordering::SeqCst) {
                 info!("Kill switch flipped, stopping Indexer({indexer_uid}). <('.')>");
                 break;
             }
 
-            retry_count = 0;
+            // Since we had successful call, we reset the retry count.
+            consecutive_retries = 0;
         }
     }
 }
 
 /// Retrieve blocks from a client node.
 ///
-// This was abstracted out of `run_executor` in order to allow for
-// use in the benchmarking suite to give consistent timings.
+/// This was abstracted out of `run_executor` in order to allow for use in the benchmarking suite
+/// to give consistent timings.
+///
+/// If there is an issue fetching blocks, we return an empty cursor and an empty list of blocks, then
+/// run_executor will determine whether or not we should sleep for a bit and try again.
 pub async fn retrieve_blocks_from_node(
     client: &FuelClient,
     block_page_size: usize,
-    next_cursor: &Option<String>,
+    cursor: &Option<String>,
     end_block: Option<u64>,
     indexer_uid: &str,
-) -> IndexerResult<(Vec<BlockData>, Option<String>)> {
-    debug!("Fetching paginated results from {next_cursor:?}");
+) -> IndexerResult<(Vec<BlockData>, Option<String>, bool)> {
+    debug!("Fetching paginated results from {cursor:?}");
 
     let PaginatedResult {
-        cursor, results, ..
+        cursor,
+        results,
+        has_next_page,
+        ..
     } = client
         .full_blocks(PaginationRequest {
-            cursor: next_cursor.clone(),
+            cursor: cursor.clone(),
             results: block_page_size,
             direction: PageDirection::Forward,
         })
         .await
         .unwrap_or_else(|e| {
-            error!("Indexer({indexer_uid}) Failed to retrieve blocks: {e}");
+            error!("Indexer({indexer_uid}) failed to retrieve blocks: {e}");
+            // Setting an empty cursor will cause the indexer to sleep for a bit and try again.
             PaginatedResult {
                 cursor: None,
                 results: vec![],
@@ -450,9 +474,12 @@ pub async fn retrieve_blocks_from_node(
         block_info.push(block);
     }
 
-    Ok((block_info, cursor))
+    Ok((block_info, cursor, has_next_page))
 }
 
+/// Executors are responsible for the actual indexing of data.
+///
+/// Executors can either be WASM modules or native Rust functions.
 #[async_trait]
 pub trait Executor
 where
@@ -461,21 +488,24 @@ where
     async fn handle_events(&mut self, blocks: Vec<BlockData>) -> IndexerResult<()>;
 }
 
-#[derive(Error, Debug)]
-pub enum TxError {
-    #[error("WASM Runtime Error {0:?}")]
-    WasmRuntimeError(#[from] RuntimeError),
-}
-
+/// WASM indexer runtime environment responsible for fetching/saving data to and from the database.
 #[derive(Clone)]
 pub struct IndexEnv {
+    /// Memory allocated to this runtime.
     pub memory: Option<Memory>,
+
+    /// Allocator function used to allocate memory for calls that fetch items from the database.
     pub alloc: Option<TypedFunction<u32, u32>>,
+
+    /// Deallocator function used to deallocate memory after the associated `WasmArg` is dropped.
     pub dealloc: Option<TypedFunction<(u32, u32), ()>>,
+
+    /// Reference to the connected database.
     pub db: Arc<Mutex<Database>>,
 }
 
 impl IndexEnv {
+    /// Create a new `IndexEnv`.
     pub async fn new(
         pool: IndexerConnectionPool,
         manifest: &Manifest,
@@ -501,13 +531,21 @@ unsafe impl<F: Future<Output = IndexerResult<()>> + Send> Send
 {
 }
 
+/// Native executors differ from WASM executors in that they are not sandboxed; they are merely a
+/// set of native Rust functions that (run/execute/are spawned) directly from the indexer service
+/// process.
 pub struct NativeIndexExecutor<F>
 where
     F: Future<Output = IndexerResult<()>> + Send,
 {
+    /// Reference to the connected database.
     db: Arc<Mutex<Database>>,
+
+    /// Manifest of the indexer.
     #[allow(unused)]
     manifest: Manifest,
+
+    /// Function that handles events.
     handle_events_fn: fn(Vec<BlockData>, Arc<Mutex<Database>>) -> F,
 }
 
@@ -564,6 +602,7 @@ impl<F> Executor for NativeIndexExecutor<F>
 where
     F: Future<Output = IndexerResult<()>> + Send,
 {
+    /// Handle events for  native executor.
     async fn handle_events(&mut self, blocks: Vec<BlockData>) -> IndexerResult<()> {
         self.db.lock().await.start_transaction().await?;
         let res = (self.handle_events_fn)(blocks, self.db.clone()).await;
@@ -579,14 +618,29 @@ where
     }
 }
 
-/// Responsible for loading a single indexer module, triggering events.
+/// WASM executors are the primary means of execution.
+///
+/// WASM executors contain a WASM module that is instantiated and executed by the indexer service on a
+/// virtually infinite tokio task loop. These executors are responsible for allocating/deallocating their
+/// own memory for calls in and out of the runtime.
 #[derive(Debug)]
 pub struct WasmIndexExecutor {
+    /// Associated wasmer module instance.
     instance: Instance,
+
+    /// Associated wasmer module.
     _module: Module,
+
+    /// Associated wasmer store.
     store: Arc<Mutex<Store>>,
+
+    /// Reference to the connected database.
     db: Arc<Mutex<Database>>,
+
+    /// Number of metering points to use for this executor.
     metering_points: Option<u64>,
+
+    /// Manifest of the indexer.
     manifest: Manifest,
 }
 

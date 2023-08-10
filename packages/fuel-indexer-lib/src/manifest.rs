@@ -175,7 +175,7 @@ impl Manifest {
         let mut file = File::create(path).map_err(|err| {
             ManifestError::FileError(path.to_str().unwrap_or_default().to_string(), err)
         })?;
-        let content: Vec<u8> = Self::try_into(self.clone())?;
+        let content: Vec<u8> = Self::into(self.clone());
         file.write_all(&content).map_err(|err| {
             ManifestError::FileError(path.to_str().unwrap_or_default().to_string(), err)
         })?;
@@ -252,11 +252,9 @@ impl TryFrom<&str> for Manifest {
     }
 }
 
-impl TryInto<Vec<u8>> for Manifest {
-    type Error = ManifestError;
-
-    fn try_into(self) -> ManifestResult<Vec<u8>> {
-        Ok(serde_yaml::to_string(&self)?.as_bytes().to_vec())
+impl From<Manifest> for Vec<u8> {
+    fn from(manifest: Manifest) -> Self {
+        serde_yaml::to_vec(&manifest).unwrap()
     }
 }
 
