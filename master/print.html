@@ -174,7 +174,7 @@
 <h1 id="-fuel-indexer"><a class="header" href="#-fuel-indexer">🗃 Fuel Indexer</a></h1>
 <p>The Fuel indexer is a standalone service that can be used to index various components of the blockchain. These indexable components include blocks, transactions, receipts, and state within the Fuel network, allowing for high-performance read-only access to the blockchain for advanced dApp use-cases.</p>
 <p>By using a combination of Fuel-flavored GraphQL schema, a SQL backend, and indexers written in Rust, users of the Fuel indexer can get started creating production-ready backends for their dApps, meant to go fast 🚗💨.</p>
-<p>For those wanting to build dApp backends right away, feel free to check out the <a href="./getting-started/quickstart.html">Quickstart</a>. And for those willing to contribute to the Fuel indexer project, please feel free to read <a href="https://github.com/FuelLabs/fuel-indexer/blob/master/docs/CONTRIBUTING.md">our contributor guidelines</a> as well as the <a href="for-contributors/index.html">For Contributors</a> chapter of the book.</p>
+<p>For those wanting to build dApp backends right away, feel free to check out the <a href="./getting-started/quickstart.html">Quickstart</a>. And for those willing to contribute to the Fuel indexer project, please feel free to read <a href="https://github.com/FuelLabs/fuel-indexer/blob/develop/docs/CONTRIBUTING.md">our contributor guidelines</a> as well as the <a href="for-contributors/index.html">For Contributors</a> chapter of the book.</p>
 <!-- KEEP THIS IN CASE WE WANT TO MAKE DIAGRAM CHANGES [![fo](https://mermaid.ink/img/pako:eNp9kWFrwjAQhv_KcZ8U9A-UIajZhrDBZkUYjR9uzamFNqlpAhbrf1-6TFCY5r6EN-9zb7g7YW4UY4I7S_UeVkJqCGeavXguYW4sb2A8nnTrd0gdOe5gNvh9WmjFR7bD6J9l12JEXvuOn2-wamtuOhADQY6-qeE_Zn7DwMU-_VhEPi12msrmTuIjGp56fskHz437L1pkF2EThefsy3h7-_-tsTkUvQKK69K03aNQqa8LR1ixrahQYbSnPkOi23PFEpNwVbwlXzqJUp-DlbwzaatzTJz1PEJfqzBqUVBYShXF8w9dz4xz?type=png)](https://mermaid.live/edit#pako:eNp9kWFrwjAQhv_KcZ8U9A-UIajZhrDBZkUYjR9uzamFNqlpAhbrf1-6TFCY5r6EN-9zb7g7YW4UY4I7S_UeVkJqCGeavXguYW4sb2A8nnTrd0gdOe5gNvh9WmjFR7bD6J9l12JEXvuOn2-wamtuOhADQY6-qeE_Zn7DwMU-_VhEPi12msrmTuIjGp56fskHz437L1pkF2EThefsy3h7-_-tsTkUvQKK69K03aNQqa8LR1ixrahQYbSnPkOi23PFEpNwVbwlXzqJUp-DlbwzaatzTJz1PEJfqzBqUVBYShXF8w9dz4xz) -->
 <h2 id="architecture"><a class="header" href="#architecture">Architecture</a></h2>
 <!-- Using an <img> so we can size it -->
@@ -199,7 +199,7 @@
 <li>The <a href="getting-started/dependencies.html#wasm"><code>wasm32-unknown-unknown</code></a> <code>rustup</code> target</li>
 <li><a href="getting-started/dependencies.html#wasm"><code>wasm-snip</code></a>, a utility for stripping symbols from WebAssemly binaries.</li>
 </ul>
-<p>If you don't want to install a database directly onto your system, you can use Docker to run it as an isolated container. You can install it by following the <a href="https://docs.docker.com/get-docker/">install instructions</a>. For reference purposes, we provide a <a href="https://github.com/FuelLabs/fuel-indexer/blob/master/scripts/docker-compose.yaml"><code>docker compose</code> file</a> that runs a Postgres database and the Fuel indexer service.</p>
+<p>If you don't want to install a database directly onto your system, you can use Docker to run it as an isolated container. You can install it by following the <a href="https://docs.docker.com/get-docker/">install instructions</a>. For reference purposes, we provide a <a href="https://github.com/FuelLabs/fuel-indexer/blob/develop/scripts/docker-compose.yaml"><code>docker compose</code> file</a> that runs a Postgres database and the Fuel indexer service.</p>
 <blockquote>
 <p>IMPORTANT: Note for Apple Silicon macOS users:</p>
 <p>Using the Fuel indexer through Docker on Apple Silicon systems is currently not supported.</p>
@@ -223,7 +223,7 @@
 <h2 id="wasm"><a class="header" href="#wasm">WASM</a></h2>
 <p>Two additonal cargo components will be required to build your indexers: <code>wasm-snip</code> and the <code>wasm32-unknown-unknown</code> target.</p>
 <blockquote>
-<p>As of this writing, there is a small bug in newly built Fuel indexer WASM modules that produces a WASM runtime error due an errant upstream dependency. For now, you can use <code>wasm-snip</code> to remove the errant symbols from the WASM module. An example can be found in the related script <a href="https://github.com/FuelLabs/fuel-indexer/blob/master/scripts/stripper.bash">here</a>.</p>
+<p>As of this writing, there is a small bug in newly built Fuel indexer WASM modules that produces a WASM runtime error due an errant upstream dependency. For now, you can use <code>wasm-snip</code> to remove the errant symbols from the WASM module. An example can be found in the related script <a href="https://github.com/FuelLabs/fuel-indexer/blob/develop/scripts/stripper.bash">here</a>.</p>
 </blockquote>
 <h3 id="wasm-snip"><a class="header" href="#wasm-snip"><code>wasm-snip</code></a></h3>
 <p>To install the <code>wasm-snip</code>:</p>
@@ -943,7 +943,7 @@ types can be found in <a href="project-components/../data-types/types.html">the 
 <p>Developers should be aware of what things may not work off-the-shelf in a module: file I/O, thread spawning, and anything that depends on system libraries. This is due to the technological limitations of WASM as a whole; more information can be found <a href="https://rustwasm.github.io/docs/book/reference/which-crates-work-with-wasm.html">here</a>.</p>
 </li>
 <li>
-<p>As of this writing, there is a small bug in newly built Fuel indexer WASM modules that produces a WASM runtime error due to an errant upstream dependency. For now, a quick workaround requires the use of <code>wasm-snip</code> to remove the errant symbols from the WASM module. More info can be found in the related script <a href="https://github.com/FuelLabs/fuel-indexer/blob/master/scripts/stripper.bash">here</a>.</p>
+<p>As of this writing, there is a small bug in newly built Fuel indexer WASM modules that produces a WASM runtime error due to an errant upstream dependency. For now, a quick workaround requires the use of <code>wasm-snip</code> to remove the errant symbols from the WASM module. More info can be found in the related script <a href="https://github.com/FuelLabs/fuel-indexer/blob/develop/scripts/stripper.bash">here</a>.</p>
 </li>
 <li>
 <p>Users on Apple Silicon macOS systems may experience trouble when trying to build WASM modules due to its <code>clang</code> binary not supporting WASM targets. If encountered, you can install a binary with better support from Homebrew (<code>brew install llvm</code>) and instruct <code>rustc</code> to leverage it by setting the following environment variables:</p>
@@ -1409,7 +1409,7 @@ type Book @entity {
 <p>To run the standalone Fuel indexer GraphQL API server using a configuration file:</p>
 <pre><code class="language-bash">fuel-indexer-api-server run --config config.yaml
 </code></pre>
-<p>In the above example, <code>config.yaml</code> is based on <a href="https://github.com/FuelLabs/fuel-indexer/blob/master/config.yaml">the default service configuration file</a>.</p>
+<p>In the above example, <code>config.yaml</code> is based on <a href="https://github.com/FuelLabs/fuel-indexer/blob/develop/config.yaml">the default service configuration file</a>.</p>
 <h2 id="options"><a class="header" href="#options">Options</a></h2>
 <pre><code class="language-text">USAGE:
     fuel-indexer-api-server run [OPTIONS]

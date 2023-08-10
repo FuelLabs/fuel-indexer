@@ -200,7 +200,7 @@
 <p>Developers should be aware of what things may not work off-the-shelf in a module: file I/O, thread spawning, and anything that depends on system libraries. This is due to the technological limitations of WASM as a whole; more information can be found <a href="https://rustwasm.github.io/docs/book/reference/which-crates-work-with-wasm.html">here</a>.</p>
 </li>
 <li>
-<p>As of this writing, there is a small bug in newly built Fuel indexer WASM modules that produces a WASM runtime error due to an errant upstream dependency. For now, a quick workaround requires the use of <code>wasm-snip</code> to remove the errant symbols from the WASM module. More info can be found in the related script <a href="https://github.com/FuelLabs/fuel-indexer/blob/master/scripts/stripper.bash">here</a>.</p>
+<p>As of this writing, there is a small bug in newly built Fuel indexer WASM modules that produces a WASM runtime error due to an errant upstream dependency. For now, a quick workaround requires the use of <code>wasm-snip</code> to remove the errant symbols from the WASM module. More info can be found in the related script <a href="https://github.com/FuelLabs/fuel-indexer/blob/develop/scripts/stripper.bash">here</a>.</p>
 </li>
 <li>
 <p>Users on Apple Silicon macOS systems may experience trouble when trying to build WASM modules due to its <code>clang</code> binary not supporting WASM targets. If encountered, you can install a binary with better support from Homebrew (<code>brew install llvm</code>) and instruct <code>rustc</code> to leverage it by setting the following environment variables:</p>
