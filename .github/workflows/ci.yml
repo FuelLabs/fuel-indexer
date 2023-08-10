@@ -22,14 +22,14 @@ env:
   IS_RELEASE: ${{ github.event_name == 'release' && github.event.action == 'published' }}
 jobs:
   cancel-previous-runs:
-    runs-on: ubuntu-latest
+    runs-on: buildjet-4vcpu-ubuntu-2204
     steps:
       - name: Cancel Previous Runs
         uses: styfle/cancel-workflow-action@0.9.1
         with:
           access_token: ${{ github.token }}
   cargo-toml-fmt-check:
-    runs-on: ubuntu-latest
+    runs-on: buildjet-4vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@master
@@ -42,7 +42,7 @@ jobs:
       - name: Run Cargo.toml sort check
         run: cargo sort -w --check packages/**/Cargo.toml
   set-env-vars:
-    runs-on: ubuntu-latest
+    runs-on: buildjet-4vcpu-ubuntu-2204
     outputs:
       IS_MASTER: ${{ steps.set-env.outputs.IS_MASTER }}
       IS_DEVELOP: ${{ steps.set-env.outputs.IS_DEVELOP }}
@@ -70,11 +70,19 @@ jobs:
   mdbook-build:
     needs:
       - docs-test
-    runs-on: ubuntu-latest
+    runs-on: buildjet-4vcpu-ubuntu-2204
     steps:
       - name: Install toolchain
         uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v1
+      - uses: buildjet/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ matrix.command }}-${{ matrix.args }}-${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - name: mdbook build
         uses: peaceiris/actions-mdbook@v1
         with:
@@ -83,7 +91,7 @@ jobs:
     needs:
       - cargo-toml-fmt-check
       - set-env-vars
-    runs-on: ubuntu-latest
+    runs-on: buildjet-4vcpu-ubuntu-2204
     if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_DEVELOP_OR_SEMVER ==
       'true'
     steps:
@@ -93,7 +101,7 @@ jobs:
       - name: cargo check --locked --all-features --all-targets
         run: cargo check --locked --all-features --all-targets
   cargo-verifications:
-    runs-on: ubuntu-latest
+    runs-on: buildjet-4vcpu-ubuntu-2204
     needs:
       - cargo-toml-fmt-check
       - set-env-vars
@@ -148,7 +156,7 @@ jobs:
     needs:
       - cargo-toml-fmt-check
       - set-env-vars
-    runs-on: ubuntu-latest
+    runs-on: buildjet-4vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v3
       - name: Install toolchain
@@ -162,7 +170,7 @@ jobs:
     needs:
       - cargo-toml-fmt-check
       - set-env-vars
-    runs-on: ubuntu-latest
+    runs-on: buildjet-4vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v3
       - name: Install toolchain
@@ -177,7 +185,7 @@ jobs:
     needs:
       - cargo-toml-fmt-check
       - set-env-vars
-    runs-on: ubuntu-latest
+    runs-on: buildjet-4vcpu-ubuntu-2204
     services:
       postgres:
         image: postgres:latest
@@ -206,7 +214,7 @@ jobs:
     needs:
       - cargo-toml-fmt-check
       - set-env-vars
-    runs-on: ubuntu-latest
+    runs-on: buildjet-4vcpu-ubuntu-2204
     services:
       postgres:
         image: postgres:latest
@@ -227,10 +235,21 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
-      - uses: Swatinem/rust-cache@v1
-      - run: cargo install sqlx-cli
+      - uses: buildjet/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ matrix.command }}-${{ matrix.args }}-${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - name: Install SQLx CLI
+        run: |
+          if ! which sqlx; then cargo install sqlx-cli; fi
       - name: Install wasm-snip
-        run: cargo install wasm-snip
+        run: |
+          if ! which wasm-snip; then cargo install wasm-snip; fi
       - name: Build fuel-indexer-test WASM
         run: >
           cargo build -p fuel-indexer-test --release --target
@@ -253,16 +272,25 @@ jobs:
     needs:
       - cargo-toml-fmt-check
       - set-env-vars
-    runs-on: ubuntu-latest
+    runs-on: buildjet-4vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v3
       - name: Install toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
-      - uses: Swatinem/rust-cache@v1
-      - name: wasm-snip
-        run: cargo install wasm-snip
+      - uses: buildjet/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ matrix.command }}-${{ matrix.args }}-${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - name: Install wasm-snip
+        run: |
+          if ! which wasm-snip; then cargo install wasm-snip; fi
       - name: cargo build -p forc-index -p fuel-indexer --locked --release
         run: cargo build -p forc-index -p fuel-indexer --locked --release
       - name: forc-index-* commands (wasm + native)
@@ -296,7 +324,7 @@ jobs:
     needs:
       - cargo-toml-fmt-check
       - set-env-vars
-    runs-on: ubuntu-latest
+    runs-on: buildjet-4vcpu-ubuntu-2204
     services:
       postgres:
         image: postgres:latest
@@ -317,9 +345,18 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
-      - uses: Swatinem/rust-cache@v1
-      - name: wasm-snip
-        run: cargo install wasm-snip
+      - uses: buildjet/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ matrix.command }}-${{ matrix.args }}-${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - name: Install wasm-snip
+        run: |
+          if ! which wasm-snip; then cargo install wasm-snip; fi
       - name: cargo build -p forc-index -p fuel-indexer --locked --release
         run: cargo build -p forc-index -p fuel-indexer --locked --release
       - name: Build and test examples
@@ -334,7 +371,7 @@ jobs:
     needs:
       - set-env-vars
     if: needs.set-env-vars.outputs.IS_RELEASE == 'true'
-    runs-on: ubuntu-latest
+    runs-on: buildjet-4vcpu-ubuntu-2204
     permissions:
       contents: read
       packages: write
@@ -376,8 +413,8 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=registry,ref=ghcr.io/fuellabs/fuel-indexer-build-cache:latest
+          cache-to: type=registry,ref=ghcr.io/fuellabs/fuel-indexer-build-cache:latest,mode=max
       - name: Notify if Job Fails
         uses: ravsamhq/notify-slack-action@v2
         if: always() && (github.ref == 'refs/heads/master' || github.ref_type == 'tag')
@@ -399,11 +436,11 @@ jobs:
     strategy:
       matrix:
         job:
-          - os: ubuntu-latest
+          - os: buildjet-4vcpu-ubuntu-2204
             platform: linux
             target: x86_64-unknown-linux-gnu
             cross_image: x86_64-linux-gnu
-          - os: ubuntu-latest
+          - os: buildjet-4vcpu-ubuntu-2204
             platform: linux-arm
             target: aarch64-unknown-linux-gnu
             cross_image: aarch64-linux-gnu
@@ -592,7 +629,7 @@ jobs:
     needs:
       - publish-docker-image
       - set-env-vars
-    runs-on: ubuntu-latest
+    runs-on: buildjet-4vcpu-ubuntu-2204
     steps:
       - name: Set Environment Variables
         run: |
@@ -616,7 +653,7 @@ jobs:
     needs:
       - set-env-vars
     if: needs.set-env-vars.outputs.IS_RELEASE == 'true'
-    runs-on: ubuntu-latest
+    runs-on: buildjet-4vcpu-ubuntu-2204
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -659,14 +696,14 @@ jobs:
       - cargo-clippy
       - cargo-fmt-check
       - build-default-indexer
-    runs-on: ubuntu-latest
+    runs-on: buildjet-4vcpu-ubuntu-2204
     steps:
       - run: true
   notify-slack-on-failure:
     needs:
       - validation-complete
     if: always()
-    runs-on: ubuntu-latest
+    runs-on: buildjet-4vcpu-ubuntu-2204
     steps:
       - name: Notify Slack On Failure
         uses: ravsamhq/notify-slack-action@v2
