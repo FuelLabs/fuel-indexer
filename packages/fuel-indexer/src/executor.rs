@@ -597,6 +597,7 @@ impl WasmIndexExecutor {
         manifest: &Manifest,
         wasm_bytes: impl AsRef<[u8]>,
         pool: IndexerConnectionPool,
+        schema_version: String,
     ) -> IndexerResult<Self> {
         let mut compiler_config = Cranelift::new();
 
@@ -631,11 +632,17 @@ impl WasmIndexExecutor {
             return Err(IndexerError::MissingHandler);
         }
 
-        // FunctionEnvMut and SotreMut must be scoped because they can't be used
-        // across await
-        let version = {
+        // FunctionEnvMut and StoreMut must be scoped because they can't
+        // be used across await
+        {
             let mut env_mut = env.clone().into_mut(&mut store);
             let (data_mut, mut store_mut) = env_mut.data_and_store_mut();
+
+            let schema_version_from_wasm = ffi::get_version(&mut store_mut, &instance)?;
+
+            if schema_version_from_wasm != schema_version {
+                return Err(IndexerError::Unknown(format!("Schema version from WASM {schema_version_from_wasm} does not match schema version {schema_version}")));
+            }
 
             data_mut.memory = Some(instance.exports.get_memory("memory")?.clone());
             data_mut.alloc = Some(
@@ -648,11 +655,9 @@ impl WasmIndexExecutor {
                     .exports
                     .get_typed_function(&store_mut, "dealloc_fn")?,
             );
+        }
 
-            ffi::get_version(&mut store_mut, &instance)?
-        };
-
-        db.lock().await.load_schema(version).await?;
+        db.lock().await.load_schema(schema_version).await?;
 
         Ok(WasmIndexExecutor {
             instance,
@@ -673,7 +678,8 @@ impl WasmIndexExecutor {
         let config = config.unwrap_or_default();
         let manifest = Manifest::from_file(p)?;
         let bytes = manifest.module_bytes()?;
-        Self::new(&config, &manifest, bytes, pool).await
+        let schema_version = manifest.graphql_schema_content()?.version().to_string();
+        Self::new(&config, &manifest, bytes, pool, schema_version).await
     }
 
     /// Create a new `WasmIndexExecutor`.
@@ -682,6 +688,7 @@ impl WasmIndexExecutor {
         manifest: &Manifest,
         exec_source: ExecutorSource,
         pool: IndexerConnectionPool,
+        schema_version: String,
     ) -> IndexerResult<(JoinHandle<()>, ExecutorSource, Arc<AtomicBool>)> {
         let killer = Arc::new(AtomicBool::new(false));
 
@@ -696,7 +703,8 @@ impl WasmIndexExecutor {
                         config,
                         manifest,
                         bytes.clone(),
-                        pool.clone(),
+                        pool,
+                        schema_version,
                     )
                     .await?;
                     let handle = tokio::spawn(run_executor(
@@ -714,7 +722,8 @@ impl WasmIndexExecutor {
             },
             ExecutorSource::Registry(bytes) => {
                 let executor =
-                    WasmIndexExecutor::new(config, manifest, bytes, pool).await?;
+                    WasmIndexExecutor::new(config, manifest, bytes, pool, schema_version)
+                        .await?;
                 let handle = tokio::spawn(run_executor(
                     config,
                     manifest,
