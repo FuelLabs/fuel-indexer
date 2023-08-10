@@ -370,7 +370,7 @@ async fn test_can_index_metadata_when_indexer_macro_is_called_postgres() {
             .unwrap();
 
     assert!(row.get::<BigDecimal, usize>(1).to_u64().unwrap() > 0);
-    assert_eq!(row.get::<BigDecimal, usize>(2).to_u64().unwrap(), 1);
+    assert_eq!(row.get::<i32, usize>(2), 1);
 }
 
 #[actix_web::test]
