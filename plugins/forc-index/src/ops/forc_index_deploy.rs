@@ -50,8 +50,7 @@ pub async fn init(command: DeployCommand) -> anyhow::Result<()> {
 
     let path = path.unwrap_or(current_dir);
 
-    let workspace_root =
-        crate::ops::utils::cargo_workspace_root_dir(path.as_path()).unwrap();
+    let workspace_root = crate::utils::cargo_workspace_root_dir(path.as_path()).unwrap();
 
     let manifest_schema_file = Path::new(&workspace_root)
         .join(manifest.graphql_schema())

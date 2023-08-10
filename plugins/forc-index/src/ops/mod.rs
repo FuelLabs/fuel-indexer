@@ -7,4 +7,3 @@ pub mod forc_index_new;
 pub mod forc_index_remove;
 pub mod forc_index_start;
 pub mod forc_index_status;
-pub mod utils;
