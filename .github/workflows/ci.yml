@@ -63,6 +63,10 @@ jobs:
           else
             echo "IS_RELEASE_OR_MASTER_OR_DEVELOP_OR_SEMVER=false" >> $GITHUB_OUTPUT
           fi
+
+          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+          echo “SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+
   docs-test:
     uses: FuelLabs/github-actions/.github/workflows/mdbook-docs.yml@master
     with:
@@ -163,6 +167,8 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy, rustfmt
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.3
       - name: cargo clippy --all-targets --all-features
         run: cargo clippy --all-targets --all-features
   cargo-fmt-check:
@@ -204,6 +210,8 @@ jobs:
       - uses: actions/checkout@v3
       - name: Install toolchain
         uses: dtolnay/rust-toolchain@stable
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.3
       - name: cargo test --locked --all-targets --workspace --exclude fuel-indexer-tests
           --exclude plugin-tests --exclude fuel-indexer-benchmarks
         run: cargo test --locked --all-targets --workspace --exclude fuel-indexer-tests
@@ -250,6 +258,8 @@ jobs:
       - name: Install wasm-snip
         run: |
           if ! which wasm-snip; then cargo install wasm-snip; fi
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.3
       - name: Build fuel-indexer-test WASM
         run: >
           cargo build -p fuel-indexer-test --release --target
@@ -266,6 +276,10 @@ jobs:
       - name: Run E2E and integration tests
         run: cargo test --locked --all-targets --features e2e,postgres -p
           fuel-indexer-tests -- --test-threads=1
+      - name: Run sccache stat for check
+        shell: bash
+        run: ${SCCACHE_PATH} --show-stats
+
   build-default-indexer:
     if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_DEVELOP_OR_SEMVER != 'true'
     needs:
@@ -290,6 +304,8 @@ jobs:
       - name: Install wasm-snip
         run: |
           if ! which wasm-snip; then cargo install wasm-snip; fi
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.3
       - name: cargo build -p forc-index -p fuel-indexer --locked --release
         run: cargo build -p forc-index -p fuel-indexer --locked --release
       - name: forc-index-* commands (wasm + native)
@@ -356,6 +372,8 @@ jobs:
       - name: Install wasm-snip
         run: |
           if ! which wasm-snip; then cargo install wasm-snip; fi
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.3
       - name: cargo build -p forc-index -p fuel-indexer --locked --release
         run: cargo build -p forc-index -p fuel-indexer --locked --release
       - name: Build and test examples
