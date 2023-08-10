@@ -261,20 +261,19 @@ pub(crate) async fn register_indexer_assets(
                             }
                         }
                         IndexerAssetType::Schema => {
+                            let schema = GraphQLSchema::from(data.to_vec());
+
                             match queries::register_indexer_asset(
                                 &mut conn,
                                 &namespace,
                                 &identifier,
-                                data.to_vec(),
+                                (&schema).into(),
                                 IndexerAssetType::Schema,
                                 Some(claims.sub()),
                             )
                             .await
                             {
                                 Ok(result) => {
-                                    let schema = GraphQLSchema::new(
-                                        String::from_utf8_lossy(&data).to_string(),
-                                    );
                                     match schema_manager
                                         .write()
                                         .await

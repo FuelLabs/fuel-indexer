@@ -64,6 +64,10 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
         );
     }
 
+    let current_dir = std::env::current_dir()?;
+
+    let path = path.unwrap_or(current_dir);
+
     let mut file = File::open(&cargo_manifest_path)?;
     let mut content = String::new();
     file.read_to_string(&mut content)?;
@@ -71,6 +75,18 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
 
     let indexer_manifest_path = root_dir.join(manifest);
     let mut manifest = Manifest::from_file(&indexer_manifest_path)?;
+
+    let manifest_schema_file = {
+        let workspace_root: std::path::PathBuf =
+            crate::ops::utils::cargo_workspace_root_dir(path.as_path()).unwrap();
+        Path::new(&workspace_root).join(manifest.graphql_schema())
+    };
+
+    // Rebuild the WASM module even if only the schema has changed.
+    crate::ops::utils::ensure_rebuild_if_schema_changed(
+        root_dir.as_path(),
+        Path::new(manifest_schema_file.as_path()),
+    )?;
 
     // Construct our build command
     //
@@ -171,8 +187,7 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
         let profile = if release { "release" } else { "debug" };
 
         let target_dir: std::path::PathBuf =
-            crate::ops::utils::cargo_target_dir(path.unwrap_or(".".into()).as_path())
-                .unwrap();
+            crate::ops::utils::cargo_target_dir(path.as_path()).unwrap();
 
         let abs_artifact_path = target_dir
             .join(defaults::WASM_TARGET)

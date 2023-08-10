@@ -62,10 +62,21 @@ async fn test_wasm_executor_can_meter_execution() {
             // not enough points to finish execution
             config.metering_points = Some(100u64);
 
-            let mut executor =
-                WasmIndexExecutor::new(&config, &manifest, bytes.clone(), pool)
-                    .await
-                    .unwrap();
+            let schema_version = manifest
+                .graphql_schema_content()
+                .unwrap()
+                .version()
+                .to_string();
+
+            let mut executor = WasmIndexExecutor::new(
+                &config,
+                &manifest,
+                bytes.clone(),
+                pool,
+                schema_version,
+            )
+            .await
+            .unwrap();
 
             let blocks: Vec<fuel_indexer_types::fuel::BlockData> = vec![];
 

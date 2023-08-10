@@ -110,6 +110,7 @@ impl IndexerService {
         .await?;
 
         let schema = manifest.graphql_schema_content()?;
+        let schema_version = schema.version().to_string();
         let schema_bytes = Vec::<u8>::from(&schema);
 
         self.manager
@@ -130,6 +131,7 @@ impl IndexerService {
             &manifest,
             ExecutorSource::Manifest,
             self.pool.clone(),
+            schema_version,
         )
         .await?;
 
@@ -188,6 +190,7 @@ impl IndexerService {
                 &manifest,
                 ExecutorSource::Registry(assets.wasm.bytes),
                 self.pool.clone(),
+                assets.schema.digest,
             )
             .await?;
 
@@ -315,6 +318,7 @@ async fn create_service_task(
                                     &manifest,
                                     ExecutorSource::Registry(assets.wasm.bytes),
                                     pool.clone(),
+                                    assets.schema.digest,
                                 )
                                 .await?;
 
