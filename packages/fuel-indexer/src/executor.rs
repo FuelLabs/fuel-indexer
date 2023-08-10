@@ -807,13 +807,9 @@ impl Executor for WasmIndexExecutor {
             move || {
                 let store_guard =
                     tokio::runtime::Handle::current().block_on(store.lock());
-                let mut arg = ffi::WasmArg::new(
-                    store_guard,
-                    instance,
-                    bytes,
-                    metering_enabled,
-                )
-                .unwrap();
+                let mut arg =
+                    ffi::WasmArg::new(store_guard, instance, bytes, metering_enabled)
+                        .unwrap();
 
                 let ptr = arg.get_ptr();
                 let len = arg.get_len();
