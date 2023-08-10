@@ -4,14 +4,13 @@ use fuel_indexer_tests::fixtures::{
     mock_request, setup_indexing_test_components, IndexingTestComponents,
 };
 use fuel_indexer_types::prelude::*;
-use hex::FromHex;
 use serde::{Deserialize, Serialize};
 use sqlx::{types::BigDecimal, Row};
 use std::{collections::HashSet, str::FromStr};
 
 const REVERT_VM_CODE: u64 = 0x0004;
 const EXPECTED_CONTRACT_ID: &str =
-    "164c38e3cf312b346e51a6a928cb0beefe3cd0a1efd461f24b1fc2c9c957e613";
+    "9ccd23f730a8357508ae2b4c8333769d67faccc06e8831b3cf7b20553da39cf9";
 const TRANSFER_BASE_ASSET_ID: &str =
     "0000000000000000000000000000000000000000000000000000000000000000";
 
@@ -33,7 +32,7 @@ async fn test_can_trigger_and_index_events_with_multiple_args_in_index_handler_p
     .await
     .unwrap();
 
-    let height = block_row.get::<BigDecimal, usize>(1).to_u64().unwrap();
+    let height = block_row.get::<i32, usize>(1);
     let timestamp: i64 = block_row.get(2);
     assert!(height >= 1);
     assert!(timestamp > 0);
@@ -62,18 +61,16 @@ async fn test_can_trigger_and_index_events_with_multiple_args_in_index_handler_p
             .await
             .unwrap();
 
-    let from_buff_str = pung_row.get::<&str, usize>(3);
-    let from_buff = <[u8; 32]>::from_hex(hex::decode(from_buff_str).unwrap()).unwrap();
+    let from_buff = ContractId::from_str(&pung_row.get::<String, usize>(3)).unwrap();
 
-    let contract_buff = <[u8; 32]>::from_hex(
-        hex::decode("0x322ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96")
-            .unwrap(),
+    let contract_buff = ContractId::from_str(
+        "0x322ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96",
     )
     .unwrap();
 
     assert_eq!(
-        Identity::ContractId(from_buff.into()),
-        Identity::ContractId(contract_buff.into()),
+        Identity::ContractId(ContractId::from(<[u8; 32]>::from(from_buff))),
+        Identity::ContractId(ContractId::from(<[u8; 32]>::from(contract_buff))),
     );
 }
 
@@ -93,20 +90,17 @@ async fn test_can_trigger_and_index_callreturn_postgres() {
             .await
             .unwrap();
 
-    let from_buff =
-        <[u8; 32]>::from_hex(hex::decode(row.get::<&str, usize>(3)).unwrap()).unwrap();
-
-    let addr_buff = <[u8; 32]>::from_hex(
-        hex::decode("0x532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96")
-            .unwrap(),
+    let from_buff = Address::from_str(&row.get::<String, usize>(3)).unwrap();
+    let addr_buff = Address::from_str(
+        "0x532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96",
     )
     .unwrap();
 
     assert_eq!(12345, row.get::<BigDecimal, usize>(1).to_u64().unwrap());
     assert!(row.get::<bool, usize>(2));
     assert_eq!(
-        Identity::Address(from_buff.into()),
-        Identity::Address(addr_buff.into())
+        Identity::Address(Address::from(<[u8; 32]>::from(from_buff))),
+        Identity::Address(Address::from(<[u8; 32]>::from(addr_buff)))
     );
 }
 
@@ -131,7 +125,7 @@ async fn test_can_trigger_and_index_blocks_and_transactions_postgres() {
     let _id = row.get::<BigDecimal, usize>(0).to_u64().unwrap();
     let timestamp = row.get::<i64, usize>(2);
 
-    assert!(row.get::<BigDecimal, usize>(1).to_u64().unwrap() > 1);
+    assert!(row.get::<i32, usize>(1).to_u64().unwrap() > 1);
     assert!(timestamp > 0);
 }
 
@@ -227,20 +221,17 @@ async fn test_can_trigger_and_index_logdata_event_postgres() {
             .await
             .unwrap();
 
-    let from_buff =
-        <[u8; 32]>::from_hex(hex::decode(row.get::<&str, usize>(3)).unwrap()).unwrap();
-
-    let addr_buff = <[u8; 32]>::from_hex(
-        hex::decode("0x532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96")
-            .unwrap(),
+    let from_buff = Address::from_str(&row.get::<String, usize>(3)).unwrap();
+    let addr_buff = Address::from_str(
+        "0x532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96",
     )
     .unwrap();
 
     assert_eq!(row.get::<BigDecimal, usize>(1).to_u64().unwrap(), 456);
     assert!(row.get::<bool, usize>(2));
     assert_eq!(
-        Identity::Address(from_buff.into()),
-        Identity::Address(addr_buff.into())
+        Identity::Address(Address::from(<[u8; 32]>::from(from_buff))),
+        Identity::Address(Address::from(<[u8; 32]>::from(addr_buff)))
     );
 }
 
