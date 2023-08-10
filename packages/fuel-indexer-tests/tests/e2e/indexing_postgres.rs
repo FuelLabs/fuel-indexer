@@ -437,6 +437,48 @@ async fn test_can_trigger_and_index_panic_event_postgres() {
 }
 
 #[actix_web::test]
+async fn test_can_trigger_and_index_mint_event_postgres() {
+    let IndexingTestComponents { node, db, .. } =
+        setup_indexing_test_components(None).await;
+
+    mock_request("/mint").await;
+
+    node.abort();
+
+    let mut conn = db.pool.acquire().await.unwrap();
+    let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.mintentity LIMIT 1")
+        .fetch_one(&mut conn)
+        .await
+        .unwrap();
+
+    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 123);
+    assert_eq!(row.get::<&str, usize>(1), TRANSFER_BASE_ASSET_ID);
+    assert_eq!(row.get::<&str, usize>(2), EXPECTED_CONTRACT_ID);
+    assert_eq!(row.get::<BigDecimal, usize>(3).to_u64().unwrap(), 100);
+}
+
+#[actix_web::test]
+async fn test_can_trigger_and_index_burn_event_postgres() {
+    let IndexingTestComponents { node, db, .. } =
+        setup_indexing_test_components(None).await;
+
+    mock_request("/burn").await;
+
+    node.abort();
+
+    let mut conn = db.pool.acquire().await.unwrap();
+    let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.burnentity LIMIT 1")
+        .fetch_one(&mut conn)
+        .await
+        .unwrap();
+
+    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 123);
+    assert_eq!(row.get::<&str, usize>(1), TRANSFER_BASE_ASSET_ID);
+    assert_eq!(row.get::<&str, usize>(2), EXPECTED_CONTRACT_ID);
+    assert_eq!(row.get::<BigDecimal, usize>(3).to_u64().unwrap(), 100);
+}
+
+#[actix_web::test]
 async fn test_can_trigger_and_index_enum_error_function_postgres() {
     let IndexingTestComponents { node, db, .. } =
         setup_indexing_test_components(None).await;

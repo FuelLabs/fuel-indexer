@@ -593,6 +593,46 @@ mod fuel_indexer_test {
         entity.save();
     }
 
+    fn fuel_indexer_trigger_mint(mint: Mint) {
+        info!("fuel_indexer_trigger_mint handling trigger_mint event.");
+
+        let Mint {
+            sub_id,
+            contract_id,
+            val,
+            ..
+        } = mint;
+
+        let entity = MintEntity {
+            id: 123,
+            sub_id,
+            contract_id,
+            val,
+        };
+
+        entity.save();
+    }
+
+    fn fuel_indexer_trigger_burn(burn: Burn) {
+        info!("fuel_indexer_trigger_burn handling trigger_burn event.");
+
+        let Burn {
+            sub_id,
+            contract_id,
+            val,
+            ..
+        } = burn;
+
+        let entity = BurnEntity {
+            id: 123,
+            sub_id,
+            contract_id,
+            val,
+        };
+
+        entity.save();
+    }
+
     fn fuel_indexer_test_filterable_fields(_ping: Ping) {
         let inner_entity1 = InnerFilterEntity {
             id: 1,
