@@ -137,10 +137,7 @@ impl IndexerService {
 
         let mut items = vec![
             (IndexerAssetType::Wasm, exec_source.into()),
-            (
-                IndexerAssetType::Manifest,
-                manifest.clone().try_into().expect("Bad manifest."),
-            ),
+            (IndexerAssetType::Manifest, manifest.clone().into()),
             (IndexerAssetType::Schema, schema_bytes),
         ];
 
