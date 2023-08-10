@@ -44,7 +44,7 @@ name = "{indexer_name}"
 version = "0.0.0"
 edition = "2021"
 publish = false
-rust-version = "1.71.0"
+rust-version = "1.71.1"
 
 [lib]
 crate-type = ['cdylib']
