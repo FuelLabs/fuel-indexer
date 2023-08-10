@@ -774,11 +774,15 @@ pub mod test_web {
     async fn fuel_indexer_test_trigger_burn(
         state: web::Data<Arc<AppState>>,
     ) -> impl Responder {
+        let call_params =
+            CallParameters::new(1_000_000, fuels::types::AssetId::default(), 1000);
         let _ = state
             .contract
             .methods()
             .trigger_burn()
             .tx_params(tx_params())
+            .call_params(call_params)
+            .unwrap()
             .call()
             .await;
 

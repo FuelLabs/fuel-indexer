@@ -101,6 +101,7 @@ abi FuelIndexer {
     fn trigger_enum_error(num: u64);
     fn trigger_enum() -> AnotherSimpleEnum;
     fn trigger_mint();
+    #[payable]
     fn trigger_burn();
 }
 
@@ -157,7 +158,7 @@ impl FuelIndexer for Contract {
     #[payable]
     fn trigger_transfer() {
         // Transfer the asset back to the originating contract
-        transfer(1, BASE_ASSET_ID, Identity::ContractId(contract_id()));
+        transfer(Identity::ContractId(contract_id()), BASE_ASSET_ID, 1);
     }
 
     fn trigger_log() {
@@ -181,7 +182,7 @@ impl FuelIndexer for Contract {
     #[payable]
     fn trigger_transferout() {
         const RECEIVER = Address::from(0x532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96);
-        transfer(1, BASE_ASSET_ID, Identity::Address(RECEIVER));
+        transfer(Identity::Address(RECEIVER), BASE_ASSET_ID, 1);
     }
 
     #[payable]
@@ -265,10 +266,11 @@ impl FuelIndexer for Contract {
     }
 
     fn trigger_mint () {
-        mint(100);
+        mint(BASE_ASSET_ID, 100);
     }
 
+    #[payable]
     fn trigger_burn() {
-        burn(100);
+        burn(BASE_ASSET_ID, 100);
     }
 }

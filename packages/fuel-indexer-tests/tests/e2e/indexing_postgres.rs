@@ -10,7 +10,7 @@ use std::{collections::HashSet, str::FromStr};
 
 const REVERT_VM_CODE: u64 = 0x0004;
 const EXPECTED_CONTRACT_ID: &str =
-    "9ccd23f730a8357508ae2b4c8333769d67faccc06e8831b3cf7b20553da39cf9";
+    "6471e0b4927a0db1685482465782bad1d8d9deb6fbf39e80a3e1b7fd8beaf89d";
 const TRANSFER_BASE_ASSET_ID: &str =
     "0000000000000000000000000000000000000000000000000000000000000000";
 
@@ -437,13 +437,12 @@ async fn test_can_trigger_and_index_panic_event_postgres() {
 }
 
 #[actix_web::test]
-async fn test_can_trigger_and_index_mint_event_postgres() {
+async fn test_can_trigger_and_index_mint_and_burn_events_postgres() {
     let IndexingTestComponents { node, db, .. } =
         setup_indexing_test_components(None).await;
 
+    // First, we mint the contract's native asset...
     mock_request("/mint").await;
-
-    node.abort();
 
     let mut conn = db.pool.acquire().await.unwrap();
     let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.mintentity LIMIT 1")
@@ -455,13 +454,8 @@ async fn test_can_trigger_and_index_mint_event_postgres() {
     assert_eq!(row.get::<&str, usize>(1), TRANSFER_BASE_ASSET_ID);
     assert_eq!(row.get::<&str, usize>(2), EXPECTED_CONTRACT_ID);
     assert_eq!(row.get::<BigDecimal, usize>(3).to_u64().unwrap(), 100);
-}
 
-#[actix_web::test]
-async fn test_can_trigger_and_index_burn_event_postgres() {
-    let IndexingTestComponents { node, db, .. } =
-        setup_indexing_test_components(None).await;
-
+    // ...then we burn it.
     mock_request("/burn").await;
 
     node.abort();
