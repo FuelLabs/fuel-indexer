@@ -118,6 +118,20 @@ type RevertEntity @entity {
   error_val: UInt8!
 }
 
+type MintEntity @entity {
+  id: ID!
+  sub_id: AssetId!
+  contract_id: ContractId!
+  val: UInt8!
+}
+
+type BurnEntity @entity {
+  id: ID!
+  sub_id: AssetId!
+  contract_id: ContractId!
+  val: UInt8!
+}
+
 type Genre @entity {
   id: ID!
   name: Charfield!

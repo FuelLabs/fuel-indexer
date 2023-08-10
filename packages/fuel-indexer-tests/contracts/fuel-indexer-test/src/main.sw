@@ -8,7 +8,7 @@ use std::{
     logging::log,
     message::send_typed_message,
     revert::revert,
-    token::transfer,
+    token::*,
     bytes::Bytes,
 };
 
@@ -100,6 +100,8 @@ abi FuelIndexer {
     fn trigger_revert();
     fn trigger_enum_error(num: u64);
     fn trigger_enum() -> AnotherSimpleEnum;
+    fn trigger_mint();
+    fn trigger_burn();
 }
 
 impl FuelIndexer for Contract {
@@ -260,5 +262,13 @@ impl FuelIndexer for Contract {
             value: 7775, 
             message: "hello world! I am, a log event!!"
         })
+    }
+
+    fn trigger_mint () {
+        mint(100);
+    }
+
+    fn trigger_burn() {
+        burn(100);
     }
 }
