@@ -81,6 +81,8 @@ lazy_static! {
         "ScriptResult",
         "Transfer",
         "TransferOut",
+        "Mint",
+        "Burn",
     ]);
 
     /// ABI types not allowed in the contract ABI.
@@ -110,6 +112,8 @@ lazy_static! {
         "ScriptResult",
         "Transfer",
         "TransferOut",
+        "Mint",
+        "Burn",
     ]);
 
     /// Set of Rust primitive types.
