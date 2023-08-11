@@ -23,6 +23,7 @@ pub fn schema_version(schema: &str) -> String {
     format!("{:x}", Sha256::digest(schema.as_bytes()))
 }
 
+
 /// Native GraphQL `TypeDefinition` used to keep track of chain metadata.
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct IndexMetadata {
