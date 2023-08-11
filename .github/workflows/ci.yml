@@ -64,8 +64,8 @@ jobs:
             echo "IS_RELEASE_OR_MASTER_OR_DEVELOP_OR_SEMVER=false" >> $GITHUB_OUTPUT
           fi
 
-          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
-          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_OUTPUT
+          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_OUTPUT
 
   docs-test:
     uses: FuelLabs/github-actions/.github/workflows/mdbook-docs.yml@master
@@ -252,14 +252,14 @@ jobs:
             ~/.cargo/git/db/
             target/
           key: ${{ matrix.command }}-${{ matrix.args }}-${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.3
       - name: Install SQLx CLI
         run: |
           if ! which sqlx; then cargo install sqlx-cli; fi
       - name: Install wasm-snip
         run: |
           if ! which wasm-snip; then cargo install wasm-snip; fi
-      - name: Run sccache-cache
-        uses: mozilla-actions/sccache-action@v0.0.3
       - name: Build fuel-indexer-test WASM
         run: >
           cargo build -p fuel-indexer-test --release --target
@@ -301,11 +301,11 @@ jobs:
             ~/.cargo/git/db/
             target/
           key: ${{ matrix.command }}-${{ matrix.args }}-${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.3
       - name: Install wasm-snip
         run: |
           if ! which wasm-snip; then cargo install wasm-snip; fi
-      - name: Run sccache-cache
-        uses: mozilla-actions/sccache-action@v0.0.3
       - name: cargo build -p forc-index -p fuel-indexer --locked --release
         run: cargo build -p forc-index -p fuel-indexer --locked --release
       - name: forc-index-* commands (wasm + native)
