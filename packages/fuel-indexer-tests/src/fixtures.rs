@@ -549,14 +549,14 @@ pub mod test_web {
             .call()
             .await;
 
-        HttpResponse::Ok()
-    }
+    //     HttpResponse::Ok()
+    // }
 
-    async fn fuel_indexer_test_messageout(
-        state: web::Data<Arc<AppState>>,
-    ) -> impl Responder {
-        let call_params =
-            CallParameters::new(1_000_000, fuels::types::AssetId::default(), 1000);
+    // async fn fuel_indexer_test_messageout(
+    //     state: web::Data<Arc<AppState>>,
+    // ) -> impl Responder {
+    //     let call_params =
+    //         CallParameters::new(1_000_000, fuels::types::AssetId::default(), 1000);
 
         let _ = state
             .contract
@@ -569,8 +569,8 @@ pub mod test_web {
             .await
             .unwrap();
 
-        HttpResponse::Ok()
-    }
+    //     HttpResponse::Ok()
+    // }
 
     async fn fuel_indexer_test_callreturn(
         state: web::Data<Arc<AppState>>,
