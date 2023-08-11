@@ -20,6 +20,8 @@ env:
   IS_MASTER: ${{ github.head_ref == 'master' || github.ref_name == 'master' }}
   IS_DEVELOP: ${{ github.head_ref == 'develop' || github.ref_name == 'develop' }}
   IS_RELEASE: ${{ github.event_name == 'release' && github.event.action == 'published' }}
+  SCCACHE_GHA_ENABLED: "true"
+  RUSTC_WRAPPER: "sccache"
 jobs:
   cancel-previous-runs:
     runs-on: buildjet-4vcpu-ubuntu-2204
@@ -63,9 +65,6 @@ jobs:
           else
             echo "IS_RELEASE_OR_MASTER_OR_DEVELOP_OR_SEMVER=false" >> $GITHUB_OUTPUT
           fi
-
-          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_OUTPUT
-          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_OUTPUT
 
   docs-test:
     uses: FuelLabs/github-actions/.github/workflows/mdbook-docs.yml@master
