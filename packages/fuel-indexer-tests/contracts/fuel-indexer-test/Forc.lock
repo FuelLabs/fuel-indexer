@@ -1,6 +1,6 @@
 [[package]]
 name = 'core'
-source = 'path+from-root-9BFE6D5D0CBDF740'
+source = 'path+from-root-9A6624D3A81711FF'
 
 [[package]]
 name = 'fuel-indexer-test'
@@ -9,5 +9,5 @@ dependencies = ['std']
 
 [[package]]
 name = 'std'
-source = 'git+https://github.com/fuellabs/sway?tag=v0.42.1#3b66f8e424bd21e3ba467783b10b36e808cfa6ee'
+source = 'git+https://github.com/FuelLabs/sway?branch=upgrade/fuel-core-v0.20.1#4b4adc271ebb293e400ccbc338a85990a70f9a66'
 dependencies = ['core']
