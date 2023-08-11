@@ -1,12 +1,13 @@
 use cynic::QueryBuilder;
 use fuel_core_client::client::{
+    pagination::{PaginatedResult, PaginationRequest},
     schema::{
         block::{BlockByHeightArgs, Consensus, Header},
         schema,
         tx::OpaqueTransaction,
         BlockId, ConnectionArgs, PageInfo,
     },
-    FuelClient, PaginatedResult, PaginationRequest,
+    FuelClient,
 };
 
 #[derive(cynic::QueryFragment, Debug)]

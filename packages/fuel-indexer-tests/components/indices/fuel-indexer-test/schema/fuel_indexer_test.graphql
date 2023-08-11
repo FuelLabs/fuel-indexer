@@ -24,7 +24,7 @@ type PongEntity @entity {
 
 type BlockEntity @entity {
   id: ID!
-  height: UInt8!
+  height: UInt4!
   timestamp: Int8!
 }
 

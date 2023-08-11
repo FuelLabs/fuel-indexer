@@ -313,9 +313,7 @@ mod tests {
         ));
         let charfield = FtColumn::Charfield(Some(String::from("hello world")));
         let json = FtColumn::Json(Some(Json(r#"{"hello":"world"}"#.to_string())));
-        let identity = FtColumn::Identity(Some(Identity::Address(
-            Address::try_from([0x12; 32]).unwrap(),
-        )));
+        let identity = FtColumn::Identity(Some(Identity::Address([0x12; 32].into())));
 
         insta::assert_yaml_snapshot!(id.query_fragment());
         insta::assert_yaml_snapshot!(addr.query_fragment());

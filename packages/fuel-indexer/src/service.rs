@@ -360,7 +360,7 @@ async fn create_service_task(
 async fn get_start_block(
     conn: &mut IndexerConnection,
     manifest: &Manifest,
-) -> Result<u64, IndexerError> {
+) -> Result<u32, IndexerError> {
     match &manifest.resumable() {
         Some(resumable) => {
             let last = queries::last_block_height_for_indexer(
