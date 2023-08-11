@@ -245,7 +245,7 @@ mod fuel_indexer_test {
         pi.save();
     }
 
-    fn fuel_indexer_test_optional_schema_fields(_ping: Ping) {
+    fn fuel_indexer_test_optional_schema_fields(_block: BlockData) {
         info!("fuel_indexer_test_optional_schema_fields handling Ping event and setting optional fields.");
 
         let entity = OptionEntity {
@@ -539,19 +539,19 @@ mod fuel_indexer_test {
     }
 
     fn fuel_indexer_test_nested_query_explicit_foreign_keys_schema_fields(
-        explicit: ExplicitQueryStruct,
+        _block: BlockData,
     ) {
         info!("fuel_indexer_test_nested_query_explicit_foreign_keys_schema_fields handling ExplicitQueryTestStruct event.");
 
         let municipality = Municipality {
-            id: explicit.id,
+            id: 123,
             name: "Republic of Indexia".to_string(),
         };
 
         municipality.save();
 
         let team = SportsTeam {
-            id: explicit.id,
+            id: 123,
             name: "The Indexers".to_string(),
             municipality: municipality.name,
         };
@@ -720,11 +720,10 @@ mod fuel_indexer_test {
         e.save();
     }
 
-    #[allow(unused)]
     fn fuel_indexer_trigger_enum(
-        first: AnotherSimpleEnum,
-        second: NestedEnum,
-        third: AnotherSimpleEnum,
+        _first: AnotherSimpleEnum,
+        _second: NestedEnum,
+        _third: AnotherSimpleEnum,
     ) {
         info!("fuel_indexer_trigger_enum handling trigger_enum event..");
 
