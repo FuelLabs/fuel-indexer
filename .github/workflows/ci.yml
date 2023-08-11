@@ -155,9 +155,6 @@ jobs:
           notify_when: failure
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NOTIFY_BUILD }}
-      - name: Run sccache stat for check
-        shell: bash
-        run: ${SCCACHE_PATH} --show-stats
   cargo-clippy:
     if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_DEVELOP_OR_SEMVER !=
       'true'
@@ -280,9 +277,6 @@ jobs:
       - name: Run E2E and integration tests
         run: cargo test --locked --all-targets --features e2e,postgres -p
           fuel-indexer-tests -- --test-threads=1
-      - name: Run sccache stat for check
-        shell: bash
-        run: ${SCCACHE_PATH} --show-stats
 
   build-default-indexer:
     if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_DEVELOP_OR_SEMVER != 'true'
@@ -738,17 +732,3 @@ jobs:
           notify_when: failure
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NOTIFY_BUILD }}
-  sccache-stats:
-    runs-on: buildjet-4vcpu-ubuntu-2204
-    needs:
-      - cargo-verifications
-      - cargo-test-unit-tests
-      - cargo-test-e2e-and-integration-tests
-      - build-default-indexer
-      - build-and-test-examples
-    steps:
-      - name: Run sccache-cache
-        uses: mozilla-actions/sccache-action@v0.0.3
-      - name: Run sccache stat for check
-        shell: bash
-        run: ${SCCACHE_PATH} --show-stats
