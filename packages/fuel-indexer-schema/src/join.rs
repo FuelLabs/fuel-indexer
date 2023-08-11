@@ -67,7 +67,7 @@ impl RawQuery {
             .position(|x| matches!(x, FtColumn::ID(_)))
             .expect("ID field is required for many-to-many relationships.");
 
-        let id = match columns[id_index] {
+        let id = match &columns[id_index] {
             FtColumn::ID(Some(id)) => id,
             _ => panic!("No ID field found on Entity."),
         };

@@ -1,19 +1,17 @@
 use bytes::Bytes;
 pub use fuel_types::{
-    BlockHeight, Bytes32, Bytes4, Bytes64, Bytes8, MessageId, Nonce, Salt, Word,
+    Address, AssetId, BlockHeight, Bytes32, Bytes4, Bytes64, Bytes8, ContractId,
+    MessageId, Nonce, Salt, Word,
 };
-pub use fuels::{
-    core::codec::try_from_bytes,
-    types::{
-        bech32::{Bech32Address, Bech32ContractId},
-        Address, AssetId, Bits256, ContractId, Identity, SizedAsciiString,
-    },
-};
+use fuels::types::SizedAsciiString;
 use serde::{Deserialize, Serialize};
 use tai64::Tai64;
 
+/// Scalar for 32-byte payloads.
+pub type String64 = SizedAsciiString<64>;
+
 /// Scalar for object IDs.
-pub type ID = u64;
+pub type ID = String64;
 
 /// Scalar for 4-byte signed integers.
 pub type Int4 = i32;

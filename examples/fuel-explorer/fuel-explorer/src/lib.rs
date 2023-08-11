@@ -144,22 +144,18 @@ impl From<fuel::UtxoId> for UtxoId {
 
 impl From<Bytes32> for ContractIdFragment {
     fn from(hash: Bytes32) -> Self {
-        // Since the u64 ID will just be derived from the hash, rather than using `::new()`,
+        // Since the ID will just be derived from the hash, rather than using `::new()`,
         // just manaully derived the ID, then use `::get_or_create()`.
-        Self {
-            id: id8(hash),
-            hash,
-        }
-        .get_or_create()
+        Self { id: id(hash), hash }.get_or_create()
     }
 }
 
 impl From<ContractId> for ContractIdFragment {
     fn from(hash: ContractId) -> Self {
-        // Since the u64 ID will just be derived from the hash, rather than using `::new()`,
+        // Since the ID will just be derived from the hash, rather than using `::new()`,
         // just manaully derived the ID, then use `::get_or_create()`.
         Self {
-            id: id8(hash),
+            id: id(hash),
             hash: Bytes32::from(<[u8; 32]>::from(hash)),
         }
         .get_or_create()
@@ -168,25 +164,17 @@ impl From<ContractId> for ContractIdFragment {
 
 impl From<Bytes32> for BlockIdFragment {
     fn from(hash: Bytes32) -> Self {
-        // Since the u64 ID will just be derived from the hash, rather than using `::new()`,
+        // Since the ID will just be derived from the hash, rather than using `::new()`,
         // just manaully derived the ID, then use `::get_or_create()`.
-        Self {
-            id: id8(hash),
-            hash,
-        }
-        .get_or_create()
+        Self { id: id(hash), hash }.get_or_create()
     }
 }
 
 impl From<Bytes32> for TransactionIdFragment {
     fn from(hash: Bytes32) -> Self {
-        // Since the u64 ID will just be derived from the hash, rather than using `::new()`,
+        // Since the ID will just be derived from the hash, rather than using `::new()`,
         // just manaully derived the ID, then use `::get_or_create()`.
-        Self {
-            id: id8(hash),
-            hash,
-        }
-        .get_or_create()
+        Self { id: id(hash), hash }.get_or_create()
     }
 }
 
@@ -256,8 +244,8 @@ impl From<fuel::Input> for Input {
                     state_root,
                     tx_pointer.id,
                     // Don't need to load the object here since the `ContractIdFragment.id` is
-                    // just `id8(ContractId)`
-                    id8(contract_id),
+                    // just `id(ContractId)`
+                    id(contract_id),
                     InputLabel::Contract.into(),
                     true,
                 );
@@ -421,8 +409,8 @@ impl From<fuel::TransactionStatus> for TransactionStatus {
                 program_state,
             } => {
                 // Don't need to load the object here since the `BlockFragment.id` is
-                // just `id8(hash)
-                let block_id = id8(block);
+                // just `id(hash)
+                let block_id = id(block);
                 let program_state = program_state.map(|p| p.into());
 
                 let status = FailureStatus::new(
@@ -442,8 +430,8 @@ impl From<fuel::TransactionStatus> for TransactionStatus {
                 program_state,
             } => {
                 // Don't need to load the object here since the `BlockFragment.id` is
-                // just `id8(hash)
-                let block_id = id8(block);
+                // just `id(hash)
+                let block_id = id(block);
                 let program_state = program_state.map(|p| p.into());
 
                 let status = SuccessStatus::new(
@@ -739,12 +727,12 @@ impl From<fuel::TransactionData> for Transaction {
                     .iter()
                     .map(|i| Input::from(i.to_owned()))
                     .map(|i| i.id)
-                    .collect::<Vec<u64>>();
+                    .collect::<Vec<SizedAsciiString<64>>>();
                 let outputs = outputs
                     .iter()
                     .map(|o| Output::from(o.to_owned()))
                     .map(|o| o.id)
-                    .collect::<Vec<u64>>();
+                    .collect::<Vec<SizedAsciiString<64>>>();
                 let witnesses = witnesses
                     .iter()
                     .map(|w| Witness::from(w.to_owned()))
@@ -793,18 +781,18 @@ impl From<fuel::TransactionData> for Transaction {
                     .iter()
                     .map(|s| StorageSlot::from(s.to_owned()))
                     .map(|s| s.id)
-                    .collect::<Vec<u64>>();
+                    .collect::<Vec<SizedAsciiString<64>>>();
 
                 let inputs = inputs
                     .iter()
                     .map(|i| Input::from(i.to_owned()))
                     .map(|i| i.id)
-                    .collect::<Vec<u64>>();
+                    .collect::<Vec<SizedAsciiString<64>>>();
                 let outputs = outputs
                     .iter()
                     .map(|o| Output::from(o.to_owned()))
                     .map(|o| o.id)
-                    .collect::<Vec<u64>>();
+                    .collect::<Vec<SizedAsciiString<64>>>();
                 let witnesses = witnesses
                     .iter()
                     .map(|w| Witness::from(w.to_owned()))
@@ -846,7 +834,7 @@ impl From<fuel::TransactionData> for Transaction {
                     .iter()
                     .map(|o| Output::from(o.to_owned()))
                     .map(|o| o.id)
-                    .collect::<Vec<u64>>();
+                    .collect::<Vec<SizedAsciiString<64>>>();
                 let receipts = transaction
                     .receipts
                     .iter()
@@ -897,10 +885,10 @@ pub mod explorer_index {
             .iter()
             .map(|t| TransactionIdFragment::from(t.to_owned()))
             .map(|t| t.id)
-            .collect::<Vec<u64>>();
+            .collect::<Vec<SizedAsciiString<64>>>();
 
         let block = Block {
-            id: id8(block_data.header.id),
+            id: id(block_data.header.id),
             block_id: block_data.header.id,
             header: header.id,
             consensus: consensus.id,

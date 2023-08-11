@@ -3,7 +3,7 @@ extern crate alloc;
 use fuel_indexer_utils::prelude::*;
 
 #[indexer(
-    manifest = "packages/fuel-indexer-tests/components/indices/fuel-indexer-test/fuel_indexer_test.yaml"
+    manifest = "packages/fuel-indexer-tests/indexers/fuel-indexer-test/fuel_indexer_test.yaml"
 )]
 mod fuel_indexer_test {
 
@@ -13,7 +13,7 @@ mod fuel_indexer_test {
         let input_data = r#"{"foo":"bar"}"#.to_string();
 
         for _tx in block_data.transactions.iter() {
-            TxEntity::new(block.id, Json(input_data.clone()), block_data.time)
+            TxEntity::new(block.id.clone(), Json(input_data.clone()), block_data.time)
                 .get_or_create();
         }
     }
@@ -154,7 +154,7 @@ mod fuel_indexer_test {
         info!("fuel_indexer_test_optional_schema_fields handling Ping event and setting optional fields.");
 
         let entity = OptionEntity {
-            id: 8675309,
+            id: id(8675309_u32.to_le_bytes()),
             int_required: 100,
             int_optional_some: Some(999),
             addr_optional_none: None,
@@ -200,9 +200,9 @@ mod fuel_indexer_test {
         let genre2 = Genre::new("mystery".to_string()).get_or_create();
         let genre3 = Genre::new("business".to_string()).get_or_create();
 
-        let author1 = Author::new("Brian".to_string(), genre1.id).get_or_create();
-        let author2 = Author::new("James".to_string(), genre2.id).get_or_create();
-        let author3 = Author::new("Susan".to_string(), genre3.id).get_or_create();
+        let author1 = Author::new("Brian".to_string(), genre1.id.clone()).get_or_create();
+        let author2 = Author::new("James".to_string(), genre2.id.clone()).get_or_create();
+        let author3 = Author::new("Susan".to_string(), genre3.id.clone()).get_or_create();
 
         let person1 = Person::new("Ava".to_string()).get_or_create();
         let person2 = Person::new("Noel".to_string()).get_or_create();
@@ -210,12 +210,13 @@ mod fuel_indexer_test {
 
         let planet = Planet::new("Earth".to_string()).get_or_create();
 
-        let continent1 =
-            Continent::new("North America".to_string(), planet.id).get_or_create();
+        let continent1 = Continent::new("North America".to_string(), planet.id.clone())
+            .get_or_create();
         let continent2 = Continent::new("Europe".to_string(), planet.id).get_or_create();
 
         let country1 = Country::new("Jamaica".to_string(), continent1.id).get_or_create();
-        let country2 = Country::new("France".to_string(), continent2.id).get_or_create();
+        let country2 =
+            Country::new("France".to_string(), continent2.id.clone()).get_or_create();
         let country3 = Country::new("Ireland".to_string(), continent2.id).get_or_create();
 
         let region1 =
@@ -253,32 +254,36 @@ mod fuel_indexer_test {
         )
         .get_or_create();
 
-        let sponsor1 =
-            Sponsor::new("Fuel Labs".to_string(), 100, person1.id).get_or_create();
-
-        let sponsor2 = Sponsor::new("Fuel Labs, Part Two".to_string(), 200, person2.id)
+        let sponsor1 = Sponsor::new("Fuel Labs".to_string(), 100, person1.id.clone())
             .get_or_create();
 
-        let sponsor3 =
-            Sponsor::new("Fuel Labs, Yet A Third".to_string(), 300, person3.id)
+        let sponsor2 =
+            Sponsor::new("Fuel Labs, Part Two".to_string(), 200, person2.id.clone())
                 .get_or_create();
 
+        let sponsor3 = Sponsor::new(
+            "Fuel Labs, Yet A Third".to_string(),
+            300,
+            person3.id.clone(),
+        )
+        .get_or_create();
+
         let bookclub1 = BookClub {
-            id: 1,
+            id: id([1]),
             book: book1.id,
             member: person1.id,
             corporate_sponsor: sponsor1.name,
         };
 
         let bookclub2 = BookClub {
-            id: 2,
+            id: id([2]),
             book: book2.id,
             member: person2.id,
             corporate_sponsor: sponsor2.name,
         };
 
         let bookclub3 = BookClub {
-            id: 3,
+            id: id([3]),
             book: book3.id,
             member: person3.id,
             corporate_sponsor: sponsor3.name,
@@ -379,21 +384,21 @@ mod fuel_indexer_test {
 
     fn fuel_indexer_test_filterable_fields(_ping: Ping) {
         let inner_entity1 = InnerFilterEntity {
-            id: 1,
+            id: id([1]),
             inner_foo: "spam".to_string(),
             inner_bar: 100,
             inner_baz: 200,
         };
 
         let inner_entity2 = InnerFilterEntity {
-            id: 2,
+            id: id([2]),
             inner_foo: "ham".to_string(),
             inner_bar: 300,
             inner_baz: 400,
         };
 
         let inner_entity3 = InnerFilterEntity {
-            id: 3,
+            id: id([3]),
             inner_foo: "eggs".to_string(),
             inner_bar: 500,
             inner_baz: 600,
@@ -404,7 +409,7 @@ mod fuel_indexer_test {
         inner_entity3.save();
 
         let f1 = FilterEntity {
-            id: 1,
+            id: id([1]),
             foola: "beep".to_string(),
             maybe_null_bar: Some(123),
             bazoo: 1,
@@ -412,7 +417,7 @@ mod fuel_indexer_test {
         };
 
         let f2 = FilterEntity {
-            id: 2,
+            id: id([2]),
             foola: "boop".to_string(),
             maybe_null_bar: None,
             bazoo: 5,
@@ -420,7 +425,7 @@ mod fuel_indexer_test {
         };
 
         let f3 = FilterEntity {
-            id: 3,
+            id: id([3]),
             foola: "blorp".to_string(),
             maybe_null_bar: Some(456),
             bazoo: 1000,
@@ -446,7 +451,7 @@ mod fuel_indexer_test {
     fn fuel_indexer_block_explorer_types(_b: BlockData) {
         info!("fuel_indexer_block_explorer_types handling explorer_types event.");
         let e = ExplorerEntity {
-            id: 8675309,
+            id: id(8675309_u32.to_le_bytes()),
             nonce: Nonce::default(),
             // TOOD: Finish
             time: None,
@@ -466,7 +471,7 @@ mod fuel_indexer_test {
         info!("fuel_indexer_trigger_enum handling trigger_enum event..");
 
         let e = ComplexEnumEntity {
-            id: 1,
+            id: id([1]),
             one: Some(EnumEntity::One.into()),
         };
         e.save();
@@ -475,7 +480,7 @@ mod fuel_indexer_test {
     fn fuel_indexer_trigger_non_indexable_type(_b: BlockData) {
         info!("fuel_indexer_trigger_non_indexable_type handling trigger_non_indexable_type event.");
         let e = UsesVirtualEntity {
-            id: 1,
+            id: id([1]),
             name: "hello world".to_string(),
             no_table: VirtualEntity {
                 name: Some("virtual".to_string()),
@@ -498,7 +503,7 @@ mod fuel_indexer_test {
         };
 
         let vc = VirtualUnionContainerEntity {
-            id: 1,
+            id: id([1]),
             union_entity: Some(v.into()),
             union_type: UnionType::B.into(),
         };
@@ -506,7 +511,7 @@ mod fuel_indexer_test {
         vc.save();
 
         let e = IndexableUnionEntity {
-            id: 1,
+            id: id([1]),
             a: Some(5),
             b: Some(10),
             c: None,
@@ -519,17 +524,26 @@ mod fuel_indexer_test {
     fn fuel_indexer_test_trigger_list(_block: BlockData) {
         info!("fuel_indexer_test_trigger_list handling trigger_list event.");
 
-        let list_fk1 = ListFKType { id: 1, value: 1 };
+        let list_fk1 = ListFKType {
+            id: id([1]),
+            value: 1,
+        };
         list_fk1.save();
 
-        let list_fk2 = ListFKType { id: 2, value: 2 };
+        let list_fk2 = ListFKType {
+            id: id([2]),
+            value: 2,
+        };
         list_fk2.save();
 
-        let list_fk3 = ListFKType { id: 3, value: 3 };
+        let list_fk3 = ListFKType {
+            id: id([3]),
+            value: 3,
+        };
         list_fk3.save();
 
         let e = ListTypeEntity {
-            id: 1,
+            id: id([1]),
             foo: "hello world".to_string(),
             required_all: vec![list_fk1.id, list_fk2.id, list_fk3.id],
             optional_inner: vec![

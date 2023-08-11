@@ -4,7 +4,7 @@ graphql_schema: packages/fuel-indexer-tests/components/indices/fuel-indexer-test
 abi: packages/fuel-indexer-tests/contracts/fuel-indexer-test/out/debug/fuel-indexer-test-abi.json
 start_block: ~
 end_block: ~
-contract_id: fuel1p4g0suykga85824l4x465haxtg7n6rlefxv2tch8av5g6ry88pxszp6aj0
+contract_id: fuel1v3c7pdyj0gxmz6z5sfr90q4668vdnh4kl0eeaq9ruxmlmzl2lzwsl0u6xw
 identifier: index1
 module:
   wasm: target/wasm32-unknown-unknown/release/fuel_indexer_test.wasm

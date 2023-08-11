@@ -8,7 +8,7 @@
 extern crate alloc;
 
 use fuel_indexer_lib::MAX_ARRAY_LENGTH;
-use fuel_indexer_types::prelude::fuel::*;
+use fuel_indexer_types::{fuel::*, Identity, SizedAsciiString};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -63,7 +63,7 @@ pub enum FtColumn {
     ContractId(Option<ContractId>),
     Enum(Option<String>),
     HexString(Option<HexString>),
-    ID(Option<UInt8>),
+    ID(Option<SizedAsciiString<64>>),
     Identity(Option<Identity>),
     Int1(Option<Int1>),
     Int16(Option<Int16>),
@@ -84,6 +84,7 @@ pub enum FtColumn {
     Virtual(Option<Virtual>),
     BlockId(Option<BlockId>),
     Array(Option<Vec<FtColumn>>),
+    String64(Option<String64>),
 }
 
 impl FtColumn {
@@ -95,7 +96,14 @@ impl FtColumn {
         match self {
             FtColumn::ID(value) => {
                 if let Some(val) = value {
-                    format!("{val}")
+                    format!("'{val}'")
+                } else {
+                    panic!("Schema fields of type `ID` cannot be nullable.")
+                }
+            }
+            FtColumn::String64(value) => {
+                if let Some(val) = value {
+                    format!("'{val}'")
                 } else {
                     panic!("Schema fields of type `ID` cannot be nullable.")
                 }
@@ -286,7 +294,13 @@ mod tests {
     fn test_fragments_some_types() {
         use super::*;
 
-        let id = FtColumn::ID(Some(123456));
+        let id = FtColumn::ID(Some(
+            SizedAsciiString::new(
+                "0000000000000000000000000000000000000000000000000000000000000000"
+                    .to_string(),
+            )
+            .unwrap(),
+        ));
         let addr =
             FtColumn::Address(Some(Address::try_from([0x12; 32]).expect("Bad bytes")));
         let asset_id =
