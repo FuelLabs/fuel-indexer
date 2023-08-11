@@ -7,6 +7,7 @@ pub use parser::{JoinTableMeta, ParsedError, ParsedGraphQLSchema};
 pub use validator::GraphQLSchemaValidator;
 
 use async_graphql_parser::types::FieldDefinition;
+use fuels::types::SizedAsciiString;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::HashMap;
@@ -23,12 +24,11 @@ pub fn schema_version(schema: &str) -> String {
     format!("{:x}", Sha256::digest(schema.as_bytes()))
 }
 
-
 /// Native GraphQL `TypeDefinition` used to keep track of chain metadata.
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct IndexMetadata {
     /// Metadata identifier.
-    pub id: String,
+    pub id: SizedAsciiString<64>,
 
     /// Time of metadata.
     pub time: u64,
@@ -42,6 +42,8 @@ pub struct IndexMetadata {
 
 impl IndexMetadata {
     /// Return the GraphQL schema fragment for the `IndexMetadata` type.
+    ///
+    /// The structure of this fragment should always match `fuel_indexer_types::IndexMetadata`.
     pub fn schema_fragment() -> &'static str {
         r#"
 

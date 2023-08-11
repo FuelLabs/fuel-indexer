@@ -83,6 +83,9 @@ pub enum ColumnType {
     Virtual = 33,
     BlockId = 34,
     Array = 35,
+    // `ID` is a primary key, but when using foreign keys, we can't have two
+    // primary key columns, so we need a version of `ID` that does not include
+    // a primary key constraint.
     String64 = 36,
 }
 

@@ -4,6 +4,7 @@ use fuel_indexer_lib::{
     fully_qualified_namespace, graphql::types::IdCol, utils::format_sql_query,
 };
 use fuel_indexer_schema::FtColumn;
+use fuel_indexer_types::SizedAsciiString;
 use std::collections::HashMap;
 use tracing::{debug, error, info};
 

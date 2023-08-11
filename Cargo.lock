@@ -3340,6 +3340,7 @@ dependencies = [
  "async-graphql-parser 5.0.10",
  "bincode",
  "clap 3.2.25",
+ "fuels",
  "http",
  "lazy_static",
  "proc-macro2",

@@ -15,8 +15,11 @@ use wasmer_middlewares::metering::{
 };
 
 use crate::{IndexEnv, IndexerResult};
+
+/// Symbol name for the module entrypoint.
 pub const MODULE_ENTRYPOINT: &str = "handle_events";
 
+/// Result type returned by FFI operations.
 type FFIResult<T> = Result<T, FFIError>;
 
 /// Error type returned by FFI operations.

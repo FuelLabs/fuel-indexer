@@ -11,13 +11,13 @@ pub mod test_namespace {
         let AnotherEvent { hash, .. } = event2;
 
         let t1 = Thing1 {
-            id: "1".to_string(),
+            id: SizedAsciiString::<64>::from("1".to_string()),
             account: Address::from(account.0),
         };
         t1.save();
 
         let t2 = Thing2 {
-            id: "2".to_string(),
+            id: SizedAsciiString::<64>::from("2".to_string()),
             account: Address::from(account.0),
             hash: Bytes32::from(hash.0),
         };
@@ -31,13 +31,13 @@ pub mod test_namespace {
         let Thing1 { account, .. } = match Thing1::load(id) {
             Some(o) => o,
             None => Thing1 {
-                id,
+                id: SizedAsciiString::<64>::from("1".to_string()),
                 account: Address::from(hash.0),
             },
         };
 
         let t2 = Thing2 {
-            id,
+            id: SizedAsciiString::<64>::from("2".to_string()),
             account,
             hash: Bytes32::from(hash.0),
         };
@@ -48,7 +48,7 @@ pub mod test_namespace {
     fn function_three(event: SomeEvent) {
         let SomeEvent { id, account } = event;
         let t1 = Thing1 {
-            id,
+            id: SizedAsciiString::<64>::from("3".to_string()),
             account: Address::from(account.0),
         };
         t1.save();

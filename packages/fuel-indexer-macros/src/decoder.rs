@@ -257,7 +257,7 @@ impl From<ImplementationDecoder> for TokenStream {
             ExecutionSource::Native => {
                 quote! {
                     pub async fn get_or_create(self) -> Self {
-                        match Self::load(self.id).await {
+                        match Self::load(self.id.clone()).await {
                             Some(instance) => instance,
                             None => {
                                 self.save().await;
@@ -270,7 +270,7 @@ impl From<ImplementationDecoder> for TokenStream {
             ExecutionSource::Wasm => {
                 quote! {
                     pub fn get_or_create(self) -> Self {
-                        match Self::load(self.id) {
+                        match Self::load(self.id.clone()) {
                             Some(instance) => instance,
                             None => {
                                 self.save();
@@ -298,8 +298,9 @@ impl From<ImplementationDecoder> for TokenStream {
                     impl #ident {
                         pub fn new(#parameters) -> Self {
                             let hashed = #hasher.chain_update(#typdef_name).finalize();
+                            let id = SizedAsciiString::<64>::new(format!("{:x}", hashed)).expect("Bad ID.");
                             Self {
-                                id: format!("{:x}", hashed),
+                                id,
                                 #struct_fields
                             }
                         }
