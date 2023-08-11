@@ -14,8 +14,7 @@ const TRANSFER_BASE_ASSET_ID: &str =
     "0000000000000000000000000000000000000000000000000000000000000000";
 
 #[actix_web::test]
-async fn test_can_trigger_and_index_events_with_multiple_args_in_index_handler_postgres()
-{
+async fn test_index_events_with_multiple_args_in_index_handler() {
     let IndexingTestComponents { node, db, .. } =
         setup_indexing_test_components(None).await;
 
@@ -74,7 +73,7 @@ async fn test_can_trigger_and_index_events_with_multiple_args_in_index_handler_p
 }
 
 #[actix_web::test]
-async fn test_can_trigger_and_index_blocks_and_transactions_postgres() {
+async fn test_index_blocks_and_transactions() {
     let IndexingTestComponents { node, db, .. } =
         setup_indexing_test_components(None).await;
 
@@ -109,7 +108,7 @@ async fn test_can_trigger_and_index_blocks_and_transactions_postgres() {
 }
 
 #[actix_web::test]
-async fn test_ensure_receipt_types_are_indexed() {
+async fn test_index_receipt_types() {
     let IndexingTestComponents { node, db, .. } =
         setup_indexing_test_components(None).await;
     let mut conn = db.pool.acquire().await.unwrap();
@@ -294,7 +293,7 @@ async fn test_ensure_receipt_types_are_indexed() {
 }
 
 #[actix_web::test]
-async fn test_can_trigger_and_index_ping_event_postgres() {
+async fn test_index_128_bit_integers() {
     let IndexingTestComponents { node, db, .. } =
         setup_indexing_test_components(None).await;
 
@@ -303,16 +302,7 @@ async fn test_can_trigger_and_index_ping_event_postgres() {
     node.abort();
 
     let mut conn = db.pool.acquire().await.unwrap();
-    let row =
-        sqlx::query("SELECT * FROM fuel_indexer_test_index1.pingentity WHERE id = 1")
-            .fetch_one(&mut conn)
-            .await
-            .unwrap();
 
-    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 1);
-    assert_eq!(row.get::<BigDecimal, usize>(1).to_u64().unwrap(), 123);
-
-    // Ping also triggers the 128-bit integer test as well
     let row =
         sqlx::query("SELECT * FROM fuel_indexer_test_index1.u16entity WHERE id = 9999")
             .fetch_one(&mut conn)
@@ -327,8 +317,19 @@ async fn test_can_trigger_and_index_ping_event_postgres() {
         row.get::<BigDecimal, usize>(2),
         BigDecimal::from_str("170141183460469231731687303715884105727").unwrap()
     );
+}
 
-    // Check for optionals
+#[actix_web::test]
+async fn test_index_optional_types() {
+    let IndexingTestComponents { node, db, .. } =
+        setup_indexing_test_components(None).await;
+
+    mock_request("/ping").await;
+
+    node.abort();
+
+    let mut conn = db.pool.acquire().await.unwrap();
+
     let row = sqlx::query(
         "SELECT * FROM fuel_indexer_test_index1.optionentity WHERE id = 8675309",
     )
@@ -376,7 +377,7 @@ async fn test_can_trigger_and_index_transferout_event_postgres() {
 }
 
 #[actix_web::test]
-async fn test_can_trigger_and_index_tuple_events_postgres() {
+async fn test_index_tuples() {
     let IndexingTestComponents { node, db, .. } =
         setup_indexing_test_components(None).await;
 
@@ -393,26 +394,6 @@ async fn test_can_trigger_and_index_tuple_events_postgres() {
     assert_eq!(row.get::<&str, usize>(1), "abcde");
     assert_eq!(row.get::<BigDecimal, usize>(2).to_u64().unwrap(), 54321);
     assert_eq!(row.get::<&str, usize>(3), "hello world!");
-}
-
-#[actix_web::test]
-async fn test_can_trigger_and_index_enum_error_function_postgres() {
-    let IndexingTestComponents { node, db, .. } =
-        setup_indexing_test_components(None).await;
-
-    mock_request("/enum_error").await;
-
-    node.abort();
-
-    let mut conn = db.pool.acquire().await.unwrap();
-    let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.enumerror LIMIT 1")
-        .fetch_one(&mut conn)
-        .await
-        .unwrap();
-
-    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 42);
-    assert_eq!(row.get::<&str, usize>(1), EXPECTED_CONTRACT_ID);
-    assert_eq!(row.get::<BigDecimal, usize>(2).to_u64().unwrap(), 0);
 }
 
 #[derive(Serialize, Deserialize, sqlx::FromRow, sqlx::Decode, Debug, Eq, PartialEq)]
@@ -597,13 +578,11 @@ async fn test_index_types_for_block_explorer() {
 }
 
 #[actix_web::test]
-async fn test_can_trigger_and_index_enum_types_postgres() {
+async fn test_index_sway_enums() {
     let IndexingTestComponents { node, db, .. } =
         setup_indexing_test_components(None).await;
 
     mock_request("/enum").await;
-
-    node.abort();
 
     let mut conn = db.pool.acquire().await.unwrap();
     let row =
@@ -614,6 +593,20 @@ async fn test_can_trigger_and_index_enum_types_postgres() {
 
     assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 1);
     assert_eq!(row.get::<&str, usize>(1), "EnumEntity::One");
+
+    mock_request("/enum_error").await;
+
+    node.abort();
+
+    let mut conn = db.pool.acquire().await.unwrap();
+    let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.enumerror LIMIT 1")
+        .fetch_one(&mut conn)
+        .await
+        .unwrap();
+
+    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 42);
+    assert_eq!(row.get::<&str, usize>(1), EXPECTED_CONTRACT_ID);
+    assert_eq!(row.get::<BigDecimal, usize>(2).to_u64().unwrap(), 0);
 }
 
 // FIXME: This is not an indexing test...
