@@ -738,3 +738,17 @@ jobs:
           notify_when: failure
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NOTIFY_BUILD }}
+  sccache-stats:
+    runs-on: buildjet-4vcpu-ubuntu-2204
+    needs:
+      - cargo-verifications
+      - cargo-test-unit-tests
+      - cargo-test-e2e-and-integration-tests
+      - build-default-indexer
+      - build-and-test-examples
+    steps:
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.3
+      - name: Run sccache stat for check
+        shell: bash
+        run: ${SCCACHE_PATH} --show-stats
