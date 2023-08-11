@@ -433,6 +433,7 @@ pub async fn sql_query(
     Path((_namespace, _identifier)): Path<(String, String)>,
     Extension(claims): Extension<Claims>,
     Extension(pool): Extension<IndexerConnectionPool>,
+    Extension(config): Extension<IndexerConfig>,
     Json(query): Json<SqlQuery>,
 ) -> ApiResult<axum::Json<Value>> {
     if claims.is_unauthenticated() {
@@ -440,6 +441,10 @@ pub async fn sql_query(
     }
     let SqlQuery { query } = query;
     SqlQueryValidator::validate_sql_query(&query)?;
+
+    if config.verbose {
+        tracing::info!("{query}");
+    }
     let mut conn = pool.acquire().await?;
     let result = queries::run_query(&mut conn, query).await?;
     Ok(Json(json!({ "data": result })))
