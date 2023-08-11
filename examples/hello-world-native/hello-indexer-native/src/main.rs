@@ -35,8 +35,8 @@ mod hello_world_native {
         // load the corresponding record from the database, if present.
         let greeter = Greeter::new(
             event.person.name.to_right_trimmed_str().into(),
-            block.height,
-            block.height,
+            block.height.into(),
+            block.height.into(),
             vec![1u8, 2, 3, 4, 5, 6, 7, 8].into(),
         )
         .get_or_create()
@@ -56,8 +56,8 @@ mod hello_world_native {
             message_hash,
             message,
             greeter.id,
-            block.height,
-            block.height,
+            block.height.into(),
+            block.height.into(),
         )
         .get_or_create()
         .await;

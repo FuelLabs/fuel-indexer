@@ -21,9 +21,9 @@ bincode = { workspace = true }
 clap = { features = ["cargo", "derive", "env"], workspace = true }
 cynic = "2.2"
 forc-postgres = { workspace = true }
-fuel-core = { version = "0.17", optional = true }
-fuel-core-client = "0.17.12"
-fuel-crypto = { version = "0.26" }
+fuel-core = { version = "0.20", optional = true }
+fuel-core-client = "0.20"
+fuel-crypto = { version = "0.35" }
 fuel-indexer-api-server = { workspace = true, optional = true }
 fuel-indexer-database = { workspace = true }
 fuel-indexer-lib = { workspace = true }
@@ -46,7 +46,7 @@ version = "0.10.52"
 features = ["vendored"]
 
 [dev-dependencies]
-fuel-core-client = { version = "0.17", features = ["test-helpers"] }
+fuel-core-client = { version = "0.20", features = ["test-helpers"] }
 
 [features]
 default = ["api-server"]

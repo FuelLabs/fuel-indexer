@@ -21,7 +21,7 @@ fuel-indexer-lib = { workspace = true, default-features = true }
 fuel-indexer-schema = { workspace = true, default-features = false }
 fuel-indexer-types = { workspace = true }
 fuels = { workspace = true }
-fuels-code-gen = { version = "0.43", default-features = false }
+fuels-code-gen = { version = "0.45", default-features = false }
 lazy_static = "1.4"
 proc-macro-error = "1.0"
 proc-macro2 = "1.0"
@@ -32,8 +32,7 @@ syn = { version = "2.0", features = ["full"] }
 
 [dev-dependencies]
 fuel-indexer-plugin = { workspace = true }
-fuels-macros = { version = "0.43", default-features = false }
-fuels-types = { version = "0.42", default-features = false }
+fuels-macros = { version = "0.45", default-features = false }
 serde = { workspace = true }
 trybuild = "1.0"
 
