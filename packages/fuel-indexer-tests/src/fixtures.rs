@@ -451,6 +451,7 @@ pub mod test_web {
             .call()
             .await
             .unwrap();
+
         HttpResponse::Ok()
     }
 
@@ -463,6 +464,7 @@ pub mod test_web {
             .call()
             .await
             .unwrap();
+
         HttpResponse::Ok()
     }
 
@@ -495,6 +497,7 @@ pub mod test_web {
             .call()
             .await
             .unwrap();
+
         HttpResponse::Ok()
     }
 
@@ -509,6 +512,7 @@ pub mod test_web {
             .call()
             .await
             .unwrap();
+
         HttpResponse::Ok()
     }
 
@@ -523,52 +527,50 @@ pub mod test_web {
             .call()
             .await
             .unwrap();
+
         HttpResponse::Ok()
     }
 
     // TODO: TransferOut and MessageOut tests are currently ignored
     // due to flakiness; this will be addressed in https://github.com/FuelLabs/fuel-indexer/issues/1194
-    // async fn fuel_indexer_test_transferout(
-    //     state: web::Data<Arc<AppState>>,
-    // ) -> impl Responder {
-    //     let call_params =
-    //         CallParameters::new(1_000_000, fuels::types::AssetId::default(), 1000);
+    async fn fuel_indexer_test_transferout(
+        state: web::Data<Arc<AppState>>,
+    ) -> impl Responder {
+        let call_params =
+            CallParameters::new(1_000_000, fuels::types::AssetId::default(), 1000);
 
-    //     let _ = state
-    //         .contract
-    //         .methods()
-    //         .trigger_transferout()
-    //         .append_variable_outputs(1)
-    //         // .tx_params(tx_params())
-    //         .call_params(call_params)?
-    //         .expect("Could not set call parameters for contract method")
-    //         .call()
-    //         .await;
+        let _ = state
+            .contract
+            .methods()
+            .trigger_transferout()
+            .tx_params(tx_params())
+            .call_params(call_params)
+            .expect("Could not set call parameters for contract method")
+            .call()
+            .await;
 
-    //     HttpResponse::Ok()
-    // }
+        HttpResponse::Ok()
+    }
 
-    // async fn fuel_indexer_test_messageout(
-    //     state: web::Data<Arc<AppState>>,
-    // ) -> impl Responder {
-    //     let call_params =
-    //         CallParameters::new(1_000_000, fuels::types::AssetId::default(), 1000);
+    async fn fuel_indexer_test_messageout(
+        state: web::Data<Arc<AppState>>,
+    ) -> impl Responder {
+        let call_params =
+            CallParameters::new(1_000_000, fuels::types::AssetId::default(), 1000);
 
-    //     let _ = state
-    //         .contract
-    //         .methods()
-    //         .trigger_messageout()
-    //         .call_params(call_params)
-    //         .unwrap()
-    //         // .tx_params(tx_params())
-    //         .append_variable_outputs(1)
-    //         .expect("Could not set call parameters for contract method")
-    //         .call()
-    //         .await
-    //         .unwrap();
+        let _ = state
+            .contract
+            .methods()
+            .trigger_messageout()
+            .call_params(call_params)
+            .expect("Could not set call parameters for contract method")
+            .tx_params(tx_params())
+            .call()
+            .await
+            .unwrap();
 
-    //     HttpResponse::Ok()
-    // }
+        HttpResponse::Ok()
+    }
 
     async fn fuel_indexer_test_callreturn(
         state: web::Data<Arc<AppState>>,
@@ -611,6 +613,7 @@ pub mod test_web {
             .call()
             .await
             .unwrap();
+
         HttpResponse::Ok()
     }
 
@@ -625,6 +628,7 @@ pub mod test_web {
             .call()
             .await
             .unwrap();
+
         HttpResponse::Ok()
     }
 
@@ -752,7 +756,8 @@ pub mod test_web {
             .trigger_enum()
             .tx_params(tx_params())
             .call()
-            .await;
+            .await
+            .unwrap();
 
         HttpResponse::Ok()
     }
@@ -766,7 +771,8 @@ pub mod test_web {
             .trigger_mint()
             .tx_params(tx_params())
             .call()
-            .await;
+            .await
+            .unwrap();
 
         HttpResponse::Ok()
     }
@@ -784,7 +790,8 @@ pub mod test_web {
             .call_params(call_params)
             .unwrap()
             .call()
-            .await;
+            .await
+            .unwrap();
 
         HttpResponse::Ok()
     }
@@ -816,11 +823,11 @@ pub mod test_web {
                 "/scriptresult",
                 web::post().to(fuel_indexer_test_scriptresult),
             )
-            // .route(
-            //     "/transferout",
-            //     web::post().to(fuel_indexer_test_transferout),
-            // )
-            // .route("/messageout", web::post().to(fuel_indexer_test_messageout))
+            .route(
+                "/transferout",
+                web::post().to(fuel_indexer_test_transferout),
+            )
+            .route("/messageout", web::post().to(fuel_indexer_test_messageout))
             .route("/returndata", web::post().to(fuel_indexer_test_callreturn))
             .route("/multiarg", web::post().to(fuel_indexer_test_multiargs))
             .route(

@@ -104,8 +104,8 @@ async fn test_can_trigger_and_index_blocks_and_transactions_postgres() {
             .await
             .unwrap();
 
-    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 0);
-    assert_eq!(row.get::<BigDecimal, usize>(1).to_u64().unwrap(), 0);
+    assert!(row.get::<BigDecimal, usize>(1).to_u64().unwrap() > 0);
+    assert_eq!(row.get::<i32, usize>(2), 1);
 }
 
 #[actix_web::test]
@@ -251,8 +251,6 @@ async fn test_ensure_receipt_types_are_indexed() {
     // ...then we burn it.
     mock_request("/burn").await;
 
-    node.abort();
-
     let mut conn = db.pool.acquire().await.unwrap();
     let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.burnentity LIMIT 1")
         .fetch_one(&mut conn)
@@ -263,6 +261,36 @@ async fn test_ensure_receipt_types_are_indexed() {
     assert_eq!(row.get::<&str, usize>(1), TRANSFER_BASE_ASSET_ID);
     assert_eq!(row.get::<&str, usize>(2), EXPECTED_CONTRACT_ID);
     assert_eq!(row.get::<BigDecimal, usize>(3).to_u64().unwrap(), 100);
+
+    mock_request("/messageout").await;
+
+    node.abort();
+
+    let mut conn = db.pool.acquire().await.unwrap();
+    let row =
+        sqlx::query("SELECT * FROM fuel_indexer_test_index1.messageoutentity LIMIT 1")
+            .fetch_one(&mut conn)
+            .await
+            .unwrap();
+
+    let recipient = row.get::<&str, usize>(3);
+    let amount = row.get::<BigDecimal, usize>(4).to_u64().unwrap();
+    assert_eq!(
+        recipient,
+        "532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96"
+    );
+    assert_eq!(amount, 100);
+
+    let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.messageentity LIMIT 1")
+        .fetch_one(&mut conn)
+        .await
+        .unwrap();
+
+    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 1234);
+    assert_eq!(
+        row.get::<&str, usize>(1),
+        "abcdefghijklmnopqrstuvwxyz123456"
+    );
 }
 
 #[actix_web::test]
@@ -319,6 +347,9 @@ async fn test_can_trigger_and_index_ping_event_postgres() {
     assert!(row.get::<Option<&str>, usize>(3).is_none());
 }
 
+// TODO: Fixing this test is blocked by https://github.com/FuelLabs/sway/pull/4821.
+// The unreleased version of Sway used for the Mint and Burn tests had errors
+// with the Sway standard library at the time of this change.
 #[actix_web::test]
 #[ignore]
 async fn test_can_trigger_and_index_transferout_event_postgres() {
@@ -342,43 +373,6 @@ async fn test_can_trigger_and_index_transferout_event_postgres() {
     );
     assert_eq!(row.get::<BigDecimal, usize>(3).to_u64().unwrap(), 1);
     assert_eq!(row.get::<&str, usize>(4), TRANSFER_BASE_ASSET_ID);
-}
-
-#[actix_web::test]
-#[ignore]
-async fn test_can_trigger_and_index_messageout_event_postgres() {
-    let IndexingTestComponents { node, db, .. } =
-        setup_indexing_test_components(None).await;
-
-    mock_request("/messageout").await;
-
-    node.abort();
-
-    let mut conn = db.pool.acquire().await.unwrap();
-    let row =
-        sqlx::query("SELECT * FROM fuel_indexer_test_index1.messageoutentity LIMIT 1")
-            .fetch_one(&mut conn)
-            .await
-            .unwrap();
-
-    let recipient = row.get::<&str, usize>(3);
-    let amount = row.get::<BigDecimal, usize>(4).to_u64().unwrap();
-    assert_eq!(
-        recipient,
-        "532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96"
-    );
-    assert_eq!(amount, 100);
-
-    let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.messageentity LIMIT 1")
-        .fetch_one(&mut conn)
-        .await
-        .unwrap();
-
-    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 1234);
-    assert_eq!(
-        row.get::<&str, usize>(1),
-        "abcdefghijklmnopqrstuvwxyz123456"
-    );
 }
 
 #[actix_web::test]
