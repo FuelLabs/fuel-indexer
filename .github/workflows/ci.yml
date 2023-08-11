@@ -65,7 +65,7 @@ jobs:
           fi
 
           echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
-          echo “SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+          echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
 
   docs-test:
     uses: FuelLabs/github-actions/.github/workflows/mdbook-docs.yml@master
