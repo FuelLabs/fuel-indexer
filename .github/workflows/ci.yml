@@ -138,6 +138,8 @@ jobs:
       - uses: actions/checkout@v3
       - name: Install toolchain
         uses: dtolnay/rust-toolchain@stable
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.3
       - name: cargo ${{ matrix.command }} -p ${{ matrix.package }} ${{ matrix.args }}
         if: ${{ matrix.package }}
         run: cargo ${{ matrix.command }} -p ${{ matrix.package }} ${{ matrix.args }}
@@ -154,6 +156,9 @@ jobs:
           notify_when: failure
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NOTIFY_BUILD }}
+      - name: Run sccache stat for check
+        shell: bash
+        run: ${SCCACHE_PATH} --show-stats
   cargo-clippy:
     if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_DEVELOP_OR_SEMVER !=
       'true'
