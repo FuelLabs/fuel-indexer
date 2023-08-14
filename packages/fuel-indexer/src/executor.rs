@@ -266,7 +266,7 @@ pub async fn retrieve_blocks_from_node(
         })
         .await
         .unwrap_or_else(|e| {
-            error!("Indexer({indexer_uid}) failed to retrieve blocks: {e}");
+            error!("Indexer({indexer_uid}) failed to retrieve blocks: {e:?}");
             // Setting an empty cursor will cause the indexer to sleep for a bit and try again.
             PaginatedResult {
                 cursor: None,
@@ -608,7 +608,7 @@ where
         let res = (self.handle_events_fn)(blocks, self.db.clone()).await;
         let uid = self.manifest.uid();
         if let Err(e) = res {
-            error!("NativeIndexExecutor({uid}) handle_events failed: {e}.");
+            error!("NativeIndexExecutor({uid}) handle_events failed: {e:?}.");
             self.db.lock().await.revert_transaction().await?;
             return Err(IndexerError::NativeExecutionRuntimeError);
         } else {
@@ -891,7 +891,7 @@ impl Executor for WasmIndexExecutor {
                 self.db.lock().await.revert_transaction().await?;
                 return Err(IndexerError::RunTimeLimitExceededError);
             } else {
-                error!("WasmIndexExecutor({uid}) WASM execution failed: {e}.");
+                error!("WasmIndexExecutor({uid}) WASM execution failed: {e:?}.");
                 self.db.lock().await.revert_transaction().await?;
                 return Err(IndexerError::from(e));
             }
