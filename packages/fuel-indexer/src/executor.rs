@@ -1,8 +1,6 @@
 use crate::{
-    database::Database,
-    ffi,
-    queries::ClientExt,
-    IndexerConfig, IndexerError, IndexerResult,
+    database::Database, ffi, queries::ClientExt, IndexerConfig, IndexerError,
+    IndexerResult,
 };
 use async_std::{
     fs::File,
