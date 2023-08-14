@@ -8,7 +8,10 @@ use std::collections::HashMap;
 #[actix_web::test]
 async fn test_entity_with_required_and_optional_fields() {
     let WebTestComponents {
-        server, db: _db, client, ..
+        server,
+        db: _db,
+        client,
+        ..
     } = setup_web_test_components(None).await;
 
     mock_request("/block").await;
@@ -55,7 +58,10 @@ async fn test_entity_with_required_and_optional_fields() {
 #[actix_web::test]
 async fn test_entity_with_foreign_keys() {
     let WebTestComponents {
-        server, db: _db, client, ..
+        server,
+        db: _db,
+        client,
+        ..
     } = setup_web_test_components(None).await;
 
     mock_request("/block").await;
@@ -107,7 +113,10 @@ async fn test_entity_with_foreign_keys() {
 #[actix_web::test]
 async fn test_deeply_nested_entity() {
     let WebTestComponents {
-        server, db: _db, client, ..
+        server,
+        db: _db,
+        client,
+        ..
     } = setup_web_test_components(None).await;
 
     mock_request("/deeply_nested").await;
@@ -239,7 +248,10 @@ async fn test_deeply_nested_entity() {
 #[actix_web::test]
 async fn test_filtering() {
     let WebTestComponents {
-        server, db: _db, client, ..
+        server,
+        db: _db,
+        client,
+        ..
     } = setup_web_test_components(None).await;
 
     mock_request("/ping").await;
@@ -426,7 +438,10 @@ async fn test_filtering() {
 #[actix_web::test]
 async fn test_sorting() {
     let WebTestComponents {
-        server, db: _db, client, ..
+        server,
+        db: _db,
+        client,
+        ..
     } = setup_web_test_components(None).await;
 
     mock_request("/ping").await;
@@ -458,7 +473,10 @@ async fn test_sorting() {
 #[actix_web::test]
 async fn test_aliasing_and_pagination() {
     let WebTestComponents {
-        server, db: _db, client, ..
+        server,
+        db: _db,
+        client,
+        ..
     } = setup_web_test_components(None).await;
 
     mock_request("/ping").await;

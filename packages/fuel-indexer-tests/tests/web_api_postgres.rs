@@ -42,7 +42,9 @@ async fn test_metrics_endpoint_returns_proper_count_of_metrics_postgres() {
 #[tokio::test]
 async fn test_database_postgres_metrics_properly_increments_counts_when_queries_are_made()
 {
-    let WebTestComponents { server, db, client, .. } = setup_web_test_components(None).await;
+    let WebTestComponents {
+        server, db, client, ..
+    } = setup_web_test_components(None).await;
 
     let mut conn = db.pool.acquire().await.unwrap();
     let _ = postgres::execute_query(&mut conn, "SELECT 1;".into()).await;
@@ -149,8 +151,9 @@ async fn test_signature_route_validates_signature_expires_nonce_and_creates_jwt(
         ..IndexerConfig::default()
     };
 
-    let WebTestComponents { server, db, client, .. } =
-        setup_web_test_components(Some(config)).await;
+    let WebTestComponents {
+        server, db, client, ..
+    } = setup_web_test_components(Some(config)).await;
 
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -217,8 +220,9 @@ async fn test_querying_sql_endpoint_when_sql_is_enabled_returns_actual_query_res
         ..IndexerConfig::default()
     };
 
-    let WebTestComponents { server, db, client, .. } =
-        setup_web_test_components(Some(config)).await;
+    let WebTestComponents {
+        server, db, client, ..
+    } = setup_web_test_components(Some(config)).await;
 
     let mut conn = db.pool.acquire().await.unwrap();
 
@@ -259,8 +263,9 @@ async fn test_querying_sql_endpoint_when_sql_is_enabled_returns_error_for_non_su
         ..IndexerConfig::default()
     };
 
-    let WebTestComponents { server, db, client, .. } =
-        setup_web_test_components(Some(config)).await;
+    let WebTestComponents {
+        server, db, client, ..
+    } = setup_web_test_components(Some(config)).await;
 
     let mut conn = db.pool.acquire().await.unwrap();
 
