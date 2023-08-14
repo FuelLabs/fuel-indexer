@@ -1,12 +1,12 @@
 Thanks for opening an issue on the Fuel Indexer project.
 
-_*If you're an internal Fuel org contributor, please feel free to remove this template when creating issues, as this template is meant for external users and contributors_.
+_*If you're an internal FuelLabs contributor, please feel free to remove this template when creating issues, as this template is meant for external users and contributors_.
 
 ### Prerequisites
 
 - [ ] Can you reproduce the problem?
-- [ ] Do you know which version you're using?
-- [ ] Did you already check for an answer in previous [Discussions](https://github.com/FuelLabs/fuel-indexer/discussions).
+- [ ] Do you know which version of the indexer you're using?
+- [ ] Did you already check for an answer in previous [Discussions](https://github.com/FuelLabs/fuel-indexer/discussions)?
 
 ### Description
 
@@ -28,9 +28,7 @@ Please list the steps required to reproduce your issue in detail.
 
 ### Versions
 
-Please list what version of indexer components you're using.
+Please list what version of indexer components you're using. Latest is currently <img src="https://img.shields.io/crates/v/fuel-indexer?label=latest" />.
 
-Latest is currently <img src="https://img.shields.io/crates/v/fuel-indexer?label=latest" />.
-
-- [ ] `fuel-indexer`: 0.0.0
-- [ ] `forc-index`: 0.0.0
+- `fuel-indexer`: 0.0.0
+- `forc-index`: 0.0.0
