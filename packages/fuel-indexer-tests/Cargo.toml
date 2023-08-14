@@ -58,6 +58,5 @@ wasmer-middlewares = "4"
 wasmer-types = "4"
 
 [features]
-default = ["e2e", "postgres"]
-e2e = []
+default = ["postgres"]
 postgres = []
