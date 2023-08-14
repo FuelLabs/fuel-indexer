@@ -31,7 +31,7 @@ pub const POSTGRES_PASSWORD: &str = "postgres";
 /// Number of failed calls to allow before stopping the indexer.
 pub const INDEXER_FAILED_CALLS: usize = 10;
 
-/// Stop indexers that have seen `MAX_EMPTY_BLOCK_REQUESTS`.
+/// Stop indexers that have seen `MAX_CONSECUTIVE_EMPTY_BLOCK_RESPONSES`.
 pub const STOP_IDLE_INDEXERS: bool = false;
 
 /// Max body size for GraphQL API requests (5 MB).
@@ -53,7 +53,7 @@ pub const INITIAL_RETRY_DELAY_SECS: u64 = 2;
 pub const EMBEDDED_DATABASE: bool = false;
 
 /// If using `--stop-idle-indexers`, this is the number of empty blocks after which the executor should stop.
-pub const MAX_EMPTY_BLOCK_REQUESTS: usize = 10;
+pub const MAX_CONSECUTIVE_EMPTY_BLOCK_RESPONSES: usize = 10;
 
 /// Amount of time to wait before fetching new blocks, if an executor error occurs.
 pub const DELAY_FOR_SERVICE_ERROR: u64 = 1;

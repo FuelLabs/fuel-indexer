@@ -112,6 +112,7 @@ impl IndexerService {
         .await?;
 
         let schema = manifest.graphql_schema_content()?;
+        let schema_version = schema.version().to_string();
         let schema_bytes = Vec::<u8>::from(&schema);
 
         self.manager
@@ -132,23 +133,20 @@ impl IndexerService {
             &manifest,
             ExecutorSource::Manifest,
             self.pool.clone(),
+            schema_version,
         )
         .await?;
 
         let mut items = vec![
-            (IndexerAssetType::Wasm, exec_source.to_vec()),
-            (
-                IndexerAssetType::Manifest,
-                Manifest::try_into(manifest.clone())?,
-            ),
+            (IndexerAssetType::Wasm, exec_source.into()),
+            (IndexerAssetType::Manifest, manifest.clone().into()),
             (IndexerAssetType::Schema, schema_bytes),
         ];
 
         while let Some((asset_type, bytes)) = items.pop() {
             info!(
-                "Registering Asset({asset_type:?}) for Indexer({}.{})",
-                manifest.namespace(),
-                manifest.identifier()
+                "Registering Asset({asset_type:?}) for Indexer({})",
+                manifest.uid()
             );
 
             {
@@ -190,6 +188,7 @@ impl IndexerService {
                 &manifest,
                 ExecutorSource::Registry(assets.wasm.bytes),
                 self.pool.clone(),
+                assets.schema.digest,
             )
             .await?;
 
@@ -317,6 +316,7 @@ async fn create_service_task(
                                     &manifest,
                                     ExecutorSource::Registry(assets.wasm.bytes),
                                     pool.clone(),
+                                    assets.schema.digest,
                                 )
                                 .await?;
 
@@ -383,6 +383,10 @@ async fn get_start_block(
             info!("{action} Indexer({}) from block {block}", manifest.uid());
             Ok(block)
         }
-        None => Ok(manifest.start_block().unwrap_or(1)),
+        None => {
+            let block = manifest.start_block().unwrap_or(1);
+            info!("Starting Indexer({}) from block {block}", manifest.uid());
+            Ok(block)
+        }
     }
 }

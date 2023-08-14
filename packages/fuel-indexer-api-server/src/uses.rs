@@ -276,18 +276,11 @@ async fn register_indexer_assets_transaction(
                 // The schema must be the same. This query returns an asset
                 // if the bytes match. If it returns None (and the indexer
                 // exists), it means that its schema is different.
-                let schema = {
-                    let content = String::from_utf8(data.to_vec())
-                        .map_err(|e| {
-                            ApiError::OtherError(format!("Invalid schema: {}", e))
-                        })?
-                        .to_string();
-                    GraphQLSchema::new(content)
-                };
+                let schema = GraphQLSchema::from(data.to_vec());
                 if queries::asset_already_exists(
                     conn,
                     &IndexerAssetType::Schema,
-                    &Vec::<u8>::from(&schema),
+                    &(&schema).into(),
                     &indexer_id,
                 )
                 .await?
@@ -324,11 +317,13 @@ async fn register_indexer_assets_transaction(
                 assets.push(result);
             }
             IndexerAssetType::Schema => {
+                let schema = GraphQLSchema::from(data.to_vec());
+
                 let asset = queries::register_indexer_asset(
                     conn,
                     namespace,
                     identifier,
-                    data.to_vec(),
+                    (&schema).into(),
                     IndexerAssetType::Schema,
                     Some(pubkey),
                 )
@@ -487,6 +482,7 @@ pub async fn sql_query(
     Path((_namespace, _identifier)): Path<(String, String)>,
     Extension(claims): Extension<Claims>,
     Extension(pool): Extension<IndexerConnectionPool>,
+    Extension(config): Extension<IndexerConfig>,
     Json(query): Json<SqlQuery>,
 ) -> ApiResult<axum::Json<Value>> {
     if claims.is_unauthenticated() {
@@ -494,6 +490,10 @@ pub async fn sql_query(
     }
     let SqlQuery { query } = query;
     SqlQueryValidator::validate_sql_query(&query)?;
+
+    if config.verbose {
+        tracing::info!("{query}");
+    }
     let mut conn = pool.acquire().await?;
     let result = queries::run_query(&mut conn, query).await?;
     Ok(Json(json!({ "data": result })))

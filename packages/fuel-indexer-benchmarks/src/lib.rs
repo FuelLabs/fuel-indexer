@@ -20,7 +20,7 @@ async fn get_blocks(start_cursor: u64, num_blocks: usize) -> Result<Vec<BlockDat
     let client = FuelClient::from_str(NODE_URL)
         .unwrap_or_else(|e| panic!("Node connection failed: {e}."));
     let next_cursor = Some(start_cursor.to_string());
-    let (blocks, _) = retrieve_blocks_from_node(
+    let (blocks, _, _) = retrieve_blocks_from_node(
         &client,
         num_blocks,
         &next_cursor,
@@ -41,11 +41,17 @@ async fn setup_wasm_executor(
     pool: IndexerConnectionPool,
 ) -> Result<WasmIndexExecutor, ()> {
     config.database = DatabaseConfig::from_str(&db_url).unwrap();
+    let schema_version = manifest
+        .graphql_schema_content()
+        .unwrap()
+        .version()
+        .to_string();
     let executor = WasmIndexExecutor::new(
         &config,
         &manifest,
         manifest.module_bytes().unwrap(),
         pool,
+        schema_version,
     )
     .await
     .expect("Could not setup WASM executor");

@@ -56,7 +56,11 @@ type IndexMetadataEntity @entity {
 
 /// Inject native entities into the GraphQL schema.
 fn inject_native_entities_into_schema(schema: &str) -> String {
-    format!("{}{}", schema, IndexMetadata::schema_fragment())
+    if !schema.contains("type IndexMetadataEntity") {
+        format!("{}{}", schema, IndexMetadata::schema_fragment())
+    } else {
+        schema.to_string()
+    }
 }
 
 /// Wrapper for GraphQL schema content.
@@ -97,6 +101,12 @@ impl GraphQLSchema {
 impl From<&GraphQLSchema> for Vec<u8> {
     fn from(schema: &GraphQLSchema) -> Self {
         schema.schema().as_bytes().to_vec()
+    }
+}
+
+impl From<Vec<u8>> for GraphQLSchema {
+    fn from(value: Vec<u8>) -> Self {
+        GraphQLSchema::new(String::from_utf8_lossy(&value).to_string())
     }
 }
 

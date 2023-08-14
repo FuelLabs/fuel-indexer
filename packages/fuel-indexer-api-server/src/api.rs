@@ -217,6 +217,7 @@ impl WebApi {
                 .route("/:namespace/:identifier", post(sql_query))
                 .layer(AuthenticationMiddleware::from(&config))
                 .layer(Extension(pool.clone()))
+                .layer(Extension(config.clone()))
                 .layer(RequestBodyLimitLayer::new(max_body_size));
         }
 

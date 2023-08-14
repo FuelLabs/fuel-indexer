@@ -13,7 +13,7 @@ To run the standalone Fuel indexer GraphQL API server using a configuration file
 fuel-indexer-api-server run --config config.yaml
 ```
 
-In the above example, `config.yaml` is based on [the default service configuration file](https://github.com/FuelLabs/fuel-indexer/blob/master/config.yaml).
+In the above example, `config.yaml` is based on [the default service configuration file](https://github.com/FuelLabs/fuel-indexer/blob/develop/config.yaml).
 
 ## Options
 
