@@ -5,7 +5,7 @@ use fuel_indexer_lib::config::{
 use fuel_indexer_postgres as postgres;
 use fuel_indexer_tests::{
     assets,
-    fixtures::{http_client, setup_web_test_components, WebTestComponents},
+    fixtures::{setup_web_test_components, WebTestComponents},
 };
 use hyper::header::CONTENT_TYPE;
 use reqwest::multipart;
@@ -18,9 +18,8 @@ const NONCE: &str = "ea35be0c98764e7ca06d02067982e3b4";
 
 #[tokio::test]
 async fn test_metrics_endpoint_returns_proper_count_of_metrics_postgres() {
-    let WebTestComponents { server, .. } = setup_web_test_components(None).await;
+    let WebTestComponents { server, client, .. } = setup_web_test_components(None).await;
 
-    let client = http_client();
     let _ = client
         .get("http://localhost:29987/api/health")
         .send()
@@ -43,13 +42,12 @@ async fn test_metrics_endpoint_returns_proper_count_of_metrics_postgres() {
 #[tokio::test]
 async fn test_database_postgres_metrics_properly_increments_counts_when_queries_are_made()
 {
-    let WebTestComponents { server, db, .. } = setup_web_test_components(None).await;
+    let WebTestComponents { server, db, client, .. } = setup_web_test_components(None).await;
 
     let mut conn = db.pool.acquire().await.unwrap();
     let _ = postgres::execute_query(&mut conn, "SELECT 1;".into()).await;
     let _ = postgres::execute_query(&mut conn, "SELECT 1;".into()).await;
 
-    let client = http_client();
     let _ = client
         .get("http://localhost:29987/api/health")
         .send()
@@ -84,6 +82,7 @@ async fn test_asset_upload_endpoint_properly_adds_assets_to_database_postgres() 
         server,
         db,
         rx: _rx,
+        client,
         ..
     } = setup_web_test_components(None).await;
 
@@ -106,7 +105,6 @@ async fn test_asset_upload_endpoint_properly_adds_assets_to_database_postgres() 
         .part("schema", schema_file)
         .part("wasm", wasm_file);
 
-    let client = http_client();
     let resp = client
         .post("http://localhost:29987/api/index/test_namespace/simple_wasm_executor")
         .multipart(form)
@@ -151,7 +149,7 @@ async fn test_signature_route_validates_signature_expires_nonce_and_creates_jwt(
         ..IndexerConfig::default()
     };
 
-    let WebTestComponents { server, db, .. } =
+    let WebTestComponents { server, db, client, .. } =
         setup_web_test_components(Some(config)).await;
 
     let now = SystemTime::now()
@@ -169,7 +167,7 @@ async fn test_signature_route_validates_signature_expires_nonce_and_creates_jwt(
         .await
         .unwrap();
 
-    let resp = http_client()
+    let resp = client
         .post("http://localhost:29987/api/auth/signature")
         .header(CONTENT_TYPE, "application/json".to_owned())
         .json(&SignatureRequest {
@@ -197,9 +195,8 @@ async fn test_signature_route_validates_signature_expires_nonce_and_creates_jwt(
 
 #[actix_web::test]
 async fn test_querying_sql_endpoint_when_sql_not_enabled_returns_404() {
-    let WebTestComponents { server, .. } = setup_web_test_components(None).await;
+    let WebTestComponents { server, client, .. } = setup_web_test_components(None).await;
 
-    let client = http_client();
     let resp = client
         .post("http://127.0.0.1:29987/api/sql/fuel_indexer_test/index1")
         .header(CONTENT_TYPE, "application/json".to_owned())
@@ -220,7 +217,7 @@ async fn test_querying_sql_endpoint_when_sql_is_enabled_returns_actual_query_res
         ..IndexerConfig::default()
     };
 
-    let WebTestComponents { server, db, .. } =
+    let WebTestComponents { server, db, client, .. } =
         setup_web_test_components(Some(config)).await;
 
     let mut conn = db.pool.acquire().await.unwrap();
@@ -235,7 +232,6 @@ async fn test_querying_sql_endpoint_when_sql_is_enabled_returns_actual_query_res
         .await
         .unwrap();
 
-    let client = http_client();
     let resp = client
         .post("http://127.0.0.1:29987/api/sql/fuel_indexer_test/index1")
         .header(CONTENT_TYPE, "application/json".to_owned())
@@ -263,7 +259,7 @@ async fn test_querying_sql_endpoint_when_sql_is_enabled_returns_error_for_non_su
         ..IndexerConfig::default()
     };
 
-    let WebTestComponents { server, db, .. } =
+    let WebTestComponents { server, db, client, .. } =
         setup_web_test_components(Some(config)).await;
 
     let mut conn = db.pool.acquire().await.unwrap();
@@ -278,7 +274,6 @@ async fn test_querying_sql_endpoint_when_sql_is_enabled_returns_error_for_non_su
         .await
         .unwrap();
 
-    let client = http_client();
     let resp = client
         .post("http://127.0.0.1:29987/api/sql/fuel_indexer_test/index1")
         .header(CONTENT_TYPE, "application/json".to_owned())

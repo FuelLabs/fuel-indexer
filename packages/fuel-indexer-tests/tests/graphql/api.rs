@@ -1,5 +1,5 @@
 use fuel_indexer_tests::fixtures::{
-    http_client, mock_request, setup_web_test_components, WebTestComponents,
+    mock_request, setup_web_test_components, WebTestComponents,
 };
 use hyper::header::CONTENT_TYPE;
 use serde_json::{Number, Value};
@@ -8,12 +8,10 @@ use std::collections::HashMap;
 #[actix_web::test]
 async fn test_entity_with_required_and_optional_fields() {
     let WebTestComponents {
-        server, db: _db, ..
+        server, db: _db, client, ..
     } = setup_web_test_components(None).await;
 
     mock_request("/block").await;
-
-    let client = http_client();
 
     // All required
     let resp = client
@@ -57,13 +55,12 @@ async fn test_entity_with_required_and_optional_fields() {
 #[actix_web::test]
 async fn test_entity_with_foreign_keys() {
     let WebTestComponents {
-        server, db: _db, ..
+        server, db: _db, client, ..
     } = setup_web_test_components(None).await;
 
     mock_request("/block").await;
 
     // Implicit foreign keys
-    let client = http_client();
     let resp = client
         .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
         .header(CONTENT_TYPE, "application/graphql".to_owned())
@@ -110,7 +107,7 @@ async fn test_entity_with_foreign_keys() {
 #[actix_web::test]
 async fn test_deeply_nested_entity() {
     let WebTestComponents {
-        server, db: _db, ..
+        server, db: _db, client, ..
     } = setup_web_test_components(None).await;
 
     mock_request("/deeply_nested").await;
@@ -176,7 +173,6 @@ async fn test_deeply_nested_entity() {
             }",
     )]);
 
-    let client = http_client();
     let resp = client
         .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
         .header(CONTENT_TYPE, "application/graphql".to_owned())
@@ -243,11 +239,10 @@ async fn test_deeply_nested_entity() {
 #[actix_web::test]
 async fn test_filtering() {
     let WebTestComponents {
-        server, db: _db, ..
+        server, db: _db, client, ..
     } = setup_web_test_components(None).await;
 
     mock_request("/ping").await;
-    let client = http_client();
 
     // ID selection
     let resp = client
@@ -431,11 +426,11 @@ async fn test_filtering() {
 #[actix_web::test]
 async fn test_sorting() {
     let WebTestComponents {
-        server, db: _db, ..
+        server, db: _db, client, ..
     } = setup_web_test_components(None).await;
 
     mock_request("/ping").await;
-    let client = http_client();
+
     let resp = client
         .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
         .header(CONTENT_TYPE, "application/graphql".to_owned())
@@ -463,12 +458,11 @@ async fn test_sorting() {
 #[actix_web::test]
 async fn test_aliasing_and_pagination() {
     let WebTestComponents {
-        server, db: _db, ..
+        server, db: _db, client, ..
     } = setup_web_test_components(None).await;
 
     mock_request("/ping").await;
 
-    let client = http_client();
     let resp = client
         .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
         .header(CONTENT_TYPE, "application/graphql".to_owned())

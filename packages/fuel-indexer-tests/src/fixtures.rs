@@ -66,6 +66,7 @@ pub struct WebTestComponents {
     #[allow(unused)]
     pub rx: Receiver<ServiceRequest>,
     pub server: JoinHandle<Result<(), Error>>,
+    pub client: reqwest::Client,
 }
 
 pub async fn mock_request(path: &str) {
@@ -121,6 +122,11 @@ pub async fn setup_web_test_components(
         .serve(app.clone().into_make_service());
     let server = tokio::spawn(server);
 
+    let client = reqwest::ClientBuilder::new()
+        .pool_max_idle_per_host(0)
+        .build()
+        .unwrap();
+
     WebTestComponents {
         node,
         db,
@@ -129,6 +135,7 @@ pub async fn setup_web_test_components(
         app,
         rx,
         server,
+        client,
     }
 }
 
@@ -242,13 +249,6 @@ impl Drop for TestPostgresDb {
             });
         });
     }
-}
-
-pub fn http_client() -> reqwest::Client {
-    reqwest::ClientBuilder::new()
-        .pool_max_idle_per_host(0)
-        .build()
-        .unwrap()
 }
 
 pub fn tx_params() -> TxParameters {
