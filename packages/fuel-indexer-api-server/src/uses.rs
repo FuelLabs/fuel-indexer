@@ -213,7 +213,7 @@ pub(crate) async fn register_indexer_assets(
 
     let mut conn = pool.acquire().await?;
 
-    let multipart = multipart.ok_or_else(|| ApiError::default())?;
+    let multipart = multipart.ok_or_else(ApiError::default)?;
 
     let (replace_indexer, asset_bytes) =
         parse_register_indexer_multipart(multipart).await?;
@@ -242,18 +242,19 @@ pub(crate) async fn register_indexer_assets(
             }))
             .await?;
 
-            return Ok(Json(json!({
+            Ok(Json(json!({
                 "success": "true",
                 "assets": assets,
-            })));
+            })))
         }
         Err(e) => {
             queries::revert_transaction(&mut conn).await?;
-            return Err(e);
+            Err(e)
         }
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 async fn register_indexer_assets_transaction(
     conn: &mut fuel_indexer_database::IndexerConnection,
     schema_manager: Arc<RwLock<SchemaManager>>,
@@ -266,7 +267,7 @@ async fn register_indexer_assets_transaction(
 ) -> ApiResult<Vec<IndexerAsset>> {
     let mut assets: Vec<IndexerAsset> = Vec::new();
 
-    let indexer_id = queries::get_indexer_id(conn, &namespace, &identifier).await;
+    let indexer_id = queries::get_indexer_id(conn, namespace, identifier).await;
 
     // If the indexer already exists, check that the schema has not changed.
     if let Ok(indexer_id) = indexer_id {
@@ -312,8 +313,8 @@ async fn register_indexer_assets_transaction(
             IndexerAssetType::Wasm | IndexerAssetType::Manifest => {
                 let result = queries::register_indexer_asset(
                     conn,
-                    &namespace,
-                    &identifier,
+                    namespace,
+                    identifier,
                     data.to_vec(),
                     asset_type.to_owned(),
                     Some(pubkey),
@@ -325,8 +326,8 @@ async fn register_indexer_assets_transaction(
             IndexerAssetType::Schema => {
                 let asset = queries::register_indexer_asset(
                     conn,
-                    &namespace,
-                    &identifier,
+                    namespace,
+                    identifier,
                     data.to_vec(),
                     IndexerAssetType::Schema,
                     Some(pubkey),
@@ -334,14 +335,14 @@ async fn register_indexer_assets_transaction(
                 .await?;
 
                 let schema =
-                    GraphQLSchema::new(String::from_utf8_lossy(&data).to_string());
+                    GraphQLSchema::new(String::from_utf8_lossy(data).to_string());
 
                 schema_manager
                     .write()
                     .await
                     .new_schema(
-                        &namespace,
-                        &identifier,
+                        namespace,
+                        identifier,
                         schema,
                         // Only WASM can be sent over the web.
                         ExecutionSource::Wasm,
