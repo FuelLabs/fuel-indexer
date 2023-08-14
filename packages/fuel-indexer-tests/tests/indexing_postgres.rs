@@ -338,9 +338,8 @@ async fn test_index_optional_types() {
     assert!(row.get::<Option<&str>, usize>(3).is_none());
 }
 
-// TODO: Fixing this test is blocked by https://github.com/FuelLabs/sway/pull/4821.
-// The unreleased version of Sway used for the Mint and Burn tests had errors
-// with the Sway standard library at the time of this change.
+// FIXME: TransferOut fails due to a failure in the contract,
+// not sure what the problem is yet.
 #[actix_web::test]
 #[ignore]
 async fn test_can_trigger_and_index_transferout_event_postgres() {
