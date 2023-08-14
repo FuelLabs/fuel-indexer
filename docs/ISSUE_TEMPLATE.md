@@ -10,19 +10,16 @@ _*If you're an internal Fuel org contributor, please feel free to remove this te
 
 ### Description
 
-Please describe your issue in detail.
+- Please describe your issue in detail.
+- The more accurate detailed information you give, the quicker we can help you.
 
 ### Steps to Reproduce
 
 Please list the steps required to reproduce your issue in detail.
 
-1. [First Step]
-2. [Second Step]
-3. [and so on...]
-
-### Expected Behavior
-
-
+1. Step one...
+2. Step two...
+3. So on and so forth...
 
 **Expected behavior:** _Please describe the behavior your would ideally expect._
 
@@ -30,6 +27,8 @@ Please list the steps required to reproduce your issue in detail.
 
 
 ### Versions
+
+Please list what version of indexer components you're using.
 
 Latest is currently <img src="https://img.shields.io/crates/v/fuel-indexer?label=latest" />.
 
