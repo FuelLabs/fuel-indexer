@@ -1,6 +1,6 @@
 use crate::{
-    cli::{BuildCommand, DeployCommand},
-    commands::build,
+    cli::{BuildCommand, DeployCommand, RemoveCommand},
+    commands::{build, remove},
     utils::{file_part, project_dir_info},
 };
 use fuel_indexer_lib::manifest::Manifest;
@@ -41,6 +41,17 @@ pub async fn init(command: DeployCommand) -> anyhow::Result<()> {
             locked,
             native,
         })?;
+    }
+
+    if replace_indexer && remove_data {
+        remove::exec(RemoveCommand {
+            url: url.clone(),
+            manifest: manifest.clone(),
+            path: path.clone(),
+            auth: auth.clone(),
+            verbose,
+        })
+        .await?;
     }
 
     let (_root_dir, manifest_path, _index_name) =

@@ -173,9 +173,16 @@ pub(crate) async fn remove_indexer(
             .map_err(|_e| ApiError::Http(HttpError::Unauthorized))?;
     }
 
-    // Allways remove data when removing an indexer
+    // Send a stop request before removing the indexer and its data.
+    tx.send(ServiceRequest::Stop(StopRequest {
+        namespace: namespace.clone(),
+        identifier: identifier.clone(),
+    }))
+    .await?;
+
+    // Allways remove data when removing an indexer.
     if let Err(e) =
-        queries::remove_indexer(&mut conn, &namespace, &identifier, false).await
+        queries::remove_indexer(&mut conn, &namespace, &identifier, true).await
     {
         error!("Failed to remove Indexer({namespace}.{identifier}): {e}");
         queries::revert_transaction(&mut conn).await?;
@@ -183,12 +190,6 @@ pub(crate) async fn remove_indexer(
     }
 
     queries::commit_transaction(&mut conn).await?;
-
-    tx.send(ServiceRequest::Stop(StopRequest {
-        namespace,
-        identifier,
-    }))
-    .await?;
 
     Ok(Json(json!({
         "success": "true"
@@ -214,7 +215,7 @@ pub(crate) async fn register_indexer_assets(
 
     let multipart = multipart.ok_or_else(|| ApiError::default())?;
 
-    let (replace_indexer, remove_data, asset_bytes) =
+    let (replace_indexer, asset_bytes) =
         parse_register_indexer_multipart(multipart).await?;
 
     queries::start_transaction(&mut conn).await?;
@@ -222,13 +223,11 @@ pub(crate) async fn register_indexer_assets(
     let result = register_indexer_assets_transaction(
         &mut conn,
         schema_manager.clone(),
-        tx.clone(),
         config,
         &namespace,
         &identifier,
         claims.sub(),
         replace_indexer,
-        remove_data,
         asset_bytes,
     )
     .await;
@@ -258,13 +257,11 @@ pub(crate) async fn register_indexer_assets(
 async fn register_indexer_assets_transaction(
     conn: &mut fuel_indexer_database::IndexerConnection,
     schema_manager: Arc<RwLock<SchemaManager>>,
-    tx: Sender<ServiceRequest>,
     config: IndexerConfig,
     namespace: &str,
     identifier: &str,
     pubkey: &str,
     replace_indexer: bool,
-    remove_data: bool,
     asset_bytes: Vec<(IndexerAssetType, Vec<u8>)>,
 ) -> ApiResult<Vec<IndexerAsset>> {
     let mut assets: Vec<IndexerAsset> = Vec::new();
@@ -273,34 +270,31 @@ async fn register_indexer_assets_transaction(
 
     // If the indexer already exists, check that the schema has not changed.
     if let Ok(indexer_id) = indexer_id {
-        // And we're not removing data
-        if !remove_data {
-            for (asset_type, data) in asset_bytes.iter() {
-                if *asset_type == IndexerAssetType::Schema {
-                    // The schema must be the same. This query returns an asset
-                    // if the bytes match. If it returns None (and the indexer
-                    // exists), it means that its schema is different.
-                    let schema = {
-                        let content = String::from_utf8(data.to_vec())
-                            .map_err(|e| {
-                                ApiError::OtherError(format!("Invalid schema: {}", e))
-                            })?
-                            .to_string();
-                        GraphQLSchema::new(content)
-                    };
-                    if queries::asset_already_exists(
-                        conn,
-                        &IndexerAssetType::Schema,
-                        &Vec::<u8>::from(&schema),
-                        &indexer_id,
-                    )
-                    .await?
-                    .is_none()
-                    {
-                        return Err(ApiError::Http(HttpError::Conflict(format!(
+        for (asset_type, data) in asset_bytes.iter() {
+            if *asset_type == IndexerAssetType::Schema {
+                // The schema must be the same. This query returns an asset
+                // if the bytes match. If it returns None (and the indexer
+                // exists), it means that its schema is different.
+                let schema = {
+                    let content = String::from_utf8(data.to_vec())
+                        .map_err(|e| {
+                            ApiError::OtherError(format!("Invalid schema: {}", e))
+                        })?
+                        .to_string();
+                    GraphQLSchema::new(content)
+                };
+                if queries::asset_already_exists(
+                    conn,
+                    &IndexerAssetType::Schema,
+                    &Vec::<u8>::from(&schema),
+                    &indexer_id,
+                )
+                .await?
+                .is_none()
+                {
+                    return Err(ApiError::Http(HttpError::Conflict(format!(
                             "Indexer({namespace}.{identifier})'s schema has changed. Use --replace-indexer --remove-data to replace the indexer and the indexed data."
                         ))));
-                    }
                 }
             }
         }
@@ -311,30 +305,6 @@ async fn register_indexer_assets_transaction(
         return Err(ApiError::Http(HttpError::Conflict(format!(
             "Failed to replace Indexer({namespace}.{identifier}): replacing an indexer is not enabled."
         ))));
-    }
-
-    if indexer_id.is_ok() {
-        // --replace-indexer is only allowed if it has also been enabled at
-        // the fuel-indexer service level
-        if config.replace_indexer && replace_indexer {
-            tx.send(ServiceRequest::Stop(StopRequest {
-                namespace: namespace.to_owned(),
-                identifier: identifier.to_owned(),
-            }))
-            .await?;
-
-            queries::remove_indexer(conn, &namespace, &identifier, remove_data)
-                .await
-                .map_err(|e| {
-                    error!("Failed to remove Indexer({namespace}.{identifier}): {e}");
-                    e
-                })?
-        } else {
-            error!("Indexer({namespace}.{identifier}) already exists.");
-            return Err(ApiError::Http(HttpError::Conflict(format!(
-                "Indexer({namespace}.{identifier}) already exists"
-            ))));
-        }
     }
 
     for (asset_type, data) in asset_bytes.iter() {
@@ -389,9 +359,8 @@ async fn register_indexer_assets_transaction(
 
 async fn parse_register_indexer_multipart(
     mut multipart: Multipart,
-) -> ApiResult<(bool, bool, Vec<(IndexerAssetType, Vec<u8>)>)> {
+) -> ApiResult<(bool, Vec<(IndexerAssetType, Vec<u8>)>)> {
     let mut replace_indexer: bool = false;
-    let mut remove_data: bool = false;
     let mut assets: Vec<(IndexerAssetType, Vec<u8>)> = vec![];
 
     while let Ok(Some(field)) = multipart.next_field().await {
@@ -405,13 +374,6 @@ async fn parse_register_indexer_multipart(
                     .map_err(|e| ApiError::OtherError(e.to_string()))?;
                 continue;
             }
-            "remove_data" => {
-                remove_data = std::str::from_utf8(&data.to_owned())
-                    .map_err(|e| ApiError::OtherError(e.to_string()))?
-                    .parse::<bool>()
-                    .map_err(|e| ApiError::OtherError(e.to_string()))?;
-                continue;
-            }
             name => {
                 let asset_type = IndexerAssetType::from_str(name)?;
                 assets.push((asset_type, data.to_vec()));
@@ -419,46 +381,8 @@ async fn parse_register_indexer_multipart(
         };
     }
 
-    Ok((replace_indexer, remove_data, assets))
+    Ok((replace_indexer, assets))
 }
-
-// async fn check_schema_not_changed(
-//     conn: fuel_indexer_database::IndexerConnection,
-//     indexer_id: i64,
-//     assets: Vec<(IndexerAssetType, Vec<u8>)>,
-// ) -> ApiResult<()> {
-//     // Check that the schema has not changed.
-//     for (asset_type, data) in assets.iter() {
-//         if *asset_type == IndexerAssetType::Schema {
-//             // The schema must be the same. This query returns an
-//             // asset if the bytes match. If it returns None (and the
-//             // indexer exists), it means that its schema is
-//             // different.
-//             let schema = {
-//                 let content = String::from_utf8(data.to_vec())
-//                     .map_err(|e| ApiError::OtherError(format!("Invalid schema: {}", e)))?
-//                     .to_string();
-//                 GraphQLSchema::new(content)
-//             };
-//             if queries::asset_already_exists(
-//                 &mut conn,
-//                 &IndexerAssetType::Schema,
-//                 &Vec::<u8>::from(&schema),
-//                 &indexer_id,
-//             )
-//             .await?
-//             .is_none()
-//             {
-//                 queries::revert_transaction(&mut conn).await?;
-//                 return Err(ApiError::Http(HttpError::Conflict(format!(
-//                     "Indexer({namespace}.{identifier})'s schema has changed. Use --replace-indexer --remove-data to replace the indexer and the indexed data."
-//                 ))));
-//             }
-//         }
-//     }
-
-//     Ok(())
-// }
 
 /// Return a `Nonce` to be used for authentication.
 pub(crate) async fn get_nonce(

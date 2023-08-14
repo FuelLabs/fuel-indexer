@@ -1,6 +1,8 @@
 use crate::{
-    database::Database, ffi, queries::ClientExt, IndexerConfig, IndexerError,
-    IndexerResult,
+    database::Database,
+    ffi,
+    queries::ClientExt,
+    IndexerConfig, IndexerError, IndexerResult,
 };
 use async_std::{
     fs::File,
@@ -709,7 +711,7 @@ impl WasmIndexExecutor {
             },
             ExecutorSource::Registry(bytes) => {
                 let executor =
-                    WasmIndexExecutor::new(config, manifest, bytes, pool).await?;
+                    WasmIndexExecutor::new(config, manifest, bytes, pool.clone()).await?;
                 let handle = tokio::spawn(run_executor(
                     config,
                     manifest,
