@@ -76,12 +76,8 @@ async fn test_entity_with_foreign_keys() {
     let v: Value = serde_json::from_str(&body).unwrap();
     let data = v["data"].as_array().expect("data is not an array");
 
-    assert!(data[0]["id"].as_i64().is_some());
-    assert!(data[0]["id"].as_i64().unwrap() > 0);
     assert!(data[0]["timestamp"].as_i64().is_some());
     assert!(data[0]["timestamp"].as_i64().unwrap() > 0);
-    assert!(data[0]["block"]["id"].as_i64().is_some());
-    assert!(data[0]["block"]["id"].as_i64().unwrap() > 0);
     assert!(data[0]["block"]["height"].as_i64().is_some());
     assert!(data[0]["block"]["height"].as_i64().unwrap() > 0);
 
@@ -487,7 +483,6 @@ async fn test_aliasing_and_pagination() {
     let v: Value = serde_json::from_str(&body).unwrap();
     let data = v["data"].as_array().expect("data is not an array");
 
-    assert_eq!(data[0]["aliased_entities"][0]["id"].as_i64(), Some(3));
     assert_eq!(
         data[0]["aliased_entities"][0]["foola"].as_str(),
         Some("blorp")

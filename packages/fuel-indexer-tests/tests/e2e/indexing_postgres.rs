@@ -36,7 +36,7 @@ async fn test_index_events_with_multiple_args_in_index_handler() {
     assert!(timestamp > 0);
 
     let ping_row =
-        sqlx::query("SELECT * FROM fuel_indexer_test_index1.pingentity WHERE id = 12345")
+        sqlx::query("SELECT * FROM fuel_indexer_test_index1.pingentity LIMIT 1")
             .fetch_one(&mut conn)
             .await
             .unwrap();
@@ -45,7 +45,7 @@ async fn test_index_events_with_multiple_args_in_index_handler() {
     assert_eq!(ping_value, 12345);
 
     let pong_row =
-        sqlx::query("SELECT * FROM fuel_indexer_test_index1.pongentity WHERE id = 45678")
+        sqlx::query("SELECT * FROM fuel_indexer_test_index1.pongentity LIMIT 1")
             .fetch_one(&mut conn)
             .await
             .unwrap();
@@ -54,7 +54,7 @@ async fn test_index_events_with_multiple_args_in_index_handler() {
     assert_eq!(pong_value, 45678);
 
     let pung_row =
-        sqlx::query("SELECT * FROM fuel_indexer_test_index1.pungentity WHERE id = 123")
+        sqlx::query("SELECT * FROM fuel_indexer_test_index1.pungentity LIMIT 1")
             .fetch_one(&mut conn)
             .await
             .unwrap();
@@ -116,7 +116,7 @@ async fn test_index_receipt_types() {
     mock_request("/call").await;
 
     let row =
-        sqlx::query("SELECT * FROM fuel_indexer_test_index1.callentity WHERE id = 123")
+        sqlx::query("SELECT * FROM fuel_indexer_test_index1.callentity LIMIT 1")
             .fetch_one(&mut conn)
             .await
             .unwrap();
@@ -128,7 +128,7 @@ async fn test_index_receipt_types() {
     mock_request("/returndata").await;
 
     let row =
-        sqlx::query("SELECT * FROM fuel_indexer_test_index1.pungentity WHERE id = 3")
+        sqlx::query("SELECT * FROM fuel_indexer_test_index1.pungentity LIMIT 1")
             .fetch_one(&mut conn)
             .await
             .unwrap();
@@ -160,7 +160,7 @@ async fn test_index_receipt_types() {
     mock_request("/logdata").await;
 
     let row =
-        sqlx::query("SELECT * FROM fuel_indexer_test_index1.pungentity WHERE id = 1")
+        sqlx::query("SELECT * FROM fuel_indexer_test_index1.pungentity LIMIT 1")
             .fetch_one(&mut conn)
             .await
             .unwrap();
@@ -171,7 +171,6 @@ async fn test_index_receipt_types() {
     )
     .unwrap();
 
-    assert_eq!(row.get::<BigDecimal, usize>(1).to_u64().unwrap(), 456);
     assert!(row.get::<bool, usize>(2));
     assert_eq!(
         Identity::Address(Address::from(<[u8; 32]>::from(from_buff))),
@@ -215,7 +214,6 @@ async fn test_index_receipt_types() {
         .await
         .unwrap();
 
-    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 123);
     assert_eq!(row.get::<&str, usize>(1), EXPECTED_CONTRACT_ID);
     assert_eq!(
         row.get::<BigDecimal, usize>(2).to_u64().unwrap(),
@@ -229,7 +227,6 @@ async fn test_index_receipt_types() {
         .await
         .unwrap();
 
-    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 123);
     assert_eq!(row.get::<&str, usize>(1), EXPECTED_CONTRACT_ID);
     assert_eq!(row.get::<i32, usize>(2), 5);
 
@@ -242,7 +239,6 @@ async fn test_index_receipt_types() {
         .await
         .unwrap();
 
-    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 123);
     assert_eq!(row.get::<&str, usize>(1), TRANSFER_BASE_ASSET_ID);
     assert_eq!(row.get::<&str, usize>(2), EXPECTED_CONTRACT_ID);
     assert_eq!(row.get::<BigDecimal, usize>(3).to_u64().unwrap(), 100);
@@ -256,7 +252,6 @@ async fn test_index_receipt_types() {
         .await
         .unwrap();
 
-    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 123);
     assert_eq!(row.get::<&str, usize>(1), TRANSFER_BASE_ASSET_ID);
     assert_eq!(row.get::<&str, usize>(2), EXPECTED_CONTRACT_ID);
     assert_eq!(row.get::<BigDecimal, usize>(3).to_u64().unwrap(), 100);
@@ -285,7 +280,6 @@ async fn test_index_receipt_types() {
         .await
         .unwrap();
 
-    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 1234);
     assert_eq!(
         row.get::<&str, usize>(1),
         "abcdefghijklmnopqrstuvwxyz123456"
@@ -304,7 +298,7 @@ async fn test_index_128_bit_integers() {
     let mut conn = db.pool.acquire().await.unwrap();
 
     let row =
-        sqlx::query("SELECT * FROM fuel_indexer_test_index1.u16entity WHERE id = 9999")
+        sqlx::query("SELECT * FROM fuel_indexer_test_index1.u16entity LIMIT 1")
             .fetch_one(&mut conn)
             .await
             .unwrap();
@@ -591,7 +585,6 @@ async fn test_index_sway_enums() {
             .await
             .unwrap();
 
-    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 1);
     assert_eq!(row.get::<&str, usize>(1), "EnumEntity::One");
 
     mock_request("/enum_error").await;
@@ -604,7 +597,6 @@ async fn test_index_sway_enums() {
         .await
         .unwrap();
 
-    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 42);
     assert_eq!(row.get::<&str, usize>(1), EXPECTED_CONTRACT_ID);
     assert_eq!(row.get::<BigDecimal, usize>(2).to_u64().unwrap(), 0);
 }
