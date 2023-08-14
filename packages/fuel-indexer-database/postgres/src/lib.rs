@@ -857,7 +857,7 @@ pub async fn remove_indexer(
 
         execute_query(
             conn,
-            format!("DROP SCHEMA {namespace}_{identifier} CASCADE"),
+            format!("DROP SCHEMA IF EXISTS {namespace}_{identifier} CASCADE"),
         )
         .await?;
     }
