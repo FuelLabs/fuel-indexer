@@ -423,6 +423,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "71938f30533e4d95a6d17aa530939da3842c2ab6f4f84b9dae68447e4129f74a"
 
 [[package]]
+name = "assert_matches"
+version = "1.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9b34d609dfbaf33d6889b2b7106d3ca345eacad44200913df5ba02bfd31d2ba9"
+
+[[package]]
 name = "async-channel"
 version = "1.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3463,14 +3469,18 @@ dependencies = [
 name = "fuel-indexer-graphql"
 version = "0.19.4"
 dependencies = [
+ "assert_matches",
  "async-graphql 5.0.10",
  "async-graphql-parser 5.0.10",
  "async-graphql-value 5.0.10",
+ "extension-trait",
  "fuel-indexer-database",
  "fuel-indexer-database-types",
  "fuel-indexer-lib",
  "fuel-indexer-schema",
  "fuel-indexer-types",
+ "graphql-parser",
+ "insta",
  "lazy_static",
  "pretty_assertions",
  "serde_json",
