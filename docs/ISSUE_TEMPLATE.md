@@ -1,8 +1,10 @@
+# Issue
+
 Thanks for opening an issue on the Fuel Indexer project.
 
 _*If you're an internal FuelLabs contributor, please feel free to remove this template when creating issues, as this template is meant for external users and contributors_.
 
-### Prerequisites
+## Prerequisites
 
 - [ ] Can you reproduce the problem?
 - [ ] Do you know which version of the indexer you're using?
@@ -24,7 +26,6 @@ Please list the steps required to reproduce your issue in detail.
 **Expected behavior:** _Please describe the behavior your would ideally expect._
 
 **Actual behavior:** _Please describe the behavior that actually happens._
-
 
 ### Versions
 
