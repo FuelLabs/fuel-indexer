@@ -353,6 +353,10 @@ async fn register_indexer_assets_transaction(
     Ok(assets)
 }
 
+// This function parses the `Multipart` struct set to the deploy indexer
+// endpoint. It extracts the `bool` value indicating whether to replace an
+// indexer if it already exists, and extracts the indexer assets: manifest,
+// schema, and the WASM module.
 async fn parse_register_indexer_multipart(
     mut multipart: Multipart,
 ) -> ApiResult<(bool, Vec<(IndexerAssetType, Vec<u8>)>)> {
