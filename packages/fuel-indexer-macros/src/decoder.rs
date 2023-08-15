@@ -845,7 +845,7 @@ impl From<ObjectDecoder> for TokenStream {
                         unsafe {
                             match &db {
                                 Some(d) => {
-                                    match d.lock().await.get_object(Self::TYPE_ID, id).await {
+                                    match d.lock().await.get_object(Self::TYPE_ID, id.to_string()).await {
                                         Some(bytes) => {
                                             let columns: Vec<FtColumn> = bincode::deserialize(&bytes).expect("Failed to deserialize Vec<FtColumn> for Entity::load.");
                                             let obj = Self::from_row(columns);
