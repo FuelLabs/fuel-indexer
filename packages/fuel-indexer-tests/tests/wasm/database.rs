@@ -4,18 +4,15 @@ use fuel_indexer_lib::{
     fully_qualified_namespace, graphql::GraphQLSchema, manifest::Manifest, type_id,
 };
 use fuel_indexer_schema::db::manager::SchemaManager;
+use fuel_indexer_tests::assets::{
+    SIMPLE_WASM_MANIFEST, SIMPLE_WASM_SCHEMA, SIMPLE_WASM_WASM,
+};
 use wasmer::{imports, AsStoreMut, Cranelift, Instance, Module, Store};
 
 fn compiler() -> Cranelift {
     Cranelift::default()
 }
 
-const SIMPLE_WASM_MANIFEST: &str =
-    include_str!("./../../components/indices/simple-wasm/simple_wasm.yaml");
-const SIMPLE_WASM_GRAPHQL_SCHEMA: &str =
-    include_str!("./../../components/indices/simple-wasm/schema/simple_wasm.graphql");
-const SIMPLE_WASM_WASM: &[u8] =
-    include_bytes!("./../../components/indices/simple-wasm/simple_wasm.wasm");
 const TEST_COLUMNS: [(&str, i32, &str); 12] = [
     ("thing2", 0, "id"),
     ("thing2", 1, "account"),
@@ -89,7 +86,7 @@ async fn generate_schema_then_load_schema_from_wasm_module(database_url: &str) {
     let manager = SchemaManager::new(pool.clone());
 
     let manifest = Manifest::try_from(SIMPLE_WASM_MANIFEST).unwrap();
-    let schema = GraphQLSchema::new(SIMPLE_WASM_GRAPHQL_SCHEMA.to_owned());
+    let schema = GraphQLSchema::new(SIMPLE_WASM_SCHEMA.to_owned());
     let version = schema.version().to_owned();
     let config = IndexerConfig::default();
 

@@ -1,13 +1,12 @@
 use bytes::Bytes;
 pub use fuel_types::{
-    Address, AssetId, Bytes32, Bytes4, Bytes64, Bytes8, ContractId, MessageId, Salt, Word,
+    BlockHeight, Bytes32, Bytes4, Bytes64, Bytes8, MessageId, Nonce, Salt, Word,
 };
-pub use fuel_types::{BlockHeight, Nonce};
 pub use fuels::{
     core::codec::try_from_bytes,
     types::{
         bech32::{Bech32Address, Bech32ContractId},
-        Bits256, Identity, SizedAsciiString,
+        Address, AssetId, Bits256, ContractId, Identity, SizedAsciiString,
     },
 };
 use serde::{Deserialize, Serialize};

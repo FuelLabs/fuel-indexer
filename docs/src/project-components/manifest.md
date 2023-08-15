@@ -5,7 +5,7 @@ A manifest serves as the YAML configuration file for a given indexer. A proper m
 ```yaml
 namespace: fuel
 identifier: index1
-fuel_client: beta-3.fuel.network:80
+fuel_client: beta-4.fuel.network:80
 abi: path/to/my/contract-abi.json
 contract_id: "0x39150017c9e38e5e280432d546fae345d6ce6d8fe4710162c2e3a95a6faff051"
 graphql_schema: path/to/my/schema.graphql

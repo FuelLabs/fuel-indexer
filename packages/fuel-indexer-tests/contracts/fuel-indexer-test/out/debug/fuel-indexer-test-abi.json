@@ -450,6 +450,21 @@
   "functions": [
     {
       "inputs": [],
+      "name": "trigger_burn",
+      "output": {
+        "name": "",
+        "type": 0,
+        "typeArguments": null
+      },
+      "attributes": [
+        {
+          "name": "payable",
+          "arguments": []
+        }
+      ]
+    },
+    {
+      "inputs": [],
       "name": "trigger_callreturn",
       "output": {
         "name": "",
@@ -538,6 +553,16 @@
           "arguments": []
         }
       ]
+    },
+    {
+      "inputs": [],
+      "name": "trigger_mint",
+      "output": {
+        "name": "",
+        "type": 0,
+        "typeArguments": null
+      },
+      "attributes": null
     },
     {
       "inputs": [],

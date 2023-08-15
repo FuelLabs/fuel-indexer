@@ -1,4 +1,9 @@
-#[cfg(all(feature = "e2e", feature = "postgres"))]
-mod e2e;
-#[cfg(feature = "postgres")]
-mod integration;
+mod graphql;
+
+#[cfg(all(feature = "postgres"))]
+mod indexing_postgres;
+
+mod wasm;
+
+#[cfg(all(feature = "postgres"))]
+mod web_api_postgres;
