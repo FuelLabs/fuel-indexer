@@ -23,17 +23,7 @@ pub enum TestError {
 
 pub mod assets {
     pub const FUEL_INDEXER_TEST_MANIFEST: &str =
-        include_str!("./../components/indices/fuel-indexer-test/fuel_indexer_test.yaml");
-    pub const SIMPLE_WASM_MANIFEST: &str =
-        include_str!("./../components/indices/simple-wasm/simple_wasm.yaml");
-    pub const BAD_SIMPLE_WASM_MANIFEST: &str =
-        include_str!("./../components/indices/simple-wasm/bad_simple_wasm.yaml");
-    pub const BAD_SIMPLE_WASM_WASM: &[u8] =
-        include_bytes!("./../components/indices/simple-wasm/bad_simple_wasm.wasm");
-    pub const SIMPLE_WASM_WASM: &[u8] =
-        include_bytes!("./../components/indices/simple-wasm/simple_wasm.wasm");
-    pub const SIMPLE_WASM_SCHEMA: &str =
-        include_str!("./../components/indices/simple-wasm/schema/simple_wasm.graphql");
+        include_str!("./../indexers/fuel-indexer-test/fuel_indexer_test.yaml");
 }
 
 pub mod defaults {
