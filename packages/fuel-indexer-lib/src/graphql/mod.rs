@@ -156,7 +156,7 @@ pub fn extract_foreign_key_info(
             )
         })
         .unwrap_or((
-            "String64".to_string(),
+            "UID".to_string(),
             IdCol::to_lowercase_string(),
             field_type_name(f).to_lowercase(),
         ));

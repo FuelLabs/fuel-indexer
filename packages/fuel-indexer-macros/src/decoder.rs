@@ -841,7 +841,7 @@ impl From<ObjectDecoder> for TokenStream {
                         }
                     }
 
-                    async fn load(id: SizedAsciiString<64>) -> Option<Self> {
+                    async fn load(id: UID) -> Option<Self> {
                         unsafe {
                             match &db {
                                 Some(d) => {

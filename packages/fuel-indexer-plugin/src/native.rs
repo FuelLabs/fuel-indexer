@@ -18,7 +18,7 @@ pub use fuel_indexer_lib::{
     manifest::Manifest,
     utils::{init_logging, ServiceRequest},
 };
-use fuel_indexer_types::SizedAsciiString;
+use fuel_indexer_types::scalar::UID;
 pub use sha2::{Digest, Sha256};
 pub use std::{
     collections::{HashMap, HashSet},
@@ -68,7 +68,7 @@ pub trait Entity<'a>: Sized + PartialEq + Eq + std::fmt::Debug {
         Self::TYPE_ID
     }
 
-    async fn load(id: SizedAsciiString<64>) -> Option<Self>;
+    async fn load(id: UID) -> Option<Self>;
 
     async fn save(&self);
 }

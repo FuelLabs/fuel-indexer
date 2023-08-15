@@ -727,12 +727,12 @@ impl From<fuel::TransactionData> for Transaction {
                     .iter()
                     .map(|i| Input::from(i.to_owned()))
                     .map(|i| i.id)
-                    .collect::<Vec<SizedAsciiString<64>>>();
+                    .collect::<Vec<UID>>();
                 let outputs = outputs
                     .iter()
                     .map(|o| Output::from(o.to_owned()))
                     .map(|o| o.id)
-                    .collect::<Vec<SizedAsciiString<64>>>();
+                    .collect::<Vec<UID>>();
                 let witnesses = witnesses
                     .iter()
                     .map(|w| Witness::from(w.to_owned()))
@@ -781,18 +781,18 @@ impl From<fuel::TransactionData> for Transaction {
                     .iter()
                     .map(|s| StorageSlot::from(s.to_owned()))
                     .map(|s| s.id)
-                    .collect::<Vec<SizedAsciiString<64>>>();
+                    .collect::<Vec<UID>>();
 
                 let inputs = inputs
                     .iter()
                     .map(|i| Input::from(i.to_owned()))
                     .map(|i| i.id)
-                    .collect::<Vec<SizedAsciiString<64>>>();
+                    .collect::<Vec<UID>>();
                 let outputs = outputs
                     .iter()
                     .map(|o| Output::from(o.to_owned()))
                     .map(|o| o.id)
-                    .collect::<Vec<SizedAsciiString<64>>>();
+                    .collect::<Vec<UID>>();
                 let witnesses = witnesses
                     .iter()
                     .map(|w| Witness::from(w.to_owned()))
@@ -834,7 +834,7 @@ impl From<fuel::TransactionData> for Transaction {
                     .iter()
                     .map(|o| Output::from(o.to_owned()))
                     .map(|o| o.id)
-                    .collect::<Vec<SizedAsciiString<64>>>();
+                    .collect::<Vec<UID>>();
                 let receipts = transaction
                     .receipts
                     .iter()
@@ -885,7 +885,7 @@ pub mod explorer_index {
             .iter()
             .map(|t| TransactionIdFragment::from(t.to_owned()))
             .map(|t| t.id)
-            .collect::<Vec<SizedAsciiString<64>>>();
+            .collect::<Vec<UID>>();
 
         let block = Block {
             id: id(block_data.header.id),

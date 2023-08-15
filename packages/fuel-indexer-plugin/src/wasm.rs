@@ -9,7 +9,7 @@ use fuel_indexer_schema::{
     join::{JoinMetadata, RawQuery},
     FtColumn,
 };
-use fuel_indexer_types::{ffi::*, SizedAsciiString};
+use fuel_indexer_types::{ffi::*, scalar::UID};
 
 pub use bincode;
 pub use hex::FromHex;
@@ -75,7 +75,7 @@ pub trait Entity<'a>: Sized + PartialEq + Eq + std::fmt::Debug {
         }
     }
 
-    fn load(id: SizedAsciiString<64>) -> Option<Self> {
+    fn load(id: UID) -> Option<Self> {
         unsafe {
             let buff = bincode::serialize(&id.to_string()).unwrap();
             let mut bufflen = (buff.len() as u32).to_le_bytes();

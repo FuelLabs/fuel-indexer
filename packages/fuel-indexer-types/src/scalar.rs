@@ -7,11 +7,11 @@ use fuels::types::SizedAsciiString;
 use serde::{Deserialize, Serialize};
 use tai64::Tai64;
 
-/// Scalar for 32-byte payloads.
-pub type String64 = SizedAsciiString<64>;
+/// Scalar for 32-byte unique ID payloads.
+pub type UID = SizedAsciiString<64>;
 
 /// Scalar for object IDs.
-pub type ID = String64;
+pub type ID = UID;
 
 /// Scalar for 4-byte signed integers.
 pub type Int4 = i32;

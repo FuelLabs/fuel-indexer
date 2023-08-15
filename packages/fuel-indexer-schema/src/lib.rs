@@ -8,7 +8,7 @@
 extern crate alloc;
 
 use fuel_indexer_lib::MAX_ARRAY_LENGTH;
-use fuel_indexer_types::{fuel::*, Identity, SizedAsciiString};
+use fuel_indexer_types::{fuel::*, scalar::UID, Identity};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -63,7 +63,7 @@ pub enum FtColumn {
     ContractId(Option<ContractId>),
     Enum(Option<String>),
     HexString(Option<HexString>),
-    ID(Option<SizedAsciiString<64>>),
+    ID(Option<UID>),
     Identity(Option<Identity>),
     Int1(Option<Int1>),
     Int16(Option<Int16>),
@@ -84,7 +84,7 @@ pub enum FtColumn {
     Virtual(Option<Virtual>),
     BlockId(Option<BlockId>),
     Array(Option<Vec<FtColumn>>),
-    String64(Option<String64>),
+    UID(Option<UID>),
 }
 
 impl FtColumn {
@@ -101,7 +101,7 @@ impl FtColumn {
                     panic!("Schema fields of type `ID` cannot be nullable.")
                 }
             }
-            FtColumn::String64(value) => {
+            FtColumn::UID(value) => {
                 if let Some(val) = value {
                     format!("'{val}'")
                 } else {
@@ -295,7 +295,7 @@ mod tests {
         use super::*;
 
         let id = FtColumn::ID(Some(
-            SizedAsciiString::new(
+            UID::new(
                 "0000000000000000000000000000000000000000000000000000000000000000"
                     .to_string(),
             )
