@@ -325,35 +325,6 @@ mod fuel_indexer_test {
         } = revert;
 
         RevertEntity::new(contract_id, error_val).get_or_create();
-<<<<<<< HEAD
-    }
-
-    fn fuel_indexer_trigger_mint(mint: Mint) {
-        info!("fuel_indexer_trigger_mint handling trigger_mint event.");
-
-        let Mint {
-            sub_id,
-            contract_id,
-            val,
-            ..
-        } = mint;
-
-        MintEntity::new(sub_id, contract_id, val).get_or_create();
-    }
-
-    fn fuel_indexer_trigger_burn(burn: Burn) {
-        info!("fuel_indexer_trigger_burn handling trigger_burn event.");
-
-        let Burn {
-            sub_id,
-            contract_id,
-            val,
-            ..
-        } = burn;
-
-        BurnEntity::new(sub_id, contract_id, val).get_or_create();
-=======
->>>>>>> 2dc1d4d9 (ci: optimize and condense E2E tests (#1263))
     }
 
     fn fuel_indexer_trigger_mint(mint: Mint) {
