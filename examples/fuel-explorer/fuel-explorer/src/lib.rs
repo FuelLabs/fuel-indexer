@@ -834,15 +834,7 @@ impl From<fuel::TransactionData> for Transaction {
                     .iter()
                     .map(|o| Output::from(o.to_owned()))
                     .map(|o| o.id)
-<<<<<<< HEAD
-<<<<<<< HEAD
                     .collect::<Vec<SizedAsciiString<64>>>();
-=======
-                    .collect::<Vec<String>>();
->>>>>>> e8d64652 (update)
-=======
-                    .collect::<Vec<SizedAsciiString<64>>>();
->>>>>>> 741da625 (updates still pending fuels-rs update)
                 let receipts = transaction
                     .receipts
                     .iter()
