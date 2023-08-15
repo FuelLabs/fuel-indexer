@@ -317,8 +317,14 @@ impl WebApi {
             )
             .layer(
                 CorsLayer::new()
-                    .allow_methods(vec![Method::GET, Method::OPTIONS, Method::POST])
-                    .allow_origin(Any {}),
+                    .allow_methods(vec![
+                        Method::GET,
+                        Method::POST,
+                        Method::OPTIONS,
+                        Method::DELETE,
+                    ])
+                    .allow_origin(Any {})
+                    .allow_headers(Any {}),
             );
 
         Ok(app)
