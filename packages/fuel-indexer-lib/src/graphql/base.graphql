@@ -22,16 +22,17 @@ scalar Int8
 scalar Json
 scalar MessageId
 scalar Nonce
-scalar Virtual
 scalar Salt
 scalar Signature
 scalar Tai64Timestamp
 scalar Timestamp
 scalar TxId
+scalar UID
 scalar UInt1
 scalar UInt16
 scalar UInt4
 scalar UInt8
+scalar Virtual
 
 enum IndexType {
     BTree,
