@@ -527,6 +527,8 @@ pub mod test_web {
             .call()
             .await
             .unwrap();
+<<<<<<< HEAD
+=======
 
         HttpResponse::Ok()
     }
@@ -548,6 +550,258 @@ pub mod test_web {
             .expect("Could not set call parameters for contract method")
             .call()
             .await;
+
+        HttpResponse::Ok()
+    }
+
+    async fn fuel_indexer_test_messageout(
+        state: web::Data<Arc<AppState>>,
+    ) -> impl Responder {
+        let call_params =
+            CallParameters::new(1_000_000, fuels::types::AssetId::default(), 1000);
+
+        let _ = state
+            .contract
+            .methods()
+            .trigger_messageout()
+            .call_params(call_params)
+            .expect("Could not set call parameters for contract method")
+            .tx_params(tx_params())
+            .call()
+            .await
+            .unwrap();
+
+        HttpResponse::Ok()
+    }
+
+    async fn fuel_indexer_test_callreturn(
+        state: web::Data<Arc<AppState>>,
+    ) -> impl Responder {
+        let _ = state
+            .contract
+            .methods()
+            .trigger_callreturn()
+            .tx_params(tx_params())
+            .call()
+            .await
+            .unwrap();
+>>>>>>> 2dc1d4d9 (ci: optimize and condense E2E tests (#1263))
+
+        HttpResponse::Ok()
+    }
+
+<<<<<<< HEAD
+    // TODO: TransferOut is  currently ignored due to flakiness;
+    // transfering to an address fails for some unknown reason
+    async fn fuel_indexer_test_transferout(
+=======
+    async fn fuel_indexer_test_multiargs(
+        state: web::Data<Arc<AppState>>,
+    ) -> impl Responder {
+        let _ = state
+            .contract
+            .methods()
+            .trigger_multiargs()
+            .tx_params(tx_params())
+            .call()
+            .await
+            .unwrap();
+
+        HttpResponse::Ok()
+    }
+
+    async fn fuel_indexer_test_optional_schema_fields(
+        state: web::Data<Arc<AppState>>,
+    ) -> impl Responder {
+        let _ = state
+            .contract
+            .methods()
+            .trigger_ping_for_optional()
+            .tx_params(tx_params())
+            .call()
+            .await
+            .unwrap();
+
+        HttpResponse::Ok()
+    }
+
+    async fn fuel_indexer_test_deeply_nested_schema_fields(
+        state: web::Data<Arc<AppState>>,
+    ) -> impl Responder {
+        let _ = state
+            .contract
+            .methods()
+            .trigger_deeply_nested()
+            .tx_params(tx_params())
+            .call()
+            .await
+            .unwrap();
+
+        HttpResponse::Ok()
+    }
+
+    async fn fuel_indexer_test_nested_query_explicit_foreign_keys_schema_fields(
+        state: web::Data<Arc<AppState>>,
+    ) -> impl Responder {
+        let _ = state
+            .contract
+            .methods()
+            .trigger_explicit()
+            .tx_params(tx_params())
+            .call()
+            .await
+            .unwrap();
+        HttpResponse::Ok()
+    }
+
+    async fn fuel_indexer_test_get_block_height() -> impl Responder {
+        let provider = Provider::connect(defaults::FUEL_NODE_ADDR).await.unwrap();
+        let block_height = provider.latest_block_height().await.unwrap();
+
+        HttpResponse::Ok().body(block_height.to_string())
+    }
+
+    async fn fuel_indexer_test_tuple(state: web::Data<Arc<AppState>>) -> impl Responder {
+        let _ = state
+            .contract
+            .methods()
+            .trigger_tuple()
+            .tx_params(tx_params())
+            .call()
+            .await
+            .unwrap();
+        HttpResponse::Ok()
+    }
+
+    async fn fuel_indexer_vec_calldata(
+        state: web::Data<Arc<AppState>>,
+    ) -> impl Responder {
+        let _ = state
+            .contract
+            .methods()
+            .trigger_vec_pong_calldata(vec![1, 2, 3, 4, 5, 6, 7, 8])
+            .tx_params(tx_params())
+            .call()
+            .await
+            .unwrap();
+        HttpResponse::Ok()
+    }
+
+    async fn fuel_indexer_vec_logdata(state: web::Data<Arc<AppState>>) -> impl Responder {
+        let _ = state
+            .contract
+            .methods()
+            .trigger_vec_pong_logdata()
+            .tx_params(tx_params())
+            .call()
+            .await
+            .unwrap();
+        HttpResponse::Ok()
+    }
+
+    async fn fuel_indexer_test_pure_function(
+        state: web::Data<Arc<AppState>>,
+    ) -> impl Responder {
+        let _ = state
+            .contract
+            .methods()
+            .trigger_pure_function()
+            .tx_params(tx_params())
+            .call()
+            .await
+            .unwrap();
+
+        HttpResponse::Ok()
+    }
+
+    async fn fuel_indexer_test_trigger_panic(
+        state: web::Data<Arc<AppState>>,
+    ) -> impl Responder {
+        let _ = state
+            .contract
+            .methods()
+            .trigger_panic()
+            .tx_params(tx_params())
+            .call()
+            .await;
+
+        HttpResponse::Ok()
+    }
+    async fn fuel_indexer_test_trigger_revert(
+        state: web::Data<Arc<AppState>>,
+    ) -> impl Responder {
+        let _ = state
+            .contract
+            .methods()
+            .trigger_revert()
+            .tx_params(tx_params())
+            .call()
+            .await;
+
+        HttpResponse::Ok()
+    }
+
+    async fn fuel_indexer_test_trigger_enum_error(
+        state: web::Data<Arc<AppState>>,
+    ) -> impl Responder {
+        let _ = state
+            .contract
+            .methods()
+            .trigger_enum_error(69)
+            .tx_params(tx_params())
+            .call()
+            .await;
+
+        HttpResponse::Ok()
+    }
+
+    async fn fuel_indexer_test_trigger_enum(
+        state: web::Data<Arc<AppState>>,
+    ) -> impl Responder {
+        let _ = state
+            .contract
+            .methods()
+            .trigger_enum()
+            .tx_params(tx_params())
+            .call()
+            .await
+            .unwrap();
+
+        HttpResponse::Ok()
+    }
+
+    async fn fuel_indexer_test_trigger_mint(
+        state: web::Data<Arc<AppState>>,
+    ) -> impl Responder {
+        let _ = state
+            .contract
+            .methods()
+            .trigger_mint()
+            .tx_params(tx_params())
+            .call()
+            .await
+            .unwrap();
+
+        HttpResponse::Ok()
+    }
+
+    async fn fuel_indexer_test_trigger_burn(
+>>>>>>> 2dc1d4d9 (ci: optimize and condense E2E tests (#1263))
+        state: web::Data<Arc<AppState>>,
+    ) -> impl Responder {
+        let call_params =
+            CallParameters::new(1_000_000, fuels::types::AssetId::default(), 1000);
+
+        let _ = state
+            .contract
+            .methods()
+            .trigger_transferout()
+            .tx_params(tx_params())
+            .call_params(call_params)
+            .expect("Could not set call parameters for contract method")
+            .call()
+            .await
+            .unwrap();
 
         //     HttpResponse::Ok()
         // }

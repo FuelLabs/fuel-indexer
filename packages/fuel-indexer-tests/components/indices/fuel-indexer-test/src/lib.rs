@@ -320,6 +320,7 @@ mod fuel_indexer_test {
         } = revert;
 
         RevertEntity::new(contract_id, error_val).get_or_create();
+<<<<<<< HEAD
     }
 
     fn fuel_indexer_trigger_mint(mint: Mint) {
@@ -346,6 +347,8 @@ mod fuel_indexer_test {
         } = burn;
 
         BurnEntity::new(sub_id, contract_id, val).get_or_create();
+=======
+>>>>>>> 2dc1d4d9 (ci: optimize and condense E2E tests (#1263))
     }
 
     fn fuel_indexer_trigger_mint(mint: Mint) {
@@ -358,14 +361,7 @@ mod fuel_indexer_test {
             ..
         } = mint;
 
-        let entity = MintEntity {
-            id: 123,
-            sub_id,
-            contract_id,
-            val,
-        };
-
-        entity.save();
+        MintEntity::new(sub_id, contract_id, val).get_or_create();
     }
 
     fn fuel_indexer_trigger_burn(burn: Burn) {
@@ -378,14 +374,7 @@ mod fuel_indexer_test {
             ..
         } = burn;
 
-        let entity = BurnEntity {
-            id: 123,
-            sub_id,
-            contract_id,
-            val,
-        };
-
-        entity.save();
+        BurnEntity::new(sub_id, contract_id, val).get_or_create();
     }
 
     fn fuel_indexer_test_filterable_fields(_ping: Ping) {
