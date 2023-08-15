@@ -132,7 +132,7 @@ type UtxoId @entity {
 
 type TxPointer @entity {
   id: ID!
-  block_height: BlockHeight!
+  block_height: UInt4!
   tx_index: UInt8!
 }
 
@@ -181,7 +181,7 @@ type InputCoin @entity {
   asset_id: AssetId! @indexed
   tx_pointer: TxPointer!
   witness_index: Int8!
-  maturity: UInt8!
+  maturity: UInt4!
   predicate: HexString!
   predicate_data: HexString!
   label: InputLabel!
@@ -243,7 +243,7 @@ type ReturnDataReceipt @entity(virtual: true) {
   ptr: UInt8!
   len: UInt8!
   digest: Bytes32!
-  data: Blob!
+  data: Blob
   pc: UInt8!
   # `is` is a reserved keyword in PostgreSQL.
   isr: UInt8!
@@ -291,7 +291,7 @@ type LogDataReceipt @entity(virtual: true) {
   ptr: UInt8!
   len: UInt8!
   digest: Bytes32!
-  data: Blob!
+  data: Blob
   pc: UInt8!
   # `is` is a reserved keyword in PostgreSQL.
   isr: UInt8!
@@ -353,7 +353,7 @@ type MessageOutReceipt @entity(virtual: true) {
   nonce: Nonce!
   len: UInt8!
   digest: Bytes32!
-  data: Blob!
+  data: Blob
   label: ReceiptLabel!
   is_message_out: Boolean!
 }
@@ -445,7 +445,7 @@ type CreateTransaction @entity {
   id: ID!
   gas_price: UInt8!
   gas_limit: UInt8!
-  maturity: UInt8!
+  maturity: UInt4!
   bytecode_length: UInt8!
   bytecode_witness_index: UInt1!
   storage_slots: [StorageSlot!]
@@ -464,7 +464,7 @@ type ScriptTransaction @entity {
   id: ID!
   gas_price: UInt8!
   gas_limit: UInt8!
-  maturity: UInt8!
+  maturity: UInt4!
   script: Blob!
   script_data: Blob!
   inputs: [Input!]
@@ -545,7 +545,7 @@ type Header @entity {
   message_receipt_count: UInt8!
   transactions_root: Bytes32!
   message_receipt_root: Bytes32!
-  height: UInt8!
+  height: UInt4!
   prev_root: Bytes32!
   time: Int8!
   application_hash: Bytes32!

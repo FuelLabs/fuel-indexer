@@ -66,6 +66,7 @@ pub struct WebTestComponents {
     #[allow(unused)]
     pub rx: Receiver<ServiceRequest>,
     pub server: JoinHandle<Result<(), Error>>,
+    pub client: reqwest::Client,
 }
 
 pub async fn mock_request(path: &str) {
@@ -121,6 +122,11 @@ pub async fn setup_web_test_components(
         .serve(app.clone().into_make_service());
     let server = tokio::spawn(server);
 
+    let client = reqwest::ClientBuilder::new()
+        .pool_max_idle_per_host(0)
+        .build()
+        .unwrap();
+
     WebTestComponents {
         node,
         db,
@@ -129,6 +135,7 @@ pub async fn setup_web_test_components(
         app,
         rx,
         server,
+        client,
     }
 }
 
@@ -244,13 +251,6 @@ impl Drop for TestPostgresDb {
     }
 }
 
-pub fn http_client() -> reqwest::Client {
-    reqwest::ClientBuilder::new()
-        .pool_max_idle_per_host(0)
-        .build()
-        .unwrap()
-}
-
 pub fn tx_params() -> TxParameters {
     let gas_price = 0;
     let gas_limit = 1_000_000;
@@ -302,9 +302,10 @@ pub async fn setup_test_fuel_node(
         ..Config::local_node()
     };
 
-    let (client, _) = setup_test_client(coins, vec![], Some(config), None, None).await;
+    let (client, _, consensus_params) =
+        setup_test_client(coins, vec![], Some(config), None).await;
 
-    let provider = Provider::new(client);
+    let provider = Provider::new(client, consensus_params);
 
     wallet.set_provider(provider.clone());
 
@@ -356,9 +357,7 @@ pub fn get_test_contract_id() -> Bech32ContractId {
     .unwrap();
     let id = loaded_contract.contract_id();
 
-    Bech32ContractId::from(fuels::tx::ContractId::from(
-        <[u8; 32]>::try_from(id).unwrap(),
-    ))
+    Bech32ContractId::from(fuels::types::ContractId::from(<[u8; 32]>::from(id)))
 }
 
 pub async fn api_server_app_postgres(
@@ -419,7 +418,7 @@ pub async fn connect_to_deployed_contract(
     );
 
     let contract_id: Bech32ContractId =
-        Bech32ContractId::from(fuels::tx::ContractId::from(get_test_contract_id()));
+        Bech32ContractId::from(fuels::types::ContractId::from(get_test_contract_id()));
 
     let contract = FuelIndexerTest::new(contract_id.clone(), wallet);
 
@@ -452,6 +451,7 @@ pub mod test_web {
             .call()
             .await
             .unwrap();
+
         HttpResponse::Ok()
     }
 
@@ -464,6 +464,7 @@ pub mod test_web {
             .call()
             .await
             .unwrap();
+
         HttpResponse::Ok()
     }
 
@@ -496,6 +497,7 @@ pub mod test_web {
             .call()
             .await
             .unwrap();
+
         HttpResponse::Ok()
     }
 
@@ -510,6 +512,7 @@ pub mod test_web {
             .call()
             .await
             .unwrap();
+
         HttpResponse::Ok()
     }
 
@@ -524,9 +527,12 @@ pub mod test_web {
             .call()
             .await
             .unwrap();
+
         HttpResponse::Ok()
     }
 
+    // TODO: TransferOut is  currently ignored due to flakiness;
+    // transfering to an address fails for some unknown reason
     async fn fuel_indexer_test_transferout(
         state: web::Data<Arc<AppState>>,
     ) -> impl Responder {
@@ -537,7 +543,6 @@ pub mod test_web {
             .contract
             .methods()
             .trigger_transferout()
-            .append_variable_outputs(1)
             .tx_params(tx_params())
             .call_params(call_params)
             .expect("Could not set call parameters for contract method")
@@ -557,10 +562,9 @@ pub mod test_web {
             .contract
             .methods()
             .trigger_messageout()
-            .append_message_outputs(1)
-            .tx_params(tx_params())
             .call_params(call_params)
             .expect("Could not set call parameters for contract method")
+            .tx_params(tx_params())
             .call()
             .await
             .unwrap();
@@ -609,6 +613,7 @@ pub mod test_web {
             .call()
             .await
             .unwrap();
+
         HttpResponse::Ok()
     }
 
@@ -623,6 +628,7 @@ pub mod test_web {
             .call()
             .await
             .unwrap();
+
         HttpResponse::Ok()
     }
 
@@ -750,7 +756,42 @@ pub mod test_web {
             .trigger_enum()
             .tx_params(tx_params())
             .call()
-            .await;
+            .await
+            .unwrap();
+
+        HttpResponse::Ok()
+    }
+
+    async fn fuel_indexer_test_trigger_mint(
+        state: web::Data<Arc<AppState>>,
+    ) -> impl Responder {
+        let _ = state
+            .contract
+            .methods()
+            .trigger_mint()
+            .tx_params(tx_params())
+            .call()
+            .await
+            .unwrap();
+
+        HttpResponse::Ok()
+    }
+
+    async fn fuel_indexer_test_trigger_burn(
+        state: web::Data<Arc<AppState>>,
+    ) -> impl Responder {
+        let call_params =
+            CallParameters::new(1_000_000, fuels::types::AssetId::default(), 1000);
+        let _ = state
+            .contract
+            .methods()
+            .trigger_burn()
+            .tx_params(tx_params())
+            .call_params(call_params)
+            .unwrap()
+            .call()
+            .await
+            .unwrap();
 
         HttpResponse::Ok()
     }
@@ -787,7 +828,7 @@ pub mod test_web {
                 web::post().to(fuel_indexer_test_transferout),
             )
             .route("/messageout", web::post().to(fuel_indexer_test_messageout))
-            .route("/callreturn", web::post().to(fuel_indexer_test_callreturn))
+            .route("/returndata", web::post().to(fuel_indexer_test_callreturn))
             .route("/multiarg", web::post().to(fuel_indexer_test_multiargs))
             .route(
                 "/optionals",
@@ -810,10 +851,7 @@ pub mod test_web {
             )
             .route("/vec_calldata", web::post().to(fuel_indexer_vec_calldata))
             .route("/vec_logdata", web::post().to(fuel_indexer_vec_logdata))
-            .route(
-                "/pure_function",
-                web::post().to(fuel_indexer_test_pure_function),
-            )
+            .route("/call", web::post().to(fuel_indexer_test_pure_function))
             .route("/panic", web::post().to(fuel_indexer_test_trigger_panic))
             .route("/revert", web::post().to(fuel_indexer_test_trigger_revert))
             .route(
@@ -821,6 +859,8 @@ pub mod test_web {
                 web::post().to(fuel_indexer_test_trigger_enum_error),
             )
             .route("/enum", web::post().to(fuel_indexer_test_trigger_enum))
+            .route("/mint", web::post().to(fuel_indexer_test_trigger_mint))
+            .route("/burn", web::post().to(fuel_indexer_test_trigger_burn))
     }
 
     pub async fn server() -> Result<(), Box<dyn std::error::Error>> {

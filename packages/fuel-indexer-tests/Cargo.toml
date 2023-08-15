@@ -36,7 +36,7 @@ fuel-indexer-postgres = { workspace = true, features = ["metrics"] }
 fuel-indexer-schema = { workspace = true, default-features = true }
 fuel-indexer-types = { workspace = true }
 fuel-tx = { workspace = true }
-fuels = { features = ["fuel-core-lib", "std"], version = "0.40" }
+fuels = { features = ["fuel-core-lib", "std"], version = "0.46" }
 futures = "0.3"
 hex = "0.4"
 hyper = { version = "0.14", features = ["client", "http2", "http1", "runtime" ] }
@@ -58,6 +58,5 @@ wasmer-middlewares = "4"
 wasmer-types = "4"
 
 [features]
-default = ["e2e", "postgres"]
-e2e = []
+default = ["postgres"]
 postgres = []

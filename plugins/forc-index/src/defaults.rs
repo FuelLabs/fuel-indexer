@@ -31,7 +31,7 @@ path = "src/main.rs"
 async-trait = {{ version = "0.1" }}
 fuel-indexer = {{ version = "0.19", default-features = false }}
 fuel-indexer-utils = {{ version = "0.19", features = ["native-execution"] }}
-fuels = {{ version = "0.43", default-features = false, features = ["std"] }}
+fuels = {{ version = "0.46", default-features = false, features = ["std"] }}
 serde = {{ version = "1.0", default-features = false, features = ["derive"] }}
 "#
     )
@@ -44,13 +44,14 @@ name = "{indexer_name}"
 version = "0.0.0"
 edition = "2021"
 publish = false
+rust-version = "1.71.1"
 
 [lib]
 crate-type = ['cdylib']
 
 [dependencies]
 fuel-indexer-utils = {{ version = "0.19" }}
-fuels = {{ version = "0.43", default-features = false }}
+fuels = {{ version = "0.46", default-features = false }}
 serde = {{ version = "1.0", default-features = false, features = ["derive"] }}
 "#
     )

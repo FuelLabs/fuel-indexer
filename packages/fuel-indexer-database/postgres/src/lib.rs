@@ -676,7 +676,7 @@ pub async fn last_block_height_for_indexer(
     conn: &mut PoolConnection<Postgres>,
     namespace: &str,
     identifier: &str,
-) -> sqlx::Result<u64> {
+) -> sqlx::Result<u32> {
     let query = format!(
         "SELECT MAX(block_height) FROM {namespace}_{identifier}.indexmetadataentity LIMIT 1"
     );
@@ -685,7 +685,7 @@ pub async fn last_block_height_for_indexer(
 
     Ok(row
         .try_get::<BigDecimal, usize>(0)
-        .map(|id| id.to_u64().expect("Bad block height."))
+        .map(|id| id.to_u32().expect("Bad block height."))
         .unwrap_or_else(|_e| 1))
 }
 

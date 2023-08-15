@@ -10,13 +10,13 @@ use fuel_indexer_tests::fixtures::TestPostgresDb;
 use std::str::FromStr;
 
 /// Location of Fuel node to be used for block retrieval.
-pub const NODE_URL: &str = "beta-3.fuel.network:80";
+pub const NODE_URL: &str = "beta-4.fuel.network:80";
 
 /// Cargo workspace root; used to ensure correct file paths.
 pub const WORKSPACE_ROOT: &str = env!("CARGO_MANIFEST_DIR");
 
 /// Retrieve blocks from the Fuel node located at `NODE_URL`.
-async fn get_blocks(start_cursor: u64, num_blocks: usize) -> Result<Vec<BlockData>, ()> {
+async fn get_blocks(start_cursor: u32, num_blocks: usize) -> Result<Vec<BlockData>, ()> {
     let client = FuelClient::from_str(NODE_URL)
         .unwrap_or_else(|e| panic!("Node connection failed: {e}."));
     let next_cursor = Some(start_cursor.to_string());
@@ -24,7 +24,7 @@ async fn get_blocks(start_cursor: u64, num_blocks: usize) -> Result<Vec<BlockDat
         &client,
         num_blocks,
         &next_cursor,
-        Some(start_cursor + num_blocks as u64),
+        Some(start_cursor + num_blocks as u32),
         "",
     )
     .await
@@ -62,7 +62,7 @@ async fn setup_wasm_executor(
 /// Staring from `start_block`, the function retrieves an amount
 /// of blocks equal to `num_blocks` and then passes it into the indexer.
 pub fn create_wasm_indexer_benchmark(
-    start_block: u64,
+    start_block: u32,
     num_blocks: usize,
     name: &str,
 ) -> impl Fn(&mut Criterion, Manifest, IndexerConfig) + '_ {
