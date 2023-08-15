@@ -66,6 +66,7 @@ pub struct WebTestComponents {
     #[allow(unused)]
     pub rx: Receiver<ServiceRequest>,
     pub server: JoinHandle<Result<(), Error>>,
+    pub client: reqwest::Client,
 }
 
 pub async fn mock_request(path: &str) {
@@ -121,6 +122,11 @@ pub async fn setup_web_test_components(
         .serve(app.clone().into_make_service());
     let server = tokio::spawn(server);
 
+    let client = reqwest::ClientBuilder::new()
+        .pool_max_idle_per_host(0)
+        .build()
+        .unwrap();
+
     WebTestComponents {
         node,
         db,
@@ -129,6 +135,7 @@ pub async fn setup_web_test_components(
         app,
         rx,
         server,
+        client,
     }
 }
 
@@ -242,13 +249,6 @@ impl Drop for TestPostgresDb {
             });
         });
     }
-}
-
-pub fn http_client() -> reqwest::Client {
-    reqwest::ClientBuilder::new()
-        .pool_max_idle_per_host(0)
-        .build()
-        .unwrap()
 }
 
 pub fn tx_params() -> TxParameters {
@@ -451,6 +451,7 @@ pub mod test_web {
             .call()
             .await
             .unwrap();
+
         HttpResponse::Ok()
     }
 
@@ -463,6 +464,7 @@ pub mod test_web {
             .call()
             .await
             .unwrap();
+
         HttpResponse::Ok()
     }
 
@@ -495,6 +497,7 @@ pub mod test_web {
             .call()
             .await
             .unwrap();
+
         HttpResponse::Ok()
     }
 
@@ -509,6 +512,7 @@ pub mod test_web {
             .call()
             .await
             .unwrap();
+
         HttpResponse::Ok()
     }
 
@@ -523,52 +527,50 @@ pub mod test_web {
             .call()
             .await
             .unwrap();
+
         HttpResponse::Ok()
     }
 
-    // TODO: TransferOut and MessageOut tests are currently ignored
-    // due to flakiness; this will be addressed in https://github.com/FuelLabs/fuel-indexer/issues/1194
-    // async fn fuel_indexer_test_transferout(
-    //     state: web::Data<Arc<AppState>>,
-    // ) -> impl Responder {
-    //     let call_params =
-    //         CallParameters::new(1_000_000, fuels::types::AssetId::default(), 1000);
+    // TODO: TransferOut is  currently ignored due to flakiness;
+    // transfering to an address fails for some unknown reason
+    async fn fuel_indexer_test_transferout(
+        state: web::Data<Arc<AppState>>,
+    ) -> impl Responder {
+        let call_params =
+            CallParameters::new(1_000_000, fuels::types::AssetId::default(), 1000);
 
-    //     let _ = state
-    //         .contract
-    //         .methods()
-    //         .trigger_transferout()
-    //         .append_variable_outputs(1)
-    //         // .tx_params(tx_params())
-    //         .call_params(call_params)?
-    //         .expect("Could not set call parameters for contract method")
-    //         .call()
-    //         .await;
+        let _ = state
+            .contract
+            .methods()
+            .trigger_transferout()
+            .tx_params(tx_params())
+            .call_params(call_params)
+            .expect("Could not set call parameters for contract method")
+            .call()
+            .await;
 
-    //     HttpResponse::Ok()
-    // }
+        HttpResponse::Ok()
+    }
 
-    // async fn fuel_indexer_test_messageout(
-    //     state: web::Data<Arc<AppState>>,
-    // ) -> impl Responder {
-    //     let call_params =
-    //         CallParameters::new(1_000_000, fuels::types::AssetId::default(), 1000);
+    async fn fuel_indexer_test_messageout(
+        state: web::Data<Arc<AppState>>,
+    ) -> impl Responder {
+        let call_params =
+            CallParameters::new(1_000_000, fuels::types::AssetId::default(), 1000);
 
-    //     let _ = state
-    //         .contract
-    //         .methods()
-    //         .trigger_messageout()
-    //         .call_params(call_params)
-    //         .unwrap()
-    //         // .tx_params(tx_params())
-    //         .append_variable_outputs(1)
-    //         .expect("Could not set call parameters for contract method")
-    //         .call()
-    //         .await
-    //         .unwrap();
+        let _ = state
+            .contract
+            .methods()
+            .trigger_messageout()
+            .call_params(call_params)
+            .expect("Could not set call parameters for contract method")
+            .tx_params(tx_params())
+            .call()
+            .await
+            .unwrap();
 
-    //     HttpResponse::Ok()
-    // }
+        HttpResponse::Ok()
+    }
 
     async fn fuel_indexer_test_callreturn(
         state: web::Data<Arc<AppState>>,
@@ -611,6 +613,7 @@ pub mod test_web {
             .call()
             .await
             .unwrap();
+
         HttpResponse::Ok()
     }
 
@@ -625,6 +628,7 @@ pub mod test_web {
             .call()
             .await
             .unwrap();
+
         HttpResponse::Ok()
     }
 
@@ -752,7 +756,8 @@ pub mod test_web {
             .trigger_enum()
             .tx_params(tx_params())
             .call()
-            .await;
+            .await
+            .unwrap();
 
         HttpResponse::Ok()
     }
@@ -766,7 +771,8 @@ pub mod test_web {
             .trigger_mint()
             .tx_params(tx_params())
             .call()
-            .await;
+            .await
+            .unwrap();
 
         HttpResponse::Ok()
     }
@@ -784,7 +790,8 @@ pub mod test_web {
             .call_params(call_params)
             .unwrap()
             .call()
-            .await;
+            .await
+            .unwrap();
 
         HttpResponse::Ok()
     }
@@ -816,12 +823,12 @@ pub mod test_web {
                 "/scriptresult",
                 web::post().to(fuel_indexer_test_scriptresult),
             )
-            // .route(
-            //     "/transferout",
-            //     web::post().to(fuel_indexer_test_transferout),
-            // )
-            // .route("/messageout", web::post().to(fuel_indexer_test_messageout))
-            .route("/callreturn", web::post().to(fuel_indexer_test_callreturn))
+            .route(
+                "/transferout",
+                web::post().to(fuel_indexer_test_transferout),
+            )
+            .route("/messageout", web::post().to(fuel_indexer_test_messageout))
+            .route("/returndata", web::post().to(fuel_indexer_test_callreturn))
             .route("/multiarg", web::post().to(fuel_indexer_test_multiargs))
             .route(
                 "/optionals",
@@ -844,10 +851,7 @@ pub mod test_web {
             )
             .route("/vec_calldata", web::post().to(fuel_indexer_vec_calldata))
             .route("/vec_logdata", web::post().to(fuel_indexer_vec_logdata))
-            .route(
-                "/pure_function",
-                web::post().to(fuel_indexer_test_pure_function),
-            )
+            .route("/call", web::post().to(fuel_indexer_test_pure_function))
             .route("/panic", web::post().to(fuel_indexer_test_trigger_panic))
             .route("/revert", web::post().to(fuel_indexer_test_trigger_revert))
             .route(
