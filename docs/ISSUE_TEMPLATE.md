@@ -13,7 +13,8 @@ _*If you're an internal FuelLabs contributor, please feel free to remove this te
 ### Description
 
 - Please describe your issue in detail.
-- The more accurate detailed information you give, the quicker we can help you.
+
+> Detailed information helps us narrow down any potential causes.
 
 ### Steps to Reproduce
 
