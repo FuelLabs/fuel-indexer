@@ -1780,7 +1780,7 @@ dependencies = [
  "criterion-plot",
  "futures",
  "is-terminal",
- "itertools",
+ "itertools 0.10.5",
  "num-traits",
  "once_cell",
  "oorandom",
@@ -1802,7 +1802,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6b50826342786a51a89e2da3a28f1c32b06e387201bc2d19791f622c673706b1"
 dependencies = [
  "cast",
- "itertools",
+ "itertools 0.10.5",
 ]
 
 [[package]]
@@ -2793,7 +2793,7 @@ version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f8118789261e77d67569859a06a886d53dbf7bd00ea23a18a2dfae26a1f5be25"
 dependencies = [
- "itertools",
+ "itertools 0.10.5",
  "lazy_static",
  "proc-macro2",
  "quote",
@@ -2822,7 +2822,7 @@ checksum = "963759585e53c7d61414192640b2f9273d5f0251182206a80a78e3a136779a01"
 dependencies = [
  "bitflags 1.3.2",
  "serde",
- "strum",
+ "strum 0.24.1",
 ]
 
 [[package]]
@@ -2853,7 +2853,7 @@ dependencies = [
  "futures",
  "hex",
  "hyper",
- "itertools",
+ "itertools 0.10.5",
  "parking_lot 0.12.1",
  "postcard",
  "primitive-types",
@@ -2861,7 +2861,7 @@ dependencies = [
  "rocksdb",
  "serde",
  "serde_json",
- "strum",
+ "strum 0.24.1",
  "strum_macros 0.24.3",
  "tempfile",
  "thiserror",
@@ -2883,7 +2883,7 @@ dependencies = [
  "fuel-core-storage",
  "fuel-core-types",
  "hex",
- "itertools",
+ "itertools 0.10.5",
  "postcard",
  "rand",
  "serde",
@@ -2906,7 +2906,7 @@ dependencies = [
  "futures",
  "hex",
  "hyper-rustls 0.24.1",
- "itertools",
+ "itertools 0.10.5",
  "reqwest",
  "serde",
  "serde_json",
@@ -3229,7 +3229,7 @@ dependencies = [
  "fuel-tx 0.35.3",
  "fuel-vm 0.35.3",
  "futures",
- "itertools",
+ "itertools 0.10.5",
  "openssl",
  "sqlx",
  "thiserror",
@@ -3266,7 +3266,7 @@ dependencies = [
  "serde_json",
  "sqlparser",
  "sqlx",
- "strum",
+ "strum 0.24.1",
  "thiserror",
  "tokio",
  "tower",
@@ -3311,7 +3311,7 @@ dependencies = [
  "chrono",
  "fuel-indexer-lib",
  "serde",
- "strum",
+ "strum 0.24.1",
 ]
 
 [[package]]
@@ -3348,7 +3348,7 @@ dependencies = [
  "serde_json",
  "serde_yaml",
  "sha2 0.9.9",
- "strum",
+ "strum 0.24.1",
  "thiserror",
  "tokio",
  "tracing",
@@ -3449,7 +3449,7 @@ dependencies = [
  "fuel-indexer-types",
  "hex",
  "insta",
- "itertools",
+ "itertools 0.10.5",
  "serde",
  "sqlx",
  "thiserror",
@@ -3488,7 +3488,7 @@ dependencies = [
  "futures",
  "hex",
  "hyper",
- "itertools",
+ "itertools 0.10.5",
  "lazy_static",
  "rand",
  "reqwest",
@@ -3592,7 +3592,7 @@ dependencies = [
  "fuel-crypto 0.26.3",
  "fuel-merkle 0.26.3",
  "fuel-types 0.26.3",
- "itertools",
+ "itertools 0.10.5",
  "num-integer",
  "rand",
  "serde",
@@ -3610,12 +3610,12 @@ dependencies = [
  "fuel-crypto 0.35.3",
  "fuel-merkle 0.35.3",
  "fuel-types 0.35.3",
- "itertools",
+ "itertools 0.10.5",
  "num-integer",
  "rand",
  "serde",
  "serde_json",
- "strum",
+ "strum 0.24.1",
  "strum_macros 0.24.3",
 ]
 
@@ -3664,7 +3664,7 @@ dependencies = [
  "fuel-storage 0.26.3",
  "fuel-tx 0.26.3",
  "fuel-types 0.26.3",
- "itertools",
+ "itertools 0.10.5",
  "serde",
  "sha3",
  "tai64",
@@ -3687,7 +3687,7 @@ dependencies = [
  "fuel-storage 0.35.3",
  "fuel-tx 0.35.3",
  "fuel-types 0.35.3",
- "itertools",
+ "itertools 0.10.5",
  "paste",
  "primitive-types",
  "rand",
@@ -3708,9 +3708,9 @@ dependencies = [
 
 [[package]]
 name = "fuels"
-version = "0.45.1"
+version = "0.46.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aa0d9fe01b4f234c07ef7d9e619ccb8d17e4a502af63f30a30a2097acab0dfdf"
+checksum = "71ee1f9244ce01bd8fae9122a16bf6f8ddad3dbf38aa6269c23e9c90f6b60522"
 dependencies = [
  "fuel-core",
  "fuel-core-client",
@@ -3724,9 +3724,9 @@ dependencies = [
 
 [[package]]
 name = "fuels-accounts"
-version = "0.45.1"
+version = "0.46.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5b8d03d520ea383743f78af6909ac5a04c805ad4eb1f03d99c80b0d4679a44f6"
+checksum = "28317c4286794553f57bcc1ec8b84d25048f07a7cf65b067a36e564936e99fb8"
 dependencies = [
  "async-trait",
  "bytes",
@@ -3740,7 +3740,7 @@ dependencies = [
  "fuel-vm 0.35.3",
  "fuels-core",
  "hex",
- "itertools",
+ "itertools 0.11.0",
  "rand",
  "serde",
  "sha2 0.10.7",
@@ -3751,13 +3751,13 @@ dependencies = [
 
 [[package]]
 name = "fuels-code-gen"
-version = "0.45.1"
+version = "0.46.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a18b307990519c78c5c7661666a912c05915d1deed7bf4b577b50987fe97ae31"
+checksum = "2a32e15704cdc5db8253322735cb665af6ab7d0b189ca79341442c6034128182"
 dependencies = [
  "Inflector",
  "fuel-abi-types 0.3.0",
- "itertools",
+ "itertools 0.11.0",
  "proc-macro2",
  "quote",
  "regex",
@@ -3767,9 +3767,9 @@ dependencies = [
 
 [[package]]
 name = "fuels-core"
-version = "0.45.1"
+version = "0.46.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "79566b388d8822c4c06aac60d9647dbb9393807cd5e6653cfa0c1630644da196"
+checksum = "711a5940eec515cbcac468eb2630322f60d50333fe455ffee4e527019d4541d4"
 dependencies = [
  "bech32 0.9.1",
  "chrono",
@@ -3782,28 +3782,28 @@ dependencies = [
  "fuel-vm 0.35.3",
  "fuels-macros",
  "hex",
- "itertools",
+ "itertools 0.11.0",
  "proc-macro2",
  "regex",
  "serde",
  "serde_json",
  "sha2 0.10.7",
- "strum",
- "strum_macros 0.24.3",
+ "strum 0.25.0",
+ "strum_macros 0.25.2",
  "thiserror",
  "uint",
 ]
 
 [[package]]
 name = "fuels-macros"
-version = "0.45.1"
+version = "0.46.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8c92232ef42b254a1649c6a6bfddd35b2c50f358b15e98e953eb82d69b397c57"
+checksum = "574c6c7292c19344fea36ff74e8c40c9bb62a1321a4f7a96300dd0a85312e9ab"
 dependencies = [
  "Inflector",
  "fuel-abi-types 0.3.0",
  "fuels-code-gen",
- "itertools",
+ "itertools 0.11.0",
  "proc-macro2",
  "quote",
  "rand",
@@ -3814,9 +3814,9 @@ dependencies = [
 
 [[package]]
 name = "fuels-programs"
-version = "0.45.1"
+version = "0.46.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e1e4250bb73ff44cfdcd39f86c0e3163c11753e16583013fae698e9132400280"
+checksum = "ba7f41efde4cad3b0122cacbfd1d7e64c1f40b21d746f40290d3224b2ed8eb75"
 dependencies = [
  "async-trait",
  "bytes",
@@ -3827,24 +3827,24 @@ dependencies = [
  "fuels-accounts",
  "fuels-core",
  "hex",
- "itertools",
+ "itertools 0.11.0",
  "proc-macro2",
  "rand",
  "regex",
  "serde",
  "serde_json",
  "sha2 0.10.7",
- "strum",
- "strum_macros 0.24.3",
+ "strum 0.25.0",
+ "strum_macros 0.25.2",
  "thiserror",
  "tokio",
 ]
 
 [[package]]
 name = "fuels-test-helpers"
-version = "0.45.1"
+version = "0.46.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4df1a046adf1862f5b1844800abed842c6748abb2dc94c8e0df43473e96c3f4d"
+checksum = "977952ffd8871315cea844580b7e8ee61ccefad0dc376ad39de621c6b352a1a0"
 dependencies = [
  "fuel-core",
  "fuel-core-chain-config",
@@ -3860,7 +3860,7 @@ dependencies = [
  "rand",
  "serde",
  "serde_json",
- "serde_with 2.3.3",
+ "serde_with 3.2.0",
  "tempfile",
  "tokio",
  "which",
@@ -4691,6 +4691,15 @@ name = "itertools"
 version = "0.10.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b0fd2260e829bddf4cb6ea802289de2f86d6a7a690192fbe91b3f46e0f2c8473"
+dependencies = [
+ "either",
+]
+
+[[package]]
+name = "itertools"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b1c173a5686ce8bfa551b3563d0c2170bf24ca44da99c7ca4bfdab5418c3fe57"
 dependencies = [
  "either",
 ]
@@ -6640,9 +6649,9 @@ dependencies = [
 
 [[package]]
 name = "serde_with"
-version = "2.3.3"
+version = "3.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "07ff71d2c147a7b57362cead5e22f772cd52f6ab31cfcd9edcd7f6aeb2a0afbe"
+checksum = "1402f54f9a3b9e2efe71c1cea24e648acce55887983553eeb858cf3115acfd49"
 dependencies = [
  "serde",
 ]
@@ -6928,7 +6937,7 @@ version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c12bc9199d1db8234678b7051747c07f517cdcf019262d1847b94ec8b1aee3e"
 dependencies = [
- "itertools",
+ "itertools 0.10.5",
  "nom",
  "unicode_categories",
 ]
@@ -7080,6 +7089,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "strum"
+version = "0.25.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "290d54ea6f91c969195bdbcd7442c8c2a2ba87da8bf60a7ee86a235d4bc1e125"
+
+[[package]]
 name = "strum_macros"
 version = "0.21.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7102,6 +7117,19 @@ dependencies = [
  "quote",
  "rustversion",
  "syn 1.0.109",
+]
+
+[[package]]
+name = "strum_macros"
+version = "0.25.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ad8d03b598d3d0fff69bf533ee3ef19b8eeb342729596df84bcc7e1f96ec4059"
+dependencies = [
+ "heck 0.4.1",
+ "proc-macro2",
+ "quote",
+ "rustversion",
+ "syn 2.0.28",
 ]
 
 [[package]]
@@ -7140,7 +7168,7 @@ dependencies = [
  "fuel-vm 0.26.3",
  "hashbrown 0.13.2",
  "im",
- "itertools",
+ "itertools 0.10.5",
  "lazy_static",
  "miden-core",
  "pest",
@@ -7200,7 +7228,7 @@ version = "0.35.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "01b8414dad7e75caf6dee76df474b340c43032d4215e1c74cbd876ac0eeaae04"
 dependencies = [
- "itertools",
+ "itertools 0.10.5",
  "proc-macro2",
  "quote",
  "syn 1.0.109",
