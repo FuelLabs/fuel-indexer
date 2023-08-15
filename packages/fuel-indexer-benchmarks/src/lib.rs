@@ -10,7 +10,7 @@ use fuel_indexer_tests::fixtures::TestPostgresDb;
 use std::str::FromStr;
 
 /// Location of Fuel node to be used for block retrieval.
-pub const NODE_URL: &str = "beta-3.fuel.network:80";
+pub const NODE_URL: &str = "beta-4.fuel.network:80";
 
 /// Cargo workspace root; used to ensure correct file paths.
 pub const WORKSPACE_ROOT: &str = env!("CARGO_MANIFEST_DIR");
