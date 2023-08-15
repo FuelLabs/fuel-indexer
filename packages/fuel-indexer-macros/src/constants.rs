@@ -127,16 +127,20 @@ lazy_static! {
         "Blob",
         "Charfield",
         "HexString",
+        "ID",
         "Identity",
         "Json",
-        "Virtual",
         "Option<Blob>",
         "Option<Charfield>",
         "Option<HexString>",
+        "Option<ID>",
         "Option<Identity>",
         "Option<Json>",
+        "Option<String64>",
         "Option<Virtual>",
-        "Vec<FtColumn>"
+        "String64",
+        "Vec<FtColumn>",
+        "Virtual",
     ]);
 
     /// Type names that are not allowed in GraphQL schema.

@@ -18,6 +18,7 @@ pub use fuel_indexer_lib::{
     manifest::Manifest,
     utils::{init_logging, ServiceRequest},
 };
+use fuel_indexer_types::SizedAsciiString;
 pub use sha2::{Digest, Sha256};
 pub use std::{
     collections::{HashMap, HashSet},

@@ -330,7 +330,6 @@ impl WebApi {
         Ok(app)
     }
 
-    
     /// Start the GraphQL API server.
     pub async fn run(config: IndexerConfig, app: Router) -> ApiResult<()> {
         let listen_on: SocketAddr = config.web_api.into();
