@@ -259,7 +259,7 @@ async fn test_filtering() {
     let id = uid([1]).to_string();
 
     // ID selection
-    let resp = client
+    let _resp = client
         .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
         .header(CONTENT_TYPE, "application/graphql".to_owned())
         .body(format!(r#"{{ "query": "query {{ filterentity(id: "{id}" ) {{ id foola maybe_null_bar bazoo }} }}" }}"#))

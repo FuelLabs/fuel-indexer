@@ -558,7 +558,7 @@ async fn test_index_types_for_block_explorer() {
         .map(|x| x.get::<String, usize>(0))
         .collect::<HashSet<String>>();
     assert_eq!(parent_ids.len(), 1);
-    assert!(parent_ids.contains(&id([1]).to_string()));
+    assert!(parent_ids.contains(&uid([1]).to_string()));
 
     // Should have 3 unique child IDs
     let child_ids = row
@@ -566,9 +566,9 @@ async fn test_index_types_for_block_explorer() {
         .map(|x| x.get::<String, usize>(1))
         .collect::<HashSet<String>>();
     assert_eq!(child_ids.len(), 3);
-    assert!(child_ids.contains(&id([1]).to_string()));
-    assert!(child_ids.contains(&id([2]).to_string()));
-    assert!(child_ids.contains(&id([3]).to_string()));
+    assert!(child_ids.contains(&uid([1]).to_string()));
+    assert!(child_ids.contains(&uid([2]).to_string()));
+    assert!(child_ids.contains(&uid([3]).to_string()));
 }
 
 #[actix_web::test]

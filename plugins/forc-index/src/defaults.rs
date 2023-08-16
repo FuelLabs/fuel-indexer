@@ -192,7 +192,7 @@ pub mod {indexer_name}_index_mod {{
 
     async fn {indexer_name}_handler(block_data: BlockData) {{
         if block_data.header.height % 1000 == 0 {{
-            info!("Processing Block#{{}}. (>'.')>", height);
+            info!("Processing Block#{{}}. (>'.')>", block_data.header.height);
         }}
         
         let block = Block::new(block_data.header.height, block_data.id);
