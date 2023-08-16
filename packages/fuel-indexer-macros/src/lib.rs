@@ -19,7 +19,6 @@ pub fn indexer(attrs: TokenStream, item: TokenStream) -> TokenStream {
     process_indexer_module(attrs, item)
 }
 
-
 #[cfg(test)]
 mod tests {
     #[test]
