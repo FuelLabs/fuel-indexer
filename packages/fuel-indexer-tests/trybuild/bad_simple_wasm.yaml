@@ -4,4 +4,4 @@ abi: ./../fuel-indexer-tests/contracts/simple-wasm/out/debug/contracts-abi.json
 graphql_schema: schema.graphql
 contract_id: ~
 module:
-  wasm: ./../fuel-indexer-tests/components/indexers/simple-wasm/simple_wasm.wasm
+  wasm: ./../fuel-indexer-tests/indexers/simple-wasm/simple_wasm.wasm

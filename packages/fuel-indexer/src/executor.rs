@@ -534,7 +534,6 @@ where
     db: Arc<Mutex<Database>>,
 
     /// Manifest of the indexer.
-    #[allow(unused)]
     manifest: Manifest,
 
     /// Function that handles events.

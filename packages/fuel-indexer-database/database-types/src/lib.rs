@@ -18,8 +18,9 @@ use fuel_indexer_lib::{
         types::{IdCol, ObjectCol},
         JoinTableMeta, ParsedGraphQLSchema,
     },
-    type_id, MAX_ARRAY_LENGTH,
+    MAX_ARRAY_LENGTH,
 };
+use fuel_indexer_types::type_id;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::HashSet,
@@ -1437,7 +1438,7 @@ type Wallet @entity {
                 column_name: "wallet_id".to_string(),
                 ref_tablename: "wallet".to_string(),
                 ref_colname: "id".to_string(),
-                ref_coltype: ColumnType::UInt8.to_string(),
+                ref_coltype: ColumnType::UID.to_string(),
                 on_delete: OnDelete::NoAction,
                 on_update: OnUpdate::NoAction,
             })
@@ -1452,7 +1453,7 @@ type Wallet @entity {
                 column_name: "account_id".to_string(),
                 ref_tablename: "account".to_string(),
                 ref_colname: "id".to_string(),
-                ref_coltype: ColumnType::UInt8.to_string(),
+                ref_coltype: ColumnType::UID.to_string(),
                 on_delete: OnDelete::NoAction,
                 on_update: OnUpdate::NoAction,
             })

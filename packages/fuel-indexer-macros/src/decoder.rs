@@ -9,8 +9,9 @@ use fuel_indexer_lib::{
         field_id, types::IdCol, GraphQLSchemaValidator, ParsedGraphQLSchema,
         MAX_FOREIGN_KEY_LIST_FIELDS,
     },
-    type_id, ExecutionSource,
+    ExecutionSource,
 };
+use fuel_indexer_types::type_id;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use std::collections::{BTreeMap, HashSet};

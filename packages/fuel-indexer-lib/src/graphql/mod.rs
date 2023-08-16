@@ -7,8 +7,7 @@ pub use parser::{JoinTableMeta, ParsedError, ParsedGraphQLSchema};
 pub use validator::GraphQLSchemaValidator;
 
 use async_graphql_parser::types::FieldDefinition;
-use fuels::types::SizedAsciiString;
-use serde::{Deserialize, Serialize};
+use fuel_indexer_types::graphql::IndexMetadata;
 use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 use types::IdCol;
@@ -22,39 +21,6 @@ pub const BASE_SCHEMA: &str = include_str!("./base.graphql");
 /// Derive version of GraphQL schema content via SHA256.
 pub fn schema_version(schema: &str) -> String {
     format!("{:x}", Sha256::digest(schema.as_bytes()))
-}
-
-/// Native GraphQL `TypeDefinition` used to keep track of chain metadata.
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct IndexMetadata {
-    /// Metadata identifier.
-    pub id: SizedAsciiString<64>,
-
-    /// Time of metadata.
-    pub time: u64,
-
-    /// Block height of metadata.
-    pub block_height: u32,
-
-    /// Block ID of metadata.
-    pub block_id: String,
-}
-
-impl IndexMetadata {
-    /// Return the GraphQL schema fragment for the `IndexMetadata` type.
-    ///
-    /// The structure of this fragment should always match `fuel_indexer_types::IndexMetadata`.
-    pub fn schema_fragment() -> &'static str {
-        r#"
-
-type IndexMetadataEntity @entity {
-    id: ID!
-    time: UInt8!
-    block_height: UInt4!
-    block_id: Bytes32!
-}
-"#
-    }
 }
 
 /// Inject native entities into the GraphQL schema.

@@ -146,7 +146,11 @@ impl From<Bytes32> for ContractIdFragment {
     fn from(hash: Bytes32) -> Self {
         // Since the ID will just be derived from the hash, rather than using `::new()`,
         // just manaully derived the ID, then use `::get_or_create()`.
-        Self { id: id(hash), hash }.get_or_create()
+        Self {
+            id: uid(hash),
+            hash,
+        }
+        .get_or_create()
     }
 }
 
@@ -155,7 +159,7 @@ impl From<ContractId> for ContractIdFragment {
         // Since the ID will just be derived from the hash, rather than using `::new()`,
         // just manaully derived the ID, then use `::get_or_create()`.
         Self {
-            id: id(hash),
+            id: uid(hash),
             hash: Bytes32::from(<[u8; 32]>::from(hash)),
         }
         .get_or_create()
@@ -166,7 +170,11 @@ impl From<Bytes32> for BlockIdFragment {
     fn from(hash: Bytes32) -> Self {
         // Since the ID will just be derived from the hash, rather than using `::new()`,
         // just manaully derived the ID, then use `::get_or_create()`.
-        Self { id: id(hash), hash }.get_or_create()
+        Self {
+            id: uid(hash),
+            hash,
+        }
+        .get_or_create()
     }
 }
 
@@ -174,7 +182,11 @@ impl From<Bytes32> for TransactionIdFragment {
     fn from(hash: Bytes32) -> Self {
         // Since the ID will just be derived from the hash, rather than using `::new()`,
         // just manaully derived the ID, then use `::get_or_create()`.
-        Self { id: id(hash), hash }.get_or_create()
+        Self {
+            id: uid(hash),
+            hash,
+        }
+        .get_or_create()
     }
 }
 
@@ -245,7 +257,7 @@ impl From<fuel::Input> for Input {
                     tx_pointer.id,
                     // Don't need to load the object here since the `ContractIdFragment.id` is
                     // just `id(ContractId)`
-                    id(contract_id),
+                    uid(contract_id),
                     InputLabel::Contract.into(),
                     true,
                 );
@@ -410,7 +422,7 @@ impl From<fuel::TransactionStatus> for TransactionStatus {
             } => {
                 // Don't need to load the object here since the `BlockFragment.id` is
                 // just `id(hash)
-                let block_id = id(block);
+                let block_id = uid(block);
                 let program_state = program_state.map(|p| p.into());
 
                 let status = FailureStatus::new(
@@ -431,7 +443,7 @@ impl From<fuel::TransactionStatus> for TransactionStatus {
             } => {
                 // Don't need to load the object here since the `BlockFragment.id` is
                 // just `id(hash)
-                let block_id = id(block);
+                let block_id = uid(block);
                 let program_state = program_state.map(|p| p.into());
 
                 let status = SuccessStatus::new(
@@ -888,7 +900,7 @@ pub mod explorer_index {
             .collect::<Vec<UID>>();
 
         let block = Block {
-            id: id(block_data.header.id),
+            id: uid(block_data.header.id),
             block_id: block_data.header.id,
             header: header.id,
             consensus: consensus.id,

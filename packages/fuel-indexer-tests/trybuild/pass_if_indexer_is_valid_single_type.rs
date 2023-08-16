@@ -7,6 +7,9 @@ fn ff_log_data(_inp: ()) {}
 #[no_mangle]
 fn ff_put_object(_inp: ()) {}
 
+#[no_mangle]
+fn ff_put_many_to_many_record(_inp: ()) {}
+
 #[indexer(manifest = "packages/fuel-indexer-tests/trybuild/simple_wasm.yaml")]
 mod indexer {
     fn function_one(event: SomeEvent) {
@@ -18,7 +21,7 @@ mod indexer {
 }
 
 fn main() {
-    use fuels::core::abi_encoder::ABIEncoder;
+    use fuels::core::codec::ABIEncoder;
 
     let s = SomeEvent {
         id: 9,
@@ -38,13 +41,13 @@ fn main() {
             id: [0u8; 32].into(),
             da_height: 1,
             transactions_count: 1,
-            output_messages_count: 1,
+            message_receipt_count: 1,
             transactions_root: [0u8; 32].into(),
-            output_messages_root: [0u8; 32].into(),
             height: 1,
             prev_root: [0u8; 32].into(),
             time: 1,
             application_hash: [0u8; 32].into(),
+            message_receipt_root: [0u8; 32].into(),
         },
         transactions: vec![fuel::TransactionData {
             status: fuel::TransactionStatus::default(),
@@ -66,7 +69,7 @@ fn main() {
                     ptr: 2342143,
                     len: bytes.len() as u64,
                     digest: [0u8; 32].into(),
-                    data: bytes,
+                    data: Some(bytes),
                     pc: 0,
                     is: 0,
                 },

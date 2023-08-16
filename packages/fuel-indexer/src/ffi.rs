@@ -64,6 +64,7 @@ fn get_string(mem: &MemoryView, ptr: u32, len: u32) -> FFIResult<String> {
 /// Fetch the object ID at the given pointer from memory.
 fn get_object_id(mem: &MemoryView, ptr: u32, len: u32) -> FFIResult<String> {
     let id = get_string(mem, ptr, len).unwrap();
+    // https://stackoverflow.com/a/1348551
     let id: String = id.chars().filter(|&c| c != '\0').collect();
     Ok(id)
 }

@@ -2,8 +2,10 @@
 use fuel_indexer_plugin::prelude::sha256_digest;
 use fuel_indexer_plugin::types::{Bytes32, UID};
 
-/// Returns the SHA256 hex digest of the input as a `SizedAsciiString`.
-pub fn id(data: impl AsRef<[u8]>) -> UID {
+/// Returns the unique ID (UID) of an input.
+///
+/// Where UID is SHA256 hex digest of the input as a `SizedAsciiString`.
+pub fn uid(data: impl AsRef<[u8]>) -> UID {
     UID::new(sha256_digest(&data)).expect("Failed to create UID.")
 }
 

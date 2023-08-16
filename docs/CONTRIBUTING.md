@@ -62,7 +62,13 @@ The test suite follows the Rust cargo standards.
 Testing is simply done using Cargo:
 
 ```sh
-RUSTFLAGS='-D warnings' SQLX_OFFLINE=1 cargo test --locked --all-targets --all-features
+RUSTFLAGS='-D warnings' cargo test --locked --all-targets --all-features
+```
+
+To run `trybuild` tests.
+
+```sh
+RUSTFLAGS='-D warnings' TRYBUILD=overwrite cargo test --locked --all-targets --all-features
 ```
 
 ## Contribution flow

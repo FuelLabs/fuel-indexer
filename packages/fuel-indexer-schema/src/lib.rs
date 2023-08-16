@@ -8,7 +8,7 @@
 extern crate alloc;
 
 use fuel_indexer_lib::MAX_ARRAY_LENGTH;
-use fuel_indexer_types::{fuel::*, scalar::UID, Identity};
+use fuel_indexer_types::{fuel::*, scalar::*, Identity};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 

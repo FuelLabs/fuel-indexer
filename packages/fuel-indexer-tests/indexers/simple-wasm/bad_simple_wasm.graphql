@@ -1,0 +1,10 @@
+type Thing1 @entity {
+  id: ID!
+  account: Address!
+}
+
+type Thing2 @entity {
+  id: ID!
+  account: Address! @indexed
+  hash: Bytes32! @indexed
+}

@@ -2,8 +2,7 @@
 //
 // TODO: https://github.com/FuelLabs/fuel-indexer/issues/286
 
-pub use crate::{scalar::*, TypeId, FUEL_TYPES_NAMESPACE};
-use fuel_indexer_lib::type_id;
+use crate::{scalar::*, type_id, TypeId, FUEL_TYPES_NAMESPACE};
 pub use fuel_tx::ScriptExecutionResult;
 pub use fuel_tx::{
     Input as ClientInput, Output as ClientOutput, PanicReason as ClientPanicReason,

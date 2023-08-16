@@ -154,7 +154,7 @@ mod fuel_indexer_test {
         info!("fuel_indexer_test_optional_schema_fields handling Ping event and setting optional fields.");
 
         let entity = OptionEntity {
-            id: id(8675309_u32.to_le_bytes()),
+            id: uid(8675309_u32.to_le_bytes()),
             int_required: 100,
             int_optional_some: Some(999),
             addr_optional_none: None,
@@ -269,21 +269,21 @@ mod fuel_indexer_test {
         .get_or_create();
 
         let bookclub1 = BookClub {
-            id: id([1]),
+            id: uid([1]),
             book: book1.id,
             member: person1.id,
             corporate_sponsor: sponsor1.name,
         };
 
         let bookclub2 = BookClub {
-            id: id([2]),
+            id: uid([2]),
             book: book2.id,
             member: person2.id,
             corporate_sponsor: sponsor2.name,
         };
 
         let bookclub3 = BookClub {
-            id: id([3]),
+            id: uid([3]),
             book: book3.id,
             member: person3.id,
             corporate_sponsor: sponsor3.name,
@@ -355,21 +355,21 @@ mod fuel_indexer_test {
 
     fn fuel_indexer_test_filterable_fields(_ping: Ping) {
         let inner_entity1 = InnerFilterEntity {
-            id: id([1]),
+            id: uid([1]),
             inner_foo: "spam".to_string(),
             inner_bar: 100,
             inner_baz: 200,
         };
 
         let inner_entity2 = InnerFilterEntity {
-            id: id([2]),
+            id: uid([2]),
             inner_foo: "ham".to_string(),
             inner_bar: 300,
             inner_baz: 400,
         };
 
         let inner_entity3 = InnerFilterEntity {
-            id: id([3]),
+            id: uid([3]),
             inner_foo: "eggs".to_string(),
             inner_bar: 500,
             inner_baz: 600,
@@ -380,7 +380,7 @@ mod fuel_indexer_test {
         inner_entity3.save();
 
         let f1 = FilterEntity {
-            id: id([1]),
+            id: uid([1]),
             foola: "beep".to_string(),
             maybe_null_bar: Some(123),
             bazoo: 1,
@@ -388,7 +388,7 @@ mod fuel_indexer_test {
         };
 
         let f2 = FilterEntity {
-            id: id([2]),
+            id: uid([2]),
             foola: "boop".to_string(),
             maybe_null_bar: None,
             bazoo: 5,
@@ -396,7 +396,7 @@ mod fuel_indexer_test {
         };
 
         let f3 = FilterEntity {
-            id: id([3]),
+            id: uid([3]),
             foola: "blorp".to_string(),
             maybe_null_bar: Some(456),
             bazoo: 1000,
@@ -422,7 +422,7 @@ mod fuel_indexer_test {
     fn fuel_indexer_block_explorer_types(_b: BlockData) {
         info!("fuel_indexer_block_explorer_types handling explorer_types event.");
         let e = ExplorerEntity {
-            id: id(8675309_u32.to_le_bytes()),
+            id: uid(8675309_u32.to_le_bytes()),
             nonce: Nonce::default(),
             // TOOD: Finish
             time: None,
@@ -442,7 +442,7 @@ mod fuel_indexer_test {
         info!("fuel_indexer_trigger_enum handling trigger_enum event..");
 
         let e = ComplexEnumEntity {
-            id: id([1]),
+            id: uid([1]),
             one: Some(EnumEntity::One.into()),
         };
         e.save();
@@ -451,7 +451,7 @@ mod fuel_indexer_test {
     fn fuel_indexer_trigger_non_indexable_type(_b: BlockData) {
         info!("fuel_indexer_trigger_non_indexable_type handling trigger_non_indexable_type event.");
         let e = UsesVirtualEntity {
-            id: id([1]),
+            id: uid([1]),
             name: "hello world".to_string(),
             no_table: VirtualEntity {
                 name: Some("virtual".to_string()),
@@ -474,7 +474,7 @@ mod fuel_indexer_test {
         };
 
         let vc = VirtualUnionContainerEntity {
-            id: id([1]),
+            id: uid([1]),
             union_entity: Some(v.into()),
             union_type: UnionType::B.into(),
         };
@@ -482,7 +482,7 @@ mod fuel_indexer_test {
         vc.save();
 
         let e = IndexableUnionEntity {
-            id: id([1]),
+            id: uid([1]),
             a: Some(5),
             b: Some(10),
             c: None,
@@ -496,25 +496,25 @@ mod fuel_indexer_test {
         info!("fuel_indexer_test_trigger_list handling trigger_list event.");
 
         let list_fk1 = ListFKType {
-            id: id([1]),
+            id: uid([1]),
             value: 1,
         };
         list_fk1.save();
 
         let list_fk2 = ListFKType {
-            id: id([2]),
+            id: uid([2]),
             value: 2,
         };
         list_fk2.save();
 
         let list_fk3 = ListFKType {
-            id: id([3]),
+            id: uid([3]),
             value: 3,
         };
         list_fk3.save();
 
         let e = ListTypeEntity {
-            id: id([1]),
+            id: uid([1]),
             foo: "hello world".to_string(),
             required_all: vec![list_fk1.id, list_fk2.id, list_fk3.id],
             optional_inner: vec![

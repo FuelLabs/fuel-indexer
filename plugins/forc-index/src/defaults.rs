@@ -161,7 +161,7 @@ pub mod {indexer_name}_index_mod {{
         block.save();
 
         for transaction in block_data.transactions.iter() {{
-            let tx = Transaction::new(block_data.id, Bytes32::from(<[u8; 32]>::from(transaction.id)));
+            let tx = Transaction::new(block_data.id, transaction.id);
             tx.save();
         }}
     }}
@@ -199,7 +199,7 @@ pub mod {indexer_name}_index_mod {{
         block.save().await;
 
         for transaction in block_data.transactions.iter() {{
-            let tx = Transaction::new(block_data.id, Bytes32::from(<[u8; 32]>::from(transaction.id)));
+            let tx = Transaction::new(block_data.id, transaction.id);
             tx.save().await;
         }}
     }}
