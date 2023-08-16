@@ -298,7 +298,7 @@ impl From<ImplementationDecoder> for TokenStream {
                     impl #ident {
                         pub fn new(#parameters) -> Self {
                             let hashed = #hasher.chain_update(#typdef_name).finalize();
-                            let id = SizedAsciiString::<64>::new(format!("{:x}", hashed)).expect("Bad ID.");
+                            let id = UID::new(format!("{:x}", hashed)).expect("Bad ID.");
                             Self {
                                 id,
                                 #struct_fields

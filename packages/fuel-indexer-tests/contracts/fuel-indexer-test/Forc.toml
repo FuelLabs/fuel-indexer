@@ -5,8 +5,4 @@ license = "Apache-2.0"
 name = "fuel-indexer-test"
 
 [dependencies]
-<<<<<<< HEAD
-std = { git = "https://github.com/FuelLabs/sway", branch = "upgrade/fuel-core-v0.20.1" }
-=======
 std = { git = "https://github.com/FuelLabs/sway", branch = "master" }
->>>>>>> 2dc1d4d9 (ci: optimize and condense E2E tests (#1263))

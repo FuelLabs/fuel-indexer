@@ -113,12 +113,7 @@ async fn test_index_receipt_types() {
         setup_indexing_test_components(None).await;
     let mut conn = db.pool.acquire().await.unwrap();
 
-<<<<<<< HEAD:packages/fuel-indexer-tests/tests/indexing_postgres.rs
     mock_request("/call").await;
-=======
-    assert_eq!(row.get::<String, usize>(0), 1);
-    assert_eq!(row.get::<BigDecimal, usize>(1).to_u64().unwrap(), 123);
->>>>>>> e8d64652 (update):packages/fuel-indexer-tests/tests/e2e/indexing_postgres.rs
 
     let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.callentity LIMIT 1")
         .fetch_one(&mut conn)
@@ -371,96 +366,7 @@ async fn test_can_trigger_and_index_transferout_event_postgres() {
 }
 
 #[actix_web::test]
-<<<<<<< HEAD:packages/fuel-indexer-tests/tests/indexing_postgres.rs
 async fn test_index_tuples() {
-=======
-#[ignore]
-async fn test_can_trigger_and_index_messageout_event_postgres() {
-    let IndexingTestComponents { node, db, .. } =
-        setup_indexing_test_components(None).await;
-
-    mock_request("/messageout").await;
-
-    node.abort();
-
-    let mut conn = db.pool.acquire().await.unwrap();
-    let row =
-        sqlx::query("SELECT * FROM fuel_indexer_test_index1.messageoutentity LIMIT 1")
-            .fetch_one(&mut conn)
-            .await
-            .unwrap();
-
-    let recipient = row.get::<&str, usize>(3);
-    let amount = row.get::<BigDecimal, usize>(4).to_u64().unwrap();
-    assert_eq!(
-        recipient,
-        "532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96"
-    );
-    assert_eq!(amount, 100);
-
-    let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.messageentity LIMIT 1")
-        .fetch_one(&mut conn)
-        .await
-        .unwrap();
-
-    assert_eq!(row.get::<String, usize>(0), 1234);
-    assert_eq!(
-        row.get::<&str, usize>(1),
-        "abcdefghijklmnopqrstuvwxyz123456"
-    );
-}
-
-#[actix_web::test]
-async fn test_can_index_event_with_optional_fields_postgres() {
-    let IndexingTestComponents { node, db, .. } =
-        setup_indexing_test_components(None).await;
-
-    mock_request("/optionals").await;
-
-    node.abort();
-
-    let mut conn = db.pool.acquire().await.unwrap();
-    let row = sqlx::query(
-        "SELECT * FROM fuel_indexer_test_index1.optionentity WHERE id = 8675309",
-    )
-    .fetch_one(&mut conn)
-    .await
-    .unwrap();
-
-    let opt_int = row.get::<Option<BigDecimal>, usize>(2);
-
-    assert_eq!(row.get::<String, usize>(0), 8675309);
-    assert_eq!(row.get::<BigDecimal, usize>(1).to_u64().unwrap(), 100);
-    assert!(opt_int.is_some());
-
-    assert_eq!(opt_int.unwrap().to_u64().unwrap(), 999);
-
-    assert!(row.get::<Option<&str>, usize>(3).is_none());
-}
-
-#[actix_web::test]
-async fn test_can_index_metadata_when_indexer_macro_is_called_postgres() {
-    let IndexingTestComponents { node, db, .. } =
-        setup_indexing_test_components(None).await;
-
-    mock_request("/block").await;
-
-    node.abort();
-
-    let mut conn = db.pool.acquire().await.unwrap();
-    let row =
-        sqlx::query("SELECT * FROM fuel_indexer_test_index1.indexmetadataentity LIMIT 1")
-            .fetch_one(&mut conn)
-            .await
-            .unwrap();
-
-    assert_eq!(row.get::<String, usize>(0), 11557898405596845040);
-    assert_eq!(row.get::<BigDecimal, usize>(1).to_u64().unwrap(), 0);
-}
-
-#[actix_web::test]
-async fn test_can_trigger_and_index_tuple_events_postgres() {
->>>>>>> e8d64652 (update):packages/fuel-indexer-tests/tests/e2e/indexing_postgres.rs
     let IndexingTestComponents { node, db, .. } =
         setup_indexing_test_components(None).await;
 
@@ -493,7 +399,6 @@ struct UnionEntity {
     union_type: String,
 }
 
-<<<<<<< HEAD:packages/fuel-indexer-tests/tests/indexing_postgres.rs
 #[derive(sqlx::FromRow, sqlx::Type)]
 struct ListFKType {
     id: BigDecimal,
@@ -502,102 +407,6 @@ struct ListFKType {
 
 #[actix_web::test]
 async fn test_index_types_for_block_explorer() {
-=======
-    node.abort();
-
-    let mut conn = db.pool.acquire().await.unwrap();
-    let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.revertentity LIMIT 1")
-        .fetch_one(&mut conn)
-        .await
-        .unwrap();
-
-    assert_eq!(row.get::<String, usize>(0), 123);
-    assert_eq!(row.get::<&str, usize>(1), EXPECTED_CONTRACT_ID);
-    assert_eq!(
-        row.get::<BigDecimal, usize>(2).to_u64().unwrap(),
-        REVERT_VM_CODE
-    );
-}
-
-#[actix_web::test]
-async fn test_can_trigger_and_index_panic_event_postgres() {
-    let IndexingTestComponents { node, db, .. } =
-        setup_indexing_test_components(None).await;
-
-    mock_request("/panic").await;
-
-    node.abort();
-
-    let mut conn = db.pool.acquire().await.unwrap();
-    let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.panicentity LIMIT 1")
-        .fetch_one(&mut conn)
-        .await
-        .unwrap();
-
-    assert_eq!(row.get::<String, usize>(0), 123);
-    assert_eq!(row.get::<&str, usize>(1), EXPECTED_CONTRACT_ID);
-    assert_eq!(row.get::<i32, usize>(2), 5);
-}
-
-#[actix_web::test]
-async fn test_can_trigger_and_index_mint_and_burn_events_postgres() {
-    let IndexingTestComponents { node, db, .. } =
-        setup_indexing_test_components(None).await;
-
-    // First, we mint the contract's native asset...
-    mock_request("/mint").await;
-
-    let mut conn = db.pool.acquire().await.unwrap();
-    let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.mintentity LIMIT 1")
-        .fetch_one(&mut conn)
-        .await
-        .unwrap();
-
-    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 123);
-    assert_eq!(row.get::<&str, usize>(1), TRANSFER_BASE_ASSET_ID);
-    assert_eq!(row.get::<&str, usize>(2), EXPECTED_CONTRACT_ID);
-    assert_eq!(row.get::<BigDecimal, usize>(3).to_u64().unwrap(), 100);
-
-    // ...then we burn it.
-    mock_request("/burn").await;
-
-    node.abort();
-
-    let mut conn = db.pool.acquire().await.unwrap();
-    let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.burnentity LIMIT 1")
-        .fetch_one(&mut conn)
-        .await
-        .unwrap();
-
-    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 123);
-    assert_eq!(row.get::<&str, usize>(1), TRANSFER_BASE_ASSET_ID);
-    assert_eq!(row.get::<&str, usize>(2), EXPECTED_CONTRACT_ID);
-    assert_eq!(row.get::<BigDecimal, usize>(3).to_u64().unwrap(), 100);
-}
-
-#[actix_web::test]
-async fn test_can_trigger_and_index_enum_error_function_postgres() {
-    let IndexingTestComponents { node, db, .. } =
-        setup_indexing_test_components(None).await;
-
-    mock_request("/enum_error").await;
-
-    node.abort();
-
-    let mut conn = db.pool.acquire().await.unwrap();
-    let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.enumerror LIMIT 1")
-        .fetch_one(&mut conn)
-        .await
-        .unwrap();
-
-    assert_eq!(row.get::<String, usize>(0), 42);
-    assert_eq!(row.get::<&str, usize>(1), EXPECTED_CONTRACT_ID);
-    assert_eq!(row.get::<BigDecimal, usize>(2).to_u64().unwrap(), 0);
-}
-
-#[actix_web::test]
-async fn test_can_trigger_and_index_block_explorer_types_postgres() {
->>>>>>> e8d64652 (update):packages/fuel-indexer-tests/tests/e2e/indexing_postgres.rs
     let IndexingTestComponents { node, db, .. } =
         setup_indexing_test_components(None).await;
 
@@ -624,46 +433,7 @@ async fn test_can_trigger_and_index_block_explorer_types_postgres() {
 
     assert_eq!(hexstring, HexString::from("hello world!"));
 
-<<<<<<< HEAD:packages/fuel-indexer-tests/tests/indexing_postgres.rs
     // Non-indexable types
-=======
-#[actix_web::test]
-async fn test_can_trigger_and_index_enum_types_postgres() {
-    let IndexingTestComponents { node, db, .. } =
-        setup_indexing_test_components(None).await;
-
-    mock_request("/enum").await;
-
-    node.abort();
-
-    let mut conn = db.pool.acquire().await.unwrap();
-    let row =
-        sqlx::query("SELECT * FROM fuel_indexer_test_index1.complexenumentity LIMIT 1")
-            .fetch_one(&mut conn)
-            .await
-            .unwrap();
-
-    assert_eq!(row.get::<String, usize>(0), 1);
-    assert_eq!(row.get::<&str, usize>(1), "EnumEntity::One");
-}
-
-#[derive(Serialize, Deserialize, sqlx::FromRow, sqlx::Decode, Debug, Eq, PartialEq)]
-struct VirtualEntity {
-    name: Option<String>,
-    size: i8,
-}
-
-#[actix_web::test]
-async fn test_can_trigger_and_index_nonindexable_events() {
-    let IndexingTestComponents { node, db, .. } =
-        setup_indexing_test_components(None).await;
-
-    mock_request("/block").await;
-
-    node.abort();
-
-    let mut conn = db.pool.acquire().await.unwrap();
->>>>>>> e8d64652 (update):packages/fuel-indexer-tests/tests/e2e/indexing_postgres.rs
     let row =
         sqlx::query("SELECT * FROM fuel_indexer_test_index1.usesvirtualentity LIMIT 1")
             .fetch_one(&mut conn)
@@ -679,96 +449,7 @@ async fn test_can_trigger_and_index_nonindexable_events() {
     assert_eq!(entity.name, Some("virtual".to_string()));
     assert_eq!(entity.size, 1);
 
-<<<<<<< HEAD:packages/fuel-indexer-tests/tests/indexing_postgres.rs
     // Union types
-=======
-// FIXME: This is not an indexing test...
-#[actix_web::test]
-async fn test_redeploying_an_already_active_indexer_returns_error_when_replace_indexer_is_false(
-) {
-    let config = IndexerConfig {
-        replace_indexer: false,
-        ..IndexerConfig::default()
-    };
-
-    let IndexingTestComponents {
-        node,
-        mut service,
-        manifest,
-        db: _db,
-        ..
-    } = setup_indexing_test_components(Some(config)).await;
-
-    node.abort();
-
-    // Attempt to re-register the indexer
-    let result = service.register_indexer_from_manifest(manifest).await;
-
-    assert!(result.is_err());
-
-    match result.unwrap_err() {
-        fuel_indexer::IndexerError::Unknown(msg) => {
-            assert_eq!(&msg, "Indexer(fuel_indexer_test.index1) already exists.")
-        }
-        err => {
-            panic!("Expected Unknown but got: {}", err)
-        }
-    }
-}
-
-// FIXME: This is not an indexing test...
-#[actix_web::test]
-async fn test_redeploying_an_already_active_indexer_works_when_replace_indexer_is_true() {
-    let config = IndexerConfig {
-        replace_indexer: true,
-        ..IndexerConfig::default()
-    };
-
-    let IndexingTestComponents {
-        node,
-        mut service,
-        db,
-        manifest,
-        ..
-    } = setup_indexing_test_components(Some(config)).await;
-
-    // Re-register the indexer
-    let _ = service.register_indexer_from_manifest(manifest).await;
-
-    mock_request("/enum").await;
-
-    node.abort();
-
-    let mut conn = db.pool.acquire().await.unwrap();
-    let row =
-        sqlx::query("SELECT * FROM fuel_indexer_test_index1.complexenumentity LIMIT 1")
-            .fetch_one(&mut conn)
-            .await
-            .unwrap();
-
-    assert_eq!(row.get::<String, usize>(0), 1);
-    assert_eq!(row.get::<&str, usize>(1), "EnumEntity::One");
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct UnionEntity {
-    a: Option<u64>,
-    b: Option<u64>,
-    c: Option<u64>,
-    union_type: String,
-}
-
-#[actix_web::test]
-async fn test_can_trigger_and_index_union_types() {
-    let IndexingTestComponents { node, db, .. } =
-        setup_indexing_test_components(None).await;
-
-    mock_request("/block").await;
-
-    node.abort();
-
-    let mut conn = db.pool.acquire().await.unwrap();
->>>>>>> e8d64652 (update):packages/fuel-indexer-tests/tests/e2e/indexing_postgres.rs
     let row = sqlx::query(
         "SELECT * FROM fuel_indexer_test_index1.indexableunionentity LIMIT 1",
     )
