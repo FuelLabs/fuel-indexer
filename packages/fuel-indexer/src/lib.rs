@@ -84,4 +84,6 @@ pub enum IndexerError {
     Elapsed(#[from] tokio::time::error::Elapsed),
     #[error("Indexer end block has been stopping execution.")]
     EndBlockMet,
+    #[error("Invalid schema: {0:?}")]
+    SchemaVersionMismatch(String),
 }

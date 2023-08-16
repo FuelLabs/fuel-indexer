@@ -656,6 +656,7 @@ impl WasmIndexExecutor {
         }
 
         let idx_env = IndexEnv::new(pool, manifest, config).await?;
+
         let db: Arc<Mutex<Database>> = idx_env.db.clone();
 
         let mut store = Store::new(compiler_config);
@@ -663,6 +664,7 @@ impl WasmIndexExecutor {
         let module = Module::new(&store, &wasm_bytes)?;
 
         let env = FunctionEnv::new(&mut store, idx_env);
+
         let mut imports = imports! {};
         for (export_name, export) in ffi::get_exports(&mut store, &env) {
             imports.define("env", &export_name, export.clone());
@@ -686,7 +688,13 @@ impl WasmIndexExecutor {
             let schema_version_from_wasm = ffi::get_version(&mut store_mut, &instance)?;
 
             if schema_version_from_wasm != schema_version {
-                return Err(IndexerError::Unknown(format!("Schema version from WASM {schema_version_from_wasm} does not match schema version {schema_version}")));
+                // Just an FYI this error below is not getting unwrapped into a panic...
+                let msg = format!(
+                    "Schema version from WASM {} does not match schema version {}",
+                    schema_version_from_wasm, schema_version
+                );
+                error!("error: {msg}");
+                return Err(IndexerError::SchemaVersionMismatch(msg));
             }
 
             data_mut.memory = Some(instance.exports.get_memory("memory")?.clone());
@@ -752,6 +760,7 @@ impl WasmIndexExecutor {
                         schema_version,
                     )
                     .await?;
+
                     let handle = tokio::spawn(run_executor(
                         config,
                         manifest,
@@ -769,6 +778,7 @@ impl WasmIndexExecutor {
                 let executor =
                     WasmIndexExecutor::new(config, manifest, bytes, pool, schema_version)
                         .await?;
+
                 let handle = tokio::spawn(run_executor(
                     config,
                     manifest,

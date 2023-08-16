@@ -25,12 +25,14 @@ pub mod assets {
     pub const FUEL_INDEXER_TEST_MANIFEST: &str =
         include_str!("./../indexers/fuel-indexer-test/fuel_indexer_test.yaml");
 
-    pub const FUEL_INDEXER_TEST_SCHEMA: &str =
-        include_str!("./../indexers/fuel-indexer-test/schema/fuel_indexer_test.graphql");
+    pub const SIMPLE_WASM_MANIFEST: &str =
+        include_str!("./../indexers/simple-wasm/simple_wasm.yaml");
 
-    pub const FUEL_INDEXER_TEST_WASM: &[u8] = include_bytes!(
-        "./../../../target/wasm32-unknown-unknown/debug/fuel_indexer_test.wasm"
-    );
+    pub const SIMPLE_WASM_SCHEMA: &str =
+        include_str!("./../indexers/simple-wasm/schema/simple_wasm.graphql");
+
+    pub const SIMPLE_WASM_WASM: &[u8] =
+        include_bytes!("./../indexers/simple-wasm/simple_wasm.wasm");
 }
 
 pub mod defaults {

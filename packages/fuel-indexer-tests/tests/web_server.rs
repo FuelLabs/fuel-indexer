@@ -95,11 +95,11 @@ async fn test_asset_upload_endpoint_properly_adds_assets_to_database_postgres() 
             .unwrap();
     assert!(is_indexer_registered.is_none());
 
-    let manifest_file = multipart::Part::stream(assets::FUEL_INDEXER_TEST_MANIFEST)
+    let manifest_file = multipart::Part::stream(assets::SIMPLE_WASM_MANIFEST)
         .file_name("fuel_indexer_test.yaml");
-    let schema_file = multipart::Part::stream(assets::FUEL_INDEXER_TEST_SCHEMA)
+    let schema_file = multipart::Part::stream(assets::SIMPLE_WASM_SCHEMA)
         .file_name("fuel_indexer_test.graphql");
-    let wasm_file = multipart::Part::stream(assets::FUEL_INDEXER_TEST_WASM)
+    let wasm_file = multipart::Part::stream(assets::SIMPLE_WASM_WASM)
         .file_name("fuel_indexer_test.wasm");
 
     let form = multipart::Form::new()
