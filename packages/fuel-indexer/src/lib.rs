@@ -76,6 +76,8 @@ pub enum IndexerError {
     SchemaError(#[from] IndexerSchemaDbError),
     #[error("Manifest error: {0:?}")]
     ManifestError(#[from] ManifestError),
+    #[error("Error creating wasm executor.")]
+    WasmExecutionInstantiationError,
     #[error("Error creating native executor.")]
     NativeExecutionInstantiationError,
     #[error("Native execution runtime error.")]

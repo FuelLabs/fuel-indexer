@@ -688,13 +688,10 @@ impl WasmIndexExecutor {
             let schema_version_from_wasm = ffi::get_version(&mut store_mut, &instance)?;
 
             if schema_version_from_wasm != schema_version {
-                // Just an FYI this error below is not getting unwrapped into a panic...
-                let msg = format!(
-                    "Schema version from WASM {} does not match schema version {}",
+                return Err(IndexerError::SchemaVersionMismatch(format!(
+                    "Schema version from WASM {} does not match schema version from database {}",
                     schema_version_from_wasm, schema_version
-                );
-                error!("error: {msg}");
-                return Err(IndexerError::SchemaVersionMismatch(msg));
+                )));
             }
 
             data_mut.memory = Some(instance.exports.get_memory("memory")?.clone());
@@ -744,6 +741,7 @@ impl WasmIndexExecutor {
         schema_version: String,
     ) -> IndexerResult<(JoinHandle<()>, ExecutorSource, Arc<AtomicBool>)> {
         let killer = Arc::new(AtomicBool::new(false));
+        let uid = manifest.uid();
 
         match &exec_source {
             ExecutorSource::Manifest => match manifest.module() {
@@ -752,41 +750,62 @@ impl WasmIndexExecutor {
                     let mut file = File::open(module).await?;
                     file.read_to_end(&mut bytes).await?;
 
-                    let executor = WasmIndexExecutor::new(
+                    match WasmIndexExecutor::new(
                         config,
                         manifest,
                         bytes.clone(),
                         pool,
                         schema_version,
                     )
-                    .await?;
+                    .await
+                    {
+                        Ok(executor) => {
+                            let handle = tokio::spawn(run_executor(
+                                config,
+                                manifest,
+                                executor,
+                                killer.clone(),
+                            ));
 
-                    let handle = tokio::spawn(run_executor(
-                        config,
-                        manifest,
-                        executor,
-                        killer.clone(),
-                    ));
-
-                    Ok((handle, ExecutorSource::Registry(bytes), killer))
+                            Ok((handle, ExecutorSource::Registry(bytes), killer))
+                        }
+                        Err(e) => {
+                            error!(
+                                "Could not instantiate WasmIndexExecutor({uid}) from ExecutorSource::Manifest: {e:?}."
+                            );
+                            Err(IndexerError::WasmExecutionInstantiationError)
+                        }
+                    }
                 }
                 crate::Module::Native => {
                     Err(IndexerError::NativeExecutionInstantiationError)
                 }
             },
             ExecutorSource::Registry(bytes) => {
-                let executor =
-                    WasmIndexExecutor::new(config, manifest, bytes, pool, schema_version)
-                        .await?;
-
-                let handle = tokio::spawn(run_executor(
+                match WasmIndexExecutor::new(
                     config,
                     manifest,
-                    executor,
-                    killer.clone(),
-                ));
+                    bytes,
+                    pool,
+                    schema_version,
+                )
+                .await
+                {
+                    Ok(executor) => {
+                        let handle = tokio::spawn(run_executor(
+                            config,
+                            manifest,
+                            executor,
+                            killer.clone(),
+                        ));
 
-                Ok((handle, exec_source, killer))
+                        Ok((handle, exec_source, killer))
+                    }
+                    Err(e) => {
+                        error!("Could not instantiate WasmIndexExecutor({uid}) from ExecutorSource::Registry: {e:?}.");
+                        Err(IndexerError::WasmExecutionInstantiationError)
+                    }
+                }
             }
         }
     }
