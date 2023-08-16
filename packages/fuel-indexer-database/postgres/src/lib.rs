@@ -3,12 +3,7 @@
 use bigdecimal::ToPrimitive;
 use fuel_indexer_database_types::*;
 use fuel_indexer_lib::utils::sha256_digest;
-use sqlx::{
-    pool::PoolConnection,
-    postgres::PgRow,
-    types::JsonValue,
-    Postgres, Row,
-};
+use sqlx::{pool::PoolConnection, postgres::PgRow, types::JsonValue, Postgres, Row};
 use std::str::FromStr;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tracing::info;
