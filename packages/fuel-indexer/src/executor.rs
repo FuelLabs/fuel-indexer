@@ -845,16 +845,6 @@ impl Executor for WasmIndexExecutor {
         let bytes = serialize(&blocks);
         let uid = self.manifest.uid();
 
-        let mut arg = {
-            let mut store_guard = self.store.lock().await;
-            ffi::WasmArg::new(
-                &mut store_guard,
-                &self.instance,
-                bytes,
-                self.metering_points.is_some(),
-            )?
-        };
-
         let fun = {
             let store_guard = self.store.lock().await;
             self.instance.exports.get_typed_function::<(u32, u32), ()>(
@@ -865,15 +855,21 @@ impl Executor for WasmIndexExecutor {
 
         let _ = self.db.lock().await.start_transaction().await?;
 
-        let ptr = arg.get_ptr();
-        let len = arg.get_len();
-
         let res = spawn_blocking({
             let store = self.store.clone();
+            let instance = self.instance.clone();
+            let metering_enabled = self.metering_enabled();
             move || {
-                let mut store_guard =
+                let store_guard =
                     tokio::runtime::Handle::current().block_on(store.lock());
-                fun.call(&mut store_guard, ptr, len)
+                let mut arg =
+                    ffi::WasmArg::new(store_guard, instance, bytes, metering_enabled)
+                        .unwrap();
+
+                let ptr = arg.get_ptr();
+                let len = arg.get_len();
+
+                fun.call(&mut arg.store, ptr, len)
             }
         })
         .await?;
@@ -890,9 +886,6 @@ impl Executor for WasmIndexExecutor {
         } else {
             let _ = self.db.lock().await.commit_transaction().await?;
         }
-
-        let mut store_guard = self.store.lock().await;
-        arg.drop(&mut store_guard);
 
         Ok(())
     }
