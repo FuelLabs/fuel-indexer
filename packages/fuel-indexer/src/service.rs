@@ -357,7 +357,7 @@ async fn create_service_task(
 }
 
 /// Determine the starting block for this indexer.
-async fn get_start_block(
+pub async fn get_start_block(
     conn: &mut IndexerConnection,
     manifest: &Manifest,
 ) -> Result<u32, IndexerError> {
