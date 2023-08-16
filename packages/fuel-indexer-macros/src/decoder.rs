@@ -297,6 +297,7 @@ impl From<ImplementationDecoder> for TokenStream {
 
                 quote! {
                     impl #ident {
+                        #[allow(clippy::too_many_arguments)]
                         pub fn new(#parameters) -> Self {
                             let hashed = #hasher.chain_update(#typdef_name).finalize();
                             let id = UID::new(format!("{:x}", hashed)).expect("Bad ID.");
