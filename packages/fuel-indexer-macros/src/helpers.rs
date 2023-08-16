@@ -162,6 +162,8 @@ pub fn rust_type_token(ty: &TypeDeclaration) -> proc_macro2::TokenStream {
             "TransferOut" => quote! { TransferOut },
             "Panic" => quote! { Panic },
             "Revert" => quote! { Revert },
+            "Mint" => quote! { Mint },
+            "Burn" => quote! { Burn },
             o if o.starts_with("str[") => quote! { String },
             o => {
                 proc_macro_error::abort_call_site!(

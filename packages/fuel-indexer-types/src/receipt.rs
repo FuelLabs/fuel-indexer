@@ -148,3 +148,33 @@ impl TypeId for Revert {
         type_id(FUEL_TYPES_NAMESPACE, "Revert") as usize
     }
 }
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct Mint {
+    pub sub_id: AssetId,
+    pub contract_id: ContractId,
+    pub val: u64,
+    pub pc: u64,
+    pub is: u64,
+}
+
+impl TypeId for Mint {
+    fn type_id() -> usize {
+        type_id(FUEL_TYPES_NAMESPACE, "Mint") as usize
+    }
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct Burn {
+    pub sub_id: AssetId,
+    pub contract_id: ContractId,
+    pub val: u64,
+    pub pc: u64,
+    pub is: u64,
+}
+
+impl TypeId for Burn {
+    fn type_id() -> usize {
+        type_id(FUEL_TYPES_NAMESPACE, "Burn") as usize
+    }
+}

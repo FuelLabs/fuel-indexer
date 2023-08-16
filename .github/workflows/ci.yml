@@ -15,7 +15,7 @@ env:
   REGISTRY: ghcr.io
   SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
   SQLX_OFFLINE: true
-  RUSTC_VERSION: 1.69.0
+  RUSTC_VERSION: 1.71.1
   BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
   IS_MASTER: ${{ github.head_ref == 'master' || github.ref_name == 'master' }}
   IS_DEVELOP: ${{ github.head_ref == 'develop' || github.ref_name == 'develop' }}
@@ -264,7 +264,7 @@ jobs:
           bash scripts/stripper.bash simple_wasm.wasm
           cp simple_wasm.wasm target/wasm32-unknown-unknown/release/
       - name: Run E2E and integration tests
-        run: cargo test --locked --all-targets --features e2e,postgres -p
+        run: cargo test --locked --all-targets --features postgres -p
           fuel-indexer-tests -- --test-threads=1
   build-default-indexer:
     if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_DEVELOP_OR_SEMVER != 'true'

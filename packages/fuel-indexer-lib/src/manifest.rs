@@ -102,10 +102,10 @@ pub struct Manifest {
     contract_id: ContractIds,
 
     /// Block at which indexer should start.
-    start_block: Option<u64>,
+    start_block: Option<u32>,
 
     /// Block at which indexer should stop.
-    end_block: Option<u64>,
+    end_block: Option<u32>,
 
     /// When set to true, the indexer will resume from the block height at which it last stopped.
     #[serde(default)]
@@ -183,7 +183,7 @@ impl Manifest {
     }
 
     /// Set the start block for this indexer.
-    pub fn set_start_block(&mut self, block: u64) {
+    pub fn set_start_block(&mut self, block: u32) {
         self.start_block = Some(block);
     }
 
@@ -214,7 +214,7 @@ impl Manifest {
         &self.graphql_schema
     }
 
-    pub fn start_block(&self) -> Option<u64> {
+    pub fn start_block(&self) -> Option<u32> {
         self.start_block
     }
 
@@ -234,7 +234,7 @@ impl Manifest {
         &self.module
     }
 
-    pub fn end_block(&self) -> Option<u64> {
+    pub fn end_block(&self) -> Option<u32> {
         self.end_block
     }
 

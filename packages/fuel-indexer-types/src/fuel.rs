@@ -45,7 +45,7 @@ impl Default for Transaction {
 pub struct Create {
     pub gas_price: Word,
     pub gas_limit: Word,
-    pub maturity: u64,
+    pub maturity: BlockHeight,
     pub bytecode_length: Word,
     pub bytecode_witness_index: u8,
     pub storage_slots: Vec<StorageSlot>,
@@ -88,7 +88,7 @@ impl From<Json> for CommonMetadata {
 pub struct Script {
     pub gas_price: Word,
     pub gas_limit: Word,
-    pub maturity: u64,
+    pub maturity: BlockHeight,
     pub script: Vec<u8>,
     pub script_data: Vec<u8>,
     pub inputs: Vec<Input>,
@@ -163,10 +163,10 @@ pub struct Header {
     pub id: Bytes32,
     pub da_height: u64,
     pub transactions_count: u64,
-    pub output_messages_count: u64,
+    pub message_receipt_count: u64,
     pub transactions_root: Bytes32,
-    pub output_messages_root: Bytes32,
-    pub height: u64,
+    pub message_receipt_root: Bytes32,
+    pub height: u32,
     pub prev_root: Bytes32,
     pub time: i64,
     pub application_hash: Bytes32,
@@ -174,7 +174,7 @@ pub struct Header {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BlockData {
-    pub height: u64,
+    pub height: u32,
     pub id: Bytes32,
     pub header: Header,
     pub producer: Option<Bytes32>,
@@ -192,7 +192,7 @@ impl TypeId for BlockData {
 impl From<ClientTxPointer> for TxPointer {
     fn from(tx_pointer: ClientTxPointer) -> Self {
         TxPointer {
-            block_height: tx_pointer.block_height().into(),
+            block_height: tx_pointer.block_height(),
             tx_index: tx_pointer.tx_index() as u64,
         }
     }
@@ -208,165 +208,85 @@ pub enum Input {
 impl From<ClientInput> for Input {
     fn from(input: ClientInput) -> Self {
         match input {
-            ClientInput::CoinSigned {
-                utxo_id,
-                owner,
-                amount,
-                asset_id,
-                tx_pointer,
-                witness_index,
-                maturity,
-                ..
-            } => Input::Coin(InputCoin {
-                utxo_id,
-                owner: Address::from(
-                    <[u8; 32]>::try_from(owner)
-                        .expect("Could not convert owner address to bytes"),
-                ),
-                amount,
-                asset_id: AssetId::from(
-                    <[u8; 32]>::try_from(asset_id)
-                        .expect("Could not convert asset ID to bytes"),
-                ),
-                tx_pointer: tx_pointer.into(),
-                witness_index,
-                maturity,
+            ClientInput::MessageDataSigned(message_signed) => {
+                Input::Message(InputMessage {
+                    sender: Address::from(<[u8; 32]>::from(message_signed.sender)),
+                    recipient: Address::from(<[u8; 32]>::from(message_signed.recipient)),
+                    amount: message_signed.amount,
+                    nonce: message_signed.nonce,
+                    witness_index: message_signed.witness_index,
+                    data: message_signed.data.into(),
+                    predicate: "".into(),
+                    predicate_data: "".into(),
+                })
+            }
+            ClientInput::MessageDataPredicate(message_predicate) => {
+                Input::Message(InputMessage {
+                    sender: Address::from(<[u8; 32]>::from(message_predicate.sender)),
+                    recipient: Address::from(<[u8; 32]>::from(
+                        message_predicate.recipient,
+                    )),
+                    amount: message_predicate.amount,
+                    nonce: message_predicate.nonce,
+                    witness_index: 0,
+                    data: message_predicate.data.into(),
+                    predicate: message_predicate.predicate.into(),
+                    predicate_data: message_predicate.predicate_data.into(),
+                })
+            }
+            ClientInput::CoinSigned(coin_signed) => Input::Coin(InputCoin {
+                utxo_id: coin_signed.utxo_id,
+                owner: Address::from(<[u8; 32]>::from(coin_signed.owner)),
+                amount: coin_signed.amount,
+                asset_id: AssetId::from(<[u8; 32]>::from(coin_signed.asset_id)),
+                tx_pointer: coin_signed.tx_pointer.into(),
+                witness_index: coin_signed.witness_index,
+                maturity: coin_signed.maturity,
                 predicate: "".into(),
                 predicate_data: "".into(),
             }),
-            ClientInput::CoinPredicate {
-                utxo_id,
-                owner,
-                amount,
-                asset_id,
-                tx_pointer,
-                maturity,
-                predicate,
-                predicate_data,
-                ..
-            } => Input::Coin(InputCoin {
-                utxo_id,
-                owner: Address::from(
-                    <[u8; 32]>::try_from(owner)
-                        .expect("Could not convert owner address to bytes"),
-                ),
-                amount,
-                asset_id: AssetId::from(
-                    <[u8; 32]>::try_from(asset_id)
-                        .expect("Could not convert asset ID to bytes"),
-                ),
-                tx_pointer: tx_pointer.into(),
+            ClientInput::CoinPredicate(coin_predicate) => Input::Coin(InputCoin {
+                utxo_id: coin_predicate.utxo_id,
+                owner: Address::from(<[u8; 32]>::from(coin_predicate.owner)),
+                amount: coin_predicate.amount,
+                asset_id: AssetId::from(<[u8; 32]>::from(coin_predicate.asset_id)),
+                tx_pointer: coin_predicate.tx_pointer.into(),
                 witness_index: 0,
-                maturity,
-                predicate: predicate.into(),
-                predicate_data: predicate_data.into(),
+                maturity: coin_predicate.maturity,
+                predicate: coin_predicate.predicate.into(),
+                predicate_data: coin_predicate.predicate_data.into(),
             }),
-            ClientInput::Contract {
-                utxo_id,
-                balance_root,
-                state_root,
-                tx_pointer,
-                contract_id,
-            } => Input::Contract(InputContract {
-                utxo_id,
-                balance_root: Bytes32::from(
-                    <[u8; 32]>::try_from(balance_root)
-                        .expect("Could not convert balance root to bytes"),
-                ),
-                state_root: Bytes32::from(
-                    <[u8; 32]>::try_from(state_root)
-                        .expect("Could not convert state root to bytes"),
-                ),
-                tx_pointer: tx_pointer.into(),
-                contract_id: ContractId::from(
-                    <[u8; 32]>::try_from(contract_id)
-                        .expect("Could not convert contract ID to bytes"),
-                ),
+            ClientInput::Contract(contract) => Input::Contract(InputContract {
+                utxo_id: contract.utxo_id,
+                balance_root: contract.balance_root,
+                state_root: contract.state_root,
+                tx_pointer: contract.tx_pointer.into(),
+                contract_id: ContractId::from(<[u8; 32]>::from(contract.contract_id)),
             }),
-            // ClientInput::MessageSigned {
-            //     amount,
-            //     witness_index,
-            //     sender,
-            //     recipient,
-            //     nonce,
-            //     ..
-            // } => Input::Message(InputMessage {
-            //     amount,
-            //     nonce: nonce.into(),
-            //     recipient,
-            //     sender,
-            //     witness_index,
-            //     data: bytes::Bytes::default(),
-            //     predicate: "".into(),
-            //     predicate_data: "".into(),
-            // }),
-            ClientInput::MessageSigned {
-                amount,
-                witness_index,
-                sender,
-                recipient,
-                nonce,
-                data,
-                ..
-            } => Input::Message(InputMessage {
-                amount,
-                nonce: nonce.into(),
-                recipient: Address::from(
-                    <[u8; 32]>::try_from(recipient)
-                        .expect("Could not convert recipient to bytes"),
-                ),
-                sender: Address::from(
-                    <[u8; 32]>::try_from(sender)
-                        .expect("Could not convert sender to bytes"),
-                ),
-                witness_index,
-                data: data.into(),
-                predicate: "".into(),
-                predicate_data: "".into(),
-            }),
-            // ClientInput::MessagePredicate {
-            //     amount,
-            //     predicate,
-            //     predicate_data,
-            //     sender,
-            //     recipient,
-            //     nonce,
-            //     ..
-            // } => Input::Message(InputMessage {
-            //     sender,
-            //     recipient,
-            //     amount,
-            //     nonce: nonce.into(),
-            //     witness_index: 0,
-            //     data: bytes::Bytes::default(),
-            //     predicate: predicate.into(),
-            //     predicate_data: predicate_data.into(),
-            // }),
-            ClientInput::MessagePredicate {
-                amount,
-                predicate,
-                predicate_data,
-                sender,
-                recipient,
-                nonce,
-                data,
-                ..
-            } => Input::Message(InputMessage {
-                sender: Address::from(
-                    <[u8; 32]>::try_from(sender)
-                        .expect("Could not convert sender to bytes"),
-                ),
-                recipient: Address::from(
-                    <[u8; 32]>::try_from(recipient)
-                        .expect("Could not convert recipient to bytes"),
-                ),
-                amount,
-                nonce: nonce.into(),
-                witness_index: 0,
-                data: data.into(),
-                predicate: predicate.into(),
-                predicate_data: predicate_data.into(),
-            }),
+            ClientInput::MessageCoinSigned(message_coin) => {
+                Input::Message(InputMessage {
+                    sender: Address::from(<[u8; 32]>::from(message_coin.sender)),
+                    recipient: Address::from(<[u8; 32]>::from(message_coin.recipient)),
+                    amount: message_coin.amount,
+                    nonce: message_coin.nonce,
+                    witness_index: message_coin.witness_index,
+                    data: "".into(),
+                    predicate: "".into(),
+                    predicate_data: "".into(),
+                })
+            }
+            ClientInput::MessageCoinPredicate(message_coin) => {
+                Input::Message(InputMessage {
+                    sender: Address::from(<[u8; 32]>::from(message_coin.sender)),
+                    recipient: Address::from(<[u8; 32]>::from(message_coin.recipient)),
+                    amount: message_coin.amount,
+                    nonce: message_coin.nonce,
+                    witness_index: 0,
+                    data: "".into(),
+                    predicate: message_coin.predicate.into(),
+                    predicate_data: message_coin.predicate_data.into(),
+                })
+            }
         }
     }
 }
@@ -385,7 +305,7 @@ pub struct InputCoin {
     pub asset_id: AssetId,
     pub tx_pointer: TxPointer,
     pub witness_index: u8,
-    pub maturity: u64,
+    pub maturity: BlockHeight,
     pub predicate: HexString,
     pub predicate_data: HexString,
 }
@@ -530,15 +450,6 @@ impl From<ClientOutput> for Output {
                         .expect("Could not convert state root to bytes"),
                 ),
             }),
-            ClientOutput::Message { recipient, amount } => {
-                Output::Message(MessageOutput {
-                    amount,
-                    recipient: Address::from(
-                        <[u8; 32]>::try_from(recipient)
-                            .expect("Could not convert recipient to bytes"),
-                    ),
-                })
-            }
         }
     }
 }

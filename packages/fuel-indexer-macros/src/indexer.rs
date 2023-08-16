@@ -260,7 +260,7 @@ fn process_fn_items(
                 .iter()
                 .map(|id| {
                     quote! {
-                        let id_bytes = <[u8; 32]>::try_from(ContractId::from(#id)).expect("Could not convert contract ID into bytes");
+                        let id_bytes = <[u8; 32]>::try_from(#id).expect("Could not convert contract ID into bytes");
                         Bech32ContractId::new("fuel", id_bytes)
                     }
                 })
@@ -276,7 +276,6 @@ fn process_fn_items(
         ContractIds::Single(contract_id) => match contract_id {
             Some(contract_id) => {
                 quote! {
-                    // TODO: Temporary conversion; remove once we update back to latest fuel-types version.
                     let id_bytes = <[u8; 32]>::try_from(id).expect("Could not convert contract ID into bytes");
                     let bech32_id = Bech32ContractId::new("fuel", id_bytes);
                     let manifest_contract_id = Bech32ContractId::from_str(#contract_id).expect("Failed to parse manifest 'contract_id' as Bech32ContractId");
@@ -290,7 +289,6 @@ fn process_fn_items(
         },
         ContractIds::Multiple(_) => {
             quote! {
-                // TODO: Temporary conversion; remove once we update back to latest fuel-types version.
                 let id_bytes = <[u8; 32]>::try_from(id).expect("Could not convert contract ID into bytes");
                 let bech32_id = Bech32ContractId::new("fuel", id_bytes);
 
@@ -401,15 +399,21 @@ fn process_fn_items(
                 }
             }
 
-            fn compute_message_id(&self, sender: &Address, recipient: &Address, nonce: Nonce, amount: Word, data: &[u8]) -> MessageId {
+            fn compute_message_id(&self, sender: &Address, recipient: &Address, nonce: Nonce, amount: Word, data: Option<Vec<u8>>) -> MessageId {
 
-                let raw_message_id = Sha256::new()
+                let mut raw_message_id = Sha256::new()
                     .chain_update(sender)
                     .chain_update(recipient)
                     .chain_update(nonce)
-                    .chain_update(amount.to_be_bytes())
-                    .chain_update(data)
-                    .finalize();
+                    .chain_update(amount.to_be_bytes());
+
+                let raw_message_id = if let Some(buffer) = data {
+                    raw_message_id
+                        .chain_update(&buffer[..])
+                        .finalize()
+                } else {
+                    raw_message_id.finalize()
+                };
 
                 let message_id = <[u8; 32]>::try_from(&raw_message_id[..]).expect("Could not calculate message ID from receipt fields");
 
@@ -481,26 +485,47 @@ fn process_fn_items(
                                 return_types.push(param1);
                                 callees.insert(id);
 
-                                let data = serialize(&Call { contract_id: <[u8; 32]>::try_from(contract_id).unwrap().into(), to: <[u8; 32]>::try_from(id).unwrap().into(), amount, asset_id: <[u8; 32]>::try_from(asset_id).unwrap().into(), gas, fn_name });
+                                let data = serialize(
+                                    &Call {
+                                        contract_id: ContractId::from(<[u8; 32]>::from(contract_id)),
+                                        to: ContractId::from(<[u8; 32]>::from(id)),
+                                        amount,
+                                        asset_id: AssetId::from(<[u8; 32]>::from(asset_id)),
+                                        gas,
+                                        fn_name
+                                    }
+                                );
                                 let ty_id = Call::type_id();
                                 decoder.decode_type(ty_id, data);
                             }
                             fuel::Receipt::Log { id, ra, rb, .. } => {
                                 #check_if_subscribed_to_contract
                                 let ty_id = Log::type_id();
-                                let data = serialize(&Log{ contract_id: <[u8; 32]>::try_from(id).unwrap().into(), ra, rb });
+                                let data = serialize(
+                                    &Log {
+                                        contract_id: ContractId::from(<[u8; 32]>::from(id)),
+                                        ra,
+                                        rb
+                                    }
+                                );
                                 decoder.decode_type(ty_id, data);
                             }
                             fuel::Receipt::LogData { rb, data, ptr, len, id, .. } => {
                                 #check_if_subscribed_to_contract
-                                decoder.decode_logdata(rb as usize, data);
-
+                                decoder.decode_logdata(rb as usize, data.unwrap_or(Vec::<u8>::new()));
                             }
                             fuel::Receipt::Return { id, val, pc, is } => {
                                 #check_if_subscribed_to_contract
                                 if callees.contains(&id) {
                                     let ty_id = Return::type_id();
-                                    let data = serialize(&Return{ contract_id: <[u8; 32]>::try_from(id).unwrap().into(), val, pc, is });
+                                    let data = serialize(
+                                        &Return {
+                                            contract_id: ContractId::from(<[u8; 32]>::from(id)),
+                                            val,
+                                            pc,
+                                            is
+                                        }
+                                    );
                                     decoder.decode_type(ty_id, data);
                                 }
                             }
@@ -508,38 +533,43 @@ fn process_fn_items(
                                 #check_if_subscribed_to_contract
                                 if callees.contains(&id) {
                                     let selector = return_types.pop().expect("No return type available. <('-'<)");
-                                    decoder.decode_return_type(selector, data);
+                                    decoder.decode_return_type(selector, data.unwrap_or(Vec::<u8>::new()));
                                 }
                             }
                             fuel::Receipt::MessageOut { sender, recipient, amount, nonce, len, digest, data, .. } => {
-                                // TODO: Temporary conversion; remove once we update back to latest fuel-types version.
-                                let nonce_bytes = <[u8; 32]>::try_from(nonce).expect("Could not convert nonce to bytes");
-                                let nonce = Nonce::from(nonce_bytes);
-
-                                let message_id = decoder.compute_message_id(&<[u8; 32]>::try_from(sender.clone()).unwrap().into(), &<[u8; 32]>::try_from(recipient.clone()).unwrap().into(), nonce, amount, &data[..]);
+                                let sender = Address::from(<[u8; 32]>::from(sender));
+                                let recipient = Address::from(<[u8; 32]>::from(recipient));
+                                let message_id = decoder.compute_message_id(&sender, &recipient, nonce, amount, data.clone());
 
                                 // It's possible that the data field was generated from an empty Sway `Bytes` array
                                 // in the send_message() instruction in which case the data field in the receipt will
                                 // have no type information or data to decode, so we decode an empty vector to a unit struct
-                                let type_id = data
-                                    .get(..8)
-                                    .map(|buffer| {
-                                        u64::from_be_bytes(
-                                            <[u8; 8]>::try_from(&buffer[..])
-                                                .expect("Could not get type ID for data in MessageOut receipt"),
-                                        )
-                                    })
-                                    .unwrap_or(u64::MAX);
-
-                                let data = data
-                                    .get(8..)
-                                    .map(|buffer| buffer.to_vec())
-                                    .unwrap_or(Vec::<u8>::new());
+                                let (type_id, data) = data
+                                    .map_or((u64::MAX, Vec::<u8>::new()), |buffer| {
+                                        let (type_id_bytes, data_bytes) = buffer.split_at(8);
+                                        let type_id = u64::from_be_bytes(
+                                            <[u8; 8]>::try_from(type_id_bytes)
+                                            .expect("Could not get type ID for data in MessageOut receipt")
+                                        );
+                                        let data = data_bytes.to_vec();
+                                        (type_id, data)
+                                    });
 
                                 decoder.decode_messagedata(type_id, data.clone());
 
                                 let ty_id = MessageOut::type_id();
-                                let data = serialize(&MessageOut{ message_id, sender: <[u8; 32]>::try_from(sender).unwrap().into(), recipient: <[u8; 32]>::try_from(recipient.clone()).unwrap().into(), amount, nonce, len, digest: <[u8; 32]>::try_from(digest).unwrap().into(), data });
+                                let data = serialize(
+                                    &MessageOut {
+                                        message_id,
+                                        sender,
+                                        recipient,
+                                        amount,
+                                        nonce,
+                                        len,
+                                        digest,
+                                        data
+                                    }
+                                );
                                 decoder.decode_type(ty_id, data);
                             }
                             fuel::Receipt::ScriptResult { result, gas_used } => {
@@ -550,25 +580,79 @@ fn process_fn_items(
                             fuel::Receipt::Transfer { id, to, asset_id, amount, pc, is, .. } => {
                                 #check_if_subscribed_to_contract
                                 let ty_id = Transfer::type_id();
-                                let data = serialize(&Transfer{ contract_id: <[u8; 32]>::try_from(id).unwrap().into(), to: <[u8; 32]>::try_from(to).unwrap().into(), asset_id: <[u8; 32]>::try_from(asset_id).unwrap().into(), amount, pc, is });
+                                let data = serialize(
+                                    &Transfer {
+                                        contract_id: ContractId::from(<[u8; 32]>::from(id)),
+                                        to: ContractId::from(<[u8; 32]>::from(to)),
+                                        asset_id: AssetId::from(<[u8; 32]>::from(asset_id)),
+                                        amount,
+                                        pc,
+                                        is
+                                    }
+                                );
                                 decoder.decode_type(ty_id, data);
                             }
                             fuel::Receipt::TransferOut { id, to, asset_id, amount, pc, is, .. } => {
                                 #check_if_subscribed_to_contract
                                 let ty_id = TransferOut::type_id();
-                                let data = serialize(&TransferOut{ contract_id: <[u8; 32]>::try_from(id).unwrap().into(), to: <[u8; 32]>::try_from(to).unwrap().into(), asset_id: <[u8; 32]>::try_from(asset_id).unwrap().into(), amount, pc, is });
+                                let data = serialize(
+                                    &TransferOut {
+                                        contract_id: ContractId::from(<[u8; 32]>::from(id)),
+                                        to: Address::from(<[u8; 32]>::from(to)),
+                                        asset_id: AssetId::from(<[u8; 32]>::from(asset_id)),
+                                        amount,
+                                        pc,
+                                        is
+                                    }
+                                );
                                 decoder.decode_type(ty_id, data);
                             }
                             fuel::Receipt::Panic { id, reason, .. } => {
                                 #check_if_subscribed_to_contract
                                 let ty_id = Panic::type_id();
-                                let data = serialize(&Panic{ contract_id: <[u8; 32]>::try_from(id).unwrap().into(), reason: *reason.reason() as u32 });
+                                let data = serialize(
+                                    &Panic {
+                                        contract_id: ContractId::from(<[u8; 32]>::from(id)),
+                                        reason: *reason.reason() as u32
+                                    }
+                                );
                                 decoder.decode_type(ty_id, data);
                             }
                             fuel::Receipt::Revert { id, ra, .. } => {
                                 #check_if_subscribed_to_contract
                                 let ty_id = Revert::type_id();
-                                let data = serialize(&Revert{ contract_id: <[u8; 32]>::try_from(id).unwrap().into(), error_val: u64::from(ra & 0xF) });
+                                let data = serialize(
+                                    &Revert {
+                                        contract_id: ContractId::from(<[u8; 32]>::from(id)),
+                                        error_val: u64::from(ra & 0xF)
+                                    }
+                                );
+                                decoder.decode_type(ty_id, data);
+                            }
+                            fuel::Receipt::Mint { sub_id, contract_id, val, pc, is } => {
+                                let ty_id = Mint::type_id();
+                                let data = serialize(
+                                    &Mint {
+                                        sub_id: AssetId::from(<[u8; 32]>::from(sub_id)),
+                                        contract_id: ContractId::from(<[u8; 32]>::from(contract_id)),
+                                        val,
+                                        pc,
+                                        is
+                                    }
+                                );
+                                decoder.decode_type(ty_id, data);
+                            }
+                            fuel::Receipt::Burn { sub_id, contract_id, val, pc, is } => {
+                                let ty_id = Burn::type_id();
+                                let data = serialize(
+                                    &Burn {
+                                        sub_id: AssetId::from(<[u8; 32]>::from(sub_id)),
+                                        contract_id: ContractId::from(<[u8; 32]>::from(contract_id)),
+                                        val,
+                                        pc,
+                                        is
+                                    }
+                                );
                                 decoder.decode_type(ty_id, data);
                             }
                             _ => {
