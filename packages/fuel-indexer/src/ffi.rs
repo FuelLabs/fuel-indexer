@@ -62,10 +62,10 @@ fn get_string(mem: &MemoryView, ptr: u32, len: u32) -> FFIResult<String> {
 }
 
 /// Fetch the object ID at the given pointer from memory.
-fn get_object_id(mem: &MemoryView, ptr: u32) -> FFIResult<String> {
-    WasmPtr::<u8>::new(ptr)
-        .read_utf8_string(mem, ptr + 32)
-        .or(Err(FFIError::MemoryBound))
+fn get_object_id(mem: &MemoryView, ptr: u32, len: u32) -> FFIResult<String> {
+    let id = get_string(mem, ptr, len).unwrap();
+    let id: String = id.chars().filter(|&c| c != '\0').collect();
+    Ok(id)
 }
 
 /// Log the string at the given pointer to stdout.
@@ -107,7 +107,10 @@ fn get_object(
         .expect("Memory unitialized.")
         .view(&store);
 
-    let id = get_object_id(&mem, ptr).unwrap();
+    let offset = 1;
+    let len = 64;
+    let padding = 6;
+    let id = get_object_id(&mem, ptr + offset, len + padding + offset).unwrap();
 
     let rt = tokio::runtime::Handle::current();
     let bytes =
@@ -161,10 +164,7 @@ fn put_object(mut env: FunctionEnvMut<IndexEnv>, type_id: i64, ptr: u32, len: u3
     let columns: Vec<FtColumn> = match bincode::deserialize(&bytes) {
         Ok(columns) => columns,
         Err(e) => {
-            error!(
-                "Failed to deserialize Vec<FtColumn> for put_object: {:?}",
-                e
-            );
+            error!("Failed to deserialize Vec<FtColumn> for put_object: {e:?}",);
             return;
         }
     };
@@ -236,7 +236,6 @@ pub fn get_exports(store: &mut Store, env: &wasmer::FunctionEnv<IndexEnv>) -> Ex
 /// Holds on to a byte blob that has been copied into WASM memory until
 /// it's not needed anymore, then tells WASM to deallocate.
 pub(crate) struct WasmArg<'a> {
-
     /// WASM store.
     store: MutexGuard<'a, Store>,
 

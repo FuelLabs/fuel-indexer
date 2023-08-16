@@ -1,8 +1,8 @@
 extern crate alloc;
 use fuel_indexer::{Executor, IndexerConfig, WasmIndexExecutor};
 use fuel_indexer_lib::{config::DatabaseConfig, manifest::Manifest};
-use std::str::FromStr;
 use fuel_indexer_tests::fixtures::TestPostgresDb;
+use std::str::FromStr;
 
 #[tokio::test]
 async fn test_wasm_executor_can_meter_execution() {

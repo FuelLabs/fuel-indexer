@@ -59,7 +59,7 @@ impl RawQuery {
         let (parent_typedef_name, child_typedef_name) =
             join_table_typedefs_name(table_name);
         let mut query = format!(
-            "INSERT INTO {namespace}.{table_name} ({parent_typedef_name}_{parent_column_name}, {child_typedef_name}_{child_column_name}) VALUES "
+            "INSERT INTO {namespace}.{table_name} ({parent_typedef_name}_{parent_column_name}, {child_typedef_name}_{child_column_name}) VALUES"
         );
 
         let id_index: usize = columns
@@ -77,8 +77,9 @@ impl RawQuery {
             FtColumn::Array(list) => {
                 if let Some(list) = list {
                     list.iter().for_each(|item| {
+                        // We could also use id.query_fragment() here
                         query.push_str(
-                            format!(" ({}, {}),", id, item.query_fragment()).as_str(),
+                            format!(" ('{}', {}),", id, item.query_fragment()).as_str(),
                         );
                     });
                 }
@@ -87,7 +88,7 @@ impl RawQuery {
         }
 
         // If we didn't actually push any records...
-        if query.ends_with("VALUES ") {
+        if query.ends_with("VALUES") {
             query = "".to_string();
         }
 

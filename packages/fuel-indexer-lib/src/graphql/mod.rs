@@ -13,7 +13,6 @@ use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 use types::IdCol;
 
-
 /// Maximum amount of foreign key list fields that can exist on a `TypeDefinition`
 pub const MAX_FOREIGN_KEY_LIST_FIELDS: usize = 10;
 

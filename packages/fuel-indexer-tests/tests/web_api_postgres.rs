@@ -95,12 +95,12 @@ async fn test_asset_upload_endpoint_properly_adds_assets_to_database_postgres() 
             .unwrap();
     assert!(is_indexer_registered.is_none());
 
-    let manifest_file = multipart::Part::stream(assets::SIMPLE_WASM_MANIFEST)
-        .file_name("simple_wasm.yaml");
-    let schema_file = multipart::Part::stream(assets::SIMPLE_WASM_SCHEMA)
-        .file_name("simple_wasm.graphql");
-    let wasm_file =
-        multipart::Part::stream(assets::SIMPLE_WASM_WASM).file_name("simple_wasm.wasm");
+    let manifest_file = multipart::Part::stream(assets::FUEL_INDEXER_TEST_MANIFEST)
+        .file_name("fuel_indexer_test.yaml");
+    let schema_file = multipart::Part::stream(assets::FUEL_INDEXER_TEST_SCHEMA)
+        .file_name("fuel_indexer_test.graphql");
+    let wasm_file = multipart::Part::stream(assets::FUEL_INDEXER_TEST_WASM)
+        .file_name("fuel_indexer_test.wasm");
 
     let form = multipart::Form::new()
         .part("manifest", manifest_file)
@@ -108,7 +108,7 @@ async fn test_asset_upload_endpoint_properly_adds_assets_to_database_postgres() 
         .part("wasm", wasm_file);
 
     let resp = client
-        .post("http://localhost:29987/api/index/test_namespace/simple_wasm_executor")
+        .post("http://localhost:29987/api/index/fuel_indexer_test/index1")
         .multipart(form)
         .header(CONTENT_TYPE, "multipart/form-data".to_owned())
         .send()
@@ -120,7 +120,7 @@ async fn test_asset_upload_endpoint_properly_adds_assets_to_database_postgres() 
     assert!(resp.status().is_success());
 
     let is_indexer_registered =
-        postgres::get_indexer(&mut conn, "test_namespace", "simple_wasm_executor")
+        postgres::get_indexer(&mut conn, "fuel_indexer_test", "index1")
             .await
             .unwrap();
 

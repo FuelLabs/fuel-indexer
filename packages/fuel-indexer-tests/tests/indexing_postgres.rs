@@ -3,6 +3,7 @@ use fuel_indexer_tests::fixtures::{
     mock_request, setup_indexing_test_components, IndexingTestComponents,
 };
 use fuel_indexer_types::prelude::*;
+use fuel_indexer_utils::id;
 use serde::{Deserialize, Serialize};
 use sqlx::{types::BigDecimal, Row};
 use std::{collections::HashSet, str::FromStr};
@@ -421,7 +422,10 @@ async fn test_index_types_for_block_explorer() {
             .await
             .unwrap();
 
-    assert_eq!(row.get::<String, usize>(0), 8675309);
+    assert_eq!(
+        row.get::<String, usize>(0),
+        id(8675309_i32.to_le_bytes()).to_string()
+    );
     let nonce = row.get::<&str, usize>(1);
     let nonce = hex::decode(nonce).unwrap();
     let mut buff: [u8; 32] = [0u8; 32];
@@ -440,7 +444,7 @@ async fn test_index_types_for_block_explorer() {
             .await
             .unwrap();
 
-    assert_eq!(row.get::<String, usize>(0), 1);
+    assert_eq!(row.get::<String, usize>(0), id([1]).to_string());
     assert_eq!(row.get::<&str, usize>(1), "hello world");
 
     let entity: VirtualEntity =
@@ -458,7 +462,7 @@ async fn test_index_types_for_block_explorer() {
     .unwrap();
 
     // Fields are in a different order for these union types
-    assert_eq!(row.get::<String, usize>(0), 1);
+    assert_eq!(row.get::<String, usize>(0), id([1]).to_string());
     assert_eq!(row.get::<BigDecimal, usize>(1).to_u64().unwrap(), 5);
     assert_eq!(row.get::<&str, usize>(2), "UnionType::A");
     assert_eq!(row.get::<BigDecimal, usize>(3).to_u64().unwrap(), 10);
@@ -470,7 +474,7 @@ async fn test_index_types_for_block_explorer() {
     .await
     .unwrap();
 
-    assert_eq!(row.get::<String, usize>(0), 1);
+    assert_eq!(row.get::<String, usize>(0), id([1]).to_string());
     let entity: UnionEntity =
         serde_json::from_value(row.get::<serde_json::Value, usize>(1)).unwrap();
     assert_eq!(row.get::<&str, usize>(2), "UnionType::B");
@@ -487,7 +491,7 @@ async fn test_index_types_for_block_explorer() {
             .unwrap();
 
     let expected_required_all = vec![1, 2, 3];
-    assert_eq!(row.get::<String, usize>(0), 1);
+    assert_eq!(row.get::<String, usize>(0), id([1]).to_string());
     assert_eq!(row.get::<&str, usize>(1), "hello world");
     assert_eq!(
         row.get::<Vec<BigDecimal>, usize>(2)

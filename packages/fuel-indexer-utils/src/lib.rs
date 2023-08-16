@@ -15,6 +15,8 @@
 /// Utility functions for Fuel indexers.
 mod utilities;
 
+pub use utilities::*;
+
 /// Prelude for Fuel indexers.
 pub mod prelude {
     pub use crate::utilities::*;

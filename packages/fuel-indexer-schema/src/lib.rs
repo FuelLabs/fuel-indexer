@@ -101,13 +101,10 @@ impl FtColumn {
                     panic!("Schema fields of type `ID` cannot be nullable.")
                 }
             }
-            FtColumn::UID(value) => {
-                if let Some(val) = value {
-                    format!("'{val}'")
-                } else {
-                    panic!("Schema fields of type `ID` cannot be nullable.")
-                }
-            }
+            FtColumn::UID(value) => match value {
+                Some(val) => format!("'{val}'"),
+                None => String::from(NULL_VALUE),
+            },
             FtColumn::Address(value) => match value {
                 Some(val) => format!("'{val:x}'"),
                 None => String::from(NULL_VALUE),

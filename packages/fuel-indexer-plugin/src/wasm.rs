@@ -79,7 +79,7 @@ pub trait Entity<'a>: Sized + PartialEq + Eq + std::fmt::Debug {
         unsafe {
             let buff = bincode::serialize(&id.to_string()).unwrap();
             let mut bufflen = (buff.len() as u32).to_le_bytes();
-
+            
             let ptr = ff_get_object(Self::TYPE_ID, buff.as_ptr(), bufflen.as_mut_ptr());
 
             if !ptr.is_null() {

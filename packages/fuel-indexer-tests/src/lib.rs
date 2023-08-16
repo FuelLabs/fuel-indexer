@@ -24,6 +24,13 @@ pub enum TestError {
 pub mod assets {
     pub const FUEL_INDEXER_TEST_MANIFEST: &str =
         include_str!("./../indexers/fuel-indexer-test/fuel_indexer_test.yaml");
+
+    pub const FUEL_INDEXER_TEST_SCHEMA: &str =
+        include_str!("./../indexers/fuel-indexer-test/schema/fuel_indexer_test.graphql");
+
+    pub const FUEL_INDEXER_TEST_WASM: &[u8] = include_bytes!(
+        "./../../../target/wasm32-unknown-unknown/debug/fuel_indexer_test.wasm"
+    );
 }
 
 pub mod defaults {
