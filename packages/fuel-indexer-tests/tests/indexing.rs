@@ -3,7 +3,7 @@ use fuel_indexer_tests::fixtures::{
     mock_request, setup_indexing_test_components, IndexingTestComponents,
 };
 use fuel_indexer_types::prelude::*;
-use fuel_indexer_utils::id;
+use fuel_indexer_utils::uid;
 use serde::{Deserialize, Serialize};
 use sqlx::{types::BigDecimal, Row};
 use std::{collections::HashSet, str::FromStr};

@@ -1,7 +1,7 @@
 use fuel_indexer_tests::fixtures::{
     mock_request, setup_web_test_components, WebTestComponents,
 };
-use fuel_indexer_utils::id;
+use fuel_indexer_utils::uid;
 use hyper::header::CONTENT_TYPE;
 use serde_json::{Number, Value};
 use std::collections::HashMap;
