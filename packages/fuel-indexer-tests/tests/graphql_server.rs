@@ -101,7 +101,10 @@ async fn test_entity_with_foreign_keys() {
     let data = v["data"].as_array().expect("data is not an array");
 
     assert_eq!(data[0]["name"].as_str(), Some("The Indexers"));
-    assert!(data[0]["muipality"]["id"].as_str().is_some());
+    assert_eq!(
+        data[0]["municipality"]["id"].as_str().unwrap(),
+        "23505dc7fc084a628a7c99568780f51ff2d2c8cc3738dcddc33e30213282b180".to_string()
+    );
     assert_eq!(
         data[0]["municipality"]["name"].as_str(),
         Some("Republic of Indexia")
@@ -255,27 +258,6 @@ async fn test_filtering() {
     } = setup_web_test_components(None).await;
 
     mock_request("/ping").await;
-
-    let id = uid([1]).to_string();
-
-    // ID selection
-    let _resp = client
-        .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
-        .header(CONTENT_TYPE, "application/graphql".to_owned())
-        .body(format!(r#"{{ "query": "query {{ filterentity(id: "{id}" ) {{ id foola maybe_null_bar bazoo }} }}" }}"#))
-        .send()
-        .await
-        .unwrap();
-
-    // let body = resp.text().await.unwrap();
-    // println!(">> DATA: {body:?}");
-    // let v: Value = serde_json::from_str(&body).unwrap();
-    // let data = v["data"].as_array().expect("data is not an array");
-
-    // assert!(data[0]["id"].as_str().is_some());
-    // assert_eq!(data[0]["foola"].as_str(), Some("beep"));
-    // assert_eq!(data[0]["maybe_null_bar"].as_i64(), Some(123));
-    // assert_eq!(data[0]["bazoo"].as_i64(), Some(1));
 
     // Set membership
     let resp = client
