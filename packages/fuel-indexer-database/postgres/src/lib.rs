@@ -6,7 +6,7 @@ use fuel_indexer_lib::utils::sha256_digest;
 use sqlx::{
     pool::PoolConnection,
     postgres::PgRow,
-    types::{BigDecimal, JsonValue},
+    types::JsonValue,
     Postgres, Row,
 };
 use std::str::FromStr;
@@ -684,7 +684,7 @@ pub async fn last_block_height_for_indexer(
     let row = sqlx::query(&query).fetch_one(conn).await?;
 
     Ok(row
-        .try_get::<BigDecimal, usize>(0)
+        .try_get::<i32, usize>(0)
         .map(|id| id.to_u32().expect("Bad block height."))
         .unwrap_or_else(|_e| 1))
 }
