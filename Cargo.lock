@@ -3478,6 +3478,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "fuel-indexer-graphql-lib"
+version = "0.19.5"
+dependencies = [
+ "async-graphql 5.0.10",
+ "extension-trait",
+]
+
+[[package]]
 name = "fuel-indexer-lib"
 version = "0.19.5"
 dependencies = [

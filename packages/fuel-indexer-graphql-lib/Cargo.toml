@@ -1,0 +1,14 @@
+[package]
+name = "fuel-indexer-graphql-lib"
+version = { workspace = true }
+authors = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+description = "Fuel Indexer GraphQL Library"
+
+[dependencies]
+async-graphql = { version = "5.0", features = ["dynamic-schema"] }
+extension-trait = "1.0.2"
