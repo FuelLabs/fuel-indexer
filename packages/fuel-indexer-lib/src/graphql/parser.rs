@@ -14,8 +14,8 @@ use crate::{
 use async_graphql_parser::{
     parse_schema,
     types::{
-        EnumType, FieldDefinition, ObjectType, ServiceDocument, TypeDefinition,
-        TypeKind, TypeSystemDefinition, UnionType,
+        EnumType, FieldDefinition, ObjectType, ServiceDocument, TypeDefinition, TypeKind,
+        TypeSystemDefinition, UnionType,
     },
 };
 
@@ -309,24 +309,27 @@ impl ParsedGraphQLSchema {
         exec_source: ExecutionSource,
         schema: Option<&GraphQLSchema>,
     ) -> ParsedResult<Self> {
-        let mut parsed_schema = ParsedGraphQLSchema::default();
+        let mut result = Self {
+            namespace: namespace.to_string(),
+            identifier: identifier.to_string(),
+            exec_source,
+            ..Default::default()
+        };
 
-        parsed_schema.namespace = namespace.to_string();
-        parsed_schema.identifier = identifier.to_string();
-        parsed_schema.exec_source = exec_source;
-
-        let (scalar_names, _) = build_schema_types_set(&parsed_schema.ast);
-        parsed_schema.scalar_names = scalar_names.clone();
-        parsed_schema.type_names.extend(scalar_names);
+        let base_ast = parse_schema(BASE_SCHEMA)?;
+        result.decode_service_document(&base_ast)?;
+        result.ast = base_ast;
 
         // Parse _everything_ in the GraphQL schema
         if let Some(schema) = schema {
-            parsed_schema.decode_schema(schema)?;
+            let ast = parse_schema(schema.schema())?;
+            result.decode_service_document(&ast)?;
+            result.ast = ast;
         }
 
-        parsed_schema.build_typedef_names_to_types();
+        result.build_typedef_names_to_types();
 
-        Ok(parsed_schema)
+        Ok(result)
     }
 
     /// Namespace of the indexer.
@@ -526,69 +529,37 @@ impl ParsedGraphQLSchema {
     // Decoder functions to iteratively build up the ParsedGraphQLSchema struct.
 
     /// Parse and decode the base GraphQL Schema
-    fn decode_base_schema() -> ParsedResult<Self> {
-        let ast = parse_schema(BASE_SCHEMA)
-            .map_err(ParsedError::ParseError)?;
-
-        Ok(Self {
-            namespace: "".to_string(),
-            identifier: "".to_string(),
-            exec_source: ExecutionSource::Wasm,
-            type_names: HashSet::new(),
-            typedef_names_to_types: HashMap::new(),
-            enum_names: HashSet::new(),
-            union_names: HashSet::new(),
-            objects: HashMap::new(),
-            virtual_type_names: HashSet::new(),
-            parsed_typedef_names: HashSet::new(),
-            field_type_mappings: HashMap::new(),
-            object_field_mappings: HashMap::new(),
-            scalar_names: HashSet::new(),
-            field_defs: HashMap::new(),
-            field_type_optionality: HashMap::new(),
-            foreign_key_mappings: HashMap::new(),
-            type_defs: HashMap::new(),
-            ast,
-            schema: GraphQLSchema::default(),
-            list_field_types: HashSet::new(),
-            list_type_defs: HashMap::new(),
-            unions: HashMap::new(),
-            join_table_meta: HashMap::new(),
-            object_ordered_fields: HashMap::new(),
-        })
-    }
-
-    fn decode_schema(&mut self, schema: &GraphQLSchema) -> ParsedResult<()> {
-        let ast = parse_schema(schema.schema()).map_err(ParsedError::ParseError)?;
-
-        let (other_type_names, _) = build_schema_types_set(&ast);
-        self.type_names.extend(other_type_names);
-
+    fn decode_service_document(&mut self, ast: &ServiceDocument) -> ParsedResult<()> {
         for def in ast.definitions.iter() {
             self.decode_type_system_definifion(def)?;
         }
-
-        self.ast = ast;
-
         Ok(())
     }
 
-    fn decode_type_system_definifion(&mut self, def: &TypeSystemDefinition) -> ParsedResult<()> {
+    fn decode_type_system_definifion(
+        &mut self,
+        def: &TypeSystemDefinition,
+    ) -> ParsedResult<()> {
         if let TypeSystemDefinition::Type(t) = def {
             let name = t.node.name.to_string();
             let node = t.node.clone();
+
+            self.type_names.insert(name.clone());
 
             match &t.node.kind {
                 TypeKind::Object(o) => self.decode_object_type(name, node, o),
                 TypeKind::Enum(e) => self.decode_enum_type(name, node, e),
                 TypeKind::Union(u) => self.decode_union_type(name, node, u),
+                TypeKind::Scalar => {
+                    self.scalar_names.insert(name.clone());
+                }
                 _ => {
                     return Err(ParsedError::UnsupportedTypeKind);
                 }
             }
         }
 
-        Ok (())
+        Ok(())
     }
 
     fn decode_enum_type(&mut self, name: String, node: TypeDefinition, e: &EnumType) {
