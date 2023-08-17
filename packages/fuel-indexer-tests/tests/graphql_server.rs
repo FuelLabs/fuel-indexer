@@ -259,6 +259,30 @@ async fn test_filtering() {
 
     mock_request("/ping").await;
 
+    // "4bf5122f344554c53bde2ebb8cd2b7e3d1600ad631c385a5d7cce23c7785459a"
+    let _id = uid([1]).to_string();
+
+    // ID selection
+    let resp = client
+        .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
+        .header(CONTENT_TYPE, "application/graphql".to_owned())
+        .body(r#"{ "query": "query { filterentity(id: \"4bf5122f344554c53bde2ebb8cd2b7e3d1600ad631c385a5d7cce23c7785459a\") { id foola maybe_null_bar bazoo } }" }"#)
+        .send()
+        .await
+        .unwrap();
+
+    let body = resp.text().await.unwrap();
+    let v: Value = serde_json::from_str(&body).unwrap();
+    let data = v["data"].as_array().expect("data is not an array");
+
+    assert_eq!(
+        data[0]["id"].as_str().unwrap(),
+        "4bf5122f344554c53bde2ebb8cd2b7e3d1600ad631c385a5d7cce23c7785459a".to_string()
+    );
+    assert_eq!(data[0]["foola"].as_str(), Some("beep"));
+    assert_eq!(data[0]["maybe_null_bar"].as_i64(), Some(123));
+    assert_eq!(data[0]["bazoo"].as_i64(), Some(1));
+
     // Set membership
     let resp = client
         .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")

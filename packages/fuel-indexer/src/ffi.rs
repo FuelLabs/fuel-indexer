@@ -284,6 +284,7 @@ impl<'a> WasmArg<'a> {
         })
     }
 
+    /// Get a mutable reference to the WASM store.
     pub fn store(&mut self) -> &mut Store {
         &mut self.store
     }
