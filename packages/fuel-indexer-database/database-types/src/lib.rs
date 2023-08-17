@@ -18,8 +18,9 @@ use fuel_indexer_lib::{
         types::{IdCol, ObjectCol},
         JoinTableMeta, ParsedGraphQLSchema,
     },
-    type_id, MAX_ARRAY_LENGTH,
+    MAX_ARRAY_LENGTH,
 };
+use fuel_indexer_types::type_id;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::HashSet,
@@ -83,6 +84,10 @@ pub enum ColumnType {
     Virtual = 33,
     BlockId = 34,
     Array = 35,
+    // `ID` is a primary key, but when using foreign keys, we can't have two
+    // primary key columns, so we need a version of `ID` that does not include
+    // a primary key constraint.
+    UID = 36,
 }
 
 impl From<ColumnType> for i32 {
@@ -124,6 +129,7 @@ impl From<ColumnType> for i32 {
             ColumnType::Virtual => 33,
             ColumnType::BlockId => 34,
             ColumnType::Array => 35,
+            ColumnType::UID => 36,
         }
     }
 }
@@ -180,6 +186,7 @@ impl From<i32> for ColumnType {
             33 => ColumnType::Virtual,
             34 => ColumnType::BlockId,
             35 => ColumnType::Array,
+            36 => ColumnType::UID,
             _ => unimplemented!("Invalid ColumnType: {num}."),
         }
     }
@@ -224,6 +231,7 @@ impl From<&str> for ColumnType {
             "Virtual" => ColumnType::Virtual,
             "BlockId" => ColumnType::BlockId,
             "Array" => ColumnType::Array,
+            "UID" => ColumnType::UID,
             _ => unimplemented!("Invalid ColumnType: '{name}'."),
         }
     }
@@ -385,7 +393,7 @@ impl Column {
             ColumnType::Enum => "varchar(255)".to_string(),
             ColumnType::ForeignKey => "numeric(20, 0)".to_string(),
             ColumnType::HexString => "varchar(10485760)".to_string(),
-            ColumnType::ID => "numeric(20, 0) primary key".to_string(),
+            ColumnType::ID => "varchar(64) primary key".to_string(),
             ColumnType::Identity => "varchar(66)".to_string(),
             ColumnType::Int1 => "integer".to_string(),
             ColumnType::Int16 => "numeric(39, 0)".to_string(),
@@ -405,12 +413,12 @@ impl Column {
             ColumnType::UInt4 => "integer".to_string(),
             ColumnType::UInt8 => "numeric(20, 0)".to_string(),
             ColumnType::Virtual => "json".to_string(),
+            ColumnType::UID => "varchar(64)".to_string(),
             ColumnType::Array => {
                 let t = match self.array_coltype.expect(
                     "Column.array_coltype cannot be None when using `ColumnType::Array`.",
                 ) {
-                    ColumnType::ID
-                    | ColumnType::Int1
+                    ColumnType::Int1
                     | ColumnType::UInt1
                     | ColumnType::Int4
                     | ColumnType::UInt4
@@ -434,7 +442,9 @@ impl Column {
                     | ColumnType::Nonce
                     | ColumnType::HexString
                     | ColumnType::TxId
-                    | ColumnType::BlockId => "varchar",
+                    | ColumnType::BlockId
+                    | ColumnType::ID
+                    | ColumnType::UID => "varchar(64)",
                     ColumnType::Blob => "bytea",
                     ColumnType::Json | ColumnType::Virtual => "json",
                     _ => unimplemented!(),
@@ -1123,8 +1133,8 @@ impl Table {
                     item.parent_table_name(),
                     item.parent_column_name()
                 ),
-                graphql_type: ColumnType::UInt8.to_string(),
-                coltype: ColumnType::UInt8,
+                graphql_type: ColumnType::UID.to_string(),
+                coltype: ColumnType::UID,
                 position: 0,
                 unique: false,
                 nullable: false,
@@ -1134,8 +1144,8 @@ impl Table {
             Column {
                 type_id: ty_id,
                 name: format!("{}_{}", item.child_table_name(), item.child_column_name()),
-                graphql_type: ColumnType::UInt8.to_string(),
-                coltype: ColumnType::UInt8,
+                graphql_type: ColumnType::UID.to_string(),
+                coltype: ColumnType::UID,
                 position: 1,
                 unique: false,
                 nullable: false,
@@ -1157,7 +1167,7 @@ impl Table {
                 ref_tablename: item.parent_table_name(),
                 ref_colname: item.parent_column_name(),
                 // Join table's _always_ reference `ID` columns only.
-                ref_coltype: ColumnType::UInt8.to_string(),
+                ref_coltype: ColumnType::UID.to_string(),
                 ..ForeignKey::default()
             }),
             Constraint::Fk(ForeignKey {
@@ -1172,7 +1182,7 @@ impl Table {
                 ref_tablename: item.child_table_name(),
                 ref_colname: item.child_column_name(),
                 // Join table's _always_ reference `ID` columns only.
-                ref_coltype: ColumnType::UInt8.to_string(),
+                ref_coltype: ColumnType::UID.to_string(),
                 ..ForeignKey::default()
             }),
             // Prevent duplicate rows in the join table.
@@ -1428,7 +1438,7 @@ type Wallet @entity {
                 column_name: "wallet_id".to_string(),
                 ref_tablename: "wallet".to_string(),
                 ref_colname: "id".to_string(),
-                ref_coltype: ColumnType::UInt8.to_string(),
+                ref_coltype: ColumnType::UID.to_string(),
                 on_delete: OnDelete::NoAction,
                 on_update: OnUpdate::NoAction,
             })
@@ -1443,7 +1453,7 @@ type Wallet @entity {
                 column_name: "account_id".to_string(),
                 ref_tablename: "account".to_string(),
                 ref_colname: "id".to_string(),
-                ref_coltype: ColumnType::UInt8.to_string(),
+                ref_coltype: ColumnType::UID.to_string(),
                 on_delete: OnDelete::NoAction,
                 on_update: OnUpdate::NoAction,
             })

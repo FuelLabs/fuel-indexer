@@ -76,6 +76,8 @@ pub enum IndexerError {
     SchemaError(#[from] IndexerSchemaDbError),
     #[error("Manifest error: {0:?}")]
     ManifestError(#[from] ManifestError),
+    #[error("Error creating wasm executor.")]
+    WasmExecutionInstantiationError,
     #[error("Error creating native executor.")]
     NativeExecutionInstantiationError,
     #[error("Native execution runtime error.")]
@@ -84,4 +86,6 @@ pub enum IndexerError {
     Elapsed(#[from] tokio::time::error::Elapsed),
     #[error("Indexer end block has been stopping execution.")]
     EndBlockMet,
+    #[error("Invalid schema: {0:?}")]
+    SchemaVersionMismatch(String),
 }

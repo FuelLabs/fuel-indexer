@@ -1,9 +1,10 @@
-mod graphql;
+#[cfg(all(feature = "postgres"))]
+mod graphql_server;
 
 #[cfg(all(feature = "postgres"))]
-mod indexing_postgres;
+mod indexing;
 
-mod wasm;
+mod service;
 
 #[cfg(all(feature = "postgres"))]
-mod web_api_postgres;
+mod web_server;

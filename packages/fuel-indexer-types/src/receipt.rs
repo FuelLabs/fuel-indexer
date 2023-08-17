@@ -1,8 +1,7 @@
 use crate::{
     scalar::{Address, AssetId, Bytes32, ContractId, MessageId, Nonce},
-    TypeId, FUEL_TYPES_NAMESPACE,
+    type_id, TypeId, FUEL_TYPES_NAMESPACE,
 };
-use fuel_indexer_lib::type_id;
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Debug, Clone)]

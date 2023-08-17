@@ -32,6 +32,7 @@ syn = { version = "2.0", features = ["full"] }
 
 [dev-dependencies]
 fuel-indexer-plugin = { workspace = true }
+fuel-indexer-utils = { workspace = true }
 fuels-macros = { version = "0.46", default-features = false }
 serde = { workspace = true }
 trybuild = "1.0"

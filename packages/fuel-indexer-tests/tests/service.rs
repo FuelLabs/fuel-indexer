@@ -20,7 +20,7 @@ async fn test_wasm_executor_can_meter_execution() {
     }
 
     let manifest = Manifest::from_file(
-        "packages/fuel-indexer-tests/components/indices/simple-wasm/simple_wasm.yaml",
+        "packages/fuel-indexer-tests/indexers/fuel-indexer-test/fuel_indexer_test.yaml",
     )
     .unwrap();
 

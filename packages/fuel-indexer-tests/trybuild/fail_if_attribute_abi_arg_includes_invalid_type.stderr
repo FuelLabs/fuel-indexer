@@ -6,49 +6,11 @@ error: Type with ident 'Ident { ident: "BadType", span: #0 bytes(225..232) }' no
   |
   = note: this error originates in the attribute macro `indexer` (in Nightly builds, run with -Z macro-backtrace for more info)
 
-error[E0433]: failed to resolve: use of undeclared crate or module `fuel`
+error[E0432]: unresolved import `fuels::types::traits`
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
   |
-  |         header: fuel::Header {
-  |                 ^^^^ use of undeclared crate or module `fuel`
-  |
-help: there is a crate or module with a similar name
-   |
-33 |         header: fuels::Header {
-   |                 ~~~~~
-
-error[E0433]: failed to resolve: use of undeclared crate or module `fuel`
- --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
-  |
-  |         transactions: vec![fuel::TransactionData {
-  |                            ^^^^ use of undeclared crate or module `fuel`
-  |
-help: there is a crate or module with a similar name
-   |
-45 |         transactions: vec![fuels::TransactionData {
-   |                            ~~~~~
-
-error[E0433]: failed to resolve: use of undeclared crate or module `fuel`
- --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
-  |
-  |                 fuel::Receipt::Call {
-  |                 ^^^^ use of undeclared crate or module `fuel`
-  |
-help: there is a crate or module with a similar name
-   |
-49 |                 fuels::Receipt::Call {
-   |                 ~~~~~
-
-error[E0433]: failed to resolve: use of undeclared crate or module `fuel`
- --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
-  |
-  |                 fuel::Receipt::ReturnData {
-  |                 ^^^^ use of undeclared crate or module `fuel`
-  |
-help: there is a crate or module with a similar name
-   |
-60 |                 fuels::Receipt::ReturnData {
-   |                 ~~~~~
+  |     use fuels::types::traits::Tokenizable;
+  |                       ^^^^^^ could not find `traits` in `types`
 
 error[E0422]: cannot find struct, variant or union type `SomeEvent` in this scope
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
@@ -110,6 +72,58 @@ help: if you import `TransactionStatus`, refer to it directly
 46 +             status: TransactionStatus::default(),
    |
 
+error[E0433]: failed to resolve: use of undeclared crate or module `fuel`
+ --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
+  |
+  |                 fuel::Receipt::Call {
+  |                 ^^^^ use of undeclared crate or module `fuel`
+  |
+help: there is a crate or module with a similar name
+   |
+49 |                 fuels::Receipt::Call {
+   |                 ~~~~~
+help: consider importing one of these items
+   |
+2  + use fuel_indexer_plugin::prelude::fuel::Receipt;
+   |
+2  + use fuel_indexer_types::fuel::Receipt;
+   |
+2  + use fuel_indexer_utils::plugin::prelude::fuel::Receipt;
+   |
+2  + use fuels::tx::Receipt;
+   |
+help: if you import `Receipt`, refer to it directly
+   |
+49 -                 fuel::Receipt::Call {
+49 +                 Receipt::Call {
+   |
+
+error[E0433]: failed to resolve: use of undeclared crate or module `fuel`
+ --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
+  |
+  |                 fuel::Receipt::ReturnData {
+  |                 ^^^^ use of undeclared crate or module `fuel`
+  |
+help: there is a crate or module with a similar name
+   |
+60 |                 fuels::Receipt::ReturnData {
+   |                 ~~~~~
+help: consider importing one of these items
+   |
+2  + use fuel_indexer_plugin::prelude::fuel::Receipt;
+   |
+2  + use fuel_indexer_types::fuel::Receipt;
+   |
+2  + use fuel_indexer_utils::plugin::prelude::fuel::Receipt;
+   |
+2  + use fuels::tx::Receipt;
+   |
+help: if you import `Receipt`, refer to it directly
+   |
+60 -                 fuel::Receipt::ReturnData {
+60 +                 Receipt::ReturnData {
+   |
+
 error[E0433]: failed to resolve: use of undeclared type `Transaction`
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
   |
@@ -126,7 +140,6 @@ help: consider importing one of these items
    |
 2  + use fuels::prelude::Transaction;
    |
-     and 2 other candidates
 
 error[E0425]: cannot find function `serialize` in this scope
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
@@ -149,10 +162,24 @@ error[E0425]: cannot find function `handle_events` in this scope
   |     handle_events(ptr, len);
   |     ^^^^^^^^^^^^^ not found in this scope
 
-error: unused import: `fuels::types::traits::Tokenizable`
+error[E0433]: failed to resolve: use of undeclared crate or module `fuel`
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
   |
-  |     use fuels::types::traits::Tokenizable;
-  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |         header: fuel::Header {
+  |                 ^^^^ use of undeclared crate or module `fuel`
   |
-  = note: `-D unused-imports` implied by `-D warnings`
+help: there is a crate or module with a similar name
+   |
+33 |         header: fuels::Header {
+   |                 ~~~~~
+
+error[E0433]: failed to resolve: use of undeclared crate or module `fuel`
+ --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
+  |
+  |         transactions: vec![fuel::TransactionData {
+  |                            ^^^^ use of undeclared crate or module `fuel`
+  |
+help: there is a crate or module with a similar name
+   |
+45 |         transactions: vec![fuels::TransactionData {
+   |                            ~~~~~

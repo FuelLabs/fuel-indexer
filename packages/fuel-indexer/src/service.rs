@@ -181,18 +181,24 @@ impl IndexerService {
             let start_block = get_start_block(&mut conn, &manifest).await.unwrap_or(1);
             manifest.set_start_block(start_block);
 
-            let (handle, _module_bytes, killer) = WasmIndexExecutor::create(
+            if let Ok((handle, _module_bytes, killer)) = WasmIndexExecutor::create(
                 &self.config,
                 &manifest,
                 ExecutorSource::Registry(assets.wasm.bytes),
                 self.pool.clone(),
                 assets.schema.digest,
             )
-            .await?;
-
-            info!("Registered Indexer({})", manifest.uid());
-            self.handles.insert(manifest.uid(), handle);
-            self.killers.insert(manifest.uid(), killer);
+            .await
+            {
+                info!("Registered Indexer({})", manifest.uid());
+                self.handles.insert(manifest.uid(), handle);
+                self.killers.insert(manifest.uid(), killer);
+            } else {
+                error!(
+                    "Failed to register Indexer({}) from registry.",
+                    manifest.uid()
+                );
+            }
         }
 
         Ok(())
@@ -308,24 +314,34 @@ async fn create_service_task(
                                 get_start_block(&mut conn, &manifest).await?;
                             manifest.set_start_block(start_block);
 
-                            let (handle, _module_bytes, killer) =
-                                WasmIndexExecutor::create(
-                                    &config,
-                                    &manifest,
-                                    ExecutorSource::Registry(assets.wasm.bytes),
-                                    pool.clone(),
-                                    assets.schema.digest,
-                                )
-                                .await?;
-
-                            futs.push(handle);
-
-                            if let Some(killer_for_prev_executor) =
-                                killers.insert(manifest.uid(), killer)
+                            match WasmIndexExecutor::create(
+                                &config,
+                                &manifest,
+                                ExecutorSource::Registry(assets.wasm.bytes),
+                                pool.clone(),
+                                assets.schema.digest,
+                            )
+                            .await
                             {
-                                let uid = manifest.uid();
-                                info!("Indexer({uid}) was replaced. Stopping previous version of Indexer({uid}).");
-                                killer_for_prev_executor.store(true, Ordering::SeqCst);
+                                Ok((handle, _module_bytes, killer)) => {
+                                    futs.push(handle);
+
+                                    if let Some(killer_for_prev_executor) =
+                                        killers.insert(manifest.uid(), killer)
+                                    {
+                                        let uid = manifest.uid();
+                                        info!("Indexer({uid}) was replaced. Stopping previous version of Indexer({uid}).");
+                                        killer_for_prev_executor
+                                            .store(true, Ordering::SeqCst);
+                                    }
+                                }
+                                Err(e) => {
+                                    error!(
+                                        "Failed to reload Indexer({}.{}): {e:?}",
+                                        &request.namespace, &request.identifier
+                                    );
+                                    return Ok(());
+                                }
                             }
                         }
                         Err(e) => {

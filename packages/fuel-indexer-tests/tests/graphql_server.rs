@@ -1,6 +1,7 @@
 use fuel_indexer_tests::fixtures::{
     mock_request, setup_web_test_components, WebTestComponents,
 };
+use fuel_indexer_utils::uid;
 use hyper::header::CONTENT_TYPE;
 use serde_json::{Number, Value};
 use std::collections::HashMap;
@@ -100,8 +101,10 @@ async fn test_entity_with_foreign_keys() {
     let data = v["data"].as_array().expect("data is not an array");
 
     assert_eq!(data[0]["name"].as_str(), Some("The Indexers"));
-    assert!(data[0]["municipality"]["id"].as_i64().is_some());
-    assert!(data[0]["municipality"]["id"].as_i64().unwrap() > 0);
+    assert_eq!(
+        data[0]["municipality"]["id"].as_str().unwrap(),
+        "23505dc7fc084a628a7c99568780f51ff2d2c8cc3738dcddc33e30213282b180".to_string()
+    );
     assert_eq!(
         data[0]["municipality"]["name"].as_str(),
         Some("Republic of Indexia")
@@ -256,11 +259,14 @@ async fn test_filtering() {
 
     mock_request("/ping").await;
 
+    // "4bf5122f344554c53bde2ebb8cd2b7e3d1600ad631c385a5d7cce23c7785459a"
+    let _id = uid([1]).to_string();
+
     // ID selection
     let resp = client
         .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
         .header(CONTENT_TYPE, "application/graphql".to_owned())
-        .body(r#"{ "query": "query { filterentity(id: 1) { id foola maybe_null_bar bazoo } }" }"#)
+        .body(r#"{ "query": "query { filterentity(id: \"4bf5122f344554c53bde2ebb8cd2b7e3d1600ad631c385a5d7cce23c7785459a\") { id foola maybe_null_bar bazoo } }" }"#)
         .send()
         .await
         .unwrap();
@@ -269,7 +275,10 @@ async fn test_filtering() {
     let v: Value = serde_json::from_str(&body).unwrap();
     let data = v["data"].as_array().expect("data is not an array");
 
-    assert_eq!(data[0]["id"].as_i64(), Some(1));
+    assert_eq!(
+        data[0]["id"].as_str().unwrap(),
+        "4bf5122f344554c53bde2ebb8cd2b7e3d1600ad631c385a5d7cce23c7785459a".to_string()
+    );
     assert_eq!(data[0]["foola"].as_str(), Some("beep"));
     assert_eq!(data[0]["maybe_null_bar"].as_i64(), Some(123));
     assert_eq!(data[0]["bazoo"].as_i64(), Some(1));
@@ -289,11 +298,11 @@ async fn test_filtering() {
     let v: Value = serde_json::from_str(&body).unwrap();
     let data = v["data"].as_array().expect("data is not an array");
 
-    assert_eq!(data[0]["id"].as_i64(), Some(1));
+    assert!(data[0]["id"].as_str().is_some());
     assert_eq!(data[0]["foola"].as_str(), Some("beep"));
     assert_eq!(data[0]["maybe_null_bar"].as_i64(), Some(123));
     assert_eq!(data[0]["bazoo"].as_i64(), Some(1));
-    assert_eq!(data[1]["id"].as_i64(), Some(2));
+    assert!(data[1]["id"].as_str().is_some());
     assert_eq!(data[1]["foola"].as_str(), Some("boop"));
     assert_eq!(data[1]["maybe_null_bar"].as_i64(), None);
     assert_eq!(data[1]["bazoo"].as_i64(), Some(5));
@@ -313,11 +322,11 @@ async fn test_filtering() {
     let v: Value = serde_json::from_str(&body).unwrap();
     let data = v["data"].as_array().expect("data is not an array");
 
-    assert_eq!(data[0]["id"].as_i64(), Some(1));
+    assert!(data[0]["id"].as_str().is_some());
     assert_eq!(data[0]["foola"].as_str(), Some("beep"));
     assert_eq!(data[0]["maybe_null_bar"].as_i64(), Some(123));
     assert_eq!(data[0]["bazoo"].as_i64(), Some(1));
-    assert_eq!(data[1]["id"].as_i64(), Some(3));
+    assert!(data[1]["id"].as_str().is_some());
     assert_eq!(data[1]["foola"].as_str(), Some("blorp"));
     assert_eq!(data[1]["maybe_null_bar"].as_i64(), Some(456));
     assert_eq!(data[1]["bazoo"].as_i64(), Some(1000));
@@ -337,11 +346,11 @@ async fn test_filtering() {
     let v: Value = serde_json::from_str(&body).unwrap();
     let data = v["data"].as_array().expect("data is not an array");
 
-    assert_eq!(data[0]["id"].as_i64(), Some(1));
+    assert!(data[0]["id"].as_str().is_some());
     assert_eq!(data[0]["foola"].as_str(), Some("beep"));
     assert_eq!(data[0]["maybe_null_bar"].as_i64(), Some(123));
     assert_eq!(data[0]["bazoo"].as_i64(), Some(1));
-    assert_eq!(data[1]["id"].as_i64(), Some(2));
+    assert!(data[1]["id"].as_str().is_some());
     assert_eq!(data[1]["foola"].as_str(), Some("boop"));
     assert_eq!(data[1]["maybe_null_bar"].as_i64(), None);
     assert_eq!(data[1]["bazoo"].as_i64(), Some(5));
@@ -359,11 +368,11 @@ async fn test_filtering() {
     let v: Value = serde_json::from_str(&body).unwrap();
     let data = v["data"].as_array().expect("data is not an array");
 
-    assert_eq!(data[0]["id"].as_i64(), Some(1));
+    assert!(data[0]["id"].as_str().is_some());
     assert_eq!(data[0]["foola"].as_str(), Some("beep"));
     assert_eq!(data[0]["maybe_null_bar"].as_i64(), Some(123));
     assert_eq!(data[0]["bazoo"].as_i64(), Some(1));
-    assert_eq!(data[1]["id"].as_i64(), Some(2));
+    assert!(data[1]["id"].as_str().is_some());
     assert_eq!(data[1]["foola"].as_str(), Some("boop"));
     assert_eq!(data[1]["maybe_null_bar"].as_i64(), None);
     assert_eq!(data[1]["bazoo"].as_i64(), Some(5));
@@ -383,11 +392,11 @@ async fn test_filtering() {
     let v: Value = serde_json::from_str(&body).unwrap();
     let data = v["data"].as_array().expect("data is not an array");
 
-    assert_eq!(data[0]["id"].as_i64(), Some(3));
+    assert!(data[0]["id"].as_str().is_some());
     assert_eq!(data[0]["foola"].as_str(), Some("blorp"));
     assert_eq!(data[0]["maybe_null_bar"].as_i64(), Some(456));
     assert_eq!(data[0]["bazoo"].as_i64(), Some(1000));
-    assert_eq!(data[0]["inner_entity"]["id"].as_i64(), Some(3));
+    assert!(data[0]["inner_entity"]["id"].as_str().is_some());
     assert_eq!(data[0]["inner_entity"]["inner_foo"].as_str(), Some("eggs"));
     assert_eq!(data[0]["inner_entity"]["inner_bar"].as_u64(), Some(500));
     assert_eq!(data[0]["inner_entity"]["inner_baz"].as_u64(), Some(600));
@@ -407,7 +416,7 @@ async fn test_filtering() {
     let v: Value = serde_json::from_str(&body).unwrap();
     let data = v["data"].as_array().expect("data is not an array");
 
-    assert_eq!(data[0]["id"].as_i64(), Some(1));
+    assert!(data[0]["id"].as_str().is_some());
     assert_eq!(data[0]["foola"].as_str(), Some("beep"));
     assert_eq!(data[0]["maybe_null_bar"].as_i64(), Some(123));
     assert_eq!(data[0]["bazoo"].as_i64(), Some(1));
@@ -427,7 +436,7 @@ async fn test_filtering() {
     let v: Value = serde_json::from_str(&body).unwrap();
     let data = v["data"].as_array().expect("data is not an array");
 
-    assert_eq!(data[0]["id"].as_i64(), Some(3));
+    assert!(data[0]["id"].as_str().is_some());
     assert_eq!(data[0]["foola"].as_str(), Some("blorp"));
     assert_eq!(data[0]["maybe_null_bar"].as_i64(), Some(456));
     assert_eq!(data[0]["bazoo"].as_i64(), Some(1000));
@@ -460,11 +469,11 @@ async fn test_sorting() {
     let v: Value = serde_json::from_str(&body).unwrap();
     let data = v["data"].as_array().expect("data is not an array");
 
-    assert_eq!(data[0]["id"].as_i64(), Some(2));
+    assert_eq!(data[0]["id"].as_str().unwrap(), uid([2]).to_string());
     assert_eq!(data[0]["foola"].as_str(), Some("boop"));
-    assert_eq!(data[1]["id"].as_i64(), Some(3));
+    assert_eq!(data[1]["id"].as_str().unwrap(), uid([3]).to_string());
     assert_eq!(data[1]["foola"].as_str(), Some("blorp"));
-    assert_eq!(data[2]["id"].as_i64(), Some(1));
+    assert_eq!(data[2]["id"].as_str().unwrap(), uid([1]).to_string());
     assert_eq!(data[2]["foola"].as_str(), Some("beep"));
 
     server.abort();

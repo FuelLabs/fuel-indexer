@@ -4,10 +4,10 @@ use crate::{
 };
 use fuel_abi_types::abi::program::TypeDeclaration;
 use fuel_indexer_lib::{
-    graphql::GraphQLSchemaValidator, manifest::ContractIds, manifest::Manifest, type_id,
+    graphql::GraphQLSchemaValidator, manifest::ContractIds, manifest::Manifest,
     utils::local_repository_root, ExecutionSource,
 };
-use fuel_indexer_types::FUEL_TYPES_NAMESPACE;
+use fuel_indexer_types::{type_id, FUEL_TYPES_NAMESPACE};
 use fuels::{core::codec::resolve_fn_selector, types::param_types::ParamType};
 use fuels_code_gen::{Abigen, AbigenTarget, ProgramType};
 use proc_macro::TokenStream;

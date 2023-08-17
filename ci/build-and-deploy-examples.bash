@@ -40,6 +40,7 @@ else
   exit 1
 fi
 
+
 # Trigger an indexable event
 cargo run -p hello-world-data --bin hello-world-data
 sleep 2
