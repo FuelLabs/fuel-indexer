@@ -595,3 +595,28 @@ async fn test_index_sway_enums() {
     assert_eq!(row.get::<&str, usize>(1), EXPECTED_CONTRACT_ID);
     assert_eq!(row.get::<BigDecimal, usize>(2).to_u64().unwrap(), 0);
 }
+
+#[actix_web::test]
+async fn test_start_block() {
+    let IndexingTestComponents { db, manifest, .. } =
+        setup_indexing_test_components(None).await;
+
+    let mut conn = fuel_indexer_database::IndexerConnection::Postgres(Box::new(
+        db.pool.acquire().await.unwrap(),
+    ));
+
+    let start = fuel_indexer::get_start_block(&mut conn, &manifest)
+        .await
+        .unwrap();
+
+    assert_eq!(start, 1);
+
+    mock_request("/block").await;
+    mock_request("/block").await;
+
+    let start = fuel_indexer::get_start_block(&mut conn, &manifest)
+        .await
+        .unwrap();
+
+    assert_eq!(start, 3);
+}

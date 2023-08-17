@@ -15,6 +15,7 @@ pub use fuel_indexer_lib::{
     manifest::{Manifest, ManifestError, Module},
 };
 pub use fuel_indexer_schema::{db::IndexerSchemaDbError, FtColumn};
+pub use service::get_start_block;
 pub use service::IndexerService;
 use thiserror::Error;
 use wasmer::{ExportError, InstantiationError, RuntimeError};
