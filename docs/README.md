@@ -10,7 +10,7 @@
 </p>
 <p align="center">
     <a href="https://github.com/FuelLabs/fuel-indexer/actions/workflows/ci.yml" alt="CI">
-        <img src="https://github.com/FuelLabs/fuel-indexer/actions/workflows/ci.yml/badge.svg" />
+        <img src="https://img.shields.io/github/actions/workflow/status/FuelLabs/fuel-indexer/ci.yml?event=release" />
     </a>
     <a href="https://docs.rs/fuel-indexer/" alt="docs.rs">
       <img src="https://docs.rs/fuel-indexer/badge.svg" />
