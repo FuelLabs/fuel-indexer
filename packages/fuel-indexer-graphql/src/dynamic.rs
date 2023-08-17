@@ -11,6 +11,7 @@ use async_graphql::{
 use async_graphql_parser::types::{BaseType, Type};
 use async_graphql_value::Name;
 use fuel_indexer_database::{queries, IndexerConnectionPool};
+use fuel_indexer_graphql_lib::spec::*;
 use fuel_indexer_schema::db::tables::IndexerSchema;
 use lazy_static::lazy_static;
 use serde_json::Value;
@@ -350,8 +351,57 @@ pub fn build_dynamic_schema(schema: &IndexerSchema) -> GraphqlResult<DynamicSche
             &sorter_tracker,
             &sort_object_list,
         );
+        let node_name = TypeRef::node(entity_type);
+        let connection_name = TypeRef::connection(&node_name);
+        let page_info = Object::new(TypeRef::PAGE_INFO)
+            .field(Field::new(
+                "hasNextPage",
+                TypeRef::named_nn(TypeRef::BOOLEAN),
+                |_| unimplemented!(),
+            ))
+            .field(Field::new(
+                "hasPreviousPage",
+                TypeRef::named_nn(TypeRef::BOOLEAN),
+                |_| unimplemented!(),
+            ))
+            .field(Field::new(
+                "startCursor",
+                TypeRef::named(TypeRef::CURSOR),
+                |_| unimplemented!(),
+            ))
+            .field(Field::new(
+                "endCursor",
+                TypeRef::named(TypeRef::CURSOR),
+                |_| unimplemented!(),
+            ));
+        let connection = Object::new(&connection_name)
+            .field(Field::new(
+                "nodes",
+                TypeRef::named_nn_list_nn(&node_name),
+                |_| unimplemented!(),
+            ))
+            .field(Field::new(
+                "pageInfo",
+                TypeRef::named_nn(TypeRef::PAGE_INFO),
+                |_| unimplemented!(),
+            ));
+        let plural_field_name = format!("{}s", node_name.to_lowercase());
+        let plural_field = create_root_connection_field(
+            plural_field_name,
+            TypeRef::named_nn(&connection_name),
+            &BaseType::Named(Name::new(obj.type_name())),
+            &filter_tracker,
+            &filter_object_list,
+            &sorter_tracker,
+            &sort_object_list,
+        );
         if !SCALAR_TYPES.contains(&obj.type_name()) {
             query_root = query_root.field(field);
+            query_root = query_root.field(plural_field);
+            schema_builder = schema_builder
+                .register_connection_types()
+                .register(connection)
+                .register(page_info);
         }
 
         schema_builder = schema_builder.register(obj).register(object_field_enum);
@@ -462,6 +512,53 @@ fn create_field_with_assoc_args(
                     .argument(offset_arg)
                     .argument(limit_arg)
                     .argument(id_selection_arg);
+            }
+        }
+        BaseType::List(_) => unimplemented!("List types are not currently supported"),
+    }
+
+    field
+}
+
+fn create_root_connection_field(
+    field_name: String,
+    field_type_ref: TypeRef,
+    base_field_type: &BaseType,
+    filter_tracker: &HashMap<String, usize>,
+    filter_object_list: &[InputObject],
+    sorter_tracker: &HashMap<String, usize>,
+    sort_object_list: &[InputObject],
+) -> Field {
+    // Because the dynamic schema is set to only resolve introspection
+    // queries, we set the resolvers to return a dummy value.
+    let mut field =
+        Field::new(field_name, field_type_ref, move |_ctx: ResolverContext| {
+            return FieldFuture::new(async move { Ok(Some(FieldValue::value(1))) });
+        });
+
+    match base_field_type {
+        BaseType::Named(field_type) => {
+            if !SCALAR_TYPES.contains(field_type.as_str()) {
+                if let Some(idx) = filter_tracker.get(&field_type.to_string()) {
+                    let object_filter_arg = InputValue::new(
+                        "filter",
+                        TypeRef::named(filter_object_list[*idx].type_name()),
+                    );
+                    field = field.argument(object_filter_arg)
+                }
+
+                if let Some(idx) = sorter_tracker.get(&field_type.to_string()) {
+                    let object_sort_arg = InputValue::new(
+                        "order",
+                        TypeRef::named(sort_object_list[*idx].type_name()),
+                    );
+                    field = field.argument(object_sort_arg);
+                }
+
+                let first_arg = InputValue::new("first", TypeRef::named(TypeRef::INT));
+                let after_arg = InputValue::new("after", TypeRef::named(TypeRef::INT));
+
+                field = field.argument(after_arg).argument(first_arg);
             }
         }
         BaseType::List(_) => unimplemented!("List types are not currently supported"),

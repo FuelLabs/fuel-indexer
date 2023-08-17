@@ -3468,6 +3468,7 @@ dependencies = [
  "async-graphql-value 5.0.10",
  "fuel-indexer-database",
  "fuel-indexer-database-types",
+ "fuel-indexer-graphql-lib",
  "fuel-indexer-lib",
  "fuel-indexer-schema",
  "fuel-indexer-types",
