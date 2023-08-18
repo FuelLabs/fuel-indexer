@@ -79,10 +79,6 @@ cargo run --features fuel-core-lib --bin fuel-indexer run
 
 Fuel indexer tests are currently broken out by a database feature flag. In order to run tests with a Postgres backend, use `--features postgres`.
 
-Further, the indexer uses end-to-end (E2E) tests. In order to trigger these end-to-end tests, you'll want to use the `e2e` features flag: `--features e2e`.
-
-> All end-to-end tests also require the use of a database feature. For example, to run the end-to-end tests with a Posgres backend, use `--features postgres`.
-
 ### Default tests
 
 ```bash

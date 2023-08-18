@@ -157,7 +157,7 @@ pub mod {indexer_name}_index_mod {{
             info!("Processing Block#{{}}. (>'.')>", block_data.header.height);
         }}
         
-        let block = Block::new(block_data.header.height, block_data.id);
+        let block = Block::new(block_data.header.height.into(), block_data.id);
         block.save();
 
         for transaction in block_data.transactions.iter() {{
@@ -195,7 +195,7 @@ pub mod {indexer_name}_index_mod {{
             info!("Processing Block#{{}}. (>'.')>", block_data.header.height);
         }}
         
-        let block = Block::new(block_data.header.height, block_data.id);
+        let block = Block::new(block_data.header.height.into(), block_data.id);
         block.save().await;
 
         for transaction in block_data.transactions.iter() {{
