@@ -295,6 +295,9 @@ impl From<ImplementationDecoder> for TokenStream {
                     return quote! {};
                 }
 
+                // We allow for `clippy::too_many_arguments` here as an entity can
+                // have a large number of fields and a method that uses those fields
+                // as parameters will trigger this clippy lint.
                 quote! {
                     impl #ident {
                         #[allow(clippy::too_many_arguments)]
