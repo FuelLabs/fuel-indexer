@@ -658,24 +658,27 @@ impl ParsedGraphQLSchema {
             // Parse _everything_ in the GraphQL schema
             let ast = parse_schema(schema.schema())?;
             decoder.decode_schema(namespace, identifier, exec_source.clone(), ast)?;
+            decoder.parsed_graphql_schema.schema = schema.clone();
         };
 
         let mut result = decoder.get_parsed_schema();
 
-        let base_ast = parse_schema(BASE_SCHEMA)?;
-        let mut base_decoder = SchemaDecoder::new();
-        base_decoder.decode_schema("base", "base", ExecutionSource::Wasm, base_ast)?;
+        let base_type_names = {
+            let base_ast = parse_schema(BASE_SCHEMA)?;
+            let mut base_decoder = SchemaDecoder::new();
+            base_decoder.decode_schema(
+                "base",
+                "base",
+                ExecutionSource::Wasm,
+                base_ast,
+            )?;
+            base_decoder.parsed_graphql_schema.type_names
+        };
 
-        result
-            .type_names
-            .extend(base_decoder.parsed_graphql_schema.type_names);
+        result.type_names.extend(base_type_names.clone());
+        result.scalar_names.extend(base_type_names);
 
-        let old_result =
-            ParsedGraphQLSchema::new(namespace, identifier, exec_source, schema)?;
-
-        assert_schema_eq(&result, &old_result);
-
-        Ok(old_result)
+        Ok(result)
     }
 
     /// Namespace of the indexer.
@@ -904,6 +907,9 @@ impl SchemaDecoder {
 
         self.decode_service_document(&ast)?;
         self.parsed_graphql_schema.ast = ast;
+
+        //TODO
+        //self.parsed_graphql_schema.ast.definitions.extend(ast.definitions.into_iter());
 
         self.build_typedef_names_to_types();
 
@@ -1280,17 +1286,27 @@ fn assert_schema_eq(result: &ParsedGraphQLSchema, old_result: &ParsedGraphQLSche
         "typedef_names_to_types"
     );
 
-    //new result contains IndexType from base.graphql, while old result does not.
-    assert_eq!(result.enum_names, old_result.enum_names, "enum_names");
-
-    assert_eq!(result.union_names, old_result.union_names, "union_names");
-
     let mut x = result.objects.keys().collect::<Vec<&String>>();
     x.sort();
     let mut y = old_result.objects.keys().collect::<Vec<&String>>();
     y.sort();
 
     assert_eq!(x, y, "objects");
+
+    let mut x = result.unions.keys().collect::<Vec<&String>>();
+    x.sort();
+    let mut y = old_result.unions.keys().collect::<Vec<&String>>();
+    y.sort();
+    assert_eq!(x, y, "unions");
+
+    assert_eq!(result.enum_names, old_result.enum_names, "enum_names");
+
+    assert_eq!(result.union_names, old_result.union_names, "union_names");
+
+    assert_eq!(
+        result.object_field_mappings, old_result.object_field_mappings,
+        "object_field_mappings"
+    );
 
     assert_eq!(
         result.virtual_type_names, old_result.virtual_type_names,
@@ -1307,9 +1323,11 @@ fn assert_schema_eq(result: &ParsedGraphQLSchema, old_result: &ParsedGraphQLSche
         "field_type_mappings"
     );
 
+    assert_eq!(result.scalar_names, old_result.scalar_names, "scalar_names");
+
     assert_eq!(
-        result.object_field_mappings, old_result.object_field_mappings,
-        "object_field_mappings"
+        result.field_type_optionality, old_result.field_type_optionality,
+        "field_type_optionality"
     );
 
     let mut x = result.field_defs.keys().collect::<Vec<&String>>();
@@ -1317,11 +1335,6 @@ fn assert_schema_eq(result: &ParsedGraphQLSchema, old_result: &ParsedGraphQLSche
     let mut y = old_result.field_defs.keys().collect::<Vec<&String>>();
     y.sort();
     assert_eq!(x, y, "field_defs");
-
-    assert_eq!(
-        result.field_type_optionality, old_result.field_type_optionality,
-        "field_type_optionality"
-    );
 
     assert_eq!(
         result.foreign_key_mappings, old_result.foreign_key_mappings,
@@ -1345,19 +1358,9 @@ fn assert_schema_eq(result: &ParsedGraphQLSchema, old_result: &ParsedGraphQLSche
     y.sort();
     assert_eq!(x, y, "list_type_defs");
 
-    let mut x = result.unions.keys().collect::<Vec<&String>>();
-    x.sort();
-    let mut y = old_result.unions.keys().collect::<Vec<&String>>();
-    y.sort();
-    assert_eq!(x, y, "unions");
-
     assert_eq!(
         result.join_table_meta, old_result.join_table_meta,
         "join_table_meta"
-    );
-    assert_eq!(
-        result.typedef_names_to_types, old_result.typedef_names_to_types,
-        "typedef_names_to_types"
     );
 
     let mut x = result
@@ -1371,6 +1374,8 @@ fn assert_schema_eq(result: &ParsedGraphQLSchema, old_result: &ParsedGraphQLSche
         .collect::<Vec<&String>>();
     y.sort();
     assert_eq!(x, y, "object_ordered_fields");
+
+    assert_eq!(result.schema.schema(), old_result.schema.schema(), "schema");
 }
 
 #[cfg(test)]
