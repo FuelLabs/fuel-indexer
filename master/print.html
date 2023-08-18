@@ -2654,13 +2654,13 @@ DATABASE_URL=postgres://postgres@localhost sqlx migrate run
 <p>Fuel indexer tests are currently broken out by a database feature flag. In order to run tests with a Postgres backend, use <code>--features postgres</code>.</p>
 <p>Further, the indexer uses end-to-end (E2E) tests. In order to trigger these end-to-end tests, you'll want to use the <code>e2e</code> features flag: <code>--features e2e</code>.</p>
 <blockquote>
-<p>All end-to-end tests also require the use of a database feature. For example, to run the end-to-end tests with a Posgres backend, use <code>--features e2e,postgres</code>.</p>
+<p>All end-to-end tests also require the use of a database feature. For example, to run the end-to-end tests with a Posgres backend, use <code>--features postgres</code>.</p>
 </blockquote>
 <h3 id="default-tests"><a class="header" href="#default-tests">Default tests</a></h3>
 <pre><code class="language-bash">cargo test --locked --workspace --all-targets
 </code></pre>
 <h3 id="end-to-end-tests"><a class="header" href="#end-to-end-tests">End-to-end tests</a></h3>
-<pre><code class="language-bash">cargo test --locked --workspace --all-targets --features e2e,postgres
+<pre><code class="language-bash">cargo test --locked --workspace --all-targets --features postgres
 </code></pre>
 <h3 id="trybuild-tests"><a class="header" href="#trybuild-tests"><code>trybuild</code> tests</a></h3>
 <p>For tests related to the meta-programming used in the Fuel indexer, we use <code>trybuild</code>.</p>
