@@ -657,7 +657,11 @@ impl ParsedGraphQLSchema {
         if let Some(schema) = schema {
             // Parse _everything_ in the GraphQL schema
             let ast = parse_schema(schema.schema())?;
-            decoder.decode_schema(namespace, identifier, exec_source.clone(), ast)?;
+            decoder.decode_service_document(ast)?;
+
+            decoder.parsed_graphql_schema.namespace = namespace.to_string();
+            decoder.parsed_graphql_schema.identifier = identifier.to_string();
+            decoder.parsed_graphql_schema.exec_source = exec_source.clone();
             decoder.parsed_graphql_schema.schema = schema.clone();
         };
 
@@ -666,10 +670,7 @@ impl ParsedGraphQLSchema {
         let base_type_names = {
             let base_ast = parse_schema(BASE_SCHEMA)?;
             let mut base_decoder = SchemaDecoder::new();
-            base_decoder.decode_schema(
-                "base",
-                "base",
-                ExecutionSource::Wasm,
+            base_decoder.decode_service_document(
                 base_ast,
             )?;
             base_decoder.parsed_graphql_schema.type_names
@@ -894,33 +895,13 @@ impl SchemaDecoder {
         self.parsed_graphql_schema
     }
 
-    fn decode_schema(
-        &mut self,
-        namespace: &str,
-        identifier: &str,
-        exec_source: ExecutionSource,
-        ast: ServiceDocument,
-    ) -> ParsedResult<()> {
-        self.parsed_graphql_schema.namespace = namespace.to_string();
-        self.parsed_graphql_schema.identifier = identifier.to_string();
-        self.parsed_graphql_schema.exec_source = exec_source;
-
-        self.decode_service_document(&ast)?;
-        self.parsed_graphql_schema.ast = ast;
-
-        //TODO
-        //self.parsed_graphql_schema.ast.definitions.extend(ast.definitions.into_iter());
-
-        self.build_typedef_names_to_types();
-
-        Ok(())
-    }
-
     /// Parse and decode the base GraphQL Schema
-    fn decode_service_document(&mut self, ast: &ServiceDocument) -> ParsedResult<()> {
+    fn decode_service_document(&mut self, ast: ServiceDocument) -> ParsedResult<()> {
         for def in ast.definitions.iter() {
             self.decode_type_system_definifion(def)?;
         }
+        self.parsed_graphql_schema.ast = ast;
+        self.build_typedef_names_to_types();
         Ok(())
     }
 
