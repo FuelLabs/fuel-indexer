@@ -577,7 +577,7 @@ impl SchemaDecoder {
             self.parsed_graphql_schema
                 .object_field_mappings
                 .entry(name.clone())
-                .or_insert_with(BTreeMap::new)
+                .or_default()
                 .insert(val_name.to_string(), name.clone());
             self.parsed_graphql_schema
                 .field_type_mappings
@@ -683,7 +683,7 @@ impl SchemaDecoder {
                         self.parsed_graphql_schema
                             .join_table_meta
                             .entry(union_name.clone())
-                            .or_insert_with(Vec::new)
+                            .or_default()
                             .push(JoinTableMeta::new(
                                 &union_name.to_lowercase(),
                                 // The parent join column is _always_ `id: ID!`
@@ -721,7 +721,7 @@ impl SchemaDecoder {
                 self.parsed_graphql_schema
                     .object_field_mappings
                     .entry(union_name.clone())
-                    .or_insert_with(BTreeMap::new)
+                    .or_default()
                     .insert(f.node.name.to_string(), field_type_name(&f.node));
 
                 self.parsed_graphql_schema
@@ -767,7 +767,7 @@ impl SchemaDecoder {
             self.parsed_graphql_schema
                 .object_ordered_fields
                 .entry(obj_name.clone())
-                .or_insert_with(Vec::new)
+                .or_default()
                 .push(OrderedField(field.node.clone(), i));
 
             if is_list_type(&field.node) {
@@ -814,7 +814,7 @@ impl SchemaDecoder {
                     self.parsed_graphql_schema
                         .join_table_meta
                         .entry(obj_name.clone())
-                        .or_insert_with(Vec::new)
+                        .or_default()
                         .push(JoinTableMeta::new(
                             &obj_name.to_lowercase(),
                             // The parent join column is _always_ `id: ID!`
