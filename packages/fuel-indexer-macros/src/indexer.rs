@@ -101,13 +101,11 @@ fn process_fn_items(
                 }
             }
         })
-        .chain(
-            vec![quote! {
-                u64::MAX => {
-                    {}
-                }
-            }],
-        )
+        .chain(vec![quote! {
+            u64::MAX => {
+                {}
+            }
+        }])
         .collect::<Vec<proc_macro2::TokenStream>>();
 
     let abi_type_decoders = abi_types

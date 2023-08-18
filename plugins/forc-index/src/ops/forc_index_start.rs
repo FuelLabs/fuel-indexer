@@ -48,11 +48,13 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
         cmd.arg("--log-level").arg(&log_level);
 
         // Bool options
-        let options = [("--run-migrations", run_migrations),
+        let options = [
+            ("--run-migrations", run_migrations),
             ("--metrics", metrics),
             ("--auth-enabled", auth_enabled),
             ("--verbose", verbose),
-            ("--local-fuel-node", local_fuel_node)];
+            ("--local-fuel-node", local_fuel_node),
+        ];
         for (opt, value) in options.iter() {
             if *value {
                 cmd.arg(opt);
