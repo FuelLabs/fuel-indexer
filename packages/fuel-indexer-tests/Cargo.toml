@@ -32,12 +32,14 @@ fuel-indexer-api-server = { workspace = true }
 fuel-indexer-database = { workspace = true }
 fuel-indexer-graphql = { workspace = true }
 fuel-indexer-lib = { workspace = true }
+fuel-indexer-plugin = { workspace = true }
 fuel-indexer-postgres = { workspace = true, features = ["metrics"] }
 fuel-indexer-schema = { workspace = true, default-features = true }
 fuel-indexer-types = { workspace = true }
 fuel-indexer-utils = { workspace = true }
 fuel-tx = { workspace = true }
 fuels = { features = ["fuel-core-lib", "std"], version = "0.46" }
+fuels-macros = { version = "0.46", default-features = false }
 futures = "0.3"
 hex = "0.4"
 hyper = { version = "0.14", features = ["client", "http2", "http1", "runtime" ] }
@@ -53,6 +55,7 @@ thiserror = { workspace = true }
 tokio = { features = ["macros", "rt-multi-thread"], workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { version = "0.2", features = ["env-filter"] }
+trybuild = "1.0"
 url = "2.3"
 wasmer = "4"
 wasmer-middlewares = "4"
@@ -61,3 +64,8 @@ wasmer-types = "4"
 [features]
 default = ["postgres"]
 postgres = []
+
+# Including trybuild tests with other integration tests causes $CARGO_MANIFEST_DIR to be switched from
+# the workspace root level to the test crate level. This in turn causes the `abigen!` macro's path to be
+# incorrect - thus the tests won't compile.
+trybuild = []

@@ -1,3 +1,4 @@
+#[cfg(not(feature = "trybuild"))]
 pub mod fixtures;
 
 pub const WORKSPACE_ROOT: &str = env!("CARGO_MANIFEST_DIR");

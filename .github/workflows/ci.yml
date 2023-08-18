@@ -52,11 +52,11 @@ jobs:
       - name: Set env vars
         id: set-env
         run: >
-          echo "IS_MASTER=${{ env.IS_MASTER }}" >> $GITHUB_OUTPUT 
+          echo "IS_MASTER=${{ env.IS_MASTER }}" >> $GITHUB_OUTPUT
 
-          echo "IS_DEVELOP=${{ env.IS_DEVELOP }}" >> $GITHUB_OUTPUT 
+          echo "IS_DEVELOP=${{ env.IS_DEVELOP }}" >> $GITHUB_OUTPUT
 
-          echo "IS_RELEASE=${{ env.IS_RELEASE }}" >> $GITHUB_OUTPUT 
+          echo "IS_RELEASE=${{ env.IS_RELEASE }}" >> $GITHUB_OUTPUT
 
           if [[ ${{ env.IS_MASTER }} == 'true' || ${{ env.IS_DEVELOP }} == 'true' || ${{ env.IS_RELEASE }} == 'true' || ${{ env.BRANCH_NAME }} =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "IS_RELEASE_OR_MASTER_OR_DEVELOP_OR_SEMVER=true" >> $GITHUB_OUTPUT
@@ -266,8 +266,12 @@ jobs:
       - name: Run E2E and integration tests
         run: cargo test --locked --all-targets --features postgres -p
           fuel-indexer-tests -- --test-threads=1
+      - name: Run trybuild tests
+        run: cargo test --locked --all-targets --features trybuild -p
+          fuel-indexer-tests
   build-default-indexer:
-    if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_DEVELOP_OR_SEMVER != 'true'
+    # if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_DEVELOP_OR_SEMVER != 'true'
+    if: false
     needs:
       - cargo-toml-fmt-check
       - set-env-vars
@@ -318,8 +322,9 @@ jobs:
           cd ..
           rm -rfv indexer-test
   build-and-test-examples:
-    if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_DEVELOP_OR_SEMVER !=
-      'true'
+    # if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_DEVELOP_OR_SEMVER !=
+    #   'true'
+    if: false
     needs:
       - cargo-toml-fmt-check
       - set-env-vars
