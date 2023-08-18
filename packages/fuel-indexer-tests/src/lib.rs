@@ -87,7 +87,7 @@ pub mod utils {
             .unwrap()
             .parent()
             .unwrap()
-            .join(manifest.abi().clone().unwrap())
+            .join(manifest.abi().unwrap())
             .into_os_string()
             .to_str()
             .unwrap()

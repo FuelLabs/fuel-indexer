@@ -230,8 +230,8 @@ impl From<fuel::Input> for Input {
                     tx_pointer.id,
                     witness_index.into(),
                     *maturity,
-                    predicate.into(),
-                    predicate_data.into(),
+                    predicate,
+                    predicate_data,
                     InputLabel::Coin.into(),
                     true,
                 );
@@ -282,9 +282,9 @@ impl From<fuel::Input> for Input {
                     amount,
                     Nonce::from(<[u8; 32]>::from(nonce)),
                     witness_index.into(),
-                    data.into(),
-                    predicate.into(),
-                    predicate_data.into(),
+                    data,
+                    predicate,
+                    predicate_data,
                     InputLabel::Message.into(),
                     true,
                 );

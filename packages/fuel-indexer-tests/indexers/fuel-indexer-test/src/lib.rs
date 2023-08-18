@@ -515,7 +515,7 @@ mod fuel_indexer_test {
 
         let e = ListTypeEntity {
             id: uid([1]),
-            foo: "hello world".to_string(),
+            foo_field: "hello world".to_string(),
             required_all: vec![list_fk1.id, list_fk2.id, list_fk3.id],
             optional_inner: vec![
                 Some("hello".to_string()),
