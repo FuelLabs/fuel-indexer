@@ -308,6 +308,18 @@ impl ParsedGraphQLSchema {
         exec_source: ExecutionSource,
         schema: Option<&GraphQLSchema>,
     ) -> ParsedResult<Self> {
+        let x = Self::old_new(namespace, identifier, exec_source.clone(), schema)?;
+        let y = Self::new_new(namespace, identifier, exec_source.clone(), schema)?;
+        assert_schema_eq(&x, &y);
+        Ok(x)
+    }
+
+    pub fn old_new(
+        namespace: &str,
+        identifier: &str,
+        exec_source: ExecutionSource,
+        schema: Option<&GraphQLSchema>,
+    ) -> ParsedResult<Self> {
         let mut ast = parse_schema(BASE_SCHEMA).map_err(ParsedError::ParseError)?;
         let mut type_names = HashSet::new();
         let (scalar_names, _) = build_schema_types_set(&ast);
