@@ -30,8 +30,8 @@ path = "src/main.rs"
 
 [dependencies]
 async-trait = {{ version = "0.1" }}
-fuel-indexer = {{ version = "0.19", default-features = false }}
-fuel-indexer-utils = {{ version = "0.19", features = ["native-execution"] }}
+fuel-indexer = {{ version = "0.20", default-features = false }}
+fuel-indexer-utils = {{ version = "0.20", features = ["native-execution"] }}
 fuels = {{ version = "0.46", default-features = false, features = ["std"] }}
 serde = {{ version = "1.0", default-features = false, features = ["derive"] }}
 "#
@@ -52,7 +52,7 @@ rust-version = "1.71.1"
 crate-type = ['cdylib']
 
 [dependencies]
-fuel-indexer-utils = {{ version = "0.19" }}
+fuel-indexer-utils = {{ version = "0.20" }}
 fuels = {{ version = "0.46", default-features = false }}
 serde = {{ version = "1.0", default-features = false, features = ["derive"] }}
 "#
