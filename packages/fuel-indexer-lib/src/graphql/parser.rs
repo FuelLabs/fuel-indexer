@@ -276,7 +276,7 @@ impl ParsedGraphQLSchema {
         exec_source: ExecutionSource,
         schema: Option<&GraphQLSchema>,
     ) -> ParsedResult<Self> {
-        let mut decoder = SchemaDecoder::new()?;
+        let mut decoder = SchemaDecoder::new();
 
         if let Some(schema) = schema {
             // Parse _everything_ in the GraphQL schema
@@ -287,7 +287,7 @@ impl ParsedGraphQLSchema {
         let mut result = decoder.get_parsed_schema();
 
         let base_ast = parse_schema(BASE_SCHEMA)?;
-        let mut base_decoder = SchemaDecoder::new()?;
+        let mut base_decoder = SchemaDecoder::new();
         base_decoder.decode_schema("base", "base", ExecutionSource::Wasm, base_ast)?;
 
         result
@@ -500,16 +500,10 @@ struct SchemaDecoder {
 }
 
 impl SchemaDecoder {
-    fn new() -> ParsedResult<Self> {
-        let mut result = Self {
+    fn new() -> Self {
+        Self {
             ..Default::default()
-        };
-
-        // let base_ast = parse_schema(BASE_SCHEMA)?;
-        // result.decode_service_document(&base_ast)?;
-        // result.parsed_graphql_schema.ast = base_ast;
-
-        Ok(result)
+        }
     }
 
     fn get_parsed_schema(self) -> ParsedGraphQLSchema {
