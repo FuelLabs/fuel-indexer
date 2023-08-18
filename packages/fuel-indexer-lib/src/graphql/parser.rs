@@ -279,10 +279,20 @@ impl ParsedGraphQLSchema {
         let mut decoder = SchemaDecoder::new()?;
 
         if let Some(schema) = schema {
-            decoder.decode_schema(namespace, identifier, exec_source, schema)?;
+            // Parse _everything_ in the GraphQL schema
+            let ast = parse_schema(schema.schema())?;
+            decoder.decode_schema(namespace, identifier, exec_source.clone(), ast)?;
         };
 
-        let result = decoder.get_parsed_schema();
+        let mut result = decoder.get_parsed_schema();
+
+        let base_ast = parse_schema(BASE_SCHEMA)?;
+        let mut base_decoder = SchemaDecoder::new()?;
+        base_decoder.decode_schema("base", "base", ExecutionSource::Wasm, base_ast)?;
+
+        result
+            .type_names
+            .extend(base_decoder.parsed_graphql_schema.type_names);
 
         Ok(result)
     }
@@ -495,9 +505,9 @@ impl SchemaDecoder {
             ..Default::default()
         };
 
-        let base_ast = parse_schema(BASE_SCHEMA)?;
-        result.decode_service_document(&base_ast)?;
-        result.parsed_graphql_schema.ast = base_ast;
+        // let base_ast = parse_schema(BASE_SCHEMA)?;
+        // result.decode_service_document(&base_ast)?;
+        // result.parsed_graphql_schema.ast = base_ast;
 
         Ok(result)
     }
@@ -511,14 +521,12 @@ impl SchemaDecoder {
         namespace: &str,
         identifier: &str,
         exec_source: ExecutionSource,
-        schema: &GraphQLSchema,
+        ast: ServiceDocument,
     ) -> ParsedResult<()> {
         self.parsed_graphql_schema.namespace = namespace.to_string();
         self.parsed_graphql_schema.identifier = identifier.to_string();
         self.parsed_graphql_schema.exec_source = exec_source;
 
-        // Parse _everything_ in the GraphQL schema
-        let ast = parse_schema(schema.schema())?;
         self.decode_service_document(&ast)?;
         self.parsed_graphql_schema.ast = ast;
 
