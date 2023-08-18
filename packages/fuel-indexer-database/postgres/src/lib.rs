@@ -127,7 +127,7 @@ pub async fn new_root_columns(
         "INSERT INTO graph_registry_root_columns (root_id, column_name, graphql_type)",
     );
 
-    builder.push_values(cols.into_iter(), |mut b, new_col| {
+    builder.push_values(cols, |mut b, new_col| {
         b.push_bind(new_col.root_id)
             .push_bind(new_col.column_name)
             .push_bind(new_col.graphql_type);
@@ -263,7 +263,7 @@ pub async fn type_id_insert(
 ) -> sqlx::Result<usize> {
     let mut builder = sqlx::QueryBuilder::new("INSERT INTO graph_registry_type_ids (id, schema_version, schema_name, schema_identifier, graphql_name, table_name)");
 
-    builder.push_values(type_ids.into_iter(), |mut b, tid| {
+    builder.push_values(type_ids, |mut b, tid| {
         b.push_bind(tid.id)
             .push_bind(tid.version)
             .push_bind(tid.namespace)
@@ -310,7 +310,7 @@ pub async fn new_column_insert(
 ) -> sqlx::Result<usize> {
     let mut builder = sqlx::QueryBuilder::new("INSERT INTO graph_registry_columns (type_id, column_position, column_name, column_type, nullable, graphql_type, is_unique, persistence)");
 
-    builder.push_values(cols.into_iter(), |mut b, new_col| {
+    builder.push_values(cols, |mut b, new_col| {
         b.push_bind(new_col.type_id)
             .push_bind(new_col.position)
             .push_bind(new_col.name)

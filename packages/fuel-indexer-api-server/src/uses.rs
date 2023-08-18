@@ -247,10 +247,10 @@ pub(crate) async fn register_indexer_assets(
                 return Err(e.into());
             }
 
-            return Ok(Json(json!({
+            Ok(Json(json!({
                 "success": "true",
                 "assets": assets,
-            })));
+            })))
         }
         Err(e) => {
             queries::revert_transaction(&mut conn).await?;

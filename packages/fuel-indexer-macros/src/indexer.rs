@@ -106,8 +106,7 @@ fn process_fn_items(
                 u64::MAX => {
                     {}
                 }
-            }]
-            .into_iter(),
+            }],
         )
         .collect::<Vec<proc_macro2::TokenStream>>();
 
