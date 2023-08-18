@@ -11,7 +11,6 @@ pub mod utils;
 
 use proc_macro2::TokenStream;
 use quote::quote;
-use sha2::{Digest, Sha256};
 
 /// Max size of Postgres array types.
 pub const MAX_ARRAY_LENGTH: usize = 2500;
@@ -34,15 +33,6 @@ impl ExecutionSource {
             Self::Wasm => (quote! {}, quote! {}),
         }
     }
-}
-
-/// Derive a type ID from a namespace and given abstraction name.
-pub fn type_id(namespace: &str, name: &str) -> i64 {
-    // IMPORTANT: https://github.com/launchbadge/sqlx/issues/499
-    let mut bytes = [0u8; 8];
-    let digest = Sha256::digest(format!("{name}:{namespace}").as_bytes());
-    bytes[..8].copy_from_slice(&digest[..8]);
-    i64::from_be_bytes(bytes)
 }
 
 /// Return a fully qualified indexer namespace.

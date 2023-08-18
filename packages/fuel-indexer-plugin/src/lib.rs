@@ -10,6 +10,7 @@ pub mod types {
         FtColumn,
     };
     pub use fuel_indexer_types::fuel::{BlockData, TxId};
+    pub use fuel_indexer_types::scalar::UID;
 
     // Traits needed to access client type fields. Could also include this as a sub-module
     // of `fuel_indexer_types::fuel`.

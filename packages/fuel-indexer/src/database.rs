@@ -122,8 +122,8 @@ impl Database {
     }
 
     /// Return a query to get an object from the database.
-    fn get_query(&self, table: &str, object_id: u64) -> String {
-        let q = format!("SELECT object from {table} where id = {object_id}");
+    fn get_query(&self, table: &str, object_id: &str) -> String {
+        let q = format!("SELECT object from {table} where id = '{object_id}'");
         if self.config.verbose {
             info!("{q}");
         }
@@ -181,9 +181,13 @@ Do your WASM modules need to be rebuilt?
     }
 
     /// Get an object from the database.
-    pub async fn get_object(&mut self, type_id: i64, object_id: u64) -> Option<Vec<u8>> {
+    pub async fn get_object(
+        &mut self,
+        type_id: i64,
+        object_id: String,
+    ) -> Option<Vec<u8>> {
         let table = &self.tables[&type_id];
-        let query = self.get_query(table, object_id);
+        let query = self.get_query(table, &object_id);
         let conn = self
             .stashed
             .as_mut()

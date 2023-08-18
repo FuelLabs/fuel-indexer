@@ -617,12 +617,14 @@ pub fn hasher_tokens(
     match base_type {
         FieldBaseType::Named => {
             let ident = format_ident! {"{field_name}"};
-            if !NON_DIGESTIBLE_FIELD_TYPES.contains(field_type_scalar_name) {
-                return Some(
-                    quote! { #hasher.chain_update(#ident #clone #unwrap_or_default #to_bytes) },
-                );
+
+            if NON_DIGESTIBLE_FIELD_TYPES.contains(field_type_scalar_name) {
+                return None;
             }
-            None
+
+            Some(
+                quote! { #hasher.chain_update(#ident #clone #unwrap_or_default #to_bytes) },
+            )
         }
         FieldBaseType::List => None,
     }

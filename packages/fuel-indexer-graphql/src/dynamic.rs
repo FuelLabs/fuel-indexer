@@ -44,16 +44,17 @@ lazy_static! {
         "Json",
         "MessageId",
         "Nonce",
-        "Virtual",
         "Salt",
         "Signature",
         "Tai64Timestamp",
         "Timestamp",
         "TxId",
+        "UID",
         "UInt1",
         "UInt16",
         "UInt4",
         "UInt8",
+        "Virtual",
     ]);
 
     /// Scalar types that are represented by a numeric type. This ensures that the
@@ -93,6 +94,7 @@ lazy_static! {
         "Nonce",
         "Salt",
         "Signature",
+        "UID",
     ]);
 
     /// Scalar types that can be sorted.
@@ -114,6 +116,7 @@ lazy_static! {
         "Signature",
         "Tai64Timestamp",
         "Timestamp",
+        "UID",
         "UInt16",
         "UInt4",
         "UInt8",

@@ -4,87 +4,19 @@ error: custom attribute panicked
   | #[indexer(manifest = "packages/fuel-indexer-tests/trybuild/bad_simple_wasm_graphql.yaml")]
   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   |
-  = help: message: Bad schema.: ParseError(Syntax { message: " --> 1:1\n  |\n1 | namespace: test_namespace\n  | ^---\n  |\n  = expected type_system_definition", start: Pos(1:1), end: None })
+  = help: message: Failed to parse GraphQL schema.: ParseError(Syntax { message: " --> 1:1\n  |\n1 | namespace: test_namespace\n  | ^---\n  |\n  = expected type_system_definition", start: Pos(1:1), end: None })
 
-error[E0433]: failed to resolve: use of undeclared crate or module `fuel`
+error[E0432]: unresolved import `fuels::traits`
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
   |
-  |         header: fuel::Header {
-  |                 ^^^^ use of undeclared crate or module `fuel`
-  |
-help: there is a crate or module with a similar name
-   |
-32 |         header: fuels::Header {
-   |                 ~~~~~
-
-error[E0433]: failed to resolve: use of undeclared crate or module `fuel`
- --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
-  |
-  |         transactions: vec![fuel::TransactionData {
-  |                            ^^^^ use of undeclared crate or module `fuel`
-  |
-help: there is a crate or module with a similar name
-   |
-45 |         transactions: vec![fuels::TransactionData {
-   |                            ~~~~~
-
-error[E0433]: failed to resolve: use of undeclared crate or module `fuel`
- --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
-  |
-  |                 fuel::Receipt::Call {
-  |                 ^^^^ use of undeclared crate or module `fuel`
-  |
-help: there is a crate or module with a similar name
-   |
-49 |                 fuels::Receipt::Call {
-   |                 ~~~~~
-
-error[E0433]: failed to resolve: use of undeclared crate or module `fuel`
- --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
-  |
-  |                 fuel::Receipt::ReturnData {
-  |                 ^^^^ use of undeclared crate or module `fuel`
-  |
-help: there is a crate or module with a similar name
-   |
-60 |                 fuels::Receipt::ReturnData {
-   |                 ~~~~~
+  |     use fuels::{core::{codec::ABIEncoder}, traits::Tokenizable};
+  |                                            ^^^^^^ could not find `traits` in `fuels`
 
 error[E0422]: cannot find struct, variant or union type `SomeEvent` in this scope
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
   |
   |     let s = SomeEvent {
   |             ^^^^^^^^^ not found in this scope
-
-error[E0412]: cannot find type `BlockData` in this scope
- --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
-  |
-  |     let data: Vec<BlockData> = vec![BlockData {
-  |                   ^^^^^^^^^ not found in this scope
-  |
-help: consider importing one of these items
-   |
-2  + use fuel_indexer_plugin::prelude::BlockData;
-   |
-2  + use fuel_indexer_types::fuel::BlockData;
-   |
-2  + use fuel_indexer_utils::plugin::prelude::BlockData;
-   |
-
-error[E0422]: cannot find struct, variant or union type `BlockData` in this scope
- --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
-  |
-  |     let data: Vec<BlockData> = vec![BlockData {
-  |                                     ^^^^^^^^^ not found in this scope
-  |
-help: consider importing one of these items
-   |
-2  + use fuel_indexer_plugin::prelude::BlockData;
-   |
-2  + use fuel_indexer_types::fuel::BlockData;
-   |
-2  + use fuel_indexer_utils::plugin::prelude::BlockData;
-   |
 
 error[E0433]: failed to resolve: use of undeclared type `Consensus`
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
@@ -94,35 +26,13 @@ error[E0433]: failed to resolve: use of undeclared type `Consensus`
   |
 help: consider importing one of these items
    |
+2  + use crate::fuel::Consensus;
+   |
 2  + use fuel_indexer_plugin::prelude::fuel::Consensus;
    |
 2  + use fuel_indexer_types::fuel::Consensus;
    |
 2  + use fuel_indexer_utils::plugin::prelude::fuel::Consensus;
-   |
-
-error[E0433]: failed to resolve: use of undeclared crate or module `fuel`
- --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
-  |
-  |             status: fuel::TransactionStatus::default(),
-  |                     ^^^^ use of undeclared crate or module `fuel`
-  |
-help: there is a crate or module with a similar name
-   |
-47 |             status: fuels::TransactionStatus::default(),
-   |                     ~~~~~
-help: consider importing one of these items
-   |
-2  + use fuel_indexer_plugin::prelude::fuel::TransactionStatus;
-   |
-2  + use fuel_indexer_types::fuel::TransactionStatus;
-   |
-2  + use fuel_indexer_utils::plugin::prelude::fuel::TransactionStatus;
-   |
-help: if you import `TransactionStatus`, refer to it directly
-   |
-47 -             status: fuel::TransactionStatus::default(),
-47 +             status: TransactionStatus::default(),
    |
 
 error[E0433]: failed to resolve: use of undeclared type `Transaction`
@@ -133,41 +43,53 @@ error[E0433]: failed to resolve: use of undeclared type `Transaction`
   |
 help: consider importing one of these items
    |
+2  + use crate::fuel::Transaction;
+   |
 2  + use fuel_indexer_plugin::prelude::fuel::Transaction;
    |
 2  + use fuel_indexer_types::fuel::Transaction;
    |
 2  + use fuel_indexer_utils::plugin::prelude::fuel::Transaction;
    |
-2  + use fuels::prelude::Transaction;
-   |
-     and 2 other candidates
+     and 1 other candidate
 
-error[E0425]: cannot find function `serialize` in this scope
+error[E0560]: struct `Header` has no field named `output_messages_count`
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
   |
-  |     let mut bytes = serialize(&data);
-  |                     ^^^^^^^^^ not found in this scope
+  |             output_messages_count: 1,
+  |             ^^^^^^^^^^^^^^^^^^^^^ `Header` does not have this field
   |
-help: consider importing one of these items
+  = note: available fields are: `id`, `da_height`, `transactions_count`, `message_receipt_count`, `transactions_root` ... and 5 others
+
+error[E0560]: struct `Header` has no field named `output_messages_root`
+ --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
+  |
+  |             output_messages_root: [0u8; 32].into(),
+  |             ^^^^^^^^^^^^^^^^^^^^ `Header` does not have this field
+  |
+  = note: available fields are: `id`, `da_height`, `transactions_count`, `message_receipt_count`, `transactions_root` ... and 5 others
+
+error[E0308]: mismatched types
+ --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
+  |
+  |                     data: bytes,
+  |                           ^^^^^ expected `Option<Vec<u8>>`, found `Vec<u8>`
+  |
+  = note: expected enum `std::option::Option<Vec<_>>`
+           found struct `Vec<_>`
+help: try wrapping the expression in `Some`
    |
-2  + use fuel_indexer_lib::utils::serialize;
-   |
-2  + use fuel_indexer_plugin::serialize;
-   |
-2  + use fuel_indexer_utils::plugin::serialize;
-   |
+65 |                     data: Some(bytes),
+   |                           +++++     +
+
+error[E0063]: missing field `producer` in initializer of `fuel_indexer_utils::prelude::BlockData`
+ --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
+  |
+  |     let data: Vec<BlockData> = vec![BlockData {
+  |                                     ^^^^^^^^^ missing `producer`
 
 error[E0425]: cannot find function `handle_events` in this scope
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
   |
   |     handle_events(ptr, len);
   |     ^^^^^^^^^^^^^ not found in this scope
-
-error: unused import: `types::traits::Tokenizable`
- --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
-  |
-  |     use fuels::{core::abi_encoder::ABIEncoder, types::traits::Tokenizable};
-  |                                                ^^^^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = note: `-D unused-imports` implied by `-D warnings`

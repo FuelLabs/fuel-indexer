@@ -9,8 +9,9 @@ use fuel_indexer_lib::{
         field_id, types::IdCol, GraphQLSchemaValidator, ParsedGraphQLSchema,
         MAX_FOREIGN_KEY_LIST_FIELDS,
     },
-    type_id, ExecutionSource,
+    ExecutionSource,
 };
+use fuel_indexer_types::type_id;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use std::collections::{BTreeMap, HashSet};
@@ -257,7 +258,7 @@ impl From<ImplementationDecoder> for TokenStream {
             ExecutionSource::Native => {
                 quote! {
                     pub async fn get_or_create(self) -> Self {
-                        match Self::load(self.id).await {
+                        match Self::load(self.id.clone()).await {
                             Some(instance) => instance,
                             None => {
                                 self.save().await;
@@ -270,7 +271,7 @@ impl From<ImplementationDecoder> for TokenStream {
             ExecutionSource::Wasm => {
                 quote! {
                     pub fn get_or_create(self) -> Self {
-                        match Self::load(self.id) {
+                        match Self::load(self.id.clone()) {
                             Some(instance) => instance,
                             None => {
                                 self.save();
@@ -297,12 +298,8 @@ impl From<ImplementationDecoder> for TokenStream {
                 quote! {
                     impl #ident {
                         pub fn new(#parameters) -> Self {
-                            let raw_bytes = #hasher.chain_update(#typdef_name).finalize();
-
-                            let id_bytes = <[u8; 8]>::try_from(&raw_bytes[..8]).expect("Could not calculate bytes for ID from struct fields");
-
-                            let id = u64::from_le_bytes(id_bytes);
-
+                            let hashed = #hasher.chain_update(#typdef_name).finalize();
+                            let id = UID::new(format!("{:x}", hashed)).expect("Bad ID.");
                             Self {
                                 id,
                                 #struct_fields
@@ -845,11 +842,11 @@ impl From<ObjectDecoder> for TokenStream {
                         }
                     }
 
-                    async fn load(id: u64) -> Option<Self> {
+                    async fn load(id: UID) -> Option<Self> {
                         unsafe {
                             match &db {
                                 Some(d) => {
-                                    match d.lock().await.get_object(Self::TYPE_ID, id).await {
+                                    match d.lock().await.get_object(Self::TYPE_ID, id.to_string()).await {
                                         Some(bytes) => {
                                             let columns: Vec<FtColumn> = bincode::deserialize(&bytes).expect("Failed to deserialize Vec<FtColumn> for Entity::load.");
                                             let obj = Self::from_row(columns);

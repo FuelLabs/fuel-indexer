@@ -12,10 +12,10 @@ description = "Fuel Indexer Types"
 [dependencies]
 bincode = "1.3"
 bytes = { version = "1.4", features = ["serde"] }
-fuel-indexer-lib = { workspace = true }
 fuel-tx = { workspace = true, features = ["serde"] }
 fuel-types = { workspace = true }
 fuels = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+sha2 = "0.9"
 tai64 = { version = "4.0", default-features = false, features = ["serde"] }

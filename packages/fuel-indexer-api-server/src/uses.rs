@@ -236,16 +236,21 @@ pub(crate) async fn register_indexer_assets(
         Ok(assets) => {
             queries::commit_transaction(&mut conn).await?;
 
-            tx.send(ServiceRequest::Reload(ReloadRequest {
-                namespace,
-                identifier,
-            }))
-            .await?;
+            if let Err(e) = tx
+                .send(ServiceRequest::Reload(ReloadRequest {
+                    namespace,
+                    identifier,
+                }))
+                .await
+            {
+                error!("Failed to send ServiceRequest::Reload: {e:?}");
+                return Err(e.into());
+            }
 
-            Ok(Json(json!({
+            return Ok(Json(json!({
                 "success": "true",
                 "assets": assets,
-            })))
+            })));
         }
         Err(e) => {
             queries::revert_transaction(&mut conn).await?;

@@ -36,7 +36,7 @@ pub async fn put_object(
     Ok(result.rows_affected() as usize)
 }
 
-/// Fetch a blob of serialized `FtColumns` from the database.
+/// Fetch a blob of serialized `FtColumn`s from the database.
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn get_object(
     conn: &mut PoolConnection<Postgres>,

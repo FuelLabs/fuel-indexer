@@ -33,9 +33,6 @@ use fuel_indexer_utils::prelude::*;
 mod hello_world_indexer {
 
     fn index_logged_greeting(event: Greeting, block: BlockData) {
-        // We're using the `::new()` method to create a Greeter, which automatically
-        // generates an ID for the entity. Then, we use `::get_or_create()` to
-        // load the corresponding record from the database, if present.
         let greeter = Greeter::new(
             event.person.name.to_right_trimmed_str().into(),
             block.height,
@@ -44,26 +41,22 @@ mod hello_world_indexer {
         )
         .get_or_create();
 
-        // Here we show how you can use the Charfield type to store strings with
-        // length <= 255. The fuel-indexer-utils package contains a number of helpful
-        // functions for byte conversion, string manipulation, etc.
         let message = format!(
             "{} 👋, my name is {}",
             event.greeting.to_right_trimmed_str(),
             event.person.name.to_right_trimmed_str(),
         );
-        let message_hash = first32_bytes_to_bytes32(&message);
+        let message_hash = bytes32(&message);
 
         let salutation = Salutation::new(
             message_hash,
             message,
-            greeter.id,
+            greeter.id.clone(),
             block.height,
             block.height,
         )
         .get_or_create();
 
-        // Finally, we save the entities to the database.
         greeter.save();
         salutation.save();
     }

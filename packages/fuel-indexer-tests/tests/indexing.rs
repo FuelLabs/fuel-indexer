@@ -3,6 +3,7 @@ use fuel_indexer_tests::fixtures::{
     mock_request, setup_indexing_test_components, IndexingTestComponents,
 };
 use fuel_indexer_types::prelude::*;
+use fuel_indexer_utils::uid;
 use serde::{Deserialize, Serialize};
 use sqlx::{types::BigDecimal, Row};
 use std::{collections::HashSet, str::FromStr};
@@ -90,7 +91,7 @@ async fn test_index_blocks_and_transactions() {
     .await
     .unwrap();
 
-    let _id = row.get::<BigDecimal, usize>(0).to_u64().unwrap();
+    let _id = row.get::<String, usize>(0);
     let timestamp = row.get::<i64, usize>(2);
 
     assert!(row.get::<i32, usize>(1).to_u64().unwrap() > 1);
@@ -320,16 +321,18 @@ async fn test_index_optional_types() {
 
     let mut conn = db.pool.acquire().await.unwrap();
 
-    let row = sqlx::query(
-        "SELECT * FROM fuel_indexer_test_index1.optionentity WHERE id = 8675309",
-    )
+    let id = uid(8675309_i32.to_le_bytes()).to_string();
+
+    let row = sqlx::query(&format!(
+        "SELECT * FROM fuel_indexer_test_index1.optionentity WHERE id = '{id}'"
+    ))
     .fetch_one(&mut conn)
     .await
     .unwrap();
 
     let opt_int = row.get::<Option<BigDecimal>, usize>(2);
 
-    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 8675309);
+    assert_eq!(row.get::<String, usize>(0), id);
     assert_eq!(row.get::<BigDecimal, usize>(1).to_u64().unwrap(), 100);
     assert!(opt_int.is_some());
 
@@ -421,7 +424,10 @@ async fn test_index_types_for_block_explorer() {
             .await
             .unwrap();
 
-    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 8675309);
+    assert_eq!(
+        row.get::<String, usize>(0),
+        uid(8675309_i32.to_le_bytes()).to_string()
+    );
     let nonce = row.get::<&str, usize>(1);
     let nonce = hex::decode(nonce).unwrap();
     let mut buff: [u8; 32] = [0u8; 32];
@@ -440,7 +446,7 @@ async fn test_index_types_for_block_explorer() {
             .await
             .unwrap();
 
-    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 1);
+    assert_eq!(row.get::<String, usize>(0), uid([1]).to_string());
     assert_eq!(row.get::<&str, usize>(1), "hello world");
 
     let entity: VirtualEntity =
@@ -458,7 +464,7 @@ async fn test_index_types_for_block_explorer() {
     .unwrap();
 
     // Fields are in a different order for these union types
-    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 1);
+    assert_eq!(row.get::<String, usize>(0), uid([1]).to_string());
     assert_eq!(row.get::<BigDecimal, usize>(1).to_u64().unwrap(), 5);
     assert_eq!(row.get::<&str, usize>(2), "UnionType::A");
     assert_eq!(row.get::<BigDecimal, usize>(3).to_u64().unwrap(), 10);
@@ -470,7 +476,7 @@ async fn test_index_types_for_block_explorer() {
     .await
     .unwrap();
 
-    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 1);
+    assert_eq!(row.get::<String, usize>(0), uid([1]).to_string());
     let entity: UnionEntity =
         serde_json::from_value(row.get::<serde_json::Value, usize>(1)).unwrap();
     assert_eq!(row.get::<&str, usize>(2), "UnionType::B");
@@ -486,17 +492,16 @@ async fn test_index_types_for_block_explorer() {
             .await
             .unwrap();
 
-    let expected_required_all = vec![1, 2, 3];
-    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 1);
+    let expected_required_all = (1..4)
+        .map(|x| uid([x]).to_string())
+        .collect::<Vec<String>>()
+        .sort();
+    assert_eq!(row.get::<String, usize>(0), uid([1]).to_string());
     assert_eq!(row.get::<&str, usize>(1), "hello world");
     assert_eq!(
-        row.get::<Vec<BigDecimal>, usize>(2)
-            .iter()
-            .map(|x| x.to_u64().unwrap())
-            .collect::<Vec<u64>>(),
+        row.get::<Vec<String>, usize>(2).sort(),
         expected_required_all
     );
-
     let expected_optional_inner = vec!["hello".to_string(), "world".to_string()];
     assert_eq!(row.get::<Vec<String>, usize>(3), expected_optional_inner);
 
@@ -550,20 +555,20 @@ async fn test_index_types_for_block_explorer() {
     // Should all have the same parent ID
     let parent_ids = row
         .iter()
-        .map(|x| x.get::<BigDecimal, usize>(0).to_u64().unwrap())
-        .collect::<HashSet<u64>>();
+        .map(|x| x.get::<String, usize>(0))
+        .collect::<HashSet<String>>();
     assert_eq!(parent_ids.len(), 1);
-    assert!(parent_ids.contains(&1));
+    assert!(parent_ids.contains(&uid([1]).to_string()));
 
     // Should have 3 unique child IDs
     let child_ids = row
         .iter()
-        .map(|x| x.get::<BigDecimal, usize>(1).to_u64().unwrap())
-        .collect::<HashSet<u64>>();
+        .map(|x| x.get::<String, usize>(1))
+        .collect::<HashSet<String>>();
     assert_eq!(child_ids.len(), 3);
-    assert!(child_ids.contains(&1));
-    assert!(child_ids.contains(&2));
-    assert!(child_ids.contains(&3));
+    assert!(child_ids.contains(&uid([1]).to_string()));
+    assert!(child_ids.contains(&uid([2]).to_string()));
+    assert!(child_ids.contains(&uid([3]).to_string()));
 }
 
 #[actix_web::test]

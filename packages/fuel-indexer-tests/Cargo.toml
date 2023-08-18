@@ -35,6 +35,7 @@ fuel-indexer-lib = { workspace = true }
 fuel-indexer-postgres = { workspace = true, features = ["metrics"] }
 fuel-indexer-schema = { workspace = true, default-features = true }
 fuel-indexer-types = { workspace = true }
+fuel-indexer-utils = { workspace = true }
 fuel-tx = { workspace = true }
 fuels = { features = ["fuel-core-lib", "std"], version = "0.46" }
 futures = "0.3"

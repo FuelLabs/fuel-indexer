@@ -1,3 +1,4 @@
+/// Macros used to convert GraphQL tokens into Rust tokens.
 use crate::{decoder::*, helpers::*};
 use async_graphql_parser::types::{TypeDefinition, TypeKind, TypeSystemDefinition};
 use fuel_indexer_lib::graphql::GraphQLSchema;
