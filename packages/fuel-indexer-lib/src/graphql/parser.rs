@@ -135,39 +135,6 @@ impl JoinTableMeta {
     }
 }
 
-/// Given a GraphQL document, return a two `HashSet`s - one for each
-/// unique field type, and one for each unique directive.
-pub fn build_schema_types_set(
-    ast: &ServiceDocument,
-) -> (HashSet<String>, HashSet<String>) {
-    let types: HashSet<String> = ast
-        .definitions
-        .iter()
-        .filter_map(|def| {
-            if let TypeSystemDefinition::Type(typ) = def {
-                Some(&typ.node)
-            } else {
-                None
-            }
-        })
-        .map(|t| t.name.to_string())
-        .collect();
-
-    let directives = ast
-        .definitions
-        .iter()
-        .filter_map(|def| {
-            if let TypeSystemDefinition::Directive(dir) = def {
-                Some(dir.node.name.to_string())
-            } else {
-                None
-            }
-        })
-        .collect();
-
-    (types, directives)
-}
-
 /// A wrapper object used to keep track of the order of a `FieldDefinition` in an object ` TypeDefinition`.
 #[derive(Debug, Clone)]
 pub struct OrderedField(pub FieldDefinition, pub usize);
@@ -309,25 +276,13 @@ impl ParsedGraphQLSchema {
         exec_source: ExecutionSource,
         schema: Option<&GraphQLSchema>,
     ) -> ParsedResult<Self> {
-        let mut result = Self {
-            namespace: namespace.to_string(),
-            identifier: identifier.to_string(),
-            exec_source,
-            ..Default::default()
+        let mut decoder = SchemaDecoder::new()?;
+
+        if let Some(schema) = schema {
+            decoder.decode_schema(namespace, identifier, exec_source, schema)?;
         };
 
-        let base_ast = parse_schema(BASE_SCHEMA)?;
-        result.decode_service_document(&base_ast)?;
-        result.ast = base_ast;
-
-        // Parse _everything_ in the GraphQL schema
-        if let Some(schema) = schema {
-            let ast = parse_schema(schema.schema())?;
-            result.decode_service_document(&ast)?;
-            result.ast = ast;
-        }
-
-        result.build_typedef_names_to_types();
+        let result = decoder.get_parsed_schema();
 
         Ok(result)
     }
@@ -527,6 +482,50 @@ impl ParsedGraphQLSchema {
     }
 
     // Decoder functions to iteratively build up the ParsedGraphQLSchema struct.
+}
+
+#[derive(Default)]
+struct SchemaDecoder {
+    parsed_graphql_schema: ParsedGraphQLSchema,
+}
+
+impl SchemaDecoder {
+    fn new() -> ParsedResult<Self> {
+        let mut result = Self {
+            ..Default::default()
+        };
+
+        let base_ast = parse_schema(BASE_SCHEMA)?;
+        result.decode_service_document(&base_ast)?;
+        result.parsed_graphql_schema.ast = base_ast;
+
+        Ok(result)
+    }
+
+    fn get_parsed_schema(self) -> ParsedGraphQLSchema {
+        self.parsed_graphql_schema
+    }
+
+    fn decode_schema(
+        &mut self,
+        namespace: &str,
+        identifier: &str,
+        exec_source: ExecutionSource,
+        schema: &GraphQLSchema,
+    ) -> ParsedResult<()> {
+        self.parsed_graphql_schema.namespace = namespace.to_string();
+        self.parsed_graphql_schema.identifier = identifier.to_string();
+        self.parsed_graphql_schema.exec_source = exec_source;
+
+        // Parse _everything_ in the GraphQL schema
+        let ast = parse_schema(schema.schema())?;
+        self.decode_service_document(&ast)?;
+        self.parsed_graphql_schema.ast = ast;
+
+        self.build_typedef_names_to_types();
+
+        Ok(())
+    }
 
     /// Parse and decode the base GraphQL Schema
     fn decode_service_document(&mut self, ast: &ServiceDocument) -> ParsedResult<()> {
@@ -544,14 +543,14 @@ impl ParsedGraphQLSchema {
             let name = t.node.name.to_string();
             let node = t.node.clone();
 
-            self.type_names.insert(name.clone());
+            self.parsed_graphql_schema.type_names.insert(name.clone());
 
             match &t.node.kind {
                 TypeKind::Object(o) => self.decode_object_type(name, node, o),
                 TypeKind::Enum(e) => self.decode_enum_type(name, node, e),
                 TypeKind::Union(u) => self.decode_union_type(name, node, u),
                 TypeKind::Scalar => {
-                    self.scalar_names.insert(name.clone());
+                    self.parsed_graphql_schema.scalar_names.insert(name.clone());
                 }
                 _ => {
                     return Err(ParsedError::UnsupportedTypeKind);
@@ -563,19 +562,26 @@ impl ParsedGraphQLSchema {
     }
 
     fn decode_enum_type(&mut self, name: String, node: TypeDefinition, e: &EnumType) {
-        self.type_defs.insert(name.clone(), node);
+        self.parsed_graphql_schema
+            .type_defs
+            .insert(name.clone(), node);
 
-        self.virtual_type_names.insert(name.clone());
-        self.enum_names.insert(name.clone());
+        self.parsed_graphql_schema
+            .virtual_type_names
+            .insert(name.clone());
+        self.parsed_graphql_schema.enum_names.insert(name.clone());
 
         for val in &e.values {
             let val_name = &val.node.value.to_string();
             let val_id = format!("{}.{val_name}", name.clone());
-            self.object_field_mappings
+            self.parsed_graphql_schema
+                .object_field_mappings
                 .entry(name.clone())
                 .or_insert_with(BTreeMap::new)
                 .insert(val_name.to_string(), name.clone());
-            self.field_type_mappings.insert(val_id, name.to_string());
+            self.parsed_graphql_schema
+                .field_type_mappings
+                .insert(val_id, name.to_string());
         }
     }
 
@@ -585,15 +591,23 @@ impl ParsedGraphQLSchema {
         node: TypeDefinition,
         u: &UnionType,
     ) {
-        self.parsed_typedef_names.insert(union_name.clone());
-        self.type_defs.insert(union_name.clone(), node.clone());
-        self.unions.insert(union_name.clone(), node.clone());
+        self.parsed_graphql_schema
+            .parsed_typedef_names
+            .insert(union_name.clone());
+        self.parsed_graphql_schema
+            .type_defs
+            .insert(union_name.clone(), node.clone());
+        self.parsed_graphql_schema
+            .unions
+            .insert(union_name.clone(), node.clone());
 
-        self.union_names.insert(union_name.clone());
+        self.parsed_graphql_schema
+            .union_names
+            .insert(union_name.clone());
 
         GraphQLSchemaValidator::check_derived_union_is_well_formed(
             &node,
-            &mut self.virtual_type_names,
+            &mut self.parsed_graphql_schema.virtual_type_names,
         );
 
         // Ensure we're not creating duplicate join table metadata, else we'll
@@ -607,19 +621,32 @@ impl ParsedGraphQLSchema {
 
         u.members.iter().for_each(|m| {
             let member_name = m.node.to_string();
-            if let Some(name) = self.virtual_type_names.get(&member_name) {
-                self.virtual_type_names.insert(name.to_owned());
+            if let Some(name) = self
+                .parsed_graphql_schema
+                .virtual_type_names
+                .get(&member_name)
+            {
+                self.parsed_graphql_schema
+                    .virtual_type_names
+                    .insert(name.to_owned());
             }
 
             // Don't create many-to-many relationships for `TypeDefintions` that are themselves
             // members of union `TypeDefinition`s.
-            if self.join_table_meta.contains_key(&member_name) {
-                self.join_table_meta.remove(&member_name);
+            if self
+                .parsed_graphql_schema
+                .join_table_meta
+                .contains_key(&member_name)
+            {
+                self.parsed_graphql_schema
+                    .join_table_meta
+                    .remove(&member_name);
             }
 
             // Parse the many-to-many relationship metadata the same as we do for
             // `TypeKind::Object` above, just using each union member's fields.
             let member_obj = self
+                .parsed_graphql_schema
                 .objects
                 .get(&member_name)
                 .expect("Union member not found in parsed TypeDefinitions.");
@@ -635,16 +662,26 @@ impl ParsedGraphQLSchema {
                 processed_fields.insert(field_id);
 
                 // Manual foreign key check, same as above
-                if self.parsed_typedef_names.contains(&ftype)
-                    && !self.scalar_names.contains(&ftype)
-                    && !self.enum_names.contains(&ftype)
-                    && !self.virtual_type_names.contains(&ftype)
+                if self
+                    .parsed_graphql_schema
+                    .parsed_typedef_names
+                    .contains(&ftype)
+                    && !self.parsed_graphql_schema.scalar_names.contains(&ftype)
+                    && !self.parsed_graphql_schema.enum_names.contains(&ftype)
+                    && !self
+                        .parsed_graphql_schema
+                        .virtual_type_names
+                        .contains(&ftype)
                 {
                     let (_ref_coltype, ref_colname, ref_tablename) =
-                        extract_foreign_key_info(&f.node, &self.field_type_mappings);
+                        extract_foreign_key_info(
+                            &f.node,
+                            &self.parsed_graphql_schema.field_type_mappings,
+                        );
 
                     if is_list_type(&f.node) {
-                        self.join_table_meta
+                        self.parsed_graphql_schema
+                            .join_table_meta
                             .entry(union_name.clone())
                             .or_insert_with(Vec::new)
                             .push(JoinTableMeta::new(
@@ -666,21 +703,29 @@ impl ParsedGraphQLSchema {
         // we also need to cache them under this derived union name.
         u.members.iter().for_each(|m| {
             let member_name = m.node.to_string();
-            let member_obj = self.objects.get(&member_name).unwrap();
+            let member_obj = self
+                .parsed_graphql_schema
+                .objects
+                .get(&member_name)
+                .unwrap();
             member_obj.fields.iter().for_each(|f| {
                 let fid = field_id(&union_name, &f.node.name.to_string());
-                self.field_defs
+                self.parsed_graphql_schema
+                    .field_defs
                     .insert(fid.clone(), (f.node.clone(), member_name.clone()));
 
-                self.field_type_mappings
+                self.parsed_graphql_schema
+                    .field_type_mappings
                     .insert(fid.clone(), field_type_name(&f.node));
 
-                self.object_field_mappings
+                self.parsed_graphql_schema
+                    .object_field_mappings
                     .entry(union_name.clone())
                     .or_insert_with(BTreeMap::new)
                     .insert(f.node.name.to_string(), field_type_name(&f.node));
 
-                self.field_type_optionality
+                self.parsed_graphql_schema
+                    .field_type_optionality
                     .insert(fid, f.node.ty.node.nullable);
             });
         });
@@ -703,9 +748,15 @@ impl ParsedGraphQLSchema {
             return;
         }
 
-        self.type_defs.insert(obj_name.clone(), node.clone());
-        self.objects.insert(obj_name.clone(), o.clone());
-        self.parsed_typedef_names.insert(obj_name.clone());
+        self.parsed_graphql_schema
+            .type_defs
+            .insert(obj_name.clone(), node.clone());
+        self.parsed_graphql_schema
+            .objects
+            .insert(obj_name.clone(), o.clone());
+        self.parsed_graphql_schema
+            .parsed_typedef_names
+            .insert(obj_name.clone());
 
         let mut field_mapping = BTreeMap::new();
         for (i, field) in o.fields.iter().enumerate() {
@@ -713,16 +764,20 @@ impl ParsedGraphQLSchema {
             let field_typ_name = field.node.ty.to_string();
             let fid = field_id(&obj_name, &field_name);
 
-            self.object_ordered_fields
+            self.parsed_graphql_schema
+                .object_ordered_fields
                 .entry(obj_name.clone())
                 .or_insert_with(Vec::new)
                 .push(OrderedField(field.node.clone(), i));
 
             if is_list_type(&field.node) {
-                self.list_field_types
+                self.parsed_graphql_schema
+                    .list_field_types
                     .insert(field_typ_name.replace('!', ""));
 
-                self.list_type_defs.insert(obj_name.clone(), node.clone());
+                self.parsed_graphql_schema
+                    .list_type_defs
+                    .insert(obj_name.clone(), node.clone());
             }
 
             let is_virtual = node
@@ -732,23 +787,32 @@ impl ParsedGraphQLSchema {
                 .any(|t| t.0.node == "virtual");
 
             if is_virtual {
-                self.virtual_type_names.insert(obj_name.clone());
+                self.parsed_graphql_schema
+                    .virtual_type_names
+                    .insert(obj_name.clone());
             }
 
             // Manual version of `ParsedGraphQLSchema::is_possible_foreign_key`
             let ftype = field_type_name(&field.node);
             if self
+                .parsed_graphql_schema
                 .parsed_typedef_names
                 .contains(&field_type_name(&field.node))
-                && !self.scalar_names.contains(&ftype)
-                && !self.enum_names.contains(&ftype)
-                && !self.virtual_type_names.contains(&ftype)
+                && !self.parsed_graphql_schema.scalar_names.contains(&ftype)
+                && !self.parsed_graphql_schema.enum_names.contains(&ftype)
+                && !self
+                    .parsed_graphql_schema
+                    .virtual_type_names
+                    .contains(&ftype)
             {
-                let (_ref_coltype, ref_colname, ref_tablename) =
-                    extract_foreign_key_info(&field.node, &self.field_type_mappings);
+                let (_ref_coltype, ref_colname, ref_tablename) = extract_foreign_key_info(
+                    &field.node,
+                    &self.parsed_graphql_schema.field_type_mappings,
+                );
 
                 if is_list_type(&field.node) {
-                    self.join_table_meta
+                    self.parsed_graphql_schema
+                        .join_table_meta
                         .entry(obj_name.clone())
                         .or_insert_with(Vec::new)
                         .push(JoinTableMeta::new(
@@ -761,7 +825,10 @@ impl ParsedGraphQLSchema {
                         ));
                 }
 
-                let fk = self.foreign_key_mappings.get_mut(&obj_name.to_lowercase());
+                let fk = self
+                    .parsed_graphql_schema
+                    .foreign_key_mappings
+                    .get_mut(&obj_name.to_lowercase());
                 match fk {
                     Some(fks_for_field) => {
                         fks_for_field.insert(
@@ -780,7 +847,8 @@ impl ParsedGraphQLSchema {
                                 ref_colname.clone(),
                             ),
                         )]);
-                        self.foreign_key_mappings
+                        self.parsed_graphql_schema
+                            .foreign_key_mappings
                             .insert(obj_name.to_lowercase(), fks_for_field);
                     }
                 }
@@ -788,53 +856,28 @@ impl ParsedGraphQLSchema {
 
             let field_typ_name = field_type_name(&field.node);
 
-            self.parsed_typedef_names.insert(field_name.clone());
+            self.parsed_graphql_schema
+                .parsed_typedef_names
+                .insert(field_name.clone());
             field_mapping.insert(field_name, field_typ_name.clone());
-            self.field_type_optionality
+            self.parsed_graphql_schema
+                .field_type_optionality
                 .insert(fid.clone(), field.node.ty.node.nullable);
-            self.field_type_mappings.insert(fid.clone(), field_typ_name);
-            self.field_defs
+            self.parsed_graphql_schema
+                .field_type_mappings
+                .insert(fid.clone(), field_typ_name);
+            self.parsed_graphql_schema
+                .field_defs
                 .insert(fid, (field.node.clone(), obj_name.clone()));
         }
-        self.object_field_mappings.insert(obj_name, field_mapping);
-    }
-
-    /// Given a GraphQL document, return a two `HashSet`s - one for each
-    /// unique field type, and one for each unique directive.
-    pub fn build_schema_types_set(&mut self) -> ParsedResult<()> {
-        let types: HashSet<String> = self
-            .ast
-            .definitions
-            .iter()
-            .filter_map(|def| {
-                if let TypeSystemDefinition::Type(typ) = def {
-                    Some(&typ.node)
-                } else {
-                    None
-                }
-            })
-            .map(|t| t.name.to_string())
-            .collect();
-
-        // let directives = self.ast
-        //     .definitions
-        //     .iter()
-        //     .filter_map(|def| {
-        //         if let TypeSystemDefinition::Directive(dir) = def {
-        //             Some(dir.node.name.to_string())
-        //         } else {
-        //             None
-        //         }
-        //     })
-        //     .collect();
-
-        self.scalar_names = types;
-
-        Ok(())
+        self.parsed_graphql_schema
+            .object_field_mappings
+            .insert(obj_name, field_mapping);
     }
 
     fn build_typedef_names_to_types(&mut self) {
-        self.typedef_names_to_types = self
+        self.parsed_graphql_schema.typedef_names_to_types = self
+            .parsed_graphql_schema
             .type_defs
             .iter()
             .filter(|(_, t)| !matches!(&t.kind, TypeKind::Enum(_)))

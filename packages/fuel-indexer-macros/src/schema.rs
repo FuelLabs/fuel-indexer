@@ -15,17 +15,16 @@ fn process_type_def(
     parsed: &ParsedGraphQLSchema,
     typ: &TypeDefinition,
 ) -> Option<proc_macro2::TokenStream> {
-    let tokens = match &typ.kind {
-        TypeKind::Object(_o) => ObjectDecoder::from_typedef(typ, parsed).into(),
-        TypeKind::Enum(_e) => EnumDecoder::from_typedef(typ, parsed).into(),
-        TypeKind::Union(_u) => ObjectDecoder::from_typedef(typ, parsed).into(),
+    match &typ.kind {
+        TypeKind::Object(_o) => Some(ObjectDecoder::from_typedef(typ, parsed).into()),
+        TypeKind::Enum(_e) => Some(EnumDecoder::from_typedef(typ, parsed).into()),
+        TypeKind::Union(_u) => Some(ObjectDecoder::from_typedef(typ, parsed).into()),
+        TypeKind::Scalar => None,
         _ => proc_macro_error::abort_call_site!(
             "Unrecognized TypeKind in GraphQL schema: {:?}",
             typ.kind
         ),
-    };
-
-    Some(tokens)
+    }
 }
 
 /// Process a schema definition into the corresponding tokens for use in an indexer module.
