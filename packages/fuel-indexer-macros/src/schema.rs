@@ -82,7 +82,7 @@ pub(crate) fn process_graphql_schema(
         ParsedGraphQLSchema::new(namespace, identifier, exec_source, Some(&schema))
             .expect("Failed to parse GraphQL schema.");
 
-    for definition in schema.ast().clone().definitions.iter() {
+    for definition in schema.ast().definitions.iter() {
         if let Some(def) = process_definition(&schema, definition) {
             output = quote! {
                 #output

@@ -670,9 +670,7 @@ impl ParsedGraphQLSchema {
         let base_type_names = {
             let base_ast = parse_schema(BASE_SCHEMA)?;
             let mut base_decoder = SchemaDecoder::new();
-            base_decoder.decode_service_document(
-                base_ast,
-            )?;
+            base_decoder.decode_service_document(base_ast)?;
             base_decoder.parsed_graphql_schema.type_names
         };
 
