@@ -915,9 +915,13 @@ impl SchemaDecoder {
 
             self.parsed_graphql_schema.type_names.insert(name.clone());
 
+            self.parsed_graphql_schema
+                .type_defs
+                .insert(name.clone(), node.clone());
+
             match &t.node.kind {
                 TypeKind::Object(o) => self.decode_object_type(name, node, o),
-                TypeKind::Enum(e) => self.decode_enum_type(name, node, e),
+                TypeKind::Enum(e) => self.decode_enum_type(name, e),
                 TypeKind::Union(u) => self.decode_union_type(name, node, u),
                 TypeKind::Scalar => {
                     self.parsed_graphql_schema.scalar_names.insert(name.clone());
@@ -931,11 +935,7 @@ impl SchemaDecoder {
         Ok(())
     }
 
-    fn decode_enum_type(&mut self, name: String, node: TypeDefinition, e: &EnumType) {
-        self.parsed_graphql_schema
-            .type_defs
-            .insert(name.clone(), node);
-
+    fn decode_enum_type(&mut self, name: String, e: &EnumType) {
         self.parsed_graphql_schema
             .virtual_type_names
             .insert(name.clone());
@@ -964,9 +964,6 @@ impl SchemaDecoder {
         self.parsed_graphql_schema
             .parsed_typedef_names
             .insert(union_name.clone());
-        self.parsed_graphql_schema
-            .type_defs
-            .insert(union_name.clone(), node.clone());
         self.parsed_graphql_schema
             .unions
             .insert(union_name.clone(), node.clone());
@@ -1117,10 +1114,6 @@ impl SchemaDecoder {
             //continue;
             return;
         }
-
-        self.parsed_graphql_schema
-            .type_defs
-            .insert(obj_name.clone(), node.clone());
         self.parsed_graphql_schema
             .objects
             .insert(obj_name.clone(), o.clone());
