@@ -227,16 +227,10 @@ pub struct ParsedGraphQLSchema {
     /// A mapping of fully qualified field names to their respective optionalities.
     field_type_optionality: HashMap<String, bool>,
 
-    /// The parsed schema AST.
-    ast: ServiceDocument,
-
     /// Mapping of fully qualified field names to their `FieldDefinition` and `TypeDefinition` name.
     ///
     /// We keep the `TypeDefinition` name so that we can know what type of object the field belongs to.
     field_defs: HashMap<String, (FieldDefinition, String)>,
-
-    /// Raw GraphQL schema content.
-    schema: GraphQLSchema,
 
     /// All unique names of foreign key types in the schema.
     foreign_key_mappings: HashMap<String, HashMap<String, (String, String)>>,
@@ -264,14 +258,13 @@ pub struct ParsedGraphQLSchema {
     /// This allows us to create SQL tables where the columns are ordered - mirroring the order of the fields
     /// on the object `TypeDefinition` derived from a union.
     object_ordered_fields: HashMap<String, Vec<OrderedField>>,
+
+    /// The version of the schema.
+    version: String,
 }
 
 impl Default for ParsedGraphQLSchema {
     fn default() -> Self {
-        let ast = parse_schema(BASE_SCHEMA)
-            .map_err(ParsedError::ParseError)
-            .expect("Bad schema");
-
         Self {
             namespace: "".to_string(),
             identifier: "".to_string(),
@@ -290,13 +283,12 @@ impl Default for ParsedGraphQLSchema {
             field_type_optionality: HashMap::new(),
             foreign_key_mappings: HashMap::new(),
             type_defs: HashMap::new(),
-            ast,
-            schema: GraphQLSchema::default(),
             list_field_types: HashSet::new(),
             list_type_defs: HashMap::new(),
             unions: HashMap::new(),
             join_table_meta: HashMap::new(),
             object_ordered_fields: HashMap::new(),
+            version: String::default(),
         }
     }
 }
@@ -319,7 +311,7 @@ impl ParsedGraphQLSchema {
             decoder.parsed_graphql_schema.namespace = namespace.to_string();
             decoder.parsed_graphql_schema.identifier = identifier.to_string();
             decoder.parsed_graphql_schema.exec_source = exec_source.clone();
-            decoder.parsed_graphql_schema.schema = schema.clone();
+            decoder.parsed_graphql_schema.version = schema.version.clone();
         };
 
         let mut result = decoder.get_parsed_schema();
@@ -365,16 +357,6 @@ impl ParsedGraphQLSchema {
     /// A mapping of fully qualified field names to their respective optionalities.
     pub fn field_type_optionality(&self) -> &HashMap<String, bool> {
         &self.field_type_optionality
-    }
-
-    /// The parsed schema AST.
-    pub fn ast(&self) -> &ServiceDocument {
-        &self.ast
-    }
-
-    /// Raw GraphQL schema content.
-    pub fn schema(&self) -> &GraphQLSchema {
-        &self.schema
     }
 
     /// All type definitions in the schema.
@@ -531,7 +513,10 @@ impl ParsedGraphQLSchema {
         fully_qualified_namespace(&self.namespace, &self.identifier)
     }
 
-    // Decoder functions to iteratively build up the ParsedGraphQLSchema struct.
+    /// Version of the schema.
+    pub fn version(&self) -> &str {
+        &self.version
+    }
 }
 
 #[derive(Default)]
@@ -555,7 +540,6 @@ impl SchemaDecoder {
         for def in ast.definitions.iter() {
             self.decode_type_system_definifion(def)?;
         }
-        self.parsed_graphql_schema.ast = ast;
         self.build_typedef_names_to_types();
         Ok(())
     }
