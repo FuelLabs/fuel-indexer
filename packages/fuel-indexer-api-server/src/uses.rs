@@ -334,9 +334,6 @@ async fn register_indexer_assets_transaction(
                 )
                 .await?;
 
-                let schema =
-                    GraphQLSchema::new(String::from_utf8_lossy(data).to_string());
-
                 schema_manager
                     .write()
                     .await
@@ -377,7 +374,6 @@ async fn parse_register_indexer_multipart(
                     .map_err(|e| ApiError::OtherError(e.to_string()))?
                     .parse::<bool>()
                     .map_err(|e| ApiError::OtherError(e.to_string()))?;
-                continue;
             }
             name => {
                 let asset_type = IndexerAssetType::from_str(name)?;
