@@ -1,5 +1,5 @@
 use async_std::sync::MutexGuard;
-use fuel_indexer_lib::defaults;
+use fuel_indexer_lib::{defaults, WasmIndexerError};
 use fuel_indexer_schema::{join::RawQuery, FtColumn};
 use fuel_indexer_types::ffi::{
     LOG_LEVEL_DEBUG, LOG_LEVEL_ERROR, LOG_LEVEL_INFO, LOG_LEVEL_TRACE, LOG_LEVEL_WARN,
@@ -147,13 +147,19 @@ fn get_object(
 /// Put the given type at the given pointer into memory.
 ///
 /// This function is fallible, and will panic if the type cannot be saved.
-fn put_object(mut env: FunctionEnvMut<IndexEnv>, type_id: i64, ptr: u32, len: u32) {
+fn put_object(
+    mut env: FunctionEnvMut<IndexEnv>,
+    type_id: i64,
+    ptr: u32,
+    len: u32,
+) -> i32 {
     let (idx_env, store) = env.data_and_store_mut();
-    let mem = idx_env
-        .memory
-        .as_mut()
-        .expect("Memory unitialized")
-        .view(&store);
+
+    let mem = if let Some(memory) = idx_env.memory.as_mut() {
+        memory.view(&store)
+    } else {
+        return WasmIndexerError::UninitializedMemory as i32;
+    };
 
     let mut bytes = Vec::with_capacity(len as usize);
     let range = ptr as usize..ptr as usize + len as usize;
@@ -166,7 +172,7 @@ fn put_object(mut env: FunctionEnvMut<IndexEnv>, type_id: i64, ptr: u32, len: u3
         Ok(columns) => columns,
         Err(e) => {
             error!("Failed to deserialize Vec<FtColumn> for put_object: {e:?}",);
-            return;
+            return WasmIndexerError::DeserializationError as i32;
         }
     };
 
@@ -179,18 +185,21 @@ fn put_object(mut env: FunctionEnvMut<IndexEnv>, type_id: i64, ptr: u32, len: u3
             .put_object(type_id, columns, bytes)
             .await
     });
+
+    0
 }
 
 /// Execute the arbitrary query at the given pointer.
 ///
 /// This function is fallible, and will panic if the query cannot be executed.
-fn put_many_to_many_record(mut env: FunctionEnvMut<IndexEnv>, ptr: u32, len: u32) {
+fn put_many_to_many_record(mut env: FunctionEnvMut<IndexEnv>, ptr: u32, len: u32) -> i32 {
     let (idx_env, store) = env.data_and_store_mut();
-    let mem = idx_env
-        .memory
-        .as_mut()
-        .expect("Memory unitialized")
-        .view(&store);
+
+    let mem = if let Some(memory) = idx_env.memory.as_mut() {
+        memory.view(&store)
+    } else {
+        return WasmIndexerError::UninitializedMemory as i32;
+    };
 
     let mut bytes = Vec::with_capacity(len as usize);
     let range = ptr as usize..ptr as usize + len as usize;
@@ -199,9 +208,14 @@ fn put_many_to_many_record(mut env: FunctionEnvMut<IndexEnv>, ptr: u32, len: u32
         bytes.extend_from_slice(&mem.data_unchecked()[range]);
     }
 
-    let queries: Vec<RawQuery> =
-        bincode::deserialize(&bytes).expect("Failed to deserialize queries");
-    let queries = queries.iter().map(|q| q.to_string()).collect::<Vec<_>>();
+    let queries: Vec<String> = match bincode::deserialize::<Vec<RawQuery>>(&bytes) {
+        Ok(queries) => queries.iter().map(|q| q.to_string()).collect(),
+        Err(e) => {
+            error!("Failed to deserialize queries: {e:?}");
+            return WasmIndexerError::DeserializationError as i32;
+        }
+    };
+
     let rt = tokio::runtime::Handle::current();
     rt.block_on(async {
         idx_env
@@ -211,6 +225,8 @@ fn put_many_to_many_record(mut env: FunctionEnvMut<IndexEnv>, ptr: u32, len: u32
             .put_many_to_many_record(queries)
             .await
     });
+
+    0
 }
 
 /// Get the exports for the given store and environment.
