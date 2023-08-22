@@ -44,7 +44,7 @@ pub async fn init(command: DeployCommand) -> anyhow::Result<()> {
     }
 
     // If we are replacing an indexer but not removing data, there is no need to
-    // issuer remove command. Ordinary reload is enough.
+    // issue a remove command. Ordinary reload is enough.
     if replace_indexer && remove_data {
         remove::exec(RemoveCommand {
             url: url.clone(),
