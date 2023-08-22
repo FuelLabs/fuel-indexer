@@ -34,10 +34,12 @@ async fn test_wasm_executor_can_meter_execution() {
             let pool = fuel_indexer_database::IndexerConnectionPool::Postgres(
                 test_db.pool.clone(),
             );
-            let mut config = IndexerConfig::default();
-            config.database = DatabaseConfig::from_str(&test_db.url).unwrap();
-            // not enough points to finish execution
-            config.metering_points = Some(100u64);
+            let config = IndexerConfig {
+                database: DatabaseConfig::from_str(&test_db.url).unwrap(),
+                // not enough points to finish execution
+                metering_points: Some(100u64),
+                ..Default::default()
+            };
 
             let schema_version = manifest
                 .graphql_schema_content()

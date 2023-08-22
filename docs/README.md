@@ -189,10 +189,6 @@ cargo run --bin fuel-indexer
 
 Fuel indexer tests are currently broken out by a database feature flag. In order to run tests with a PostgreSQL backend, use `--features postgres`.
 
-Further, the indexer uses end-to-end (E2E) tests. In order to trigger these end-to-end tests, you'll want to use the `e2e` features flag: `--features e2e`.
-
-> All end-to-end tests also require the use of a database feature. For example, to run the end-to-end tests with a Posgres backend, use `--features e2e,postgres`.
-
 ### Default tests
 
 ```bash
@@ -202,7 +198,7 @@ cargo test --locked --workspace --all-targets
 ### End-to-end tests
 
 ```bash
-cargo test --locked --workspace --all-targets --features e2e,postgres
+cargo test --locked --workspace --all-targets --features postgres
 ```
 
 ### `trybuild` tests
@@ -210,7 +206,7 @@ cargo test --locked --workspace --all-targets --features e2e,postgres
 For tests related to the meta-programming used in the Fuel indexer, we use `trybuild`.
 
 ```bash
-RUSTFLAGS='-D warnings' cargo test -p fuel-indexer-macros --locked
+RUSTFLAGS='-D warnings' cargo test -p fuel-indexer-tests --features trybuild --locked
 ```
 
 ## Contributing
