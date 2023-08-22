@@ -52,11 +52,11 @@ jobs:
       - name: Set env vars
         id: set-env
         run: >
-          echo "IS_MASTER=${{ env.IS_MASTER }}" >> $GITHUB_OUTPUT 
+          echo "IS_MASTER=${{ env.IS_MASTER }}" >> $GITHUB_OUTPUT
 
-          echo "IS_DEVELOP=${{ env.IS_DEVELOP }}" >> $GITHUB_OUTPUT 
+          echo "IS_DEVELOP=${{ env.IS_DEVELOP }}" >> $GITHUB_OUTPUT
 
-          echo "IS_RELEASE=${{ env.IS_RELEASE }}" >> $GITHUB_OUTPUT 
+          echo "IS_RELEASE=${{ env.IS_RELEASE }}" >> $GITHUB_OUTPUT
 
           if [[ ${{ env.IS_MASTER }} == 'true' || ${{ env.IS_DEVELOP }} == 'true' || ${{ env.IS_RELEASE }} == 'true' || ${{ env.BRANCH_NAME }} =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "IS_RELEASE_OR_MASTER_OR_DEVELOP_OR_SEMVER=true" >> $GITHUB_OUTPUT
@@ -179,7 +179,7 @@ jobs:
           components: rustfmt
       - name: cargo fmt --all --verbose -- --check
         run: cargo fmt --all --verbose -- --check
-  cargo-test-unit-tests:
+  cargo-test-unit:
     if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_DEVELOP_OR_SEMVER !=
       'true'
     needs:
@@ -208,7 +208,7 @@ jobs:
           --exclude plugin-tests --exclude fuel-indexer-benchmarks
         run: cargo test --locked --all-targets --workspace --exclude fuel-indexer-tests
           --exclude plugin-tests --exclude fuel-indexer-benchmarks
-  cargo-test-e2e-and-integration-tests:
+  cargo-test-integration:
     if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_DEVELOP_OR_SEMVER !=
       'true'
     needs:
@@ -266,7 +266,10 @@ jobs:
       - name: Run E2E and integration tests
         run: cargo test --locked --all-targets --features postgres -p
           fuel-indexer-tests -- --test-threads=1
-  build-default-indexer:
+      - name: Run trybuild tests
+        run: cargo test --locked --all-targets --features trybuild -p
+          fuel-indexer-tests
+  forc-index-tests:
     if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_DEVELOP_OR_SEMVER != 'true'
     needs:
       - cargo-toml-fmt-check
@@ -318,8 +321,7 @@ jobs:
           cd ..
           rm -rfv indexer-test
   build-and-test-examples:
-    if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_DEVELOP_OR_SEMVER !=
-      'true'
+    if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_DEVELOP_OR_SEMVER != 'true'
     needs:
       - cargo-toml-fmt-check
       - set-env-vars
@@ -365,11 +367,11 @@ jobs:
           which forc-index
           which fuel-indexer
 
-          bash ./ci/build-and-deploy-examples.bash
+          bash ./ci/test-examples.bash
   publish-docker-image:
     needs:
       - set-env-vars
-    if: needs.set-env-vars.outputs.IS_RELEASE == 'true'
+    if: needs.set-env-vars.outputs.IS_RELEASE == 'true' || needs.set-env-vars.outputs.IS_MASTER == 'true'
     runs-on: buildjet-4vcpu-ubuntu-2204
     permissions:
       contents: read
@@ -690,11 +692,11 @@ jobs:
       - deploy
       - publish
       - cargo-verifications
-      - cargo-test-unit-tests
-      - cargo-test-e2e-and-integration-tests
+      - cargo-test-unit
+      - cargo-test-integration
       - cargo-clippy
       - cargo-fmt-check
-      - build-default-indexer
+      - forc-index-tests
     runs-on: buildjet-4vcpu-ubuntu-2204
     steps:
       - run: true

@@ -35,10 +35,6 @@ pub struct Database {
     config: IndexerConfig,
 }
 
-// TODO: https://github.com/FuelLabs/fuel-indexer/issues/1139
-unsafe impl Sync for Database {}
-unsafe impl Send for Database {}
-
 /// Check if the upsert query is for an ID column only.
 fn is_id_only_upsert(columns: &[String]) -> bool {
     columns.len() == 2 && columns[0] == IdCol::to_lowercase_string()

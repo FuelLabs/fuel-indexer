@@ -519,16 +519,6 @@ impl IndexEnv {
     }
 }
 
-// TODO: https://github.com/FuelLabs/fuel-indexer/issues/1139
-unsafe impl<F: Future<Output = IndexerResult<()>> + Send> Sync
-    for NativeIndexExecutor<F>
-{
-}
-unsafe impl<F: Future<Output = IndexerResult<()>> + Send> Send
-    for NativeIndexExecutor<F>
-{
-}
-
 /// Native executors differ from WASM executors in that they are not sandboxed; they are merely a
 /// set of native Rust functions that (run/execute/are spawned) directly from the indexer service
 /// process.

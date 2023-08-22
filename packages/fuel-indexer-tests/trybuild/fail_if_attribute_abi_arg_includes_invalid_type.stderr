@@ -25,6 +25,8 @@ error[E0412]: cannot find type `BlockData` in this scope
   |                   ^^^^^^^^^ not found in this scope
   |
 help: consider importing one of these items
+  |
+2  + use fuel_indexer::prelude::fuel::BlockData;
    |
 2  + use fuel_indexer_plugin::prelude::BlockData;
    |
@@ -40,6 +42,8 @@ error[E0422]: cannot find struct, variant or union type `BlockData` in this scop
   |                                     ^^^^^^^^^ not found in this scope
   |
 help: consider importing one of these items
+  |
+2  + use fuel_indexer::prelude::fuel::BlockData;
    |
 2  + use fuel_indexer_plugin::prelude::BlockData;
    |
@@ -49,16 +53,18 @@ help: consider importing one of these items
    |
 
 error[E0433]: failed to resolve: use of undeclared crate or module `fuel`
- --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
-  |
-  |             status: fuel::TransactionStatus::default(),
-  |                     ^^^^ use of undeclared crate or module `fuel`
-  |
+  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
+   |
+   |             status: fuel::TransactionStatus::default(),
+   |                     ^^^^ use of undeclared crate or module `fuel`
+   |
 help: there is a crate or module with a similar name
    |
 46 |             status: fuels::TransactionStatus::default(),
    |                     ~~~~~
 help: consider importing one of these items
+   |
+2  + use fuel_indexer::prelude::fuel::TransactionStatus;
    |
 2  + use fuel_indexer_plugin::prelude::fuel::TransactionStatus;
    |
@@ -66,6 +72,7 @@ help: consider importing one of these items
    |
 2  + use fuel_indexer_utils::plugin::prelude::fuel::TransactionStatus;
    |
+     and 1 other candidate
 help: if you import `TransactionStatus`, refer to it directly
    |
 46 -             status: fuel::TransactionStatus::default(),
@@ -73,16 +80,18 @@ help: if you import `TransactionStatus`, refer to it directly
    |
 
 error[E0433]: failed to resolve: use of undeclared crate or module `fuel`
- --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
-  |
-  |                 fuel::Receipt::Call {
-  |                 ^^^^ use of undeclared crate or module `fuel`
-  |
+  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
+   |
+   |                 fuel::Receipt::Call {
+   |                 ^^^^ use of undeclared crate or module `fuel`
+   |
 help: there is a crate or module with a similar name
    |
 49 |                 fuels::Receipt::Call {
    |                 ~~~~~
 help: consider importing one of these items
+   |
+2  + use fuel_indexer::prelude::fuel::Receipt;
    |
 2  + use fuel_indexer_plugin::prelude::fuel::Receipt;
    |
@@ -90,8 +99,7 @@ help: consider importing one of these items
    |
 2  + use fuel_indexer_utils::plugin::prelude::fuel::Receipt;
    |
-2  + use fuels::tx::Receipt;
-   |
+     and 2 other candidates
 help: if you import `Receipt`, refer to it directly
    |
 49 -                 fuel::Receipt::Call {
@@ -99,16 +107,18 @@ help: if you import `Receipt`, refer to it directly
    |
 
 error[E0433]: failed to resolve: use of undeclared crate or module `fuel`
- --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
-  |
-  |                 fuel::Receipt::ReturnData {
-  |                 ^^^^ use of undeclared crate or module `fuel`
-  |
+  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
+   |
+   |                 fuel::Receipt::ReturnData {
+   |                 ^^^^ use of undeclared crate or module `fuel`
+   |
 help: there is a crate or module with a similar name
    |
 60 |                 fuels::Receipt::ReturnData {
    |                 ~~~~~
 help: consider importing one of these items
+   |
+2  + use fuel_indexer::prelude::fuel::Receipt;
    |
 2  + use fuel_indexer_plugin::prelude::fuel::Receipt;
    |
@@ -116,8 +126,7 @@ help: consider importing one of these items
    |
 2  + use fuel_indexer_utils::plugin::prelude::fuel::Receipt;
    |
-2  + use fuels::tx::Receipt;
-   |
+     and 2 other candidates
 help: if you import `Receipt`, refer to it directly
    |
 60 -                 fuel::Receipt::ReturnData {
@@ -131,6 +140,8 @@ error[E0433]: failed to resolve: use of undeclared type `Transaction`
   |                          ^^^^^^^^^^^ use of undeclared type `Transaction`
   |
 help: consider importing one of these items
+  |
+2  + use fuel_indexer::prelude::fuel::Transaction;
    |
 2  + use fuel_indexer_plugin::prelude::fuel::Transaction;
    |
@@ -138,8 +149,7 @@ help: consider importing one of these items
    |
 2  + use fuel_indexer_utils::plugin::prelude::fuel::Transaction;
    |
-2  + use fuels::prelude::Transaction;
-   |
+     and 3 other candidates
 
 error[E0425]: cannot find function `serialize` in this scope
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
@@ -148,13 +158,16 @@ error[E0425]: cannot find function `serialize` in this scope
   |                     ^^^^^^^^^ not found in this scope
   |
 help: consider importing one of these items
+  |
+2  + use chrono::naive::serde::ts_microseconds::serialize;
    |
-2  + use fuel_indexer_lib::utils::serialize;
+2  + use chrono::naive::serde::ts_microseconds_option::serialize;
    |
-2  + use fuel_indexer_plugin::serialize;
+2  + use chrono::naive::serde::ts_milliseconds::serialize;
    |
-2  + use fuel_indexer_utils::plugin::serialize;
+2  + use chrono::naive::serde::ts_milliseconds_option::serialize;
    |
+     and 16 other candidates
 
 error[E0425]: cannot find function `handle_events` in this scope
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
@@ -163,22 +176,22 @@ error[E0425]: cannot find function `handle_events` in this scope
   |     ^^^^^^^^^^^^^ not found in this scope
 
 error[E0433]: failed to resolve: use of undeclared crate or module `fuel`
- --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
-  |
-  |         header: fuel::Header {
-  |                 ^^^^ use of undeclared crate or module `fuel`
-  |
+  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
+   |
+   |         header: fuel::Header {
+   |                 ^^^^ use of undeclared crate or module `fuel`
+   |
 help: there is a crate or module with a similar name
    |
 33 |         header: fuels::Header {
    |                 ~~~~~
 
 error[E0433]: failed to resolve: use of undeclared crate or module `fuel`
- --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
-  |
-  |         transactions: vec![fuel::TransactionData {
-  |                            ^^^^ use of undeclared crate or module `fuel`
-  |
+  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
+   |
+   |         transactions: vec![fuel::TransactionData {
+   |                            ^^^^ use of undeclared crate or module `fuel`
+   |
 help: there is a crate or module with a similar name
    |
 45 |         transactions: vec![fuels::TransactionData {

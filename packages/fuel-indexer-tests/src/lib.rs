@@ -1,3 +1,4 @@
+#[cfg(not(feature = "trybuild"))]
 pub mod fixtures;
 
 pub const WORKSPACE_ROOT: &str = env!("CARGO_MANIFEST_DIR");
@@ -87,7 +88,7 @@ pub mod utils {
             .unwrap()
             .parent()
             .unwrap()
-            .join(manifest.abi().clone().unwrap())
+            .join(manifest.abi().unwrap())
             .into_os_string()
             .to_str()
             .unwrap()
