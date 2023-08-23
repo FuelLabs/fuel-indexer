@@ -387,7 +387,8 @@ pub async fn get_start_block(
             .await?;
             let start = manifest.start_block().unwrap_or(last);
             let block = if *resumable {
-                std::cmp::max(start, last)
+                // if the last processed block is N, we want to resume from N+1
+                std::cmp::max(start, last + 1)
             } else {
                 start
             };

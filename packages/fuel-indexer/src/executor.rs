@@ -71,6 +71,57 @@ impl From<ExecutorSource> for Vec<u8> {
     }
 }
 
+pub async fn process_stored_blocks<T: 'static + Executor + Send + Sync>(
+    pool: IndexerConnectionPool,
+    executor: &mut T,
+    start_block: u32,
+    end_block: Option<u32>,
+) {
+    let pool = match pool {
+        IndexerConnectionPool::Postgres(pool) => pool.clone(),
+    };
+    let query = format!("SELECT block_data FROM index_block_data WHERE block_height >= {start_block} ORDER BY block_height ASC");
+    let stream = sqlx::query(&query).fetch(&pool);
+
+    use futures::TryStreamExt;
+    use sqlx::Row;
+    let mut chunked = stream.try_chunks(100);
+    let mut done = false;
+    while let Some(rows) = chunked.try_next().await.unwrap() {
+        let mut blocks = Vec::new();
+        for row in rows {
+            let bytes = row.get::<Vec<u8>, usize>(0);
+            let blockdata: BlockData =
+                fuel_indexer_lib::utils::deserialize(&bytes).unwrap();
+            info!("Deserialized Block #{}", blockdata.height);
+            // Don't go past the end block.
+            done = end_block.map(|end| blockdata.height > end).unwrap_or(false);
+            if done {
+                break;
+            }
+            blocks.push(blockdata);
+        }
+        if blocks.len() > 0 {
+            let first = blocks[0].height;
+            let last = blocks.last().unwrap().height;
+
+            // TEMPORARY
+            // if last >= 364750 {
+            //     break;
+            // }
+
+            info!("Processing stored blocks");
+            if let Err(e) = executor.handle_events(blocks).await {
+                error!("Failed to processed stored blocks {}-{}: {e}", first, last);
+                panic!("{e}");
+            };
+        }
+        if done {
+            break;
+        }
+    }
+}
+
 /// Run the executor task until the kill switch is flipped, or until some other
 /// stop criteria is met.
 //
@@ -81,6 +132,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
     manifest: &Manifest,
     mut executor: T,
     kill_switch: Arc<AtomicBool>,
+    pool: IndexerConnectionPool,
 ) -> impl Future<Output = ()> {
     // TODO: https://github.com/FuelLabs/fuel-indexer/issues/286
 
@@ -94,16 +146,6 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
         .map(|x| x.to_string())
         .unwrap_or(config.fuel_node.to_string());
 
-    // Where should we initially start when fetching blocks from the client?
-    let mut cursor = manifest.start_block().map(|x| {
-        if x > 1 {
-            let decremented = x - 1;
-            decremented.to_string()
-        } else {
-            "0".to_string()
-        }
-    });
-
     info!("Indexer({indexer_uid}) subscribing to Fuel node at {fuel_node_addr}");
 
     let client = FuelClient::from_str(&fuel_node_addr).unwrap_or_else(|e| {
@@ -114,7 +156,15 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
         warn!("No end_block specified in manifest. Indexer will run forever.");
     }
 
+    let manifest = manifest.clone();
+
     async move {
+        let mut conn = pool.acquire().await.unwrap();
+
+        let start_block = crate::get_start_block(&mut conn, &manifest)
+            .await
+            .unwrap_or(1);
+
         // If we reach an issue that continues to fail, we'll retry a few times before giving up, as
         // we don't want to quit on the first error. But also don't want to waste CPU.
         //
@@ -135,6 +185,17 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
 
         // Keep track of how many empty pages we've received from the client.
         let mut num_empty_block_reqs = 0;
+
+        let mut conn = pool.acquire().await.unwrap();
+
+        process_stored_blocks(pool.clone(), &mut executor, start_block, end_block).await;
+
+        info!("Done processing stored blocks");
+
+        let mut cursor = {
+            let start_block = crate::get_start_block(&mut conn, &manifest).await.unwrap();
+            Some((start_block - 1).to_string())
+        };
 
         loop {
             // If something else has signaled that this indexer should stop, then stop.
@@ -181,6 +242,13 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                 sleep(Duration::from_secs(IDLE_SERVICE_WAIT_SECS)).await;
                 continue;
             }
+
+            // Blocks must be in order, and there can be no missing blocks. This
+            // is enforced when saving to the database by a trigger. If
+            // `save_blockdata` succeeds, all is well.
+            fuel_indexer_database::queries::save_blockdata(&mut conn, &block_info)
+                .await
+                .unwrap();
 
             // The client responded with actual blocks, so attempt to index them.
             let result = executor.handle_events(block_info).await;
@@ -574,6 +642,7 @@ where
             manifest,
             executor,
             kill_switch.clone(),
+            pool.clone(),
         ));
         Ok((handle, ExecutorSource::Manifest, kill_switch))
     }
@@ -745,7 +814,7 @@ impl WasmIndexExecutor {
                         config,
                         manifest,
                         bytes.clone(),
-                        pool,
+                        pool.clone(),
                         schema_version,
                     )
                     .await
@@ -756,6 +825,7 @@ impl WasmIndexExecutor {
                                 manifest,
                                 executor,
                                 killer.clone(),
+                                pool.clone(),
                             ));
 
                             Ok((handle, ExecutorSource::Registry(bytes), killer))
@@ -777,7 +847,7 @@ impl WasmIndexExecutor {
                     config,
                     manifest,
                     bytes,
-                    pool,
+                    pool.clone(),
                     schema_version,
                 )
                 .await
@@ -788,6 +858,7 @@ impl WasmIndexExecutor {
                             manifest,
                             executor,
                             killer.clone(),
+                            pool.clone(),
                         ));
 
                         Ok((handle, exec_source, killer))
