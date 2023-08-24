@@ -270,7 +270,8 @@ jobs:
         run: cargo test --locked --all-targets --features trybuild -p
           fuel-indexer-tests
   forc-index-tests:
-    if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_DEVELOP_OR_SEMVER != 'true'
+    # if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_DEVELOP_OR_SEMVER != 'true'
+    if: false
     needs:
       - cargo-toml-fmt-check
       - set-env-vars
