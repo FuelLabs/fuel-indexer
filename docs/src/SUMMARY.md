@@ -33,6 +33,7 @@
   - [TransferOut](./indexing/transferout.md)
 - [Data Types](./data-types/types.md)
 - [GraphQL](./graphql/index.md)
+  - [Scalars](./graphql/scalars.md)
   - [Directives](./graphql/directives.md)
   - [API Server](./graphql/api-server.md)
   - [Playground](./graphql/playground.md)
