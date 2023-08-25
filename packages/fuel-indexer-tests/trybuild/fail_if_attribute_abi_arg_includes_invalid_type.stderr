@@ -55,6 +55,48 @@ help: consider importing one of these items
 error[E0433]: failed to resolve: use of undeclared crate or module `fuel`
   --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
    |
+   |         header: fuel::Header {
+   |                 ^^^^ use of undeclared crate or module `fuel`
+   |
+help: there is a crate or module with a similar name
+   |
+33 |         header: fuels::Header {
+   |                 ~~~~~
+help: consider importing one of these items
+   |
+2  + use fuel_indexer::prelude::fuel;
+   |
+2  + use fuel_indexer_plugin::prelude::fuel;
+   |
+2  + use fuel_indexer_types::fuel;
+   |
+2  + use fuel_indexer_utils::plugin::prelude::fuel;
+   |
+
+error[E0433]: failed to resolve: use of undeclared crate or module `fuel`
+  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
+   |
+   |         transactions: vec![fuel::TransactionData {
+   |                            ^^^^ use of undeclared crate or module `fuel`
+   |
+help: there is a crate or module with a similar name
+   |
+45 |         transactions: vec![fuels::TransactionData {
+   |                            ~~~~~
+help: consider importing one of these items
+   |
+2  + use fuel_indexer::prelude::fuel;
+   |
+2  + use fuel_indexer_plugin::prelude::fuel;
+   |
+2  + use fuel_indexer_types::fuel;
+   |
+2  + use fuel_indexer_utils::plugin::prelude::fuel;
+   |
+
+error[E0433]: failed to resolve: use of undeclared crate or module `fuel`
+  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
+   |
    |             status: fuel::TransactionStatus::default(),
    |                     ^^^^ use of undeclared crate or module `fuel`
    |
@@ -174,25 +216,3 @@ error[E0425]: cannot find function `handle_events` in this scope
   |
   |     handle_events(ptr, len);
   |     ^^^^^^^^^^^^^ not found in this scope
-
-error[E0433]: failed to resolve: use of undeclared crate or module `fuel`
-  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
-   |
-   |         header: fuel::Header {
-   |                 ^^^^ use of undeclared crate or module `fuel`
-   |
-help: there is a crate or module with a similar name
-   |
-33 |         header: fuels::Header {
-   |                 ~~~~~
-
-error[E0433]: failed to resolve: use of undeclared crate or module `fuel`
-  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
-   |
-   |         transactions: vec![fuel::TransactionData {
-   |                            ^^^^ use of undeclared crate or module `fuel`
-   |
-help: there is a crate or module with a similar name
-   |
-45 |         transactions: vec![fuels::TransactionData {
-   |                            ~~~~~
