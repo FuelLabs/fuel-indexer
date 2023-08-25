@@ -614,8 +614,11 @@ async fn test_start_block() {
         .await
         .unwrap();
 
+    // setup_indexing_test_components deploys a contract, so one block exists.
+    // The indexer has not processed any blocks yet, so it starts there.
     assert_eq!(start, 1);
 
+    // We create two more blocks which are processed by the indexer.
     mock_request("/block").await;
     mock_request("/block").await;
 
@@ -623,5 +626,7 @@ async fn test_start_block() {
         .await
         .unwrap();
 
-    assert_eq!(start, 3);
+    // The next start block is therefore 4, because the indexer should have
+    // processed blocks 1, 2, and 3.
+    assert_eq!(start, 4);
 }
