@@ -7,7 +7,6 @@
 
 - [Dependencies](./getting-started/dependencies.md)
 - [Quickstart](./getting-started/quickstart.md)
-- [Hello World](./getting-started/hello-world.md)
 - [Starting the Fuel Indexer](./getting-started/starting-the-fuel-indexer.md)
 
 # Reference Guide
