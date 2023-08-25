@@ -101,7 +101,7 @@ pub async fn process_stored_blocks<T: 'static + Executor + Send + Sync>(
             }
             blocks.push(blockdata);
         }
-        if blocks.len() > 0 {
+        if !blocks.is_empty() {
             let first = blocks[0].height;
             let last = blocks.last().unwrap().height;
 
