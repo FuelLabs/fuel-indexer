@@ -3,12 +3,14 @@ use fuel_indexer_lib::manifest::{Manifest, Module};
 use indicatif::{ProgressBar, ProgressStyle};
 use serde::Deserialize;
 use std::{
+    env,
     fs::File,
     io::{Read, Write},
     path::Path,
     process::{Command, Stdio},
     time::Duration,
 };
+use std::collections::HashSet;
 use tracing::info;
 
 #[derive(Deserialize)]
@@ -165,18 +167,18 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
                         if s.success() {
                             pb.finish_with_message("✅ Build succeeded.");
                         } else {
-                            pb.finish_with_message("❌ Build failed.");
+                            pb.finish_with_message(error_message());
                             anyhow::bail!("❌ Failed to build index.");
                         }
                     }
                     Err(e) => {
-                        pb.finish_with_message("❌ Build failed.");
+                        pb.finish_with_message(error_message());
                         anyhow::bail!("❌ Failed to determine process exit status: {e}.",);
                     }
                 }
             }
             Err(e) => {
-                pb.finish_with_message("❌ Build failed.");
+                pb.finish_with_message(error_message());
                 anyhow::bail!(format!("❌ Error: {e}",));
             }
         }
@@ -225,4 +227,41 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
     }
 
     Ok(())
+}
+
+fn error_message() -> String {
+    let mut error = "❌ Build failed.".to_string();
+
+    if cfg!(target_arch = "aarch64") {
+        let mut extra_msg = String::new();
+
+        let env_vars: HashSet<_> = env::vars().map(|(k, _)| k).collect();
+
+        if !env_vars.contains("LIBCLANG_PATH") {
+            extra_msg.push_str("\nexport LIBCLANG_PATH='/opt/homebrew/opt/llvm/lib'");
+        }
+
+        if !env_vars.contains("LDFLAGS") {
+            extra_msg.push_str("\nexport LDFLAGS='-L/opt/homebrew/opt/llvm/lib'");
+        }
+
+        if !env_vars.contains("CPPFLAGS") {
+            extra_msg.push_str("\nexport CPPFLAGS='-I/opt/homebrew/opt/llvm/include'");
+        }
+
+        if !extra_msg.is_empty() {
+            extra_msg.insert_str(
+                0,
+                r#"
+For Apple Silicon macOS users the preinstalled llvm has limited WASM targets,
+please install a binary with better support from Homebrew (brew install llvm)
+and configuring rustc with necessary environment variables:
+            "#,
+            );
+        }
+
+        error.push_str(&extra_msg);
+    };
+
+    error
 }
