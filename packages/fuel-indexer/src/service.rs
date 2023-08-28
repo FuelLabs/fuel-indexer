@@ -286,6 +286,7 @@ impl IndexerService {
                     .unwrap_or_else(|e| panic!("Client node connection failed: {e}."));
 
             loop {
+                info!("Block fetcher: cursor {:?}", cursor);
                 // Fetch the next page of blocks, and the starting cursor for the subsequent page
                 let (block_info, next_cursor, _has_next_page) =
                     match crate::executor::retrieve_blocks_from_node(
@@ -297,18 +298,18 @@ impl IndexerService {
                     )
                     .await
                     {
-                        Ok(next) => {
-                            if !next.0.is_empty() {
-                                let first = next.0[0].height;
-                                let last = next.0.last().unwrap().height;
+                        Ok((block_info, next_cursor, _has_next_page)) => {
+                            if !block_info.is_empty() {
+                                let first = block_info[0].height;
+                                let last = block_info.last().unwrap().height;
                                 info!(
-                                    "Block fetcher: retrieved blocks: {}-{}.",
-                                    first, last
+                                    "Block fetcher: retrieved blocks: {}-{}. Has next page? {}",
+                                    first, last, _has_next_page
                                 );
                             } else {
                                 info!("Block fetcher: no new blocks.")
                             }
-                            next
+                            (block_info, next_cursor, _has_next_page)
                         }
                         Err(e) => {
                             error!("Indexer() failed to fetch blocks: {e:?}",);
