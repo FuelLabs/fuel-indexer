@@ -60,7 +60,7 @@ error[E0560]: struct `fuel_indexer_utils::prelude::fuel::Header` has no field na
   |             output_messages_count: 1,
   |             ^^^^^^^^^^^^^^^^^^^^^ `fuel_indexer_utils::prelude::fuel::Header` does not have this field
   |
-  = note: available fields are: `id`, `da_height`, `transactions_count`, `message_receipt_count`, `transactions_root` ... and 5 others
+  = note: available fields are: `message_receipt_count`, `message_receipt_root`
 
 error[E0560]: struct `fuel_indexer_utils::prelude::fuel::Header` has no field named `output_messages_root`
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
@@ -68,7 +68,7 @@ error[E0560]: struct `fuel_indexer_utils::prelude::fuel::Header` has no field na
   |             output_messages_root: [0u8; 32].into(),
   |             ^^^^^^^^^^^^^^^^^^^^ `fuel_indexer_utils::prelude::fuel::Header` does not have this field
   |
-  = note: available fields are: `id`, `da_height`, `transactions_count`, `message_receipt_count`, `transactions_root` ... and 5 others
+  = note: available fields are: `message_receipt_count`, `message_receipt_root`
 
 error[E0308]: mismatched types
   --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
