@@ -2,6 +2,7 @@ use crate::{cli::BuildCommand, defaults, utils::project_dir_info};
 use fuel_indexer_lib::manifest::{Manifest, Module};
 use indicatif::{ProgressBar, ProgressStyle};
 use serde::Deserialize;
+use std::collections::HashSet;
 use std::{
     env,
     fs::File,
@@ -10,7 +11,6 @@ use std::{
     process::{Command, Stdio},
     time::Duration,
 };
-use std::collections::HashSet;
 use tracing::info;
 
 #[derive(Deserialize)]
