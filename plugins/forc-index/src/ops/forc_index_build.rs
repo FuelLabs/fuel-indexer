@@ -127,7 +127,7 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
                     if s.success() {
                         info!("✅ Build succeeded.");
                     } else {
-                        anyhow::bail!("❌ Build failed.");
+                        anyhow::bail!(verbose_error_message());
                     }
                 }
                 Err(e) => {
@@ -167,18 +167,18 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
                         if s.success() {
                             pb.finish_with_message("✅ Build succeeded.");
                         } else {
-                            pb.finish_with_message(error_message());
+                            pb.finish_with_message("❌ Build failed.");
                             anyhow::bail!("❌ Failed to build index.");
                         }
                     }
                     Err(e) => {
-                        pb.finish_with_message(error_message());
+                        pb.finish_with_message("❌ Build failed.");
                         anyhow::bail!("❌ Failed to determine process exit status: {e}.",);
                     }
                 }
             }
             Err(e) => {
-                pb.finish_with_message(error_message());
+                pb.finish_with_message("❌ Build failed.");
                 anyhow::bail!(format!("❌ Error: {e}",));
             }
         }
@@ -229,7 +229,7 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn error_message() -> String {
+fn verbose_error_message() -> String {
     let mut error = "❌ Build failed.".to_string();
 
     if cfg!(target_arch = "aarch64") {
