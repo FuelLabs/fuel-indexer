@@ -285,7 +285,7 @@ impl IndexerService {
                 fuel_core_client::client::FuelClient::new(client_uri.to_string())
                     .unwrap_or_else(|e| panic!("Client node connection failed: {e}."));
 
-            loop {
+            while cursor.is_some() {
                 info!("Block fetcher: cursor {:?}", cursor);
                 // Fetch the next page of blocks, and the starting cursor for the subsequent page
                 let (block_info, next_cursor, _has_next_page) =
