@@ -3550,7 +3550,6 @@ version = "0.20.4"
 dependencies = [
  "fuel-indexer-macros",
  "fuel-indexer-plugin",
- "getrandom",
  "serde",
 ]
 

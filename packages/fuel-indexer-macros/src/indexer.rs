@@ -101,11 +101,14 @@ fn process_fn_items(
                 }
             }
         })
-        .chain(vec![quote! {
-            u64::MAX => {
-                {}
-            }
-        }])
+        .chain(
+            vec![quote! {
+                u64::MAX => {
+                    {}
+                }
+            }]
+            .into_iter(),
+        )
         .collect::<Vec<proc_macro2::TokenStream>>();
 
     let abi_type_decoders = abi_types
@@ -540,21 +543,16 @@ fn process_fn_items(
 
                                 // It's possible that the data field was generated from an empty Sway `Bytes` array
                                 // in the send_message() instruction in which case the data field in the receipt will
-                                // have no type information or data to decode. Thus, we check for a None value or
-                                // an empty byte vector; if either condition is present, then we decode to a unit struct instead.
+                                // have no type information or data to decode, so we decode an empty vector to a unit struct
                                 let (type_id, data) = data
                                     .map_or((u64::MAX, Vec::<u8>::new()), |buffer| {
-                                        if buffer.is_empty() {
-                                            (u64::MAX, Vec::<u8>::new())
-                                        } else {
-                                            let (type_id_bytes, data_bytes) = buffer.split_at(8);
-                                            let type_id = u64::from_be_bytes(
-                                                <[u8; 8]>::try_from(type_id_bytes)
-                                                .expect("Could not get type ID for data in MessageOut receipt")
-                                            );
-                                            let data = data_bytes.to_vec();
-                                            (type_id, data)
-                                        }
+                                        let (type_id_bytes, data_bytes) = buffer.split_at(8);
+                                        let type_id = u64::from_be_bytes(
+                                            <[u8; 8]>::try_from(type_id_bytes)
+                                            .expect("Could not get type ID for data in MessageOut receipt")
+                                        );
+                                        let data = data_bytes.to_vec();
+                                        (type_id, data)
                                     });
 
                                 decoder.decode_messagedata(type_id, data.clone());
