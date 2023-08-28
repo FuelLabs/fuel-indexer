@@ -302,7 +302,7 @@ impl IndexerService {
                                 let first = next.0[0].height;
                                 let last = next.0.last().unwrap().height;
                                 info!(
-                                    "Block fetcher retieved blocks: {}-{}.",
+                                    "Block fetcher: retrieved blocks: {}-{}.",
                                     first, last
                                 );
                             } else {
