@@ -3397,6 +3397,7 @@ dependencies = [
  "fuel-indexer-lib",
  "fuel-indexer-schema",
  "fuel-indexer-types",
+ "getrandom",
  "hex",
  "serde",
  "serde_json",
@@ -3444,6 +3445,7 @@ version = "0.0.0"
 dependencies = [
  "fuel-indexer-utils",
  "fuels",
+ "getrandom",
  "serde",
 ]
 
