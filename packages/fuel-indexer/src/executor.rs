@@ -243,13 +243,6 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                 continue;
             }
 
-            // Blocks must be in order, and there can be no missing blocks. This
-            // is enforced when saving to the database by a trigger. If
-            // `save_blockdata` succeeds, all is well.
-            fuel_indexer_database::queries::save_blockdata(&mut conn, &block_info)
-                .await
-                .unwrap();
-
             // The client responded with actual blocks, so attempt to index them.
             let result = executor.handle_events(block_info).await;
 
