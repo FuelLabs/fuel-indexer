@@ -714,6 +714,23 @@ pub async fn last_block_height_for_indexer(
         .unwrap_or(0))
 }
 
+/// Return the last block height for stored blocks.
+#[cfg_attr(feature = "metrics", metrics)]
+pub async fn last_block_height_for_stored_blocks(
+    conn: &mut PoolConnection<Postgres>,
+) -> sqlx::Result<u32> {
+    let query = format!("SELECT MAX(block_height) FROM index_block_data LIMIT 1");
+
+    let row = sqlx::query(&query).fetch_one(conn).await?;
+
+    let result = row
+        .try_get::<i32, usize>(0)
+        .map(|id| id.to_u32().expect("Bad block height."))
+        .unwrap_or(0);
+
+    Ok(result)
+}
+
 // TODO: https://github.com/FuelLabs/fuel-indexer/issues/251
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn asset_already_exists(

@@ -20,7 +20,10 @@ pub struct FuelClientConfig {
 }
 
 impl FuelClientConfig {
-    pub fn health_check_uri(self) -> Uri {
+    pub fn uri(&self) -> Uri {
+        Uri::from(self)
+    }
+    pub fn health_check_uri(&self) -> Uri {
         let base = Uri::from(self);
         format!("{}{}", base, "health")
             .parse()
@@ -34,8 +37,8 @@ impl Env for FuelClientConfig {
     }
 }
 
-impl From<FuelClientConfig> for Uri {
-    fn from(config: FuelClientConfig) -> Self {
+impl From<&FuelClientConfig> for Uri {
+    fn from(config: &FuelClientConfig) -> Self {
         let uri = derive_http_url(&config.host, &config.port);
         uri.parse().unwrap_or_else(|e| {
             panic!("Cannot parse HTTP URI from Fuel node config {config:?}: {e}")

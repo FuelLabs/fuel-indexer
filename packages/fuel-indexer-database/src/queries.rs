@@ -310,6 +310,17 @@ pub async fn last_block_height_for_indexer(
     }
 }
 
+/// Return the last block height that the given indexer has indexed.
+pub async fn last_block_height_for_stored_blocks(
+    conn: &mut IndexerConnection,
+) -> sqlx::Result<u32> {
+    match conn {
+        IndexerConnection::Postgres(ref mut c) => {
+            postgres::last_block_height_for_stored_blocks(c).await
+        }
+    }
+}
+
 pub async fn asset_already_exists(
     conn: &mut IndexerConnection,
     asset_type: &IndexerAssetType,

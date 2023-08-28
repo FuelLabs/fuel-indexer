@@ -265,6 +265,74 @@ impl IndexerService {
             handles.into_values(),
         )));
 
+        let node_block_page_size = config.node_block_page_size;
+        let client_uri = config.fuel_node.uri();
+        let mut conn = pool.acquire().await.unwrap();
+
+        let start_block_height = queries::last_block_height_for_stored_blocks(&mut conn)
+            .await
+            .unwrap();
+
+        tokio::spawn(async move {
+            let mut cursor = Some(start_block_height.to_string());
+
+            info!(
+                "Block fetcher: starting from Block#{}",
+                start_block_height + 1
+            );
+
+            let client =
+                fuel_core_client::client::FuelClient::new(client_uri.to_string())
+                    .unwrap_or_else(|e| panic!("Client node connection failed: {e}."));
+
+            loop {
+                // Fetch the next page of blocks, and the starting cursor for the subsequent page
+                let (block_info, next_cursor, _has_next_page) =
+                    match crate::executor::retrieve_blocks_from_node(
+                        &client,
+                        node_block_page_size,
+                        &cursor,
+                        None,
+                        "block_fetcher",
+                    )
+                    .await
+                    {
+                        Ok(next) => {
+                            if !next.0.is_empty() {
+                                let first = next.0[0].height;
+                                let last = next.0.last().unwrap().height;
+                                info!(
+                                    "Block fetcher retieved blocks: {}-{}.",
+                                    first, last
+                                );
+                            } else {
+                                info!("Block fetcher: no new blocks.")
+                            }
+                            next
+                        }
+                        Err(e) => {
+                            error!("Indexer() failed to fetch blocks: {e:?}",);
+                            sleep(Duration::from_secs(
+                                fuel_indexer_lib::defaults::DELAY_FOR_SERVICE_ERROR,
+                            ))
+                            .await;
+                            continue;
+                        }
+                    };
+
+                // Blocks must be in order, and there can be no missing blocks.
+                // This is enforced when saving to the database by a trigger. If
+                // `save_blockdata` succeeds, all is well.
+                fuel_indexer_database::queries::save_blockdata(&mut conn, &block_info)
+                    .await
+                    .unwrap();
+
+                cursor = next_cursor;
+            }
+        })
+        .await
+        .unwrap();
+
         let _ = tokio::spawn(create_service_task(
             rx,
             config.clone(),

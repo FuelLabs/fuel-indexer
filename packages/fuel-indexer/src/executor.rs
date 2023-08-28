@@ -105,12 +105,12 @@ pub async fn process_stored_blocks<T: 'static + Executor + Send + Sync>(
             let first = blocks[0].height;
             let last = blocks.last().unwrap().height;
 
-            // TEMPORARY
-            // if last >= 364750 {
-            //     break;
-            // }
-
-            info!("Processing stored blocks");
+            info!(
+                "Indexer({}) processing stored blocks {}-{}",
+                executor.uid(),
+                first,
+                last
+            );
             if let Err(e) = executor.handle_events(blocks).await {
                 error!("Failed to processed stored blocks {}-{}: {e}", first, last);
                 panic!("{e}");
@@ -547,6 +547,8 @@ where
     Self: Sized,
 {
     async fn handle_events(&mut self, blocks: Vec<BlockData>) -> IndexerResult<()>;
+
+    fn uid(&self) -> String;
 }
 
 /// WASM indexer runtime environment responsible for fetching/saving data to and from the database.
@@ -666,6 +668,10 @@ where
             self.db.lock().await.commit_transaction().await?;
         }
         Ok(())
+    }
+
+    fn uid(&self) -> String {
+        self.manifest.uid()
     }
 }
 
@@ -978,5 +984,9 @@ impl Executor for WasmIndexExecutor {
         }
 
         Ok(())
+    }
+
+    fn uid(&self) -> String {
+        self.manifest.uid()
     }
 }
