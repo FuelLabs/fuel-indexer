@@ -60,7 +60,7 @@ edition = "2021"
 homepage = "https://fuel.network/"
 license = "Apache-2.0"
 repository = "https://github.com/FuelLabs/fuel-indexer"
-rust-version = "1.71.1"
+rust-version = "1.72.0"
 version = "0.20.5"
 
 [workspace.dependencies]
@@ -84,9 +84,9 @@ fuel-indexer-postgres = { version = "0.20.5", path = "./packages/fuel-indexer-da
 fuel-indexer-schema = { version = "0.20.5", path = "./packages/fuel-indexer-schema", default-features = false }
 fuel-indexer-types = { version = "0.20.5", path = "./packages/fuel-indexer-types" }
 fuel-indexer-utils = { version = "0.20.5", path = "./packages/fuel-indexer-utils" }
-fuel-tx = { version = "0.35.3", default-features = false }
-fuel-types = { version = "0.35.3", default-features = false, features = ["serde"] }
-fuel-vm = { version = "0.35.3", default-features = false }
+fuel-tx = { version = "=0.35.3", default-features = false }
+fuel-types = { version = "=0.35.3", default-features = false, features = ["serde"] }
+fuel-vm = { version = "=0.35.3", default-features = false }
 fuels = { version = "0.46", default-features = false }
 serde = { version = "1.0", default-features = false, features = ["derive"] }
 serde_json = { version = "1.0", default-features = false }
