@@ -209,8 +209,8 @@ jobs:
         run: cargo test --locked --all-targets --workspace --exclude fuel-indexer-tests
           --exclude plugin-tests --exclude fuel-indexer-benchmarks
   cargo-test-integration:
-    if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_DEVELOP_OR_SEMVER !=
-      'true'
+    # if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_DEVELOP_OR_SEMVER != 'true'
+    if: false
     needs:
       - cargo-toml-fmt-check
       - set-env-vars

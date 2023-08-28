@@ -20,7 +20,7 @@ async-graphql-axum = "5.0.7"
 async-std = "1"
 axum = { version = "0.6", features = ["multipart", "macros"] }
 clap = { features = ["cargo", "derive", "env"], workspace = true }
-fuel-crypto = { version = "0.31.2", features = ["std"] }
+fuel-crypto = { version = "0.35.3", features = ["std"] }
 fuel-indexer-database = { workspace = true }
 fuel-indexer-graphql = { workspace = true }
 fuel-indexer-lib = { workspace = true }
