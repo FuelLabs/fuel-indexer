@@ -719,7 +719,7 @@ pub async fn last_block_height_for_indexer(
 pub async fn last_block_height_for_stored_blocks(
     conn: &mut PoolConnection<Postgres>,
 ) -> sqlx::Result<u32> {
-    let query = format!("SELECT MAX(block_height) FROM index_block_data LIMIT 1");
+    let query = "SELECT MAX(block_height) FROM index_block_data LIMIT 1".to_string();
 
     let row = sqlx::query(&query).fetch_one(conn).await?;
 
