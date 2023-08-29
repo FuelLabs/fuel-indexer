@@ -18,15 +18,20 @@ In the above example, `config.yaml` is based on [the default service configurati
 ## Options
 
 ```text
+Fuel indexer web API
+
 USAGE:
     fuel-indexer-api-server run [OPTIONS]
 
 OPTIONS:
+        --accept-sql-queries
+            Allow the web API to accept raw SQL queries.
+
         --auth-enabled
             Require users to authenticate for some operations.
 
         --auth-strategy <AUTH_STRATEGY>
-            Authentication scheme used.
+            Authentication scheme used. [possible values: jwt]
 
     -c, --config <CONFIG>
             API server config file.
@@ -40,12 +45,6 @@ OPTIONS:
         --fuel-node-port <FUEL_NODE_PORT>
             Listening port of the running Fuel node. [default: 4000]
 
-        --web-api-host <WEB_API_HOST>
-            GraphQL API host. [default: localhost]
-
-        --web-api-port <WEB_API_PORT>
-            GraphQL API port. [default: 29987]
-
     -h, --help
             Print help information
 
@@ -58,8 +57,12 @@ OPTIONS:
         --jwt-secret <JWT_SECRET>
             Secret used for JWT scheme (if JWT scheme is specified).
 
+        --log-level <LOG_LEVEL>
+            Log level passed to the Fuel Indexer service. [default: info] [possible values: info,
+            debug, error, warn]
+
         --max-body-size <MAX_BODY_SIZE>
-            Max body size for GraphQL API requests. [default: 5242880]
+            Max body size for web requests. [default: 5242880]
 
         --metrics
             Use Prometheus metrics reporting.
@@ -79,13 +82,27 @@ OPTIONS:
         --postgres-user <POSTGRES_USER>
             Postgres username.
 
+        --rate-limit
+            Enable rate limiting.
+
+        --rate-limit-request-count <RATE_LIMIT_REQUEST_COUNT>
+            Maximum number of requests to allow over --rate-limit-window..
+
+        --rate-limit-window-size <RATE_LIMIT_WINDOW_SIZE>
+            Number of seconds over which to allow --rate-limit-rps.
+
         --run-migrations
             Run database migrations before starting service.
-
-    -V, --version
-            Print version information
 
     -v, --verbose
             Enable verbose logging.
 
+    -V, --version
+            Print version information
+
+        --web-api-host <WEB_API_HOST>
+            Web API host. [default: localhost]
+
+        --web-api-port <WEB_API_PORT>
+            Web API port. [default: 29987]
 ```

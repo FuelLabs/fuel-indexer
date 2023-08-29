@@ -1,7 +1,0 @@
-namespace: test_namespace
-identifier: test_simple_wasm
-abi: ./../fuel-indexer-tests/contracts/simple-wasm/out/debug/contracts-abi.json
-graphql_schema: ./../fuel-indexer-tests/trybuild/bad_simple_wasm_graphql.yaml
-contract_id: ~
-module:
-  wasm: ./../../../target/wasm32-unknown-unknown/release/simple_wasm.wasm

@@ -82,6 +82,15 @@ pub const AUTH_ENABLED: bool = false;
 /// Amount of time (seconds) before expiring token (if JWT scheme is specified).
 pub const JWT_EXPIRY_SECS: usize = 2592000;
 
+/// JWT secret (should not be used in production)
+pub const JWT_SECRET: &str = "abcdefghijklmnopqrstuvwxyz1234567890";
+
+/// Authentication strategy
+pub const AUTH_STRATEGY: &str = "jwt";
+
+/// JWT issuer
+pub const JWT_ISSUER: &str = "FuelLabs";
+
 /// Index of account to use for signing.
 pub const ACCOUNT_INDEX: &str = "0";
 

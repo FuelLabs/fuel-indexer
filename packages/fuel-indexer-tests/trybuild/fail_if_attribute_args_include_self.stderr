@@ -1,5 +1,5 @@
 error: `self` argument not allowed in handler function.
- --> ../fuel-indexer-tests/trybuild/fail_if_attribute_args_include_self.rs
+ --> trybuild/fail_if_attribute_args_include_self.rs
   |
   | #[indexer(manifest = "packages/fuel-indexer-tests/trybuild/simple_wasm.yaml")]
   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -7,7 +7,7 @@ error: `self` argument not allowed in handler function.
   = note: this error originates in the attribute macro `indexer` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0601]: `main` function not found in crate `$CRATE`
- --> ../fuel-indexer-tests/trybuild/fail_if_attribute_args_include_self.rs
+ --> trybuild/fail_if_attribute_args_include_self.rs
   |
   | }
-  |  ^ consider adding a `main` function to `$DIR/../fuel-indexer-tests/trybuild/fail_if_attribute_args_include_self.rs`
+  |  ^ consider adding a `main` function to `$DIR/trybuild/fail_if_attribute_args_include_self.rs`

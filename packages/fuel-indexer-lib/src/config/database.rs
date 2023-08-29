@@ -5,7 +5,7 @@ use crate::{
 };
 pub use clap::Parser;
 use http::Uri;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
     fmt::{Debug, Formatter},
@@ -14,7 +14,7 @@ use std::{
 use url::{ParseError, Url};
 
 /// Indexer database configuration.
-#[derive(Clone, Deserialize)]
+#[derive(Clone, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum DatabaseConfig {
     Postgres {

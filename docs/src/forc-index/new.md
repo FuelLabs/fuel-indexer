@@ -7,6 +7,8 @@ forc index new --namespace fuel /home/fuel/projects/example_indexer
 ```
 
 ```text
+Create a new indexer project in a new directory
+
 USAGE:
     forc-index new [OPTIONS] <PATH>
 
@@ -19,5 +21,5 @@ OPTIONS:
         --name <NAME>              Name of indexer.
         --namespace <NAMESPACE>    Namespace to which indexer belongs.
         --native                   Initialize an indexer with native execution enabled.
-    -v, --verbose                  Enable verbose output
+    -v, --verbose                  Enable verbose output.
 ```

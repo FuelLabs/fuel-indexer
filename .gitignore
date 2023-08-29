@@ -7,3 +7,8 @@ docs/book/
 *.swp
 *.db
 *.db*
+
+# There's not really a great way to cleanup the test manifest assets
+# used by the trybuild tests, and we don't want to commit these test
+# files so as to not clutter the repo. So, we'll just ignore them.
+packages/fuel-indexer-tests/trybuild/*.yaml

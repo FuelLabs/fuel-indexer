@@ -3,7 +3,7 @@ use crate::{decoder::*, helpers::*};
 use async_graphql_parser::types::{TypeDefinition, TypeKind};
 use fuel_indexer_lib::graphql::GraphQLSchema;
 use fuel_indexer_lib::{
-    graphql::ParsedGraphQLSchema, utils::local_repository_root, ExecutionSource,
+    graphql::ParsedGraphQLSchema, utils::workspace_manifest_prefix, ExecutionSource,
 };
 use quote::quote;
 use std::fs::File;
@@ -38,7 +38,7 @@ pub(crate) fn process_graphql_schema(
     let namespace_tokens = const_item("NAMESPACE", namespace);
     let identifer_tokens = const_item("IDENTIFIER", identifier);
 
-    let path = local_repository_root()
+    let path = workspace_manifest_prefix()
         .map(|p| Path::new(&p).join(schema_path))
         .unwrap_or_else(|| PathBuf::from(schema_path));
 

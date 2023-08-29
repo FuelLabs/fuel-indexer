@@ -51,9 +51,11 @@ pub enum IndexerSchemaError {
 #[derive(Debug, PartialEq, Eq, Deserialize, Serialize, Clone, Hash)]
 pub enum FtColumn {
     Address(Option<Address>),
+    Array(Option<Vec<FtColumn>>),
     AssetId(Option<AssetId>),
     Blob(Option<Blob>),
     BlockHeight(Option<BlockHeight>),
+    BlockId(Option<BlockId>),
     Boolean(Option<bool>),
     Bytes32(Option<Bytes32>),
     Bytes4(Option<Bytes4>),
@@ -77,14 +79,12 @@ pub enum FtColumn {
     Tai64Timestamp(Option<Tai64Timestamp>),
     Timestamp(Option<Int8>),
     TxId(Option<TxId>),
+    UID(Option<UID>),
     UInt1(Option<UInt1>),
     UInt16(Option<UInt16>),
     UInt4(Option<UInt4>),
     UInt8(Option<UInt8>),
     Virtual(Option<Virtual>),
-    BlockId(Option<BlockId>),
-    Array(Option<Vec<FtColumn>>),
-    UID(Option<UID>),
 }
 
 impl FtColumn {
@@ -291,7 +291,7 @@ mod tests {
     fn test_fragments_some_types() {
         use super::*;
 
-        let id = FtColumn::ID(Some(
+        let uid = FtColumn::ID(Some(
             UID::new(
                 "0000000000000000000000000000000000000000000000000000000000000000"
                     .to_string(),
@@ -308,6 +308,17 @@ mod tests {
             FtColumn::Bytes8(Some(Bytes8::try_from([0x9D; 8]).expect("Bad bytes")));
         let bytes32 =
             FtColumn::Bytes32(Some(Bytes32::try_from([0xEE; 32]).expect("Bad bytes")));
+        let nonce =
+            FtColumn::Nonce(Some(Nonce::try_from([0x12; 32]).expect("Bad bytes")));
+        let bytes64 =
+            FtColumn::Bytes64(Some(Bytes64::try_from([0x12; 64]).expect("Bad bytes")));
+        let txid = FtColumn::TxId(Some(TxId::try_from([0x12; 32]).expect("Bad bytes")));
+        let hex = FtColumn::HexString(Some(
+            HexString::try_from("this is a hexstring").expect("Bad bytes"),
+        ));
+        let sig = FtColumn::Signature(Some(
+            Signature::try_from([0x12; 64]).expect("Bad bytes"),
+        ));
         let contractid = FtColumn::ContractId(Some(
             ContractId::try_from([0x78; 32]).expect("Bad bytes"),
         ));
@@ -315,9 +326,16 @@ mod tests {
         let int8 = FtColumn::Int8(Some(i64::from_le_bytes([0x78; 8])));
         let int16 = FtColumn::Int16(Some(i128::from_le_bytes([0x78; 16])));
         let uint4 = FtColumn::UInt4(Some(u32::from_le_bytes([0x78; 4])));
+        let uint1 = FtColumn::UInt1(Some(u8::from_le_bytes([0x78; 1])));
         let uint8 = FtColumn::UInt8(Some(u64::from_le_bytes([0x78; 8])));
         let uint16 = FtColumn::UInt16(Some(u128::from_le_bytes([0x78; 16])));
         let int64 = FtColumn::Timestamp(Some(i64::from_le_bytes([0x78; 8])));
+        let block_height =
+            FtColumn::BlockHeight(Some(BlockHeight::try_from(0x78).unwrap()));
+        let timestamp = FtColumn::Timestamp(Some(i64::from_le_bytes([0x78; 8])));
+        let tai64_timestamp = FtColumn::Tai64Timestamp(Some(
+            Tai64Timestamp::try_from([0u8; 8]).expect("Bad bytes"),
+        ));
         let salt = FtColumn::Salt(Some(Salt::try_from([0x31; 32]).expect("Bad bytes")));
         let message_id = FtColumn::MessageId(Some(
             MessageId::try_from([0x0F; 32]).expect("Bad bytes"),
@@ -325,26 +343,43 @@ mod tests {
         let charfield = FtColumn::Charfield(Some(String::from("hello world")));
         let json = FtColumn::Json(Some(Json(r#"{"hello":"world"}"#.to_string())));
         let identity = FtColumn::Identity(Some(Identity::Address([0x12; 32].into())));
+        let r#bool = FtColumn::Boolean(Some(true));
+        let blob = FtColumn::Blob(Some(Blob::from(vec![0u8, 1, 2, 3, 4, 5])));
+        let r#enum = FtColumn::Enum(Some(String::from("hello")));
+        let array = FtColumn::Array(Some(vec![FtColumn::Int4(Some(1))]));
 
-        insta::assert_yaml_snapshot!(id.query_fragment());
+        insta::assert_yaml_snapshot!(uid.query_fragment());
         insta::assert_yaml_snapshot!(addr.query_fragment());
         insta::assert_yaml_snapshot!(asset_id.query_fragment());
         insta::assert_yaml_snapshot!(bytes4.query_fragment());
         insta::assert_yaml_snapshot!(bytes8.query_fragment());
         insta::assert_yaml_snapshot!(bytes32.query_fragment());
+        insta::assert_yaml_snapshot!(nonce.query_fragment());
+        insta::assert_yaml_snapshot!(bytes64.query_fragment());
+        insta::assert_yaml_snapshot!(txid.query_fragment());
+        insta::assert_yaml_snapshot!(hex.query_fragment());
+        insta::assert_yaml_snapshot!(sig.query_fragment());
         insta::assert_yaml_snapshot!(contractid.query_fragment());
         insta::assert_yaml_snapshot!(salt.query_fragment());
         insta::assert_yaml_snapshot!(int4.query_fragment());
         insta::assert_yaml_snapshot!(int8.query_fragment());
         insta::assert_yaml_snapshot!(int16.query_fragment());
         insta::assert_yaml_snapshot!(uint4.query_fragment());
+        insta::assert_yaml_snapshot!(uint1.query_fragment());
         insta::assert_yaml_snapshot!(uint8.query_fragment());
         insta::assert_yaml_snapshot!(uint16.query_fragment());
         insta::assert_yaml_snapshot!(int64.query_fragment());
+        insta::assert_yaml_snapshot!(block_height.query_fragment());
+        insta::assert_yaml_snapshot!(timestamp.query_fragment());
+        insta::assert_yaml_snapshot!(tai64_timestamp.query_fragment());
         insta::assert_yaml_snapshot!(message_id.query_fragment());
         insta::assert_yaml_snapshot!(charfield.query_fragment());
         insta::assert_yaml_snapshot!(json.query_fragment());
         insta::assert_yaml_snapshot!(identity.query_fragment());
+        insta::assert_yaml_snapshot!(r#bool.query_fragment());
+        insta::assert_yaml_snapshot!(blob.query_fragment());
+        insta::assert_yaml_snapshot!(r#enum.query_fragment());
+        insta::assert_yaml_snapshot!(array.query_fragment());
     }
 
     #[test]
@@ -369,6 +404,18 @@ mod tests {
         let charfield_none = FtColumn::Charfield(None);
         let json_none = FtColumn::Json(None);
         let identity_none = FtColumn::Identity(None);
+        let nonce = FtColumn::Nonce(None);
+        let bytes64 = FtColumn::Bytes64(None);
+        let txid = FtColumn::TxId(None);
+        let hex = FtColumn::HexString(None);
+        let sig = FtColumn::Signature(None);
+        let block_height = FtColumn::BlockHeight(None);
+        let timestamp = FtColumn::Timestamp(None);
+        let tai64_timestamp = FtColumn::Tai64Timestamp(None);
+        let r#bool = FtColumn::Boolean(None);
+        let blob = FtColumn::Blob(None);
+        let r#enum = FtColumn::Enum(None);
+        let array = FtColumn::Array(None);
 
         insta::assert_yaml_snapshot!(addr_none.query_fragment());
         insta::assert_yaml_snapshot!(asset_id_none.query_fragment());
@@ -388,6 +435,18 @@ mod tests {
         insta::assert_yaml_snapshot!(charfield_none.query_fragment());
         insta::assert_yaml_snapshot!(json_none.query_fragment());
         insta::assert_yaml_snapshot!(identity_none.query_fragment());
+        insta::assert_yaml_snapshot!(nonce.query_fragment());
+        insta::assert_yaml_snapshot!(bytes64.query_fragment());
+        insta::assert_yaml_snapshot!(txid.query_fragment());
+        insta::assert_yaml_snapshot!(hex.query_fragment());
+        insta::assert_yaml_snapshot!(sig.query_fragment());
+        insta::assert_yaml_snapshot!(block_height.query_fragment());
+        insta::assert_yaml_snapshot!(timestamp.query_fragment());
+        insta::assert_yaml_snapshot!(tai64_timestamp.query_fragment());
+        insta::assert_yaml_snapshot!(r#bool.query_fragment());
+        insta::assert_yaml_snapshot!(blob.query_fragment());
+        insta::assert_yaml_snapshot!(r#enum.query_fragment());
+        insta::assert_yaml_snapshot!(array.query_fragment());
     }
 
     #[test]
@@ -395,8 +454,7 @@ mod tests {
     fn test_panic_on_none_id_fragment() {
         use super::*;
 
-        let id_none = FtColumn::ID(None);
-
-        insta::assert_yaml_snapshot!(id_none.query_fragment());
+        let uid_none = FtColumn::ID(None);
+        insta::assert_yaml_snapshot!(uid_none.query_fragment());
     }
 }

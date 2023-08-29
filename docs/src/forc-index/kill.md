@@ -7,6 +7,9 @@ forc index kill --port 29987
 ```
 
 ```text
+Kill the indexer process. Note that this command will kill any process listening on the default
+indexer port or the port specified by the `--port` flag
+
 USAGE:
     forc-index kill [OPTIONS]
 

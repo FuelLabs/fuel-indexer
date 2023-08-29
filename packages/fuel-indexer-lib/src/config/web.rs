@@ -3,12 +3,13 @@ use crate::{
     defaults,
     utils::derive_socket_addr,
 };
-pub use clap::Parser;
 use http::Uri;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 
-#[derive(Clone, Deserialize, Debug)]
+pub use clap::Parser;
+
+#[derive(Clone, Deserialize, Debug, Serialize)]
 pub struct WebApiConfig {
     /// Web API host.
     #[serde(default)]
