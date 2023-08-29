@@ -274,8 +274,15 @@ async fn register_indexer_assets_transaction(
 
     let indexer_id = queries::get_indexer_id(conn, namespace, identifier).await;
 
-    // If the indexer already exists, check that the schema has not changed.
+    // If the indexer already exists, check that replacing is enabled and that
+    // the schema has not changed.
     if let Ok(indexer_id) = indexer_id {
+        if !replace_indexer {
+            return Err(ApiError::Http(HttpError::Conflict(format!(
+                "Indexer({namespace}.{identifier}) already exists. Use --replace-indexer to replace it."
+            ))));
+        }
+
         for (asset_type, data) in asset_bytes.iter() {
             if *asset_type == IndexerAssetType::Schema {
                 // The schema must be the same. This query returns an asset
