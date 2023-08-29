@@ -183,7 +183,9 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
             }
 
             // The client responded with actual blocks, so attempt to index them.
-            let result = executor.handle_events(block_info).await;
+            let result = executor
+                .handle_events(kill_switch.clone(), block_info)
+                .await;
 
             if let Err(e) = result {
                 // Run time metering is deterministic. There is no point in retrying.
@@ -478,7 +480,11 @@ pub trait Executor
 where
     Self: Sized,
 {
-    async fn handle_events(&mut self, blocks: Vec<BlockData>) -> IndexerResult<()>;
+    async fn handle_events(
+        &mut self,
+        kill_switch: Arc<AtomicBool>,
+        blocks: Vec<BlockData>,
+    ) -> IndexerResult<()>;
 }
 
 /// WASM indexer runtime environment responsible for fetching/saving data to and from the database.
@@ -585,7 +591,11 @@ where
     F: Future<Output = IndexerResult<()>> + Send,
 {
     /// Handle events for  native executor.
-    async fn handle_events(&mut self, blocks: Vec<BlockData>) -> IndexerResult<()> {
+    async fn handle_events(
+        &mut self,
+        kill_switch: Arc<AtomicBool>,
+        blocks: Vec<BlockData>,
+    ) -> IndexerResult<()> {
         self.db.lock().await.start_transaction().await?;
         let res = (self.handle_events_fn)(blocks, self.db.clone()).await;
         let uid = self.manifest.uid();
@@ -594,7 +604,12 @@ where
             self.db.lock().await.revert_transaction().await?;
             return Err(IndexerError::NativeExecutionRuntimeError);
         } else {
-            self.db.lock().await.commit_transaction().await?;
+            // Do not commit if kill switch has been triggered.
+            if kill_switch.load(Ordering::SeqCst) {
+                self.db.lock().await.revert_transaction().await?;
+            } else {
+                self.db.lock().await.commit_transaction().await?;
+            }
         }
         Ok(())
     }
@@ -853,7 +868,11 @@ impl WasmIndexExecutor {
 #[async_trait]
 impl Executor for WasmIndexExecutor {
     /// Trigger a WASM event handler, passing in a serialized event struct.
-    async fn handle_events(&mut self, blocks: Vec<BlockData>) -> IndexerResult<()> {
+    async fn handle_events(
+        &mut self,
+        kill_switch: Arc<AtomicBool>,
+        blocks: Vec<BlockData>,
+    ) -> IndexerResult<()> {
         if blocks.is_empty() {
             return Ok(());
         }
@@ -903,7 +922,12 @@ impl Executor for WasmIndexExecutor {
                 return Err(IndexerError::from(e));
             }
         } else {
-            let _ = self.db.lock().await.commit_transaction().await?;
+            // Do not commit if kill switch has been triggered.
+            if kill_switch.load(Ordering::SeqCst) {
+                self.db.lock().await.revert_transaction().await?;
+            } else {
+                self.db.lock().await.commit_transaction().await?;
+            }
         }
 
         Ok(())
