@@ -88,7 +88,7 @@ fn print_indexers(indexers: Vec<RegisteredIndexer>) {
     let groupped: Vec<Vec<RegisteredIndexer>> = {
         let mut ixs: BTreeMap<String, Vec<RegisteredIndexer>> = BTreeMap::new();
         for i in indexers.into_iter() {
-            ixs.entry(i.namespace.clone()).or_insert(Vec::new()).push(i);
+            ixs.entry(i.namespace.clone()).or_default().push(i);
         }
         ixs.into_values().collect()
     };
