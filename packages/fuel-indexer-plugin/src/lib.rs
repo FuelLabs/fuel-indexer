@@ -1,5 +1,3 @@
-#![deny(unused_crate_dependencies)]
-
 #[cfg(feature = "native-execution")]
 pub mod native;
 pub mod wasm;
