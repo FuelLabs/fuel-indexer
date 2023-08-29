@@ -48,7 +48,7 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
         cmd.arg("--log-level").arg(&log_level);
 
         // Bool options
-        let options = vec![
+        let options = [
             ("--run-migrations", run_migrations),
             ("--metrics", metrics),
             ("--auth-enabled", auth_enabled),
@@ -62,7 +62,7 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
         }
 
         // Nullable options
-        let options = vec![
+        let options = [
             ("--auth-strategy", auth_strategy),
             ("--jwt-secret", jwt_secret),
             ("--jwt-issuer", jwt_issuer),
@@ -81,7 +81,7 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
                 }
 
                 // Postgres optional values
-                let postgres_optionals = vec![
+                let postgres_optionals = [
                     ("--postgres-user", postgres_user),
                     ("--postgres-password", postgres_password),
                     ("--postgres-host", postgres_host),

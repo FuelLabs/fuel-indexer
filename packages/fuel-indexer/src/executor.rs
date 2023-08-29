@@ -277,6 +277,8 @@ pub async fn retrieve_blocks_from_node(
             }
         });
 
+    let chain_id = client.chain_info().await?.consensus_parameters.chain_id;
+
     let mut block_info = Vec::new();
     for block in results.into_iter() {
         if let Some(end_block) = end_block {
@@ -377,7 +379,6 @@ pub async fn retrieve_blocks_from_node(
                 fuel_tx::Transaction::from_bytes(trans.raw_payload.0 .0.as_slice())
                     .expect("Bad transaction.");
 
-            let chain_id = client.chain_info().await?.consensus_parameters.chain_id;
             let id = transaction.id(&chain_id);
 
             let transaction = match transaction {

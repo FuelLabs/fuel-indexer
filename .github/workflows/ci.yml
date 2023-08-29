@@ -15,7 +15,7 @@ env:
   REGISTRY: ghcr.io
   SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
   SQLX_OFFLINE: true
-  RUSTC_VERSION: 1.71.1
+  RUSTC_VERSION: 1.72.0
   BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
   IS_MASTER: ${{ github.head_ref == 'master' || github.ref_name == 'master' }}
   IS_DEVELOP: ${{ github.head_ref == 'develop' || github.ref_name == 'develop' }}
@@ -209,8 +209,7 @@ jobs:
         run: cargo test --locked --all-targets --workspace --exclude fuel-indexer-tests
           --exclude plugin-tests --exclude fuel-indexer-benchmarks
   cargo-test-integration:
-    if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_DEVELOP_OR_SEMVER !=
-      'true'
+    if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_DEVELOP_OR_SEMVER != 'true'
     needs:
       - cargo-toml-fmt-check
       - set-env-vars
@@ -322,8 +321,7 @@ jobs:
           cd ..
           rm -rfv indexer-test
   build-and-test-examples:
-    # if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_DEVELOP_OR_SEMVER != 'true'
-    if: false
+    if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_DEVELOP_OR_SEMVER != 'true'
     needs:
       - cargo-toml-fmt-check
       - set-env-vars
@@ -373,7 +371,7 @@ jobs:
   publish-docker-image:
     needs:
       - set-env-vars
-    if: needs.set-env-vars.outputs.IS_RELEASE == 'true'
+    if: needs.set-env-vars.outputs.IS_RELEASE == 'true' || needs.set-env-vars.outputs.IS_MASTER == 'true'
     runs-on: buildjet-4vcpu-ubuntu-2204
     permissions:
       contents: read
