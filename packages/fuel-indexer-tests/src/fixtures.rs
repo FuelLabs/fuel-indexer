@@ -89,7 +89,10 @@ pub async fn setup_indexing_test_components(
     update_test_manifest_asset_paths(&mut manifest);
 
     service
-        .register_indexer_from_manifest(manifest.clone())
+        .register_indexer_from_manifest(
+            manifest.clone(),
+            fuel_indexer_lib::defaults::REMOVE_DATA,
+        )
         .await
         .unwrap();
 
@@ -112,7 +115,10 @@ pub async fn setup_web_test_components(
     update_test_manifest_asset_paths(&mut manifest);
 
     service
-        .register_indexer_from_manifest(manifest.clone())
+        .register_indexer_from_manifest(
+            manifest.clone(),
+            fuel_indexer_lib::defaults::REMOVE_DATA,
+        )
         .await
         .unwrap();
 
