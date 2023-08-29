@@ -350,8 +350,8 @@ async fn test_ensure_no_missing_blocks() {
     let mut conn2 = db.pool.acquire().await.unwrap();
 
     // Remove the last entry in the indexmetadataentity table. This will cause a
-    // gap in block heights and when the indexer tries to insert the entry for
-    // the next block, the trigger will raise an exception.
+    // gap in the block heights and when the indexer tries to insert the entry
+    // for the next block, the trigger will raise an exception.
     postgres::execute_query(
         &mut conn2,
         format!(
@@ -375,7 +375,7 @@ async fn test_ensure_no_missing_blocks() {
     .await
     .unwrap();
 
-    // The indexer did not process block #5 and we save removed the entry for
+    // The indexer did not process block #5 and we have removed the entry for
     // block #4, so the last height is #3.
     assert_eq!(last, 3);
 }
