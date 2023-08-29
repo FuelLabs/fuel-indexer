@@ -311,10 +311,7 @@ async fn test_ensure_no_missing_blocks() {
     };
 
     let IndexingTestComponents {
-        node,
-        manifest,
-        db,
-        ..
+        node, manifest, db, ..
     } = setup_indexing_test_components(Some(config)).await;
 
     node.abort();
@@ -364,7 +361,8 @@ async fn test_ensure_no_missing_blocks() {
             4
         ),
     )
-    .await.unwrap();
+    .await
+    .unwrap();
 
     // Trigger the next block #5.
     mock_request("/block").await;
