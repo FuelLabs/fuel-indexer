@@ -231,10 +231,7 @@ Do your WASM modules need to be rebuilt?
                 .entry(column.type_id)
                 .or_insert_with(|| table.to_string());
 
-            let columns = self
-                .schema
-                .entry(table.to_string())
-                .or_insert_with(Vec::new);
+            let columns = self.schema.entry(table.to_string()).or_default();
 
             columns.push(column.column_name);
         }

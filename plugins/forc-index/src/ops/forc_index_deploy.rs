@@ -1,6 +1,6 @@
 use crate::{
-    cli::{BuildCommand, DeployCommand},
-    commands::build,
+    cli::{BuildCommand, DeployCommand, RemoveCommand},
+    commands::{build, remove},
     utils::{file_part, project_dir_info},
 };
 use fuel_indexer_lib::manifest::Manifest;
@@ -27,6 +27,8 @@ pub async fn init(command: DeployCommand) -> anyhow::Result<()> {
         locked,
         native,
         verbose,
+        replace_indexer,
+        remove_data,
         skip_build,
     } = command;
 
@@ -39,6 +41,19 @@ pub async fn init(command: DeployCommand) -> anyhow::Result<()> {
             locked,
             native,
         })?;
+    }
+
+    // If we are replacing an indexer but not removing data, there is no need to
+    // issue a remove command. Ordinary reload is enough.
+    if replace_indexer && remove_data {
+        remove::exec(RemoveCommand {
+            url: url.clone(),
+            manifest: manifest.clone(),
+            path: path.clone(),
+            auth: auth.clone(),
+            verbose,
+        })
+        .await?;
     }
 
     let (_root_dir, manifest_path, _index_name) =
@@ -61,6 +76,7 @@ pub async fn init(command: DeployCommand) -> anyhow::Result<()> {
     let manifest_module_file = workspace_root.join(manifest.module());
 
     let form = Form::new()
+        .text("replace_indexer", replace_indexer.to_string())
         .part("manifest", file_part(&manifest_path).await?)
         .part("schema", file_part(manifest_schema_file).await?)
         .part("wasm", file_part(manifest_module_file).await?);

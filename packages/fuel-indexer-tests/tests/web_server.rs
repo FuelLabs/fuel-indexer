@@ -13,6 +13,12 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use fuel_indexer_database::queries::last_block_height_for_indexer;
+use fuel_indexer_database::IndexerConnection;
+use fuel_indexer_tests::fixtures::{
+    mock_request, setup_indexing_test_components, IndexingTestComponents,
+};
+
 const SIGNATURE: &str = "cb19384361af5dd7fec2a0052ca49d289f997238ea90590baf47f16ff0a33fb20170a43bd20208ce16daf443bad06dd66c1d1bf73f48b5ae53de682a5731d7d9";
 const NONCE: &str = "ea35be0c98764e7ca06d02067982e3b4";
 
@@ -295,4 +301,104 @@ async fn test_querying_sql_endpoint_when_sql_is_enabled_returns_error_for_non_su
     assert_eq!(v["details"], "Error: Operation is not supported.");
 
     server.abort();
+}
+
+#[actix_web::test]
+async fn test_replacing_an_indexer_and_keeping_or_removing_data() {
+    let config = IndexerConfig {
+        replace_indexer: true,
+        ..IndexerConfig::default()
+    };
+
+    let IndexingTestComponents {
+        node,
+        mut service,
+        mut manifest,
+        db,
+        ..
+    } = setup_indexing_test_components(Some(config)).await;
+
+    node.abort();
+
+    let mut conn =
+        IndexerConnection::Postgres(Box::new(db.pool.acquire().await.unwrap()));
+
+    let last = last_block_height_for_indexer(
+        &mut conn,
+        manifest.namespace(),
+        manifest.identifier(),
+    )
+    .await
+    .unwrap();
+
+    // Starting from block 1.
+    assert_eq!(last, 1);
+
+    // Add three more blocks.
+    mock_request("/block").await;
+    mock_request("/block").await;
+    mock_request("/block").await;
+
+    let last = last_block_height_for_indexer(
+        &mut conn,
+        manifest.namespace(),
+        manifest.identifier(),
+    )
+    .await
+    .unwrap();
+
+    assert_eq!(last, 4);
+
+    // Set the start block and the end block to 5. This way, since blocks 1-4
+    // are already indexed, this new indexer should do nothing.
+    manifest.set_start_block(5);
+
+    // Replace the indexer, keep the data.
+    service
+        .register_indexer_from_manifest(manifest.clone(), false)
+        .await
+        .unwrap();
+
+    let last = last_block_height_for_indexer(
+        &mut conn,
+        manifest.namespace(),
+        manifest.identifier(),
+    )
+    .await
+    .unwrap();
+
+    // We kept the data, i.e. blocks 1-4, and the redeployed indexer should do
+    // nothing. The last block must still be 4.
+    assert_eq!(last, 4);
+
+    // Replace the indexer, remove the data.
+    service
+        .register_indexer_from_manifest(manifest.clone(), true)
+        .await
+        .unwrap();
+
+    let last = last_block_height_for_indexer(
+        &mut conn,
+        manifest.namespace(),
+        manifest.identifier(),
+    )
+    .await
+    .unwrap();
+
+    // We removed the data, and the new indexer sould not start until block 5 is
+    // present. The last block must be 1.
+    assert_eq!(last, 1);
+
+    // Increase blocks to 5. The new indexer should start.
+    mock_request("/block").await;
+
+    let last = last_block_height_for_indexer(
+        &mut conn,
+        manifest.namespace(),
+        manifest.identifier(),
+    )
+    .await
+    .unwrap();
+
+    assert_eq!(last, 5);
 }

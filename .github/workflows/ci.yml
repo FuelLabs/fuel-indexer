@@ -15,7 +15,7 @@ env:
   REGISTRY: ghcr.io
   SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
   SQLX_OFFLINE: true
-  RUSTC_VERSION: 1.71.1
+  RUSTC_VERSION: 1.72.0
   BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
   IS_MASTER: ${{ github.head_ref == 'master' || github.ref_name == 'master' }}
   IS_DEVELOP: ${{ github.head_ref == 'develop' || github.ref_name == 'develop' }}
@@ -28,19 +28,6 @@ jobs:
         uses: styfle/cancel-workflow-action@0.9.1
         with:
           access_token: ${{ github.token }}
-  cargo-toml-fmt-check:
-    runs-on: buildjet-4vcpu-ubuntu-2204
-    steps:
-      - uses: actions/checkout@v3
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: ${{ env.RUSTC_VERSION }}
-      - name: setup binstall
-        uses: taiki-e/install-action@cargo-binstall
-      - name: Install Cargo.toml linter
-        run: cargo binstall --no-confirm cargo-sort
-      - name: Run Cargo.toml sort check
-        run: cargo sort -w --check packages/**/Cargo.toml
   set-env-vars:
     runs-on: buildjet-4vcpu-ubuntu-2204
     outputs:
@@ -63,6 +50,21 @@ jobs:
           else
             echo "IS_RELEASE_OR_MASTER_OR_DEVELOP_OR_SEMVER=false" >> $GITHUB_OUTPUT
           fi
+  cargo-toml-fmt-check:
+    runs-on: buildjet-4vcpu-ubuntu-2204
+    needs:
+      - set-env-vars
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ env.RUSTC_VERSION }}
+      - name: setup binstall
+        uses: taiki-e/install-action@cargo-binstall
+      - name: Install Cargo.toml linter
+        run: cargo binstall --no-confirm cargo-sort
+      - name: Run Cargo.toml sort check
+        run: cargo sort -w --check packages/**/Cargo.toml
   docs-test:
     uses: FuelLabs/github-actions/.github/workflows/mdbook-docs.yml@master
     with:
@@ -87,88 +89,9 @@ jobs:
         uses: peaceiris/actions-mdbook@v1
         with:
           mdbook-version: latest
-  cargo-check:
-    needs:
-      - cargo-toml-fmt-check
-      - set-env-vars
-    runs-on: buildjet-4vcpu-ubuntu-2204
-    if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_DEVELOP_OR_SEMVER ==
-      'true'
-    steps:
-      - uses: actions/checkout@v3
-      - name: Install toolchain
-        uses: dtolnay/rust-toolchain@stable
-      - name: cargo check --locked --all-features --all-targets
-        run: cargo check --locked --all-features --all-targets
-  cargo-verifications:
-    runs-on: buildjet-4vcpu-ubuntu-2204
-    needs:
-      - cargo-toml-fmt-check
-      - set-env-vars
-    if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_DEVELOP_OR_SEMVER !=
-      'true'
-    strategy:
-      matrix:
-        command:
-          - build
-        args:
-          - --locked --all-features --all-targets
-          - --locked --no-default-features
-        package:
-          - fuel-indexer
-          - fuel-indexer-api-server
-          - fuel-indexer-database
-          - fuel-indexer-database-types
-          - fuel-indexer-postgres
-          - fuel-indexer-lib
-          - fuel-indexer-macros
-          - fuel-indexer-metrics
-          - fuel-indexer-plugin
-          - fuel-indexer-schema
-          - fuel-indexer-types
-          - forc-index
-          - forc-postgres
-    timeout-minutes: 45
-    continue-on-error: ${{ matrix.skip-error || false }}
-    steps:
-      - uses: actions/checkout@v3
-      - name: Install toolchain
-        uses: dtolnay/rust-toolchain@stable
-      - name: cargo ${{ matrix.command }} -p ${{ matrix.package }} ${{ matrix.args }}
-        if: ${{ matrix.package }}
-        run: cargo ${{ matrix.command }} -p ${{ matrix.package }} ${{ matrix.args }}
-      - name: Notify if Job Fails
-        uses: ravsamhq/notify-slack-action@v2
-        if: always() && github.ref == 'refs/heads/master'
-        with:
-          status: ${{ job.status }}
-          token: ${{ secrets.GITHUB_TOKEN }}
-          notification_title: "{workflow} has {status_message}"
-          message_format: "{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}> :
-            <{run_url}|View Run Results>"
-          footer: ""
-          notify_when: failure
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NOTIFY_BUILD }}
-  cargo-clippy:
-    if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_DEVELOP_OR_SEMVER !=
-      'true'
-    needs:
-      - cargo-toml-fmt-check
-      - set-env-vars
-    runs-on: buildjet-4vcpu-ubuntu-2204
-    steps:
-      - uses: actions/checkout@v3
-      - name: Install toolchain
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          components: clippy, rustfmt
-      - name: cargo clippy --all-targets --all-features
-        run: cargo clippy --all-targets --all-features
   cargo-fmt-check:
     if: needs.set-env-vars.outputs.IS_RELEASE != 'true'
     needs:
-      - cargo-toml-fmt-check
       - set-env-vars
     runs-on: buildjet-4vcpu-ubuntu-2204
     steps:
@@ -179,12 +102,45 @@ jobs:
           components: rustfmt
       - name: cargo fmt --all --verbose -- --check
         run: cargo fmt --all --verbose -- --check
-  cargo-test-unit:
+  cargo-clippy-no-default-features:
+    runs-on: buildjet-4vcpu-ubuntu-2204
+    needs:
+     - set-env-vars
+     - cargo-toml-fmt-check
+     - cargo-fmt-check
+    if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_DEVELOP_OR_SEMVER !=
+      'true'
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - name: cargo clippy --locked --no-default-features
+        run: cargo clippy --locked --no-default-features
+  cargo-clippy-all-features-all-targets:
+    runs-on: buildjet-4vcpu-ubuntu-2204
+    needs:
+     - set-env-vars
+     - cargo-toml-fmt-check
+     - cargo-fmt-check
+    if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_DEVELOP_OR_SEMVER !=
+      'true'
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - name: cargo clippy --locked --all-targets --all-features
+        run: cargo clippy --locked --all-targets --all-features
+  unit-tests:
     if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_DEVELOP_OR_SEMVER !=
       'true'
     needs:
-      - cargo-toml-fmt-check
       - set-env-vars
+      - cargo-toml-fmt-check
+      - cargo-fmt-check
     runs-on: buildjet-4vcpu-ubuntu-2204
     services:
       postgres:
@@ -208,12 +164,13 @@ jobs:
           --exclude plugin-tests --exclude fuel-indexer-benchmarks
         run: cargo test --locked --all-targets --workspace --exclude fuel-indexer-tests
           --exclude plugin-tests --exclude fuel-indexer-benchmarks
-  cargo-test-integration:
+  integration-tests:
     if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_DEVELOP_OR_SEMVER !=
       'true'
     needs:
-      - cargo-toml-fmt-check
       - set-env-vars
+      - cargo-toml-fmt-check
+      - cargo-fmt-check
     runs-on: buildjet-4vcpu-ubuntu-2204
     services:
       postgres:
@@ -272,8 +229,9 @@ jobs:
   forc-index-tests:
     if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_DEVELOP_OR_SEMVER != 'true'
     needs:
-      - cargo-toml-fmt-check
       - set-env-vars
+      - cargo-toml-fmt-check
+      - cargo-fmt-check
     runs-on: buildjet-4vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v3
@@ -323,8 +281,9 @@ jobs:
   build-and-test-examples:
     if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_DEVELOP_OR_SEMVER != 'true'
     needs:
-      - cargo-toml-fmt-check
       - set-env-vars
+      - cargo-toml-fmt-check
+      - cargo-fmt-check
     runs-on: buildjet-4vcpu-ubuntu-2204
     services:
       postgres:
@@ -691,12 +650,14 @@ jobs:
     needs:
       - deploy
       - publish
-      - cargo-verifications
-      - cargo-test-unit
-      - cargo-test-integration
-      - cargo-clippy
+      - unit-tests
+      - integration-tests
+      - cargo-clippy-no-default-features
+      - cargo-clippy-all-features-all-targets
       - cargo-fmt-check
+      - cargo-toml-fmt-check
       - forc-index-tests
+      - build-and-test-examples
     runs-on: buildjet-4vcpu-ubuntu-2204
     steps:
       - run: true

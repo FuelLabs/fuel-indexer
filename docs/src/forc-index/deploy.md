@@ -18,6 +18,8 @@ OPTIONS:
     -m, --manifest <MANIFEST>        Path to the manifest of indexer project being deployed.
         --native                     Building for native execution.
     -p, --path <PATH>                Path to the indexer project.
+        --remove-data                Remove all indexed data when replacing an existing indexer.
+        --replace-indexer            If an indexer with the same UID exists, remove it.
         --skip-build                 Do not build before deploying.
         --url <URL>                  URL at which to deploy indexer assets. [default:
                                      http://127.0.0.1:29987]

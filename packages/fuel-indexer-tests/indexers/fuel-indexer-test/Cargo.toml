@@ -10,4 +10,5 @@ crate-type = ['cdylib']
 [dependencies]
 fuel-indexer-utils = { workspace = true }
 fuels = { workspace = true }
+getrandom = { version = "0.2", features = ["js"] }
 serde = { workspace = true }

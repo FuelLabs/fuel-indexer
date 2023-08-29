@@ -103,6 +103,8 @@ pub enum ApiError {
     SqlValidator(#[from] crate::sql::SqlValidatorError),
     #[error("ParseError: {0:?}")]
     ParseError(#[from] strum::ParseError),
+    #[error("Other error: {0}")]
+    OtherError(String),
 }
 
 impl Default for ApiError {
