@@ -253,9 +253,9 @@ fn verbose_error_message() -> String {
             extra_msg.insert_str(
                 0,
                 r#"
-For Apple Silicon macOS users the preinstalled llvm has limited WASM targets,
-please install a binary with better support from Homebrew (brew install llvm)
-and configuring rustc with necessary environment variables:
+For Apple Silicon macOS users, the preinstalled llvm has limited WASM targets.
+Please install a binary with better support from Homebrew (brew install llvm)
+and configure rustc with the necessary environment variables:
             "#,
             );
         }
