@@ -12,11 +12,6 @@ description = "Utilities for use in an indexer to be deployed on the Fuel indexe
 [dependencies]
 fuel-indexer-macros = { default-features = false, workspace = true }
 fuel-indexer-plugin = { workspace = true }
-
-# Note: The absence of getrandom with the js feature led to build problems
-# because of an upstream dependency of the fuel-* crates. Adding this here
-# to fix builds until there's a more fleshed-out no-std plan for Fuel crates.
-getrandom = { version = "0.2", features = ["js"] }
 serde = { workspace = true, features = ["derive"] }
 
 [features]
