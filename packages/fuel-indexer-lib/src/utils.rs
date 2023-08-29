@@ -72,10 +72,9 @@ pub fn local_repository_root() -> Option<String> {
 /// Sent from API server to indexer service.
 #[derive(Debug)]
 pub struct ReloadRequest {
-    /// The namespace of the indexer being registered.
+    /// The namespace of the indexer being removed.
     pub namespace: String,
-
-    /// The identifier of the indexer being registered.
+    /// The identifier of the indexer being removed.
     pub identifier: String,
 }
 
@@ -86,7 +85,6 @@ pub struct ReloadRequest {
 pub struct StopRequest {
     /// The namespace of the indexer being removed.
     pub namespace: String,
-
     /// The identifier of the indexer being removed.
     pub identifier: String,
 }
