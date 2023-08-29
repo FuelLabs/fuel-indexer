@@ -227,8 +227,7 @@ jobs:
         run: cargo test --locked --all-targets --features trybuild -p
           fuel-indexer-tests
   forc-index-tests:
-    # if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_DEVELOP_OR_SEMVER != 'true'
-    if: false
+    if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_DEVELOP_OR_SEMVER != 'true'
     needs:
       - set-env-vars
       - cargo-toml-fmt-check
@@ -658,6 +657,7 @@ jobs:
       - cargo-fmt-check
       - cargo-toml-fmt-check
       - forc-index-tests
+      - build-and-test-examples
     runs-on: buildjet-4vcpu-ubuntu-2204
     steps:
       - run: true
