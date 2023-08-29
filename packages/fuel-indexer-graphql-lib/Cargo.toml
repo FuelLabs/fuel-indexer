@@ -1,0 +1,33 @@
+[package]
+name = "fuel-indexer-graphql-lib"
+version = { workspace = true }
+authors = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+description = "Fuel Indexer GraphQL Library"
+
+[features]
+default = ["json"]
+json = ["dep:serde_json"]
+
+[dependencies]
+async-graphql = { version = "5.0", features = ["dynamic-schema", "dataloader"] }
+async-graphql-value = "6.0.3"
+async-trait = "0.1.73"
+extension-trait = "1.0.2"
+indexmap = "2.0.0"
+serde_json = { workspace = true, optional = true }
+strum = { version = "0.25.0", features = ["derive"] }
+tokio = { workspace = true, features = ["sync"] }
+
+[dev-dependencies]
+assert_matches = "1.5.0"
+async-graphql-parser = "5.0"
+graphql-parser = "0.4.0"
+insta = { version = "1.31.0", features = ["json"] }
+serde_json = { workspace = true }
+tokio = { workspace = true, features = ["sync", "rt", "macros"] }
+velcro = "0.5.4"
