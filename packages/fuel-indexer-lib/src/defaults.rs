@@ -122,3 +122,5 @@ pub const REPLACE_INDEXER: bool = false;
 
 /// Allow the web API to accept raw SQL queries.
 pub const ACCEPT_SQL: bool = false;
+
+pub const ENABLE_BLOCKSTORE: bool = false;

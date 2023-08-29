@@ -184,6 +184,13 @@ pub struct IndexerArgs {
     /// Amount of blocks to return in a request to a Fuel node.
     #[clap(long, help = "Amount of blocks to return in a request to a Fuel node.", default_value_t = defaults::NODE_BLOCK_PAGE_SIZE)]
     pub block_page_size: usize,
+
+    /// Store blocks in the database and use these stored blocks to fast-forward an indexer starting it up.
+    #[clap(
+        long,
+        help = "Store blocks in the database and use these stored blocks to fast-forward an indexer starting it up."
+    )]
+    pub enable_blockstore: bool,
 }
 
 #[derive(Debug, Parser, Clone)]

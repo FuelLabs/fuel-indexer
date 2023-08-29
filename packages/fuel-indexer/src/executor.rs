@@ -158,12 +158,10 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
 
     let manifest = manifest.clone();
 
+    let enable_blockstore = config.enable_blockstore;
+
     async move {
         let mut conn = pool.acquire().await.unwrap();
-
-        let start_block = crate::get_start_block(&mut conn, &manifest)
-            .await
-            .unwrap_or(1);
 
         // If we reach an issue that continues to fail, we'll retry a few times before giving up, as
         // we don't want to quit on the first error. But also don't want to waste CPU.
@@ -186,11 +184,16 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
         // Keep track of how many empty pages we've received from the client.
         let mut num_empty_block_reqs = 0;
 
-        let mut conn = pool.acquire().await.unwrap();
+        if enable_blockstore {
+            let start_block = crate::get_start_block(&mut conn, &manifest)
+                .await
+                .unwrap_or(1);
 
-        process_stored_blocks(pool.clone(), &mut executor, start_block, end_block).await;
+            process_stored_blocks(pool.clone(), &mut executor, start_block, end_block)
+                .await;
 
-        info!("Done processing stored blocks");
+            info!("Done processing stored blocks");
+        }
 
         let mut cursor = {
             let start_block = crate::get_start_block(&mut conn, &manifest).await.unwrap();

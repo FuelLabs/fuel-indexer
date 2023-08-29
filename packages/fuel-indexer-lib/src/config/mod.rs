@@ -106,6 +106,7 @@ impl Default for IndexerArgs {
             replace_indexer: defaults::REPLACE_INDEXER,
             accept_sql_queries: defaults::ACCEPT_SQL,
             block_page_size: defaults::NODE_BLOCK_PAGE_SIZE,
+            enable_blockstore: defaults::ENABLE_BLOCKSTORE,
         }
     }
 }
@@ -135,6 +136,7 @@ pub struct IndexerConfig {
     pub replace_indexer: bool,
     pub accept_sql_queries: bool,
     pub node_block_page_size: usize,
+    pub enable_blockstore: bool,
 }
 
 impl Default for IndexerConfig {
@@ -156,6 +158,7 @@ impl Default for IndexerConfig {
             replace_indexer: defaults::REPLACE_INDEXER,
             accept_sql_queries: defaults::ACCEPT_SQL,
             node_block_page_size: defaults::NODE_BLOCK_PAGE_SIZE,
+            enable_blockstore: defaults::ENABLE_BLOCKSTORE,
         }
     }
 }
@@ -237,6 +240,7 @@ impl From<IndexerArgs> for IndexerConfig {
             replace_indexer: args.replace_indexer,
             accept_sql_queries: args.accept_sql_queries,
             node_block_page_size: args.block_page_size,
+            enable_blockstore: args.enable_blockstore,
         };
 
         config
@@ -324,6 +328,7 @@ impl From<ApiServerArgs> for IndexerConfig {
             replace_indexer: defaults::REPLACE_INDEXER,
             accept_sql_queries: args.accept_sql_queries,
             node_block_page_size: defaults::NODE_BLOCK_PAGE_SIZE,
+            enable_blockstore: defaults::ENABLE_BLOCKSTORE,
         };
 
         config
