@@ -1,0 +1,40 @@
+---
+source: packages/fuel-indexer-graphql-dyn/tests/dynamic_connection.rs
+expression: response.data
+---
+{
+  "chain": {
+    "a": {
+      "edges": [
+        {
+          "node": {
+            "id": "Transaction:0-0-0"
+          },
+          "cursor": "2"
+        }
+      ],
+      "pageInfo": {
+        "hasNextPage": false,
+        "hasPreviousPage": false,
+        "startCursor": "2",
+        "endCursor": "2"
+      }
+    },
+    "b": {
+      "edges": [
+        {
+          "node": {
+            "id": "Transaction:0-0-0"
+          },
+          "cursor": "2"
+        }
+      ],
+      "pageInfo": {
+        "hasNextPage": false,
+        "hasPreviousPage": false,
+        "startCursor": "2",
+        "endCursor": "2"
+      }
+    }
+  }
+}

@@ -1,0 +1,127 @@
+---
+source: packages/fuel-indexer-graphql-dyn/src/testing/schema.rs
+expression: text
+---
+scalar B256
+
+type Block implements Node {
+  id: ID!
+  number: U64!
+  hash: B256!
+  parentHash: B256!
+  chain: Chain!
+  transactions(first: Int, after: String, last: Int, before: String): BlockHasTransactionConnection!
+}
+
+type BlockHasTransactionConnection {
+  totalCount: Int!
+  nodes: [Transaction!]!
+  edges: [BlockHasTransactionEdge!]!
+  pageInfo: PageInfo!
+}
+
+type BlockHasTransactionEdge {
+  node: Transaction!
+  cursor: String!
+}
+
+scalar Bytes
+
+type CallReceiptData {
+  param1: U64!
+  param2: U64!
+}
+
+type Chain implements Node {
+  id: ID!
+  number: U64!
+  blocks(first: Int, after: String, last: Int, before: String): ChainHasBlockConnection!
+  transactions(first: Int, after: String, last: Int, before: String): ChainHasTransactionConnection!
+}
+
+type ChainHasBlockConnection {
+  totalCount: Int!
+  nodes: [Block!]!
+  edges: [ChainHasBlockEdge!]!
+  pageInfo: PageInfo!
+}
+
+type ChainHasBlockEdge {
+  node: Block!
+  cursor: String!
+}
+
+type ChainHasTransactionConnection {
+  totalCount: Int!
+  nodes: [Transaction!]!
+  edges: [ChainHasTransactionEdge!]!
+  pageInfo: PageInfo!
+}
+
+type ChainHasTransactionEdge {
+  node: Transaction!
+  cursor: String!
+}
+
+interface Node {
+  id: ID!
+}
+
+type PageInfo {
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: String
+  endCursor: String
+}
+
+type Query {
+  node(id: ID!): Node
+  nodes(ids: [ID!]!): [Node]!
+  chain(id: ID!): Chain
+  block(id: ID!): Block
+  transaction(id: ID!): Transaction
+  receipt(id: ID!): Receipt
+}
+
+type Receipt implements Node {
+  id: ID!
+  type: ReceiptType!
+  data: ReceiptData!
+}
+
+union ReceiptData = CallReceiptData | ReturnReceiptData
+
+enum ReceiptType {
+  CallReceipt
+  ReturnReceipt
+}
+
+type ReturnReceiptData {
+  val: U64!
+}
+
+type Transaction implements Node {
+  id: ID!
+  index: U64!
+  hash: B256!
+  gasLimit: U64!
+  gasPrice: U64!
+  blockHash: B256!
+  chain: Chain!
+  block: Block!
+}
+
+scalar U16
+
+scalar U32
+
+scalar U64
+
+scalar U8
+
+scalar Unit
+
+schema {
+  query: Query
+}
+

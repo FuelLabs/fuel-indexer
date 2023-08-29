@@ -1,0 +1,140 @@
+---
+source: packages/fuel-indexer-graphql-dyn/src/testing/store_type.rs
+expression: store_type
+---
+StoreType(
+  data: {
+    Unit: Unit,
+    Bool: Bool,
+    U8: U8,
+    U16: U16,
+    U32: U32,
+    U64: U64,
+    B256: B256,
+    Byte: Byte,
+    Bytes: Bytes,
+    String: String,
+    Name(Pascal("CallReceiptData")): Composite(Pascal("CallReceiptData"), {
+      "param1": DataFieldType(
+        name: Snake("param1"),
+        type_id: U64,
+      ),
+      "param2": DataFieldType(
+        name: Snake("param2"),
+        type_id: U64,
+      ),
+    }),
+    Name(Pascal("ReturnReceiptData")): Composite(Pascal("ReturnReceiptData"), {
+      "val": DataFieldType(
+        name: Snake("val"),
+        type_id: U64,
+      ),
+    }),
+    Name(Pascal("ReceiptType")): Enum(Pascal("ReceiptType"), {
+      "call_receipt": DataFieldType(
+        name: Pascal("CallReceipt"),
+        type_id: Unit,
+      ),
+      "return_receipt": DataFieldType(
+        name: Pascal("ReturnReceipt"),
+        type_id: Unit,
+      ),
+    }),
+    Name(Pascal("ReceiptData")): Enum(Pascal("ReceiptData"), {
+      "call_receipt_data": DataFieldType(
+        name: Pascal("CallReceiptData"),
+        type_id: Name(Pascal("CallReceiptData")),
+      ),
+      "return_receipt_data": DataFieldType(
+        name: Pascal("ReturnReceiptData"),
+        type_id: Name(Pascal("ReturnReceiptData")),
+      ),
+    }),
+  },
+  obj: {
+    "Chain": ObjType(
+      name: Pascal("Chain"),
+      fields: {
+        "number": DataFieldType(
+          name: Snake("number"),
+          type_id: U64,
+        ),
+      },
+    ),
+    "Block": ObjType(
+      name: Pascal("Block"),
+      fields: {
+        "number": DataFieldType(
+          name: Snake("number"),
+          type_id: U64,
+        ),
+        "hash": DataFieldType(
+          name: Snake("hash"),
+          type_id: B256,
+        ),
+        "parent_hash": DataFieldType(
+          name: Snake("parent_hash"),
+          type_id: B256,
+        ),
+      },
+    ),
+    "Transaction": ObjType(
+      name: Pascal("Transaction"),
+      fields: {
+        "index": DataFieldType(
+          name: Snake("index"),
+          type_id: U64,
+        ),
+        "hash": DataFieldType(
+          name: Snake("hash"),
+          type_id: B256,
+        ),
+        "gas_limit": DataFieldType(
+          name: Snake("gas_limit"),
+          type_id: U64,
+        ),
+        "gas_price": DataFieldType(
+          name: Snake("gas_price"),
+          type_id: U64,
+        ),
+        "block_hash": DataFieldType(
+          name: Snake("block_hash"),
+          type_id: B256,
+        ),
+      },
+    ),
+    "Receipt": ObjType(
+      name: Pascal("Receipt"),
+      fields: {
+        "type": DataFieldType(
+          name: Snake("type"),
+          type_id: Name(Pascal("ReceiptType")),
+        ),
+        "data": DataFieldType(
+          name: Snake("data"),
+          type_id: Name(Pascal("ReceiptData")),
+        ),
+      },
+    ),
+  },
+  assoc: {
+    "ChainHasBlock": AssocType(
+      name: Pascal("ChainHasBlock"),
+      tail: "Chain",
+      head: "Block",
+      fields: {},
+    ),
+    "ChainHasTransaction": AssocType(
+      name: Pascal("ChainHasTransaction"),
+      tail: "Chain",
+      head: "Transaction",
+      fields: {},
+    ),
+    "BlockHasTransaction": AssocType(
+      name: Pascal("BlockHasTransaction"),
+      tail: "Block",
+      head: "Transaction",
+      fields: {},
+    ),
+  },
+)
