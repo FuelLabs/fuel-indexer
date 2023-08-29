@@ -521,7 +521,7 @@ impl TypeId {
         let type_id = type_id(&parsed.fully_qualified_namespace(), &typ.name.to_string());
         Self {
             id: type_id,
-            version: parsed.schema().version().to_string(),
+            version: parsed.version().to_string(),
             namespace: parsed.namespace().to_string(),
             identifier: parsed.identifier().to_string(),
             graphql_name: typ.name.to_string(),
@@ -534,7 +534,7 @@ impl TypeId {
         let type_id = type_id(&parsed.fully_qualified_namespace(), &info.table_name());
         Self {
             id: type_id,
-            version: parsed.schema().version().to_string(),
+            version: parsed.version().to_string(),
             namespace: parsed.namespace().to_string(),
             identifier: parsed.identifier().to_string(),
             // Doesn't matter what this is, but let's use `ID` since all column types
