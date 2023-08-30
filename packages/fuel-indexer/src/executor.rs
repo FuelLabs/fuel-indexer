@@ -104,57 +104,6 @@ pub async fn load_blocks(
     Ok(blocks)
 }
 
-pub async fn process_stored_blocks<T: 'static + Executor + Send + Sync>(
-    pool: IndexerConnectionPool,
-    executor: &mut T,
-    start_block: u32,
-    end_block: Option<u32>,
-) {
-    let pool = match pool {
-        IndexerConnectionPool::Postgres(pool) => pool.clone(),
-    };
-    let query = format!("SELECT block_data FROM index_block_data WHERE block_height >= {start_block} ORDER BY block_height ASC");
-    let stream = sqlx::query(&query).fetch(&pool);
-
-    use futures::TryStreamExt;
-    use sqlx::Row;
-    let mut chunked = stream.try_chunks(100);
-    let mut done = false;
-    while let Some(rows) = chunked.try_next().await.unwrap() {
-        let mut blocks = Vec::new();
-        for row in rows {
-            let bytes = row.get::<Vec<u8>, usize>(0);
-            let blockdata: BlockData =
-                fuel_indexer_lib::utils::deserialize(&bytes).unwrap();
-            info!("Deserialized Block #{}", blockdata.height);
-            // Don't go past the end block.
-            done = end_block.map(|end| blockdata.height > end).unwrap_or(false);
-            if done {
-                break;
-            }
-            blocks.push(blockdata);
-        }
-        if !blocks.is_empty() {
-            let first = blocks[0].height;
-            let last = blocks.last().unwrap().height;
-
-            info!(
-                "Indexer({}) processing stored blocks {}-{}",
-                executor.uid(),
-                first,
-                last
-            );
-            if let Err(e) = executor.handle_events(blocks).await {
-                error!("Failed to processed stored blocks {}-{}: {e}", first, last);
-                panic!("{e}");
-            };
-        }
-        if done {
-            break;
-        }
-    }
-}
-
 /// Run the executor task until the kill switch is flipped, or until some other
 /// stop criteria is met.
 //
@@ -216,17 +165,6 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
 
         // Keep track of how many empty pages we've received from the client.
         let mut num_empty_block_reqs = 0;
-
-        if enable_blockstore {
-            let start_block = crate::get_start_block(&mut conn, &manifest)
-                .await
-                .unwrap_or(1);
-
-            process_stored_blocks(pool.clone(), &mut executor, start_block, end_block)
-                .await;
-
-            info!("Done processing stored blocks");
-        }
 
         let mut start_block = crate::get_start_block(&mut conn, &manifest).await.unwrap();
 
