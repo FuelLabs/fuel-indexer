@@ -83,7 +83,8 @@ pub async fn load_blocks(
     };
 
     let query = {
-        let end_condition = manifest.end_block()
+        let end_condition = manifest
+            .end_block()
             .map(|x| format!("AND block_height <= {x}"))
             .unwrap_or("".to_string());
         let start_block_query = format!(
@@ -179,13 +180,9 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
 
             // Fetch the next page of blocks, and the starting cursor for the subsequent page
             let (block_info, next_cursor, _has_next_page) = if enable_blockstore {
-                let blocks = load_blocks(
-                    &pool,
-                    &manifest,
-                    node_block_page_size,
-                )
-                .await
-                .unwrap();
+                let blocks = load_blocks(&pool, &manifest, node_block_page_size)
+                    .await
+                    .unwrap();
                 start_block += blocks.len() as u32;
                 (blocks, None, false)
             } else {
