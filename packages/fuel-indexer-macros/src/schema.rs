@@ -1,6 +1,6 @@
 /// Macros used to convert GraphQL tokens into Rust tokens.
 use crate::{decoder::*, helpers::*};
-use async_graphql_parser::types::{TypeDefinition, TypeKind, TypeSystemDefinition};
+use async_graphql_parser::types::{TypeDefinition, TypeKind};
 use fuel_indexer_lib::graphql::GraphQLSchema;
 use fuel_indexer_lib::{
     graphql::ParsedGraphQLSchema, utils::local_repository_root, ExecutionSource,
@@ -26,20 +26,6 @@ fn process_type_def(
     };
 
     Some(tokens)
-}
-
-/// Process a schema definition into the corresponding tokens for use in an indexer module.
-fn process_definition(
-    schema: &ParsedGraphQLSchema,
-    definition: &TypeSystemDefinition,
-) -> Option<proc_macro2::TokenStream> {
-    match definition {
-        TypeSystemDefinition::Type(def) => process_type_def(schema, &def.node),
-        TypeSystemDefinition::Schema(_def) => None,
-        def => {
-            panic!("Unhandled definition type: {def:?}");
-        }
-    }
 }
 
 /// Process user-supplied GraphQL schema into code for indexer module.
@@ -83,8 +69,8 @@ pub(crate) fn process_graphql_schema(
         ParsedGraphQLSchema::new(namespace, identifier, exec_source, Some(&schema))
             .expect("Failed to parse GraphQL schema.");
 
-    for definition in schema.ast().clone().definitions.iter() {
-        if let Some(def) = process_definition(&schema, definition) {
+    for (_, type_def) in schema.type_defs().iter() {
+        if let Some(def) = process_type_def(&schema, type_def) {
             output = quote! {
                 #output
                 #def

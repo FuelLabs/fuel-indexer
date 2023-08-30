@@ -124,7 +124,7 @@ You should see output indicating the successful creation of a database and start
 Now that we have our development environment set up, the next step is to create an indexer.
 
 ```bash
-forc index new hello-indexer --namespace FuelLabs && cd hello-indexer
+forc index new hello-indexer --namespace fuelLabs && cd hello-indexer
 ```
 
 > The `namespace` of your project is a required option. You can think of a `namespace` as your organization name or company name. Your project might contain one or many indexers all under the same `namespace`. For a complete list of options passed to `forc index new`, see [here](../forc-index/new.md)
@@ -203,10 +203,12 @@ You can open your GraphQL query playground at `http://127.0.0.1:29987/api/playgr
 
 ```graphql
 query {
-  tx {
-    id
-    hash
-    block
+  transaction {
+    id,
+    hash,
+    block {
+      id
+    }
   }
 }
 ```
@@ -215,21 +217,27 @@ The response you get should resemble:
 
 ```json
 [
-   {
-      "block" : 7017844286925529648,
-      "hash" : "fb93ce9519866676813584eca79afe2d98466b3e2c8b787503b76b0b4718a565",
-      "id" : 7292230935510476086,
-   },
-   {
-      "block" : 3473793069188998756,
-      "hash" : "5ea2577727aaadc331d5ae1ffcbc11ec4c2ba503410f8edfb22fc0a72a1d01eb",
-      "id" : 4136050720295695667,
-   },
-   {
-      "block" : 7221293542007912803,
-      "hash" : "d2f638c26a313c681d75db2edfbc8081dbf5ecced87a41ec4199d221251b0578",
-      "id" : 4049687577184449589,
-   },
+  {
+    "block": {
+      "id": "24002b29ef4331f5ee75a38bf6381f2c8e8d2d5b4d78470706dde7ab0b8d54c0"
+    },
+    "hash": "82b36dce26d926921b8e79597899d8712fdabf2553f28b45ef3851a968efb4b9",
+    "id": "eb7e14822e18e71ba7c92c266b0976acda2344dfbef7a60099d400cc243394fb"
+  },
+  {
+    "block": {
+      "id": "1309ee2cb0846b1a7e45313e1c39b2a24ffd552a381f2f627225256f725a93e3"
+    },
+    "hash": "f0c7c778faa6eb2a8bf03c9c47bb3f836bd4fe37e69c18e30f853ff146522dcb",
+    "id": "182b6343bbbca2fcecf97020ea3f3767b8f5c370a6b853d2add46853e542a113"
+  },
+  {
+    "block": {
+      "id": "95588e20296969a76576d519d301c6cabe1e009675e430da93e18ba2a0d38a49"
+    },
+    "hash": "e729045198ee10dcf49e431f50c2ffe8c37129cbe47e003a59aff81a88b03b50",
+    "id": "6910ebc30a1037b83336c956c95f7fc470c4b76750a93f6a1f6d19a21d058b19"
+  }
 ]
 ```
 
