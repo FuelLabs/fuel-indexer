@@ -1,6 +1,23 @@
-# Starting the Fuel Indexer
+# Indexer Service Infrastructure
 
-## Using CLI options
+A Fuel indexer service instance requires just three components:
+
+- a **Fuel node**: Custom indexers monitor incoming blocks from a Fuel node and extract information about the state of the Fuel blockchain.
+- a **Postgres database server**: Extracted information is saved into a database.
+- the **indexer service web API**: dApps can query indexers for up-to-date information and operators can deploy/remove indexers as needed.
+
+The Fuel indexer service will connect to any Fuel node, which means you can run your own node or use a node provided by Fuel. The indexer service web API is included with the Fuel indexer; it's available as soon as the indexer is started through `fuel-indexer run`. The only component that isn't provided for you is a Postgres database server. You should set up a server according to your own needs and specifications.
+
+## Components
+
+| Component | Default Host | Default Port | CLI Argument | Environment Variable |
+|---|---|---|---|---|
+| Fuel Node | localhost | 4000 | `--fuel-node-host` / `--fuel-node-port` |  |
+| Database Server | localhost | 5432 | `--postgres-user` / `--postgres--password` / `--postgres-host` / `--postgres--port` / `--postgres-database` |  |
+| Indexer Service Web API | localhost | 29987 | `--web-api-host` / `--web-api-port` |  |
+
+## Starting the Fuel indexer
+### Using CLI options
 
 ```text
 Standalone binary for the fuel indexer service.
@@ -119,7 +136,7 @@ OPTIONS:
 
 ```
 
-## Using a configuration file
+### Using a configuration file
 
 ```yaml
 {{#include ../../../config.yaml}}

@@ -7,7 +7,7 @@
 
 - [Dependencies](./getting-started/dependencies.md)
 - [Quickstart](./getting-started/quickstart.md)
-- [Starting the Fuel Indexer](./getting-started/starting-the-fuel-indexer.md)
+- [Indexer Service Infrastructure](./getting-started/starting-the-fuel-indexer.md)
 
 # Reference Guide
 
