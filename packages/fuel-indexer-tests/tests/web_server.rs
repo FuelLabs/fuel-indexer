@@ -463,8 +463,9 @@ async fn test_replacing_an_indexer_and_keeping_or_removing_data() {
     .unwrap();
 
     // We removed the data, and the new indexer sould not start until block 5 is
-    // present. The last block must be 1.
-    assert_eq!(last, 1);
+    // present. The last block must be 0—indicating that the indexer processed
+    // no blocks.
+    assert_eq!(last, 0);
 
     // Increase blocks to 5. The new indexer should start.
     mock_request("/block").await;
