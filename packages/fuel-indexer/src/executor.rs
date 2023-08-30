@@ -77,23 +77,26 @@ pub async fn load_blocks(
     end_block: Option<u32>,
     limit: usize,
 ) -> IndexerResult<Vec<BlockData>> {
+    let end = std::cmp::min(
+        start_block + limit as u32,
+        end_block.unwrap_or(start_block + limit as u32),
+    );
+    info!("Loading blocks {start_block}-{end} from the database.");
     use sqlx::Row;
 
     let pool = match pool {
         IndexerConnectionPool::Postgres(pool) => pool.clone(),
     };
-    let query = format!("SELECT block_data FROM index_block_data WHERE block_height >= {start_block} ORDER BY block_height ASC LIMIT {limit}");
+    let end_condition = end_block
+        .map(|x| format!("AND block_height <= {x}"))
+        .unwrap_or("".to_string());
+    let query = format!("SELECT block_data FROM index_block_data WHERE block_height >= {start_block} {end_condition} ORDER BY block_height ASC LIMIT {limit}");
     let rows = sqlx::query(&query).fetch_all(&pool).await?;
 
     let mut blocks = Vec::new();
     for row in rows {
         let bytes = row.get::<Vec<u8>, usize>(0);
         let blockdata: BlockData = fuel_indexer_lib::utils::deserialize(&bytes).unwrap();
-        // Don't go past the end block.
-        let done = end_block.map(|end| blockdata.height > end).unwrap_or(false);
-        if done {
-            break;
-        }
         blocks.push(blockdata);
     }
     Ok(blocks)
@@ -240,8 +243,6 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                     load_blocks(&pool, start_block, end_block, node_block_page_size)
                         .await
                         .unwrap();
-
-                info!("Loading blocks from the database. {start_block}, {end_block:?}, {}", blocks.last().unwrap().height);
                 start_block += blocks.len() as u32;
                 (blocks, None, false)
             } else {
