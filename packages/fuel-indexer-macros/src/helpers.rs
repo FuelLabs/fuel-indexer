@@ -77,16 +77,16 @@ pub fn get_json_abi(abi_path: Option<String>) -> Option<ProgramABI> {
 pub fn is_tuple_type(typ: &TypeDeclaration) -> bool {
     let mut type_field_chars = typ.type_field.chars();
 
-    type_field_chars.nth(0).is_some_and(|c| c == '(')
-        && type_field_chars.nth(0).is_some_and(|c| c != ')')
+    type_field_chars.next().is_some_and(|c| c == '(')
+        && type_field_chars.next().is_some_and(|c| c != ')')
 }
 
 /// Whether a `TypeDeclaration` is a unit type
 pub fn is_unit_type(typ: &TypeDeclaration) -> bool {
     let mut type_field_chars = typ.type_field.chars();
 
-    type_field_chars.nth(0).is_some_and(|c| c == '(')
-        && type_field_chars.nth(0).is_some_and(|c| c == ')')
+    type_field_chars.next().is_some_and(|c| c == '(')
+        && type_field_chars.next().is_some_and(|c| c == ')')
 }
 
 /// Whether this TypeDeclaration should be used in the codegen
