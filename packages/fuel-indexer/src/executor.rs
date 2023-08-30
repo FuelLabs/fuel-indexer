@@ -73,24 +73,26 @@ impl From<ExecutorSource> for Vec<u8> {
 
 pub async fn load_blocks(
     pool: &IndexerConnectionPool,
-    start_block: u32,
-    end_block: Option<u32>,
+    manifest: &Manifest,
     limit: usize,
 ) -> IndexerResult<Vec<BlockData>> {
-    let end = std::cmp::min(
-        start_block + limit as u32,
-        end_block.unwrap_or(start_block + limit as u32),
-    );
-    info!("Loading blocks {start_block}-{end} from the database.");
     use sqlx::Row;
 
     let pool = match pool {
         IndexerConnectionPool::Postgres(pool) => pool.clone(),
     };
-    let end_condition = end_block
-        .map(|x| format!("AND block_height <= {x}"))
-        .unwrap_or("".to_string());
-    let query = format!("SELECT block_data FROM index_block_data WHERE block_height >= {start_block} {end_condition} ORDER BY block_height ASC LIMIT {limit}");
+
+    let query = {
+        let end_condition = manifest.end_block()
+            .map(|x| format!("AND block_height <= {x}"))
+            .unwrap_or("".to_string());
+        let start_block_query = format!(
+            "SELECT MAX(block_height) + 1 FROM {}_{}.indexmetadataentity",
+            manifest.namespace(),
+            manifest.identifier()
+        );
+        format!("SELECT block_data FROM index_block_data WHERE block_height >= ({start_block_query}) {end_condition} ORDER BY block_height ASC LIMIT {limit}")
+    };
     let rows = sqlx::query(&query).fetch_all(&pool).await?;
 
     let mut blocks = Vec::new();
@@ -239,10 +241,13 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
 
             // Fetch the next page of blocks, and the starting cursor for the subsequent page
             let (block_info, next_cursor, _has_next_page) = if enable_blockstore {
-                let blocks =
-                    load_blocks(&pool, start_block, end_block, node_block_page_size)
-                        .await
-                        .unwrap();
+                let blocks = load_blocks(
+                    &pool,
+                    &manifest,
+                    node_block_page_size,
+                )
+                .await
+                .unwrap();
                 start_block += blocks.len() as u32;
                 (blocks, None, false)
             } else {
