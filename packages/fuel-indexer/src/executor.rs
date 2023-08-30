@@ -71,6 +71,34 @@ impl From<ExecutorSource> for Vec<u8> {
     }
 }
 
+pub async fn load_blocks(
+    pool: &IndexerConnectionPool,
+    start_block: u32,
+    end_block: Option<u32>,
+    limit: usize,
+) -> IndexerResult<Vec<BlockData>> {
+    use sqlx::Row;
+
+    let pool = match pool {
+        IndexerConnectionPool::Postgres(pool) => pool.clone(),
+    };
+    let query = format!("SELECT block_data FROM index_block_data WHERE block_height >= {start_block} ORDER BY block_height ASC LIMIT {limit}");
+    let rows = sqlx::query(&query).fetch_all(&pool).await?;
+
+    let mut blocks = Vec::new();
+    for row in rows {
+        let bytes = row.get::<Vec<u8>, usize>(0);
+        let blockdata: BlockData = fuel_indexer_lib::utils::deserialize(&bytes).unwrap();
+        // Don't go past the end block.
+        let done = end_block.map(|end| blockdata.height > end).unwrap_or(false);
+        if done {
+            break;
+        }
+        blocks.push(blockdata);
+    }
+    Ok(blocks)
+}
+
 pub async fn process_stored_blocks<T: 'static + Executor + Send + Sync>(
     pool: IndexerConnectionPool,
     executor: &mut T,
@@ -195,10 +223,9 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
             info!("Done processing stored blocks");
         }
 
-        let mut cursor = {
-            let start_block = crate::get_start_block(&mut conn, &manifest).await.unwrap();
-            Some((start_block - 1).to_string())
-        };
+        let mut start_block = crate::get_start_block(&mut conn, &manifest).await.unwrap();
+
+        let mut cursor = { Some((start_block - 1).to_string()) };
 
         loop {
             // If something else has signaled that this indexer should stop, then stop.
@@ -208,7 +235,16 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
             }
 
             // Fetch the next page of blocks, and the starting cursor for the subsequent page
-            let (block_info, next_cursor, _has_next_page) =
+            let (block_info, next_cursor, _has_next_page) = if enable_blockstore {
+                let blocks =
+                    load_blocks(&pool, start_block, end_block, node_block_page_size)
+                        .await
+                        .unwrap();
+
+                info!("Loading blocks from the database. {start_block}, {end_block:?}, {}", blocks.last().unwrap().height);
+                start_block += blocks.len() as u32;
+                (blocks, None, false)
+            } else {
                 match retrieve_blocks_from_node(
                     &client,
                     node_block_page_size,
@@ -226,7 +262,8 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                         sleep(Duration::from_secs(DELAY_FOR_SERVICE_ERROR)).await;
                         continue;
                     }
-                };
+                }
+            };
 
             // If our block page request from the client returns empty, we sleep for a bit, and then continue.
             if block_info.is_empty() {
