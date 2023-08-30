@@ -173,19 +173,23 @@ pub(crate) async fn remove_indexer(
             .map_err(|_e| ApiError::Http(HttpError::Unauthorized))?;
     }
 
-    if let Err(e) = queries::remove_indexer(&mut conn, &namespace, &identifier).await {
+    // Send a stop request before removing the indexer and its data.
+    tx.send(ServiceRequest::Stop(StopRequest {
+        namespace: namespace.clone(),
+        identifier: identifier.clone(),
+    }))
+    .await?;
+
+    // Allways remove data when removing an indexer.
+    if let Err(e) =
+        queries::remove_indexer(&mut conn, &namespace, &identifier, true).await
+    {
         error!("Failed to remove Indexer({namespace}.{identifier}): {e}");
         queries::revert_transaction(&mut conn).await?;
         return Err(ApiError::Sqlx(sqlx::Error::RowNotFound));
     }
 
     queries::commit_transaction(&mut conn).await?;
-
-    tx.send(ServiceRequest::Stop(StopRequest {
-        namespace,
-        identifier,
-    }))
-    .await?;
 
     Ok(Json(json!({
         "success": "true"
@@ -208,132 +212,184 @@ pub(crate) async fn register_indexer_assets(
     }
 
     let mut conn = pool.acquire().await?;
-    let mut assets: Vec<IndexerAsset> = Vec::new();
 
-    if let Some(mut multipart) = multipart {
-        queries::start_transaction(&mut conn).await?;
+    let multipart = multipart.ok_or_else(ApiError::default)?;
 
-        let indexer_exists = queries::get_indexer_id(&mut conn, &namespace, &identifier)
-            .await
-            .is_ok();
-        if indexer_exists {
-            if !config.replace_indexer {
-                error!("Indexer({namespace}.{identifier}) already exists.");
-                queries::revert_transaction(&mut conn).await?;
-                return Err(ApiError::Http(HttpError::Conflict(format!(
-                    "Indexer({namespace}.{identifier}) already exists"
-                ))));
-            } else if let Err(e) =
-                queries::remove_indexer(&mut conn, &namespace, &identifier).await
+    let (replace_indexer, asset_bytes) =
+        parse_register_indexer_multipart(multipart).await?;
+
+    queries::start_transaction(&mut conn).await?;
+
+    let result = register_indexer_assets_transaction(
+        &mut conn,
+        schema_manager.clone(),
+        config,
+        &namespace,
+        &identifier,
+        claims.sub(),
+        replace_indexer,
+        asset_bytes,
+    )
+    .await;
+
+    match result {
+        Ok(assets) => {
+            queries::commit_transaction(&mut conn).await?;
+
+            if let Err(e) = tx
+                .send(ServiceRequest::Reload(ReloadRequest {
+                    namespace,
+                    identifier,
+                }))
+                .await
             {
-                error!("Failed to remove Indexer({namespace}.{identifier}): {e}");
-                queries::revert_transaction(&mut conn).await?;
+                error!("Failed to send ServiceRequest::Reload: {e:?}");
                 return Err(e.into());
             }
+
+            Ok(Json(json!({
+                "success": "true",
+                "assets": assets,
+            })))
+        }
+        Err(e) => {
+            queries::revert_transaction(&mut conn).await?;
+            Err(e)
+        }
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+async fn register_indexer_assets_transaction(
+    conn: &mut fuel_indexer_database::IndexerConnection,
+    schema_manager: Arc<RwLock<SchemaManager>>,
+    config: IndexerConfig,
+    namespace: &str,
+    identifier: &str,
+    pubkey: &str,
+    replace_indexer: bool,
+    asset_bytes: Vec<(IndexerAssetType, Vec<u8>)>,
+) -> ApiResult<Vec<IndexerAsset>> {
+    let mut assets: Vec<IndexerAsset> = Vec::new();
+
+    let indexer_id = queries::get_indexer_id(conn, namespace, identifier).await;
+
+    // If the indexer already exists, check that replacing is enabled and that
+    // the schema has not changed.
+    if let Ok(indexer_id) = indexer_id {
+        if !replace_indexer {
+            return Err(ApiError::Http(HttpError::Conflict(format!(
+                "Indexer({namespace}.{identifier}) already exists. Use --replace-indexer to replace it."
+            ))));
         }
 
-        while let Ok(Some(field)) = multipart.next_field().await {
-            let name = field.name().unwrap_or("").to_string();
-            let data = field.bytes().await.unwrap_or_default();
-
-            match IndexerAssetType::from_str(&name) {
-                Ok(asset_type) => {
-                    match asset_type {
-                        IndexerAssetType::Wasm | IndexerAssetType::Manifest => {
-                            match queries::register_indexer_asset(
-                                &mut conn,
-                                &namespace,
-                                &identifier,
-                                data.to_vec(),
-                                asset_type,
-                                Some(claims.sub()),
-                            )
-                            .await
-                            {
-                                Ok(result) => {
-                                    assets.push(result);
-                                }
-                                Err(e) => {
-                                    let _res =
-                                        queries::revert_transaction(&mut conn).await?;
-                                    return Err(e.into());
-                                }
-                            }
-                        }
-                        IndexerAssetType::Schema => {
-                            let schema = GraphQLSchema::from(data.to_vec());
-
-                            match queries::register_indexer_asset(
-                                &mut conn,
-                                &namespace,
-                                &identifier,
-                                (&schema).into(),
-                                IndexerAssetType::Schema,
-                                Some(claims.sub()),
-                            )
-                            .await
-                            {
-                                Ok(result) => {
-                                    match schema_manager
-                                        .write()
-                                        .await
-                                        .new_schema(
-                                            &namespace,
-                                            &identifier,
-                                            schema,
-                                            // Only WASM can be sent over the web.
-                                            ExecutionSource::Wasm,
-                                            &mut conn,
-                                        )
-                                        .await
-                                    {
-                                        Ok(_) => {
-                                            assets.push(result);
-                                        }
-                                        Err(e) => {
-                                            let _res =
-                                                queries::revert_transaction(&mut conn)
-                                                    .await?;
-                                            return Err(e.into());
-                                        }
-                                    }
-                                }
-                                Err(e) => {
-                                    let _res =
-                                        queries::revert_transaction(&mut conn).await?;
-                                    return Err(e.into());
-                                }
-                            }
-                        }
-                    }
-                }
-                Err(e) => {
-                    let _res = queries::revert_transaction(&mut conn).await?;
-                    return Err(e.into());
+        for (asset_type, data) in asset_bytes.iter() {
+            if *asset_type == IndexerAssetType::Schema {
+                // The schema must be the same. This query returns an asset
+                // if the bytes match. If it returns None (and the indexer
+                // exists), it means that its schema is different.
+                let schema = GraphQLSchema::from(data.to_vec());
+                if queries::asset_already_exists(
+                    conn,
+                    &IndexerAssetType::Schema,
+                    &(&schema).into(),
+                    &indexer_id,
+                )
+                .await?
+                .is_none()
+                {
+                    return Err(ApiError::Http(HttpError::Conflict(format!(
+                            "Indexer({namespace}.{identifier})'s schema has changed. Use --replace-indexer --remove-data to replace the indexer and the indexed data."
+                        ))));
                 }
             }
         }
-
-        queries::commit_transaction(&mut conn).await?;
-
-        if let Err(e) = tx
-            .send(ServiceRequest::Reload(ReloadRequest {
-                namespace,
-                identifier,
-            }))
-            .await
-        {
-            error!("Failed to send ServiceRequest::Reload: {e:?}");
-            return Err(e.into());
-        }
-
-        return Ok(Json(json!({
-            "success": "true",
-            "assets": assets,
-        })));
     }
 
-    Err(ApiError::default())
+    if !config.replace_indexer && replace_indexer {
+        error!("Failed to replace Indexer({namespace}.{identifier}): replacing an indexer is not enabled.");
+        return Err(ApiError::Http(HttpError::Conflict(format!(
+            "Failed to replace Indexer({namespace}.{identifier}): replacing an indexer is not enabled."
+        ))));
+    }
+
+    for (asset_type, data) in asset_bytes.iter() {
+        match asset_type {
+            IndexerAssetType::Wasm | IndexerAssetType::Manifest => {
+                let result = queries::register_indexer_asset(
+                    conn,
+                    namespace,
+                    identifier,
+                    data.to_vec(),
+                    asset_type.to_owned(),
+                    Some(pubkey),
+                )
+                .await?;
+
+                assets.push(result);
+            }
+            IndexerAssetType::Schema => {
+                let schema = GraphQLSchema::from(data.to_vec());
+
+                let asset = queries::register_indexer_asset(
+                    conn,
+                    namespace,
+                    identifier,
+                    (&schema).into(),
+                    IndexerAssetType::Schema,
+                    Some(pubkey),
+                )
+                .await?;
+
+                schema_manager
+                    .write()
+                    .await
+                    .new_schema(
+                        namespace,
+                        identifier,
+                        schema,
+                        // Only WASM can be sent over the web.
+                        ExecutionSource::Wasm,
+                        conn,
+                    )
+                    .await?;
+
+                assets.push(asset);
+            }
+        }
+    }
+
+    Ok(assets)
+}
+
+// This function parses the `Multipart` struct set to the deploy indexer
+// endpoint. It extracts the `bool` value indicating whether to replace an
+// indexer if it already exists, and extracts the indexer assets: manifest,
+// schema, and the WASM module.
+async fn parse_register_indexer_multipart(
+    mut multipart: Multipart,
+) -> ApiResult<(bool, Vec<(IndexerAssetType, Vec<u8>)>)> {
+    let mut replace_indexer: bool = false;
+    let mut assets: Vec<(IndexerAssetType, Vec<u8>)> = vec![];
+
+    while let Ok(Some(field)) = multipart.next_field().await {
+        let name = field.name().unwrap_or("").to_string();
+        let data = field.bytes().await.unwrap_or_default();
+        match name.as_str() {
+            "replace_indexer" => {
+                replace_indexer = std::str::from_utf8(&data.to_owned())
+                    .map_err(|e| ApiError::OtherError(e.to_string()))?
+                    .parse::<bool>()
+                    .map_err(|e| ApiError::OtherError(e.to_string()))?;
+            }
+            name => {
+                let asset_type = IndexerAssetType::from_str(name)?;
+                assets.push((asset_type, data.to_vec()));
+            }
+        };
+    }
+
+    Ok((replace_indexer, assets))
 }
 
 /// Return a `Nonce` to be used for authentication.

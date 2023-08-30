@@ -7,7 +7,7 @@ use fuel_indexer::{
 use fuel_indexer_database::IndexerConnectionPool;
 use fuel_indexer_lib::config::DatabaseConfig;
 use fuel_indexer_tests::fixtures::TestPostgresDb;
-use std::str::FromStr;
+use std::{str::FromStr, sync::atomic::AtomicBool};
 
 /// Location of Fuel node to be used for block retrieval.
 pub const NODE_URL: &str = "beta-4.fuel.network:80";
@@ -73,6 +73,7 @@ pub fn create_wasm_indexer_benchmark(
             .unwrap();
         let blocks = rt.block_on(get_blocks(start_block, num_blocks)).unwrap();
         c.bench_function(name, move |b| {
+            let kill_switch = std::sync::Arc::new(AtomicBool::new(false));
             b.iter_batched(
                 // This setup function is run prior to each iteration of
                 // the benchmark; this ensures that there is a fresh WASM
@@ -91,7 +92,9 @@ pub fn create_wasm_indexer_benchmark(
                         (executor, blocks.clone())
                     })
                 },
-                |(mut ex, blocks)| rt.block_on(ex.handle_events(blocks)),
+                |(mut ex, blocks)| {
+                    rt.block_on(ex.handle_events(kill_switch.clone(), blocks))
+                },
                 criterion::BatchSize::SmallInput,
             )
         });

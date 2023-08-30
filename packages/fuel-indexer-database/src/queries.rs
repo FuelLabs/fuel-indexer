@@ -382,10 +382,11 @@ pub async fn remove_indexer(
     conn: &mut IndexerConnection,
     namespace: &str,
     identifier: &str,
+    remove_data: bool,
 ) -> sqlx::Result<()> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
-            postgres::remove_indexer(c, namespace, identifier).await
+            postgres::remove_indexer(c, namespace, identifier, remove_data).await
         }
     }
 }

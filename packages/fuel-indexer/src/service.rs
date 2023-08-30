@@ -67,6 +67,7 @@ impl IndexerService {
     pub async fn register_indexer_from_manifest(
         &mut self,
         manifest: Manifest,
+        remove_data: bool,
     ) -> IndexerResult<()> {
         let mut conn = self.pool.acquire().await?;
 
@@ -88,6 +89,7 @@ impl IndexerService {
                 &mut conn,
                 manifest.namespace(),
                 manifest.identifier(),
+                remove_data,
             )
             .await
             {
