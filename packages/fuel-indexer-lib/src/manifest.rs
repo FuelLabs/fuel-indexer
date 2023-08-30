@@ -182,6 +182,11 @@ impl Manifest {
         Ok(())
     }
 
+    /// Set the start block for this indexer.
+    pub fn set_start_block(&mut self, block: u32) {
+        self.start_block = Some(block);
+    }
+
     /// Set the executor module for this indexer.
     pub fn set_module(&mut self, module: Module) {
         self.module = module;
