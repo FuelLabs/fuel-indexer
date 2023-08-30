@@ -5,7 +5,7 @@ The Fuel indexer uses GraphQL to in order to allow users to query for indexed da
 - [Directives](./directives.md)
 - [GraphQL API Server](./api-server.md)
 - [Playground](./playground.md)
-- [Queries](../queries/index.md)
+- [Queries](./queries.md)
 
 ## Supported Functionality
 
@@ -19,12 +19,12 @@ While we do our best to maintain compliance with the GraphQL specification and p
 
 | Functionality | Status | Notes |
 |------|----------|-------|
-| Arguments | ✅ | [read the Search and Filtering section](../queries/search-filtering.md) |
+| Arguments | ✅ | [read the Search and Filtering section](./search-filtering.md) |
 | Aliases | ✅ | |
 | Fragments | ✅ | inline fragments are currently not supported |
 | Introspection | ✅ | |
 | GraphQL Playground | ✅ | [read the Playground section](./playground.md) |
-| Pagination | ✅ | [read the Pagination section](../queries/pagination.md) |
+| Pagination | ✅ | [read the Pagination section](./pagination.md) |
 | Directives | 🚧 | [read the Directives section](./directives.md) |
 | List Types | 🚧 | |
 | Union Types | 🚧 | |

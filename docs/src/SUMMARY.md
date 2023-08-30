@@ -37,10 +37,10 @@
   - [Relationships](./graphql/relationships.md)
   - [API Server](./graphql/api-server.md)
   - [Playground](./graphql/playground.md)
-  - [Queries](./graphql/queries/index.md)
-    - [Search and Filtering](./graphql/queries/search-filtering.md)
-    - [Pagination](./graphql/queries/pagination.md)
-    - [A Full Example](./graphql/queries/full-example.md)
+  - [Basic Queries](./graphql/queries.md)
+  - [Search and Filtering](./graphql/search-filtering.md)
+  - [Pagination](./graphql/pagination.md)
+  - [A Full Example](./graphql/full-example.md)
 - [Storing Info in a Database](./database/index.md)
 - [forc index](./forc-index/index.md)
   - [new](./forc-index/new.md)
@@ -57,7 +57,7 @@
   - [start](./forc-postgres/start.md)
   - [stop](./forc-postgres/stop.md)
   - [drop](./forc-postgres/drop.md)
-- [Authentication](./authentication/index.md) -->
+- [Authentication](./authentication/index.md)
 
 # For Contributors
 

@@ -12,7 +12,7 @@ We'll describe these three different implementations below.
 
 ### As tooling for compiling indexers
 
-The Fuel indexer provides functionality to make it easy to build and compile abitrary indexers by using [`forc index`](../forc-index/index.md). For info on how to use indexer tooling to compile arbitrary indexers, check out our [Quickstart](../getting-started/quickstart.md) and [Hello World](../getting-started/hello-world.md) examples for a more in-depth exploration of how to compile indexers.
+The Fuel indexer provides functionality to make it easy to build and compile abitrary indexers by using [`forc index`](../forc-index/index.md). For info on how to use indexer tooling to compile arbitrary indexers, check out our [Quickstart](../getting-started/quickstart.md) example for a more in-depth exploration of how to compile indexers.
 
 ### As a standalone service
 

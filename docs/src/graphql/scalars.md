@@ -3,7 +3,7 @@
 The Fuel indexer has a collection of GraphQL scalars that cover virtually any value type in use on the Fuel network. The following list contains each GraphQL scalar type along with its equivalent Rust type.
 
 | GraphQL Scalar | Rust Type | Notes |
---- | --- | --- 
+--- | --- | ---
 | Address | `u8[32]` |
 | AssetId | `u8[32]` |
 | Blob | `Vec<u8>` | Byte blob of arbitary size |

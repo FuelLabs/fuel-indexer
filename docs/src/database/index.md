@@ -7,7 +7,7 @@ The Fuel indexer uses [PostgreSQL](https://github.com/docker-library/postgres/bl
 Below is a mapping of GraphQL schema types to their Sway and database equivalents. Note that an empty cell denotes that there is no direct equivalent for the type in the corresponding domain.
 
 | GraphQL Scalar | Sway Type | Postgres Type |
---- | --- | --- 
+--- | --- | ---
 | Address | `b256` | varchar(64) |
 | AssetId | `u8[32]` | varchar(64) |
 | Blob | `str[]` | varchar(10485760) |

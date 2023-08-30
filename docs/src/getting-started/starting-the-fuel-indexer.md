@@ -17,6 +17,7 @@ The Fuel indexer service will connect to any Fuel node, which means you can run 
 | Indexer Service Web API | localhost | 29987 | `--web-api-host` / `--web-api-port` |  |
 
 ## Starting the Fuel indexer
+
 ### Using CLI options
 
 ```text
