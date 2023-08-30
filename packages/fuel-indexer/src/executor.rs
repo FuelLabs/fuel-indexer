@@ -167,9 +167,10 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
         // Keep track of how many empty pages we've received from the client.
         let mut num_empty_block_reqs = 0;
 
-        let mut start_block = crate::get_start_block(&mut conn, &manifest).await.unwrap();
-
-        let mut cursor = { Some((start_block - 1).to_string()) };
+        let mut cursor = {
+            let start_block = crate::get_start_block(&mut conn, &manifest).await.unwrap();
+            Some((start_block - 1).to_string())
+        };
 
         loop {
             // If something else has signaled that this indexer should stop, then stop.
@@ -183,7 +184,6 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                 let blocks = load_blocks(&pool, &manifest, node_block_page_size)
                     .await
                     .unwrap();
-                start_block += blocks.len() as u32;
                 (blocks, None, false)
             } else {
                 match retrieve_blocks_from_node(
