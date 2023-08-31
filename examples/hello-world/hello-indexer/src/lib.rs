@@ -33,29 +33,18 @@ use fuel_indexer_utils::prelude::*;
 mod hello_world_indexer {
 
     fn index_logged_greeting(event: Greeting, block: BlockData) {
-        let greeter = Greeter::new(
-            event.person.name.to_right_trimmed_str().into(),
-            block.height,
-            block.height,
-            vec![1u8, 2, 3, 4, 5, 6, 7, 8].into(),
-        )
-        .get_or_create();
+        let greeting = event.greeting.to_right_trimmed_str().to_string();
+        let name = event.person.name.to_right_trimmed_str().to_string();
+        let height = block.height;
+        let data = vec![1u8, 2, 3, 4, 5, 6, 7, 8].into();
+        let greeter = Greeter::new(name.clone(), height, height, data).get_or_create();
 
-        let message = format!(
-            "{} 👋, my name is {}",
-            event.greeting.to_right_trimmed_str(),
-            event.person.name.to_right_trimmed_str(),
-        );
+        let message = format!("{greeting} 👋, my name is {name}");
         let message_hash = bytes32(&message);
 
-        let salutation = Salutation::new(
-            message_hash,
-            message,
-            greeter.id.clone(),
-            block.height,
-            block.height,
-        )
-        .get_or_create();
+        let salutation =
+            Salutation::new(message_hash, message, greeter.id.clone(), height, height)
+                .get_or_create();
 
         greeter.save();
         salutation.save();
