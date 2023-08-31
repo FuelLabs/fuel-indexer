@@ -1,11 +1,11 @@
 use crate::{
-    constants::*, helpers::*, native::handler_block_native, parse::IndexerConfig,
+    helpers::*, native::handler_block_native, parse::IndexerConfig,
     schema::process_graphql_schema, wasm::handler_block_wasm,
 };
 use fuel_abi_types::abi::program::TypeDeclaration;
 use fuel_indexer_lib::{
-    graphql::GraphQLSchemaValidator, manifest::ContractIds, manifest::Manifest,
-    utils::local_repository_root, ExecutionSource,
+    constants::*, graphql::GraphQLSchemaValidator, manifest::ContractIds,
+    manifest::Manifest, utils::workspace_manifest_prefix, ExecutionSource,
 };
 use fuel_indexer_types::{type_id, FUEL_TYPES_NAMESPACE};
 use fuels::{core::codec::resolve_fn_selector, types::param_types::ParamType};
@@ -57,7 +57,7 @@ fn process_fn_items(
         })
         .collect::<HashMap<usize, TypeDeclaration>>();
 
-    let mut type_ids = FUEL_PRIMITIVES
+    let mut type_ids = RESERVED_TYPEDEF_NAMES
         .iter()
         .map(|x| (x.to_string(), type_id(FUEL_TYPES_NAMESPACE, x) as usize))
         .collect::<HashMap<String, usize>>();
@@ -352,6 +352,13 @@ fn process_fn_items(
 
                 let fn_name = &fn_item.sig.ident;
 
+                if arg_list.is_empty() {
+                    proc_macro_error::abort_call_site!(
+                        "Handler function '{}' must have at least one argument.",
+                        fn_name.to_string(),
+                    );
+                }
+
                 abi_dispatchers.push(quote! {
                     if ( #(#input_checks)&&* ) {
                         #fn_name(#(#arg_list),*)#awaitness;
@@ -557,6 +564,7 @@ fn process_fn_items(
                                         }
                                     });
 
+
                                 decoder.decode_messagedata(type_id, data.clone());
 
                                 let ty_id = MessageOut::type_id();
@@ -741,7 +749,7 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
 
     let IndexerConfig { manifest } = config;
 
-    let path = local_repository_root()
+    let path = workspace_manifest_prefix()
         .map(|x| Path::new(&x).join(&manifest))
         .unwrap_or_else(|| PathBuf::from(&manifest));
 

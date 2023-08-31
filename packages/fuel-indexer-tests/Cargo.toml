@@ -27,6 +27,7 @@ async-std = "1"
 axum = { version = "0.6", features = ["multipart"] }
 bigdecimal = { version = "0.3" }
 chrono = { version = "0.4", features = ["serde"] }
+duct = "0.13"
 fuel-indexer = { workspace = true }
 fuel-indexer-api-server = { workspace = true }
 fuel-indexer-database = { workspace = true }
@@ -43,6 +44,7 @@ fuels-macros = { version = "0.46", default-features = false }
 futures = "0.3"
 hex = "0.4"
 hyper = { version = "0.14", features = ["client", "http2", "http1", "runtime" ] }
+insta = { version = "1.8", features = ["yaml"] }
 itertools = "0.10"
 lazy_static = "1.4"
 rand = "0.8"

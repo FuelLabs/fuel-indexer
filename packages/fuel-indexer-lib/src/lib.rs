@@ -4,6 +4,7 @@
 
 #![deny(unused_crate_dependencies)]
 pub mod config;
+pub mod constants;
 pub mod defaults;
 pub mod graphql;
 pub mod manifest;

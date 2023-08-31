@@ -1,0 +1,6 @@
+---
+source: packages/fuel-indexer-schema/src/lib.rs
+expression: blob.query_fragment()
+---
+"'000102030405'"
+

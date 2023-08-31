@@ -709,11 +709,15 @@ impl SchemaDecoder {
         // we also need to cache them under this derived union name.
         u.members.iter().for_each(|m| {
             let member_name = m.node.to_string();
-            let member_obj = self
-                .parsed_graphql_schema
-                .objects
-                .get(&member_name)
-                .unwrap();
+            let member_obj =
+                self.parsed_graphql_schema
+                    .objects
+                    .get(&member_name)
+                    .unwrap_or_else(|| {
+                        panic!(
+                        "Union member not found in parsed TypeDefinitions: {member_name}")
+                    });
+
             member_obj.fields.iter().for_each(|f| {
                 let fid = field_id(&union_name, &f.node.name.to_string());
                 self.parsed_graphql_schema

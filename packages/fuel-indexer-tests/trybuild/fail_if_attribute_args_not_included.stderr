@@ -1,5 +1,5 @@
 error: custom attribute panicked
- --> ../fuel-indexer-tests/trybuild/fail_if_attribute_args_not_included.rs
+ --> trybuild/fail_if_attribute_args_not_included.rs
   |
   | #[indexer()]
   | ^^^^^^^^^^^^
@@ -7,7 +7,7 @@ error: custom attribute panicked
   = help: message: `manifest` specification is required in indexer definition.
 
 error[E0601]: `main` function not found in crate `$CRATE`
- --> ../fuel-indexer-tests/trybuild/fail_if_attribute_args_not_included.rs
+ --> trybuild/fail_if_attribute_args_not_included.rs
   |
   | }
-  |  ^ consider adding a `main` function to `$DIR/../fuel-indexer-tests/trybuild/fail_if_attribute_args_not_included.rs`
+  |  ^ consider adding a `main` function to `$DIR/trybuild/fail_if_attribute_args_not_included.rs`

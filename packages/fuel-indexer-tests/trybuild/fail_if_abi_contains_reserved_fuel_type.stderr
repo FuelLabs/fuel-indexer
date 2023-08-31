@@ -1,0 +1,13 @@
+error: 'BlockData' is a reserved Fuel type.
+ --> trybuild/fail_if_abi_contains_reserved_fuel_type.rs
+  |
+  | #[indexer(manifest = "packages/fuel-indexer-tests/trybuild/invalid_abi_type_simple_wasm.yaml")]
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: this error originates in the attribute macro `indexer` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0601]: `main` function not found in crate `$CRATE`
+ --> trybuild/fail_if_abi_contains_reserved_fuel_type.rs
+  |
+  | }
+  |  ^ consider adding a `main` function to `$DIR/trybuild/fail_if_abi_contains_reserved_fuel_type.rs`

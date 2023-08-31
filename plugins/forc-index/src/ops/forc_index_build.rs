@@ -223,6 +223,7 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
             anyhow::bail!("❌ Failed to execute wasm-snip: (Code: {code:?})",)
         }
 
+        // FIXME: This should include whatever comments were in the original doc
         manifest.write(&indexer_manifest_path)?;
     }
 

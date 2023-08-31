@@ -1,125 +1,125 @@
-# # The following is an example Fuel indexer configuration file.
-# #
-# # This configuration spec is intended to be used for a single instance
-# # of a Fuel indexer node or service.
-# #
-# # For more info on how the Fuel indexer works, read the book: https://fuellabs.github.io/fuel-indexer/master/
-# # or specifically read up on these configuration options: https://fuellabs.github.io/fuel-indexer/master/getting-started/configuration.html
+# The following is an example Fuel indexer configuration file.
+#
+# This configuration spec is intended to be used for a single instance
+# of a Fuel indexer node or service.
+#
+# For more info on how the Fuel indexer works, read the book: https://fuellabs.github.io/fuel-indexer/master/
+# or specifically read up on these configuration options: https://fuellabs.github.io/fuel-indexer/master/getting-started/configuration.html
 
-# # Whether to allow replacing an indexer.
-# #
-# # If this is disabled, then an HTTP 409 Conflict will be returned if an indexer with the same name already exists.
-# replace_indexer: false
+# Whether to allow replacing an indexer.
+#
+# If this is disabled, then an HTTP 409 Conflict will be returned if an indexer with the same name already exists.
+replace_indexer: false
 
-# # Log level passed to the Fuel Indexer service.
-# log_level: info
+# Log level passed to the Fuel Indexer service.
+log_level: info
 
-# # Use Prometheus metrics reporting.
-# metrics: true
+# Use Prometheus metrics reporting.
+metrics: true
 
-# # Prevent indexers from running without handling any blocks.
-# stop_idle_indexers: true
+# Prevent indexers from running without handling any blocks.
+stop_idle_indexers: false
 
-# # Run database migrations before starting service.
-# run_migrations: true
+# Run database migrations before starting service.
+run_migrations: true
 
-# # Enable verbose logging.
-# verbose: false
+# Enable verbose logging.
+verbose: false
 
-# # Start a local Fuel node.
-# local_fuel_node: false
+# Start a local Fuel node.
+local_fuel_node: false
 
-# # Allow network configuration via indexer manifests.
-# indexer_net_config: false
+# Allow network configuration via indexer manifests.
+indexer_net_config: false
 
 # The number of WASM opcodes after which the indexer will stop execution.
-# metering_points: 30000000000
+metering_points: 30000000000
 
-# # Allow the web API to accept raw SQL queries.
-# accept_sql_queries: true
+# Allow the web API to accept raw SQL queries.
+accept_sql_queries: false
 
-# # Amount of blocks to return in a request to a Fuel node.
-# block_page_size: 20
+# Amount of blocks to return in a request to a Fuel node.
+block_page_size: 20
 
-# # ***********************
-# # Fuel Node configuration
-# # ************************
+# ***********************
+# Fuel Node configuration
+# ************************
 
-# fuel_node:
+fuel_node:
 
-#   # Host of the running Fuel node.
-#   host: localhost
+  # Host of the running Fuel node.
+  host: localhost
 
-#   # Listening port of the running Fuel node.
-#   port: 4000
+  # Listening port of the running Fuel node.
+  port: 4000
 
-# # *************************
-# # Web API configuration
-# # *************************
+# *************************
+# Web API configuration
+# *************************
 
-# web_api:
-#   # Web API host.
-#   host: localhost
+web_api:
+  # Web API host.
+  host: localhost
 
-#   # Web API port.
-#   port: 29987
+  # Web API port.
+  port: 29987
 
-#   # Max body size for web API requests.
-#   max_body_size: "5242880"
+  # Max body size for web API requests.
+  max_body_size: "5242880"
 
-# # ******************************
-# # Database configuration options
-# # ******************************
+# ******************************
+# Database configuration options
+# ******************************
 
-# database:
+database:
 
-#   postgres:
-#     # Postgres username.
-#     user: postgres
+  postgres:
+    # Postgres username.
+    user: postgres
 
-#     # Postgres database.
-#     database: postgres
+    # Postgres database.
+    database: postgres
 
-#     # Postgres password.
-#     password: password
+    # Postgres password.
+    password: postgres
 
-#     # Postgres host.
-#     host: localhost
+    # Postgres host.
+    host: localhost
 
-#     # Postgres port.
-#     port: 5432
+    # Postgres port.
+    port: 5432
 
-# # ******************************
-# # Indexer service authentication
-# # ******************************
+# ******************************
+# Indexer service authentication
+# ******************************
 
-# authentication:
-#   # Require users to authenticate for some operations.
-#   enabled: false
+authentication:
+  # Require users to authenticate for some operations.
+  enabled: false
 
-#   # Which authentication scheme to use.
-#   strategy: jwt
+  # Which authentication scheme to use.
+  strategy: jwt
 
-#   # Secret used if JWT authentication is specified.
-#   jwt_secret: abcdefghijklmnopqrstuvwxyz1234567890*
+  # Secret used if JWT authentication is specified.
+  jwt_secret: abcdefghijklmnopqrstuvwxyz1234567890
 
-#   # JWT issuer if JWT authentication is specified.
-#   # jwt_issuer: FuelLabs
+  # JWT issuer if JWT authentication is specified.
+  jwt_issuer: FuelLabs
 
-#   # Amount of time (seconds) before expiring token if JWT authentication is specified.
-#   # jwt_expiry: 2592000
+  # Amount of time (seconds) before expiring token if JWT authentication is specified.
+  jwt_expiry: 2592000
 
-# # ********************************
-# # Rate limit configuration options
-# # ********************************
+# ********************************
+# Rate limit configuration options
+# ********************************
 
-# rate_limit:
-#   # Enable rate limiting.
-#   enabled: false
+rate_limit:
+  # Enable rate limiting.
+  enabled: false
 
-#   # Maximum number of requests to allow over --rate-limit-window..
-#   request_count: 10
+  # Maximum number of requests to allow over --rate-limit-window..
+  request_count: 10
 
-#   # Number of seconds over which to allow --rate-limit-rps.
-#   window_size: 5
+  # Number of seconds over which to allow --rate-limit-rps.
+  window_size: 5
 
