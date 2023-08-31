@@ -83,7 +83,7 @@ pub async fn load_blocks(
         .map(|x| format!("AND block_height <= {x}"))
         .unwrap_or("".to_string());
     let mut conn = pool.acquire().await?;
-    let start_block = crate::get_start_block(&mut conn, &manifest).await?;
+    let start_block = crate::get_start_block(&mut conn, manifest).await?;
     let query = format!("SELECT block_data FROM index_block_data WHERE block_height >= {start_block} {end_condition} ORDER BY block_height ASC LIMIT {limit}");
 
     let pool = match pool {
