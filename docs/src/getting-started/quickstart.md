@@ -3,8 +3,10 @@
 In this tutorial you will:
 
 1. Bootstrap your development environment.
-2. Create, build, and deploy an indexer to an indexer service hooked up to Fuel's `beta-3` testnet.
-3. Query your newly created index for data using GraphQL.
+2. Create, build, and deploy an indexer to an indexer service hooked up to Fuel's `beta-4` testnet.
+3. Query your indexer's newly created index for data using GraphQL.
+
+---
 
 ## 1. Setting up your environment
 
@@ -33,6 +35,8 @@ Additionally, you'll need the `wasm-snip` utility in order to remove errant symb
 ```bash
 cargo install wasm-snip
 ```
+
+---
 
 ## 2. Using the `forc-index` plugin
 
@@ -98,7 +102,9 @@ To quickly setup and bootstrap the PostgreSQL database that we'll need, we'll us
 
 We can quickly create a bootstrapped database and start the Fuel indexer service by running the following command:
 
-> IMPORTANT: Below we're specifying our Postgres hostname as `--postgres-host postgresql`, but you will need to be specific to your own Postgres instance details (see `forc index start --help` for more details). You can try using the `--embedded-database` flag in order to quickly use an embedded instance of Postgres, but this is flaky and often depends on what platform you're using.
+> IMPORTANT: Below we're specifying our Postgres hostname as `--postgres-host postgresql`, but you might need to change this based on your own Postgres instance details (see `forc index start --help` for more details). 
+>
+> Additionally, you can try using the `--embedded-database` flag in order to quickly use an embedded instance of Postgres, but this flag can be flaky, and its ease of use often depends on what platform you're using.
 
 ```bash
 forc index start --fuel-node-host beta-4.fuel.network --fuel-node-port 80 --run-migrations --postgres-host postgresql
@@ -124,13 +130,16 @@ You should see output indicating the successful creation of a database and start
 Now that we have our development environment set up, the next step is to create an indexer.
 
 ```bash
-forc index new hello-indexer --namespace fuelLabs && cd hello-indexer
+forc index new hello-indexer --namespace fuellabs && cd hello-indexer
 ```
 
-> The `namespace` of your project is a required option. You can think of a `namespace` as your organization name or company name. Your project might contain one or many indexers all under the same `namespace`. For a complete list of options passed to `forc index new`, see [here](../forc-index/new.md)
+> The `namespace` of your project is a required option. You can think of a `namespace` as your organization name or company name. Your project might contain one or many indexers all under the same `namespace`. For a complete list of options passed to `forc index new`, see [here](../forc-index/new.md).
 
 ```text
 forc index new hello-indexer --namespace FuelLabs
+
+✅ Successfully created indexer
+
 
 ███████╗██╗   ██╗███████╗██╗         ██╗███╗   ██╗██████╗ ███████╗██╗  ██╗███████╗██████╗
 ██╔════╝██║   ██║██╔════╝██║         ██║████╗  ██║██╔══██╗██╔════╝╚██╗██╔╝██╔════╝██╔══██╗
@@ -139,7 +148,9 @@ forc index new hello-indexer --namespace FuelLabs
 ██║     ╚██████╔╝███████╗███████╗    ██║██║ ╚████║██████╔╝███████╗██╔╝ ██╗███████╗██║  ██║
 ╚═╝      ╚═════╝ ╚══════╝╚══════╝    ╚═╝╚═╝  ╚═══╝╚═════╝ ╚══════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝
 
+
 An easy-to-use, flexible indexing service built to go fast. 🚗💨
+
 
 ----
 
@@ -147,43 +158,47 @@ Read the Docs:
 - Fuel Indexer: https://github.com/FuelLabs/fuel-indexer
 - Fuel Indexer Book: https://fuellabs.github.io/fuel-indexer/latest
 - Sway Book: https://fuellabs.github.io/sway/latest
-- Rust SDK Book: https://fuellabs.github.io/fuels-rs/latest
+- Rust SDK Book: https://rust.fuel.network
+
 
 Join the Community:
-- Follow us @SwayLang: https://twitter.com/fuellabs_
+- Follow us @Fuel: https://twitter.com/fuel_network
 - Ask questions in dev-chat on Discord: https://discord.com/invite/xfpK4Pe
 
 Report Bugs:
 - Fuel Indexer Issues: https://github.com/FuelLabs/fuel-indexer/issues/new
 
 Take a quick tour.
-`forc index check`
-    List indexer components.
-`forc index new`
-    Create a new indexer.
-`forc index start`
-    Start a local indexer service.
-`forc index build`
-    Build your indexer.
-`forc index deploy`
-    Deploy your indexer.
-`forc index remove`
-    Stop a running indexer.
+
 `forc index auth`
     Authenticate against an indexer service.
+`forc index build`
+    Build an indexer.
+`forc index check`
+    List indexer components.
+`forc index deploy`
+    Deploy an indexer.
+`forc index kill`
+    Kill a running Fuel indexer process on a given port.
+`forc index new`
+    Create a new indexer.
+`forc index remove`
+    Stop a running indexer.
+`forc index start`
+    Start a local indexer service.
 `forc index status`
     Check the status of an indexer.
 ```
 
 ### 2.4 Deploying our indexer
 
-At this point, we have a brand new indexer that will index some blocks and transactions. And with both our database and Fuel indexer services up and running, all that's left is to build and deploy the indexer in order to see it in action. Let's build and deploy our indexer:
+At this point, we have a brand new indexer that will index some blocks and transactions. And with both our database and Fuel indexer services up and running, all that's left to do is to build and deploy the indexer in order to see it in action. Let's build and deploy our indexer:
 
 ```bash
 forc index deploy
 ```
 
-> IMPORTANT: `forc index deploy` by defaults runs `forc index build` prior to deploying the indexer. The same result can be produced by running `forc index build` then subsequently running `forc index deploy`.
+> IMPORTANT: `forc index deploy` by defaults runs `forc index build` prior to deploying the indexer. The same result can be produced by running `forc index build` then subsequently running `forc index deploy`. For more info, checkout the [`forc index deploy`](./../forc-index/deploy.md) command.
 
 If all goes well, you should see the following:
 
@@ -197,7 +212,7 @@ If all goes well, you should see the following:
 
 With our indexer deployed, we should be able to query for newly indexed data after a few seconds.
 
-Below, we write a simple GraphQL query that simply returns a few fields from all transactions that we've indexed.
+Below, we write a simple GraphQL query that returns a few fields from all transactions that we've indexed.
 
 You can open your GraphQL query playground at `http://127.0.0.1:29987/api/playground/fuellabs/hello_indexer` and submit the following GraphQL query.
 
@@ -244,3 +259,5 @@ The response you get should resemble:
 ### Finished! 🥳
 
 Congrats, you just created, built, and deployed your first indexer on the world's fastest execution layer.
+
+For more info on how indexers work, please checkout the [reference guide](./../project-components/index.md).

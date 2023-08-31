@@ -1,6 +1,8 @@
-# WASM Modules
+# Indexer modules
 
-WebAssembly (WASM) modules are compiled binaries that are registered into a Fuel indexer at runtime. The WASM bytes are read in by the indexer and _executors_ are created which will implement blocking calls to the WASM runtime.
+> While the Fuel indexer does support native indexer modules, this section will mostly focus on Web Assembly (WASM) modules.
+
+WebAssembly (WASM) modules are compiled binaries that are registered or deployed to a Fuel indexer at runtime. The WASM bytes are read in by the indexer and _executors_ are created which will essentially pass blocks of on-chain data from the FuelVM to your indexers indefinitely.
 
 The WASM module is generated based on your manifest, schema, and your `lib.rs` file.
 
@@ -13,20 +15,23 @@ Here, you can define which functions handle different events based on the functi
 We can look at the function below as an example:
 
 ```rust, ignore
-fn index_logged_greeting(greeter: Greeting) {
-    // function logic goes here
+extern crate alloc;
+use fuel_indexer_utils::prelude::*;
+
+#[indexer(manifest = "my_indexer.manifest.yaml")]
+mod my_indexer {
+
+    // This `log_the_greeting` function will be called, when we find 
+    // a `Greeting` in a block.
+    fn log_the_greeting(greeter: Greeting) {
+        info!("The greeter is: {greeter:?}");
+    }
 }
 ```
 
-All transactions that have a receipt that contains data with a type of `Greeting` will be handled by the function.
+> You can learn more about what data can be indexed in the [Indexing](../indexing/index.md) section.
 
-You can learn more about what data can be indexed in the [Indexing](../indexing/index.md) section.
-
-To save an instance of a schema type in your database, you can call the `save` method on the instance.
-
-```rust, ignore
-instance.save();
-```
+---
 
 ## Usage
 
@@ -36,23 +41,19 @@ To compile your indexer code to WASM, you'll first need to install the `wasm32-u
 rustup add target wasm32-unknown-unknown
 ```
 
-After that, you would compile your indexer code by navigating to the root folder for your indexer code and build. An example of this can be found below:
+After that, you can conveniently use the [`forc index`](./../forc-index/index.md) plugin to manager your indexers. Simply use `forc index build` to build your indexer or checkout the [`forc index build`](./../forc-index/build.md) docs for more options.
 
-```bash
-cd /my/index-lib && cargo build --release
-```
-
-## Notes on WASM
-
-There are a few points that Fuel indexer users should know when using WASM:
-
-1. WASM modules are only used if the execution mode specified in your manifest file is `wasm`.
-
-2. Developers should be aware of what things may not work off-the-shelf in a module: file I/O, thread spawning, and anything that depends on system libraries. This is due to the technological limitations of WASM as a whole; more information can be found [here](https://rustwasm.github.io/docs/book/reference/which-crates-work-with-wasm.html).
-
-3. As of this writing, there is a small bug in newly built Fuel indexer WASM modules that produces a WASM runtime error due to an errant upstream dependency. For now, a quick workaround requires the use of `wasm-snip` to remove the errant symbols from the WASM module. More info can be found in the related script [here](https://github.com/FuelLabs/fuel-indexer/blob/develop/scripts/stripper.bash).
-
-4. Users on Apple Silicon macOS systems may experience trouble when trying to build WASM modules due to its `clang` binary not supporting WASM targets. If encountered, you can install a binary with better support from Homebrew (`brew install llvm`) and instruct `rustc` to leverage it by setting the following environment variables:
-
-- `AR=/opt/homebrew/opt/llvm/bin/llvm-ar`
-- `CC=/opt/homebrew/opt/llvm/bin/clang`
+> ## Notes on Web Assembly modules
+>
+> There are a few points that Fuel indexer users should know when using WASM:
+>
+> 1. WASM modules are only used if the execution mode specified in your manifest file is `wasm`.
+> 
+> 2. Developers should be aware of what things may not work off-the-shelf in a module: file I/O, thread spawning, and anything that depends on system libraries or makes system calls. This is due to the technological limitations of WASM as a whole; more information can be found [here](https://rustwasm.github.io/docs/book/reference/which-crates-work-with-wasm.html).
+>
+> 3. As of this writing, there is a small bug in newly built Fuel indexer WASM modules that produces a WASM runtime error due to an errant upstream dependency. For now, a quick workaround requires the use of `wasm-snip` to remove the errant symbols from the WASM module. More info can be found in the related script [here](https://github.com/FuelLabs/fuel-indexer/blob/develop/scripts/stripper.bash).
+>
+> 4. Users on Apple Silicon macOS systems may experience trouble when trying to build WASM modules due to its `clang` binary not supporting WASM targets. If encountered, you can install a binary with better support from Homebrew (`brew install llvm`) and instruct `rustc` to leverage it by setting the following environment variables:
+> 
+> - `AR=/opt/homebrew/opt/llvm/bin/llvm-ar`
+> - `CC=/opt/homebrew/opt/llvm/bin/clang`

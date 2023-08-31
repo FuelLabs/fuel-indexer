@@ -6,8 +6,8 @@
 # Getting Started
 
 - [Dependencies](./getting-started/dependencies.md)
+- [Service Infrastructure](./getting-started/starting-the-fuel-indexer.md)
 - [Quickstart](./getting-started/quickstart.md)
-- [Indexer Service Infrastructure](./getting-started/starting-the-fuel-indexer.md)
 
 # Reference Guide
 
