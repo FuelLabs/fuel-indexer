@@ -35,11 +35,6 @@ pub fn unwrap_or_default_for_external_type(
     }
 }
 
-/// Whether or not a `TypeDeclaration` is tuple type
-pub fn is_tuple_type(typ: &TypeDeclaration) -> bool {
-    typ.type_field.as_str().starts_with('(')
-}
-
 /// Extract tokens from JSON ABI file
 pub fn get_json_abi(abi_path: Option<String>) -> Option<ProgramABI> {
     match abi_path {
@@ -78,7 +73,23 @@ pub fn get_json_abi(abi_path: Option<String>) -> Option<ProgramABI> {
     }
 }
 
-/// Whether this TypeDeclaration should be used in the codgen
+/// Whether a `TypeDeclaration` is tuple type
+pub fn is_tuple_type(typ: &TypeDeclaration) -> bool {
+    let mut type_field_chars = typ.type_field.chars();
+
+    type_field_chars.next().is_some_and(|c| c == '(')
+        && type_field_chars.next().is_some_and(|c| c != ')')
+}
+
+/// Whether a `TypeDeclaration` is a unit type
+pub fn is_unit_type(typ: &TypeDeclaration) -> bool {
+    let mut type_field_chars = typ.type_field.chars();
+
+    type_field_chars.next().is_some_and(|c| c == '(')
+        && type_field_chars.next().is_some_and(|c| c == ')')
+}
+
+/// Whether this TypeDeclaration should be used in the codegen
 pub fn is_ignored_type(typ: &TypeDeclaration) -> bool {
     is_tuple_type(typ)
 }
@@ -90,6 +101,10 @@ pub fn is_non_decodable_type(typ: &TypeDeclaration) -> bool {
     }
 
     if is_ignored_type(typ) {
+        return true;
+    }
+
+    if is_unit_type(typ) {
         return true;
     }
 
