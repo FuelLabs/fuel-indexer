@@ -78,22 +78,18 @@ pub async fn load_blocks(
 ) -> IndexerResult<Vec<BlockData>> {
     use sqlx::Row;
 
+    let end_condition = manifest
+        .end_block()
+        .map(|x| format!("AND block_height <= {x}"))
+        .unwrap_or("".to_string());
+    let mut conn = pool.acquire().await?;
+    let start_block = crate::get_start_block(&mut conn, &manifest).await?;
+    let query = format!("SELECT block_data FROM index_block_data WHERE block_height >= {start_block} {end_condition} ORDER BY block_height ASC LIMIT {limit}");
+
     let pool = match pool {
         IndexerConnectionPool::Postgres(pool) => pool.clone(),
     };
 
-    let query = {
-        let end_condition = manifest
-            .end_block()
-            .map(|x| format!("AND block_height <= {x}"))
-            .unwrap_or("".to_string());
-        let start_block_query = format!(
-            "SELECT MAX(block_height) + 1 FROM {}_{}.indexmetadataentity",
-            manifest.namespace(),
-            manifest.identifier()
-        );
-        format!("SELECT block_data FROM index_block_data WHERE block_height >= ({start_block_query}) {end_condition} ORDER BY block_height ASC LIMIT {limit}")
-    };
     let rows = sqlx::query(&query).fetch_all(&pool).await?;
 
     let mut blocks = Vec::new();
@@ -181,10 +177,15 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
 
             // Fetch the next page of blocks, and the starting cursor for the subsequent page
             let (block_info, next_cursor, _has_next_page) = if enable_blockstore {
-                let blocks = load_blocks(&pool, &manifest, node_block_page_size)
-                    .await
-                    .unwrap();
-                (blocks, None, false)
+                let result = load_blocks(&pool, &manifest, node_block_page_size).await;
+                match result {
+                    Ok(blocks) => (blocks, None, false),
+                    Err(e) => {
+                        error!("Indexer({indexer_uid}) failed to load blocks from the database: {e:?}",);
+                        sleep(Duration::from_secs(DELAY_FOR_SERVICE_ERROR)).await;
+                        continue;
+                    }
+                }
             } else {
                 match retrieve_blocks_from_node(
                     &client,
