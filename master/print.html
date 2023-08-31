@@ -335,7 +335,7 @@
 </code></pre>
 <h3 id="23-creating-a-new-indexer"><a class="header" href="#23-creating-a-new-indexer">2.3 Creating a new indexer</a></h3>
 <p>Now that we have our development environment set up, the next step is to create an indexer.</p>
-<pre><code class="language-bash">forc index new hello-indexer --namespace FuelLabs &amp;&amp; cd hello-indexer
+<pre><code class="language-bash">forc index new hello-indexer --namespace fuelLabs &amp;&amp; cd hello-indexer
 </code></pre>
 <blockquote>
 <p>The <code>namespace</code> of your project is a required option. You can think of a <code>namespace</code> as your organization name or company name. Your project might contain one or many indexers all under the same <code>namespace</code>. For a complete list of options passed to <code>forc index new</code>, see <a href="getting-started/../forc-index/new.html">here</a></p>
@@ -401,30 +401,38 @@ Take a quick tour.
 <p>Below, we write a simple GraphQL query that simply returns a few fields from all transactions that we've indexed.</p>
 <p>You can open your GraphQL query playground at <code>http://127.0.0.1:29987/api/playground/fuellabs/hello_indexer</code> and submit the following GraphQL query.</p>
 <pre><code class="language-graphql">query {
-  tx {
-    id
-    hash
-    block
+  transaction {
+    id,
+    hash,
+    block {
+      id
+    }
   }
 }
 </code></pre>
 <p>The response you get should resemble:</p>
 <pre><code class="language-json">[
-   {
-      &quot;block&quot; : 7017844286925529648,
-      &quot;hash&quot; : &quot;fb93ce9519866676813584eca79afe2d98466b3e2c8b787503b76b0b4718a565&quot;,
-      &quot;id&quot; : 7292230935510476086,
-   },
-   {
-      &quot;block&quot; : 3473793069188998756,
-      &quot;hash&quot; : &quot;5ea2577727aaadc331d5ae1ffcbc11ec4c2ba503410f8edfb22fc0a72a1d01eb&quot;,
-      &quot;id&quot; : 4136050720295695667,
-   },
-   {
-      &quot;block&quot; : 7221293542007912803,
-      &quot;hash&quot; : &quot;d2f638c26a313c681d75db2edfbc8081dbf5ecced87a41ec4199d221251b0578&quot;,
-      &quot;id&quot; : 4049687577184449589,
-   },
+  {
+    &quot;block&quot;: {
+      &quot;id&quot;: &quot;24002b29ef4331f5ee75a38bf6381f2c8e8d2d5b4d78470706dde7ab0b8d54c0&quot;
+    },
+    &quot;hash&quot;: &quot;82b36dce26d926921b8e79597899d8712fdabf2553f28b45ef3851a968efb4b9&quot;,
+    &quot;id&quot;: &quot;eb7e14822e18e71ba7c92c266b0976acda2344dfbef7a60099d400cc243394fb&quot;
+  },
+  {
+    &quot;block&quot;: {
+      &quot;id&quot;: &quot;1309ee2cb0846b1a7e45313e1c39b2a24ffd552a381f2f627225256f725a93e3&quot;
+    },
+    &quot;hash&quot;: &quot;f0c7c778faa6eb2a8bf03c9c47bb3f836bd4fe37e69c18e30f853ff146522dcb&quot;,
+    &quot;id&quot;: &quot;182b6343bbbca2fcecf97020ea3f3767b8f5c370a6b853d2add46853e542a113&quot;
+  },
+  {
+    &quot;block&quot;: {
+      &quot;id&quot;: &quot;95588e20296969a76576d519d301c6cabe1e009675e430da93e18ba2a0d38a49&quot;
+    },
+    &quot;hash&quot;: &quot;e729045198ee10dcf49e431f50c2ffe8c37129cbe47e003a59aff81a88b03b50&quot;,
+    &quot;id&quot;: &quot;6910ebc30a1037b83336c956c95f7fc470c4b76750a93f6a1f6d19a21d058b19&quot;
+  }
 ]
 </code></pre>
 <h3 id="finished-"><a class="header" href="#finished-">Finished! 🥳</a></h3>
@@ -510,29 +518,18 @@ use fuel_indexer_utils::prelude::*;
 mod hello_world_indexer {
 
     fn index_logged_greeting(event: Greeting, block: BlockData) {
-        let greeter = Greeter::new(
-            event.person.name.to_right_trimmed_str().into(),
-            block.height,
-            block.height,
-            vec![1u8, 2, 3, 4, 5, 6, 7, 8].into(),
-        )
-        .get_or_create();
+        let greeting = event.greeting.to_right_trimmed_str().to_string();
+        let name = event.person.name.to_right_trimmed_str().to_string();
+        let height = block.height;
+        let data = vec![1u8, 2, 3, 4, 5, 6, 7, 8].into();
+        let greeter = Greeter::new(name.clone(), height, height, data).get_or_create();
 
-        let message = format!(
-            &quot;{} 👋, my name is {}&quot;,
-            event.greeting.to_right_trimmed_str(),
-            event.person.name.to_right_trimmed_str(),
-        );
+        let message = format!(&quot;{greeting} 👋, my name is {name}&quot;);
         let message_hash = bytes32(&amp;message);
 
-        let salutation = Salutation::new(
-            message_hash,
-            message,
-            greeter.id.clone(),
-            block.height,
-            block.height,
-        )
-        .get_or_create();
+        let salutation =
+            Salutation::new(message_hash, message, greeter.id.clone(), height, height)
+                .get_or_create();
 
         greeter.save();
         salutation.save();
@@ -656,130 +653,130 @@ OPTIONS:
 
 </code></pre>
 <h2 id="using-a-configuration-file"><a class="header" href="#using-a-configuration-file">Using a configuration file</a></h2>
-<pre><code class="language-yaml"># # The following is an example Fuel indexer configuration file.
-# #
-# # This configuration spec is intended to be used for a single instance
-# # of a Fuel indexer node or service.
-# #
-# # For more info on how the Fuel indexer works, read the book: https://fuellabs.github.io/fuel-indexer/master/
-# # or specifically read up on these configuration options: https://fuellabs.github.io/fuel-indexer/master/getting-started/configuration.html
+<pre><code class="language-yaml"># The following is an example Fuel indexer configuration file.
+#
+# This configuration spec is intended to be used for a single instance
+# of a Fuel indexer node or service.
+#
+# For more info on how the Fuel indexer works, read the book: https://fuellabs.github.io/fuel-indexer/master/
+# or specifically read up on these configuration options: https://fuellabs.github.io/fuel-indexer/master/getting-started/configuration.html
 
-# # Whether to allow replacing an indexer.
-# #
-# # If this is disabled, then an HTTP 409 Conflict will be returned if an indexer with the same name already exists.
-# replace_indexer: false
+# Whether to allow replacing an indexer.
+#
+# If this is disabled, then an HTTP 409 Conflict will be returned if an indexer with the same name already exists.
+replace_indexer: false
 
-# # Log level passed to the Fuel Indexer service.
-# log_level: info
+# Log level passed to the Fuel Indexer service.
+log_level: info
 
-# # Use Prometheus metrics reporting.
-# metrics: true
+# Use Prometheus metrics reporting.
+metrics: true
 
-# # Prevent indexers from running without handling any blocks.
-# stop_idle_indexers: true
+# Prevent indexers from running without handling any blocks.
+stop_idle_indexers: false
 
-# # Run database migrations before starting service.
-# run_migrations: true
+# Run database migrations before starting service.
+run_migrations: true
 
-# # Enable verbose logging.
-# verbose: false
+# Enable verbose logging.
+verbose: false
 
-# # Start a local Fuel node.
-# local_fuel_node: false
+# Start a local Fuel node.
+local_fuel_node: false
 
-# # Allow network configuration via indexer manifests.
-# indexer_net_config: false
+# Allow network configuration via indexer manifests.
+indexer_net_config: false
 
 # The number of WASM opcodes after which the indexer will stop execution.
-# metering_points: 30000000000
+metering_points: 30000000000
 
-# # Allow the web API to accept raw SQL queries.
-# accept_sql_queries: true
+# Allow the web API to accept raw SQL queries.
+accept_sql_queries: false
 
-# # Amount of blocks to return in a request to a Fuel node.
-# block_page_size: 20
+# Amount of blocks to return in a request to a Fuel node.
+block_page_size: 20
 
-# # ***********************
-# # Fuel Node configuration
-# # ************************
+# ***********************
+# Fuel Node configuration
+# ************************
 
-# fuel_node:
+fuel_node:
 
-#   # Host of the running Fuel node.
-#   host: localhost
+  # Host of the running Fuel node.
+  host: localhost
 
-#   # Listening port of the running Fuel node.
-#   port: 4000
+  # Listening port of the running Fuel node.
+  port: 4000
 
-# # *************************
-# # Web API configuration
-# # *************************
+# *************************
+# Web API configuration
+# *************************
 
-# web_api:
-#   # Web API host.
-#   host: localhost
+web_api:
+  # Web API host.
+  host: localhost
 
-#   # Web API port.
-#   port: 29987
+  # Web API port.
+  port: 29987
 
-#   # Max body size for web API requests.
-#   max_body_size: &quot;5242880&quot;
+  # Max body size for web API requests.
+  max_body_size: &quot;5242880&quot;
 
-# # ******************************
-# # Database configuration options
-# # ******************************
+# ******************************
+# Database configuration options
+# ******************************
 
-# database:
+database:
 
-#   postgres:
-#     # Postgres username.
-#     user: postgres
+  postgres:
+    # Postgres username.
+    user: postgres
 
-#     # Postgres database.
-#     database: postgres
+    # Postgres database.
+    database: postgres
 
-#     # Postgres password.
-#     password: password
+    # Postgres password.
+    password: postgres
 
-#     # Postgres host.
-#     host: localhost
+    # Postgres host.
+    host: localhost
 
-#     # Postgres port.
-#     port: 5432
+    # Postgres port.
+    port: 5432
 
-# # ******************************
-# # Indexer service authentication
-# # ******************************
+# ******************************
+# Indexer service authentication
+# ******************************
 
-# authentication:
-#   # Require users to authenticate for some operations.
-#   enabled: false
+authentication:
+  # Require users to authenticate for some operations.
+  enabled: false
 
-#   # Which authentication scheme to use.
-#   strategy: jwt
+  # Which authentication scheme to use.
+  strategy: jwt
 
-#   # Secret used if JWT authentication is specified.
-#   jwt_secret: abcdefghijklmnopqrstuvwxyz1234567890*
+  # Secret used if JWT authentication is specified.
+  jwt_secret: abcdefghijklmnopqrstuvwxyz1234567890
 
-#   # JWT issuer if JWT authentication is specified.
-#   # jwt_issuer: FuelLabs
+  # JWT issuer if JWT authentication is specified.
+  jwt_issuer: FuelLabs
 
-#   # Amount of time (seconds) before expiring token if JWT authentication is specified.
-#   # jwt_expiry: 2592000
+  # Amount of time (seconds) before expiring token if JWT authentication is specified.
+  jwt_expiry: 2592000
 
-# # ********************************
-# # Rate limit configuration options
-# # ********************************
+# ********************************
+# Rate limit configuration options
+# ********************************
 
-# rate_limit:
-#   # Enable rate limiting.
-#   enabled: false
+rate_limit:
+  # Enable rate limiting.
+  enabled: false
 
-#   # Maximum number of requests to allow over --rate-limit-window..
-#   request_count: 10
+  # Maximum number of requests to allow over --rate-limit-window..
+  request_count: 10
 
-#   # Number of seconds over which to allow --rate-limit-rps.
-#   window_size: 5
+  # Number of seconds over which to allow --rate-limit-rps.
+  window_size: 5
 
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="a-fuel-indexer-project"><a class="header" href="#a-fuel-indexer-project">A Fuel Indexer Project</a></h1>
@@ -1441,15 +1438,20 @@ type Book @entity {
 </code></pre>
 <p>In the above example, <code>config.yaml</code> is based on <a href="https://github.com/FuelLabs/fuel-indexer/blob/develop/config.yaml">the default service configuration file</a>.</p>
 <h2 id="options"><a class="header" href="#options">Options</a></h2>
-<pre><code class="language-text">USAGE:
+<pre><code class="language-text">Fuel indexer web API
+
+USAGE:
     fuel-indexer-api-server run [OPTIONS]
 
 OPTIONS:
+        --accept-sql-queries
+            Allow the web API to accept raw SQL queries.
+
         --auth-enabled
             Require users to authenticate for some operations.
 
         --auth-strategy &lt;AUTH_STRATEGY&gt;
-            Authentication scheme used.
+            Authentication scheme used. [possible values: jwt]
 
     -c, --config &lt;CONFIG&gt;
             API server config file.
@@ -1463,12 +1465,6 @@ OPTIONS:
         --fuel-node-port &lt;FUEL_NODE_PORT&gt;
             Listening port of the running Fuel node. [default: 4000]
 
-        --web-api-host &lt;WEB_API_HOST&gt;
-            GraphQL API host. [default: localhost]
-
-        --web-api-port &lt;WEB_API_PORT&gt;
-            GraphQL API port. [default: 29987]
-
     -h, --help
             Print help information
 
@@ -1481,8 +1477,12 @@ OPTIONS:
         --jwt-secret &lt;JWT_SECRET&gt;
             Secret used for JWT scheme (if JWT scheme is specified).
 
+        --log-level &lt;LOG_LEVEL&gt;
+            Log level passed to the Fuel Indexer service. [default: info] [possible values: info,
+            debug, error, warn]
+
         --max-body-size &lt;MAX_BODY_SIZE&gt;
-            Max body size for GraphQL API requests. [default: 5242880]
+            Max body size for web requests. [default: 5242880]
 
         --metrics
             Use Prometheus metrics reporting.
@@ -1502,15 +1502,29 @@ OPTIONS:
         --postgres-user &lt;POSTGRES_USER&gt;
             Postgres username.
 
+        --rate-limit
+            Enable rate limiting.
+
+        --rate-limit-request-count &lt;RATE_LIMIT_REQUEST_COUNT&gt;
+            Maximum number of requests to allow over --rate-limit-window..
+
+        --rate-limit-window-size &lt;RATE_LIMIT_WINDOW_SIZE&gt;
+            Number of seconds over which to allow --rate-limit-rps.
+
         --run-migrations
             Run database migrations before starting service.
-
-    -V, --version
-            Print version information
 
     -v, --verbose
             Enable verbose logging.
 
+    -V, --version
+            Print version information
+
+        --web-api-host &lt;WEB_API_HOST&gt;
+            Web API host. [default: localhost]
+
+        --web-api-port &lt;WEB_API_PORT&gt;
+            Web API port. [default: 29987]
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="graphql-playground"><a class="header" href="#graphql-playground">GraphQL Playground</a></h1>
 <p>The Fuel indexer's GraphQL Playground is an interactive, in-browser GraphQL IDE that allows developers to easily explore and test the indexer's GraphQL API server. You can read more about the GraphQL playground in general <a href="https://github.com/graphql/graphql-playground">here</a>.</p>
@@ -2197,7 +2211,9 @@ SUBCOMMANDS:
 <p>Create a new indexer project in a new directory.</p>
 <pre><code class="language-bash">forc index new --namespace fuel /home/fuel/projects/example_indexer
 </code></pre>
-<pre><code class="language-text">USAGE:
+<pre><code class="language-text">Create a new indexer project in a new directory
+
+USAGE:
     forc-index new [OPTIONS] &lt;PATH&gt;
 
 ARGS:
@@ -2209,59 +2225,44 @@ OPTIONS:
         --name &lt;NAME&gt;              Name of indexer.
         --namespace &lt;NAMESPACE&gt;    Namespace to which indexer belongs.
         --native                   Initialize an indexer with native execution enabled.
-    -v, --verbose                  Enable verbose output
+    -v, --verbose                  Enable verbose output.
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="forc-index-check"><a class="header" href="#forc-index-check"><code>forc index check</code></a></h1>
 <p>Check to see which indexer components you have installed.</p>
 <pre><code class="language-bash">forc index check
 </code></pre>
-<pre><code class="language-text">USAGE:
+<pre><code class="language-text">Check for Fuel indexer components
+
+USAGE:
     forc-index check
 
 OPTIONS:
-    -h, --help
-            Print help information
-</code></pre>
-<p>You can expect the command output to look something like this:</p>
-<pre><code class="language-text">➜  forc index check
-
-+--------+------------------------+----------------------------------------------------------------------------+
-| Status |       Component        |                                  Details                                   |
-+--------+------------------------+----------------------------------------------------------------------------+
-|   ✅   | fuel-indexer binary    |  Found 'fuel-indexer' at '/Users/me/.fuelup/bin/fuel-indexer'              |
-+--------+------------------------+----------------------------------------------------------------------------+
-|   ✅   | psql                   |  Found 'psql' at '/usr/local/bin/psql'                                     |
-+--------+------------------------+----------------------------------------------------------------------------+
-|   ✅   | fuel-core              |  Found 'fuel-core' at '/Users/me/.fuelup/bin/fuel-core'                    |
-+--------+------------------------+----------------------------------------------------------------------------+
-|   ✅   | docker                 |  Found 'docker' at '/usr/local/bin/docker'                                 |
-+--------+------------------------+----------------------------------------------------------------------------+
-|   ✅   | fuelup                 |  Found 'fuelup' at '/Users/me/.fuelup/bin/fuelup'                          |
-+--------+------------------------+----------------------------------------------------------------------------+
-|   ✅   | wasm-snip              |  Found 'wasm-snip' at '/Users/me/.cargo/bin/wasm-snip'                     |
-+--------+------------------------+----------------------------------------------------------------------------+
+    -h, --help    Print help information
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="forc-index-build"><a class="header" href="#forc-index-build"><code>forc index build</code></a></h1>
 <p>Build an indexer.</p>
 <pre><code class="language-bash">forc index build
 </code></pre>
-<pre><code class="language-text">USAGE:
+<pre><code class="language-text">Build an indexer
+
+USAGE:
     forc-index build [OPTIONS]
 
 OPTIONS:
-    -d, --debug                      Build artifacts with the debug profile.
-    -h, --help                       Print help information
-        --locked                     Ensure that the Cargo.lock file is up-to-date.
-    -m, --manifest &lt;MANIFEST&gt;        Manifest file name of indexer being built.
-        --native                     Building for native execution.
-    -p, --path &lt;PATH&gt;                Path to the indexer project.
-    -v, --verbose                    Enable verbose output.
+    -d, --debug                  Build artifacts with the debug profile.
+    -h, --help                   Print help information
+        --locked                 Ensure that the Cargo.lock file is up-to-date.
+    -m, --manifest &lt;MANIFEST&gt;    Manifest file name of indexer being built.
+        --native                 Building for native execution.
+    -p, --path &lt;PATH&gt;            Path to the indexer project.
+    -v, --verbose                Enable verbose output.
+
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="forc-index-start"><a class="header" href="#forc-index-start"><code>forc index start</code></a></h1>
 <p>Start a local Fuel Indexer service.</p>
 <pre><code class="language-bash">forc index start
 </code></pre>
-<pre><code class="language-text">Standalone binary for the fuel indexer service.
+<pre><code class="language-text">Standalone binary for the Fuel indexer service
 
 USAGE:
     forc-index start [OPTIONS]
@@ -2277,7 +2278,7 @@ OPTIONS:
             Authentication scheme used.
 
         --block-page-size &lt;BLOCK_PAGE_SIZE&gt;
-            Amount of blocks to return in a request to a Fuel node. [default: 10]
+            Amount of blocks to return in a request to a Fuel node. [default: 20]
 
     -c, --config &lt;FILE&gt;
             Indexer service config file.
@@ -2353,6 +2354,9 @@ OPTIONS:
         --rate-limit-window-size &lt;RATE_LIMIT_WINDOW_SIZE&gt;
             Number of seconds over which to allow --rate-limit-rps.
 
+        --remove-data
+            When replacing an indexer, also remove the indexed data.
+
         --replace-indexer
             Whether to allow replacing an existing indexer. If not specified, an attempt to deploy
             over an existing indexer results in an error.
@@ -2374,32 +2378,40 @@ OPTIONS:
 
         --web-api-port &lt;WEB_API_PORT&gt;
             Web API port. [default: 29987]
+
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="forc-index-deploy"><a class="header" href="#forc-index-deploy"><code>forc index deploy</code></a></h1>
 <p>Deploy an indexer to an indexer service.</p>
 <pre><code class="language-bash">forc index deploy --url https://beta-3-indexer.fuel.network
 </code></pre>
-<pre><code class="language-text">USAGE:
+<pre><code class="language-text">Deploy an indexer to an indexer service
+
+USAGE:
     forc-index deploy [OPTIONS]
 
 OPTIONS:
-        --auth &lt;AUTH&gt;                Authentication header value.
-    -d, --debug                      Build optimized artifacts with the debug profile.
-    -h, --help                       Print help information
-        --locked                     Ensure that the Cargo.lock file is up-to-date.
-    -m, --manifest &lt;MANIFEST&gt;        Path to the manifest of indexer project being deployed.
-        --native                     Building for native execution.
-    -p, --path &lt;PATH&gt;                Path to the indexer project.
-        --skip-build                 Do not build before deploying.
-        --url &lt;URL&gt;                  URL at which to deploy indexer assets. [default:
-                                     http://127.0.0.1:29987]
-    -v, --verbose                    Enable verbose logging.
+        --auth &lt;AUTH&gt;            Authentication header value.
+    -d, --debug                  Build optimized artifacts with the debug profile.
+    -h, --help                   Print help information
+        --locked                 Ensure that the Cargo.lock file is up-to-date.
+    -m, --manifest &lt;MANIFEST&gt;    Path to the manifest of indexer project being deployed.
+        --native                 Building for native execution.
+    -p, --path &lt;PATH&gt;            Path to the indexer project.
+        --remove-data            Remove all indexed data when replacing an existing indexer.
+        --replace-indexer        If an indexer with the same UID exists, remove it.
+        --skip-build             Do not build before deploying.
+        --url &lt;URL&gt;              URL at which to deploy indexer assets. [default:
+                                 http://127.0.0.1:29987]
+    -v, --verbose                Enable verbose logging.
+
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="forc-index-remove"><a class="header" href="#forc-index-remove"><code>forc index remove</code></a></h1>
 <p>Stop and remove a running indexer.</p>
 <pre><code class="language-bash">forc index remove --url https://beta-3-indexer.fuel.network
 </code></pre>
-<pre><code class="language-text">USAGE:
+<pre><code class="language-text">Stop and remove a running indexer
+
+USAGE:
     forc-index remove [OPTIONS]
 
 OPTIONS:
@@ -2407,14 +2419,17 @@ OPTIONS:
     -h, --help                   Print help information
     -m, --manifest &lt;MANIFEST&gt;    Path to the manifest of the indexer project being removed.
     -p, --path &lt;PATH&gt;            Path to the indexer project.
-        --url &lt;URL&gt;              URL at which indexer is deployed. [default: http://localhost:29987]
+        --url &lt;URL&gt;              URL at which indexer is deployed. [default: http://127.0.0.1:29987]
     -v, --verbose                Enable verbose output.
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="forc-index-kill"><a class="header" href="#forc-index-kill"><code>forc index kill</code></a></h1>
 <p>Kill the indexer process. Note that this command will kill any process listening on the default indexer port or the port specified by the <code>--port</code> flag.</p>
 <pre><code class="language-bash">forc index kill --port 29987
 </code></pre>
-<pre><code class="language-text">USAGE:
+<pre><code class="language-text">Kill the indexer process. Note that this command will kill any process listening on the default
+indexer port or the port specified by the `--port` flag
+
+USAGE:
     forc-index kill [OPTIONS]
 
 OPTIONS:
@@ -2429,21 +2444,25 @@ OPTIONS:
 </blockquote>
 <pre><code class="language-bash">forc index auth --account 0
 </code></pre>
-<pre><code class="language-text">USAGE:
-    forc-index auth [OPTIONS] --account &lt;ACCOUNT&gt;
+<pre><code class="language-text">Authenticate against an indexer service
+
+USAGE:
+    forc-index auth [OPTIONS]
 
 OPTIONS:
-        --account &lt;ACCOUNT&gt;    Index of account to use for signing.
+        --account &lt;ACCOUNT&gt;    Index of account to use for signing. [default: 0]
     -h, --help                 Print help information
         --url &lt;URL&gt;            URL at which to deploy indexer assets. [default:
-                               http://localhost:29987]
+                               http://127.0.0.1:29987]
     -v, --verbose              Verbose output.
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="forc-index-status"><a class="header" href="#forc-index-status"><code>forc index status</code></a></h1>
 <p>Check the status of a registered indexer.</p>
 <pre><code class="language-bash">forc index status --url https://beta-3-indexer.fuel.network
 </code></pre>
-<pre><code class="language-text">USAGE:
+<pre><code class="language-text">Check the status of a registered indexer
+
+USAGE:
     forc-index status [OPTIONS]
 
 OPTIONS:
@@ -2451,6 +2470,7 @@ OPTIONS:
     -h, --help           Print help information
         --url &lt;URL&gt;      URL at which to find indexer service. [default: http://127.0.0.1:29987]
     -v, --verbose        Enable verbose logging.
+
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="forc-index-postgres"><a class="header" href="#forc-index-postgres">forc index postgres</a></h1>
 <p><code>forc index postgres</code> is provided as a way to simplify the setup and management of an embedded Postgres database. After you have installed <code>fuelup</code>, you can run the <code>forc index postgres help</code> command in your terminal to view the available commands.</p>

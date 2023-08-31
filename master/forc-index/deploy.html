@@ -173,21 +173,26 @@
 <p>Deploy an indexer to an indexer service.</p>
 <pre><code class="language-bash">forc index deploy --url https://beta-3-indexer.fuel.network
 </code></pre>
-<pre><code class="language-text">USAGE:
+<pre><code class="language-text">Deploy an indexer to an indexer service
+
+USAGE:
     forc-index deploy [OPTIONS]
 
 OPTIONS:
-        --auth &lt;AUTH&gt;                Authentication header value.
-    -d, --debug                      Build optimized artifacts with the debug profile.
-    -h, --help                       Print help information
-        --locked                     Ensure that the Cargo.lock file is up-to-date.
-    -m, --manifest &lt;MANIFEST&gt;        Path to the manifest of indexer project being deployed.
-        --native                     Building for native execution.
-    -p, --path &lt;PATH&gt;                Path to the indexer project.
-        --skip-build                 Do not build before deploying.
-        --url &lt;URL&gt;                  URL at which to deploy indexer assets. [default:
-                                     http://127.0.0.1:29987]
-    -v, --verbose                    Enable verbose logging.
+        --auth &lt;AUTH&gt;            Authentication header value.
+    -d, --debug                  Build optimized artifacts with the debug profile.
+    -h, --help                   Print help information
+        --locked                 Ensure that the Cargo.lock file is up-to-date.
+    -m, --manifest &lt;MANIFEST&gt;    Path to the manifest of indexer project being deployed.
+        --native                 Building for native execution.
+    -p, --path &lt;PATH&gt;            Path to the indexer project.
+        --remove-data            Remove all indexed data when replacing an existing indexer.
+        --replace-indexer        If an indexer with the same UID exists, remove it.
+        --skip-build             Do not build before deploying.
+        --url &lt;URL&gt;              URL at which to deploy indexer assets. [default:
+                                 http://127.0.0.1:29987]
+    -v, --verbose                Enable verbose logging.
+
 </code></pre>
 
                     </main>

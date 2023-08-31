@@ -183,15 +183,20 @@
 </code></pre>
 <p>In the above example, <code>config.yaml</code> is based on <a href="https://github.com/FuelLabs/fuel-indexer/blob/develop/config.yaml">the default service configuration file</a>.</p>
 <h2 id="options"><a class="header" href="#options">Options</a></h2>
-<pre><code class="language-text">USAGE:
+<pre><code class="language-text">Fuel indexer web API
+
+USAGE:
     fuel-indexer-api-server run [OPTIONS]
 
 OPTIONS:
+        --accept-sql-queries
+            Allow the web API to accept raw SQL queries.
+
         --auth-enabled
             Require users to authenticate for some operations.
 
         --auth-strategy &lt;AUTH_STRATEGY&gt;
-            Authentication scheme used.
+            Authentication scheme used. [possible values: jwt]
 
     -c, --config &lt;CONFIG&gt;
             API server config file.
@@ -205,12 +210,6 @@ OPTIONS:
         --fuel-node-port &lt;FUEL_NODE_PORT&gt;
             Listening port of the running Fuel node. [default: 4000]
 
-        --web-api-host &lt;WEB_API_HOST&gt;
-            GraphQL API host. [default: localhost]
-
-        --web-api-port &lt;WEB_API_PORT&gt;
-            GraphQL API port. [default: 29987]
-
     -h, --help
             Print help information
 
@@ -223,8 +222,12 @@ OPTIONS:
         --jwt-secret &lt;JWT_SECRET&gt;
             Secret used for JWT scheme (if JWT scheme is specified).
 
+        --log-level &lt;LOG_LEVEL&gt;
+            Log level passed to the Fuel Indexer service. [default: info] [possible values: info,
+            debug, error, warn]
+
         --max-body-size &lt;MAX_BODY_SIZE&gt;
-            Max body size for GraphQL API requests. [default: 5242880]
+            Max body size for web requests. [default: 5242880]
 
         --metrics
             Use Prometheus metrics reporting.
@@ -244,15 +247,29 @@ OPTIONS:
         --postgres-user &lt;POSTGRES_USER&gt;
             Postgres username.
 
+        --rate-limit
+            Enable rate limiting.
+
+        --rate-limit-request-count &lt;RATE_LIMIT_REQUEST_COUNT&gt;
+            Maximum number of requests to allow over --rate-limit-window..
+
+        --rate-limit-window-size &lt;RATE_LIMIT_WINDOW_SIZE&gt;
+            Number of seconds over which to allow --rate-limit-rps.
+
         --run-migrations
             Run database migrations before starting service.
-
-    -V, --version
-            Print version information
 
     -v, --verbose
             Enable verbose logging.
 
+    -V, --version
+            Print version information
+
+        --web-api-host &lt;WEB_API_HOST&gt;
+            Web API host. [default: localhost]
+
+        --web-api-port &lt;WEB_API_PORT&gt;
+            Web API port. [default: 29987]
 </code></pre>
 
                     </main>
