@@ -1,0 +1,210 @@
+---
+source: packages/fuel-indexer-graphql-dyn/src/testing/schema_type.rs
+expression: schema_type
+---
+DynSchemaType(
+  data: {
+    Unit: Unit,
+    Boolean: Boolean,
+    U8: U8,
+    U16: U16,
+    U32: U32,
+    U64: U64,
+    B256: B256,
+    Bytes: Bytes,
+    String: String,
+    Name(Pascal("CallReceiptData")): Object(Pascal("CallReceiptData"), {
+      "param1": DynDataFieldType(
+        name: Snake("param1"),
+        data_type_id: U64,
+        store_data_field_id: "param1",
+      ),
+      "param2": DynDataFieldType(
+        name: Snake("param2"),
+        data_type_id: U64,
+        store_data_field_id: "param2",
+      ),
+    }),
+    Name(Pascal("ReturnReceiptData")): Object(Pascal("ReturnReceiptData"), {
+      "val": DynDataFieldType(
+        name: Snake("val"),
+        data_type_id: U64,
+        store_data_field_id: "val",
+      ),
+    }),
+    Name(Pascal("ReceiptType")): Enum(Pascal("ReceiptType"), {
+      "call_receipt": DynDataFieldType(
+        name: Pascal("CallReceipt"),
+        data_type_id: Unit,
+        store_data_field_id: "call_receipt",
+      ),
+      "return_receipt": DynDataFieldType(
+        name: Pascal("ReturnReceipt"),
+        data_type_id: Unit,
+        store_data_field_id: "return_receipt",
+      ),
+    }),
+    Name(Pascal("ReceiptData")): Enum(Pascal("ReceiptData"), {
+      "call_receipt_data": DynDataFieldType(
+        name: Pascal("CallReceiptData"),
+        data_type_id: Name(Pascal("CallReceiptData")),
+        store_data_field_id: "call_receipt_data",
+      ),
+      "return_receipt_data": DynDataFieldType(
+        name: Pascal("ReturnReceiptData"),
+        data_type_id: Name(Pascal("ReturnReceiptData")),
+        store_data_field_id: "return_receipt_data",
+      ),
+    }),
+  },
+  node: {
+    DynNodeTypeId(
+      store_id: "Chain",
+    ): DynNodeType(
+      name: Pascal("Chain"),
+      fields: {
+        "number": Data(DynDataFieldType(
+          name: Snake("number"),
+          data_type_id: U64,
+          store_data_field_id: "number",
+        )),
+        "blocks": Connection(DynNodeConnectionFieldType(
+          name: Camel("blocks"),
+          edge_type_id: "ChainHasBlock",
+        )),
+        "transactions": Connection(DynNodeConnectionFieldType(
+          name: Camel("transactions"),
+          edge_type_id: "ChainHasTransaction",
+        )),
+      },
+    ),
+    DynNodeTypeId(
+      store_id: "Block",
+    ): DynNodeType(
+      name: Pascal("Block"),
+      fields: {
+        "number": Data(DynDataFieldType(
+          name: Snake("number"),
+          data_type_id: U64,
+          store_data_field_id: "number",
+        )),
+        "hash": Data(DynDataFieldType(
+          name: Snake("hash"),
+          data_type_id: B256,
+          store_data_field_id: "hash",
+        )),
+        "parentHash": Data(DynDataFieldType(
+          name: Snake("parent_hash"),
+          data_type_id: B256,
+          store_data_field_id: "parent_hash",
+        )),
+        "chain": Ref(DynNodeRefFieldType(
+          name: Camel("chain"),
+          store_id: "chain_id",
+          ref_node_type_id: DynNodeTypeId(
+            store_id: "Chain",
+          ),
+        )),
+        "transactions": Connection(DynNodeConnectionFieldType(
+          name: Camel("transactions"),
+          edge_type_id: "BlockHasTransaction",
+        )),
+      },
+    ),
+    DynNodeTypeId(
+      store_id: "Transaction",
+    ): DynNodeType(
+      name: Pascal("Transaction"),
+      fields: {
+        "index": Data(DynDataFieldType(
+          name: Snake("index"),
+          data_type_id: U64,
+          store_data_field_id: "index",
+        )),
+        "hash": Data(DynDataFieldType(
+          name: Snake("hash"),
+          data_type_id: B256,
+          store_data_field_id: "hash",
+        )),
+        "gasLimit": Data(DynDataFieldType(
+          name: Snake("gas_limit"),
+          data_type_id: U64,
+          store_data_field_id: "gas_limit",
+        )),
+        "gasPrice": Data(DynDataFieldType(
+          name: Snake("gas_price"),
+          data_type_id: U64,
+          store_data_field_id: "gas_price",
+        )),
+        "blockHash": Data(DynDataFieldType(
+          name: Snake("block_hash"),
+          data_type_id: B256,
+          store_data_field_id: "block_hash",
+        )),
+        "chain": Ref(DynNodeRefFieldType(
+          name: Camel("chain"),
+          store_id: "chain_id",
+          ref_node_type_id: DynNodeTypeId(
+            store_id: "Chain",
+          ),
+        )),
+        "block": Ref(DynNodeRefFieldType(
+          name: Camel("block"),
+          store_id: "block_hash",
+          ref_node_type_id: DynNodeTypeId(
+            store_id: "Block",
+          ),
+        )),
+      },
+    ),
+    DynNodeTypeId(
+      store_id: "Receipt",
+    ): DynNodeType(
+      name: Pascal("Receipt"),
+      fields: {
+        "type": Data(DynDataFieldType(
+          name: Snake("type"),
+          data_type_id: Name(Pascal("ReceiptType")),
+          store_data_field_id: "type",
+        )),
+        "data": Data(DynDataFieldType(
+          name: Snake("data"),
+          data_type_id: Name(Pascal("ReceiptData")),
+          store_data_field_id: "data",
+        )),
+      },
+    ),
+  },
+  edge: {
+    "ChainHasBlock": DynEdgeType(
+      name: Pascal("ChainHasBlock"),
+      tail: DynNodeTypeId(
+        store_id: "Chain",
+      ),
+      head: DynNodeTypeId(
+        store_id: "Block",
+      ),
+      fields: {},
+    ),
+    "ChainHasTransaction": DynEdgeType(
+      name: Pascal("ChainHasTransaction"),
+      tail: DynNodeTypeId(
+        store_id: "Chain",
+      ),
+      head: DynNodeTypeId(
+        store_id: "Transaction",
+      ),
+      fields: {},
+    ),
+    "BlockHasTransaction": DynEdgeType(
+      name: Pascal("BlockHasTransaction"),
+      tail: DynNodeTypeId(
+        store_id: "Block",
+      ),
+      head: DynNodeTypeId(
+        store_id: "Transaction",
+      ),
+      fields: {},
+    ),
+  },
+)

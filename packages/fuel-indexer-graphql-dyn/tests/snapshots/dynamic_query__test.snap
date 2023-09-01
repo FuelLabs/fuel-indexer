@@ -1,0 +1,18 @@
+---
+source: packages/fuel-indexer-graphql-dyn/tests/dynamic_query.rs
+expression: response.data
+---
+{
+  "transaction": {
+    "id": "Transaction:0-0-0"
+  },
+  "chain": {
+    "transactions": {
+      "nodes": [
+        {
+          "id": "Transaction:0-0-0"
+        }
+      ]
+    }
+  }
+}
