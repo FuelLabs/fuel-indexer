@@ -1,0 +1,42 @@
+---
+source: packages/fuel-indexer-tests/tests/snapshots.rs
+expression: output
+---
+---
+metering_points: 30000000000
+log_level: info
+verbose: false
+local_fuel_node: false
+indexer_net_config: false
+fuel_node:
+  host: localhost
+  port: "4000"
+web_api:
+  host: localhost
+  port: "29987"
+  max_body_size: 5242880
+database:
+  postgres:
+    user: postgres
+    password: postgres
+    host: localhost
+    port: "5432"
+    database: postgres
+    verbose: "false"
+metrics: true
+stop_idle_indexers: false
+run_migrations: true
+authentication:
+  enabled: false
+  strategy: JWT
+  jwt_secret: abcdefghijklmnopqrstuvwxyz1234567890
+  jwt_issuer: FuelLabs
+  jwt_expiry: 2592000
+rate_limit:
+  enabled: false
+  request_count: 10
+  window_size: 5
+replace_indexer: false
+accept_sql_queries: false
+node_block_page_size: 20
+

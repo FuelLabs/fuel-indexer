@@ -12,3 +12,7 @@ mod web_server;
 
 #[cfg(feature = "trybuild")]
 mod trybuild;
+
+mod commands;
+
+mod config;

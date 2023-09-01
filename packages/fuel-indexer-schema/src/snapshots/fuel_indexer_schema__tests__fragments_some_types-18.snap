@@ -1,6 +1,6 @@
 ---
 source: packages/fuel-indexer-schema/src/lib.rs
-expression: json.query_fragment()
+expression: uint1.query_fragment()
 ---
-"'{\"hello\":\"world\"}'"
+"120"
 

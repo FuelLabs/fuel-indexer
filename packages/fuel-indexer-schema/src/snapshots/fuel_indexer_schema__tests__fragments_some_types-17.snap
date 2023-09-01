@@ -1,6 +1,6 @@
 ---
 source: packages/fuel-indexer-schema/src/lib.rs
-expression: charfield.query_fragment()
+expression: uint4.query_fragment()
 ---
-"'hello world'"
+"2021161080"
 

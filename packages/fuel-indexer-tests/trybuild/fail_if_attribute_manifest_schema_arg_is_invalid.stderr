@@ -1,0 +1,96 @@
+error: Could not open schema file "$DIR/schema.graphql" Os { code: 2, kind: NotFound, message: "No such file or directory" }
+ --> trybuild/fail_if_attribute_manifest_schema_arg_is_invalid.rs
+  |
+  | #[indexer(manifest = "packages/fuel-indexer-tests/trybuild/invalid_schema_simple_wasm.yaml")]
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: this error originates in the attribute macro `indexer` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0432]: unresolved import `fuels::traits`
+ --> trybuild/fail_if_attribute_manifest_schema_arg_is_invalid.rs
+  |
+  |     use fuels::{core::codec::ABIEncoder, traits::Tokenizable};
+  |                                          ^^^^^^ could not find `traits` in `fuels`
+
+error[E0422]: cannot find struct, variant or union type `SomeEvent` in this scope
+ --> trybuild/fail_if_attribute_manifest_schema_arg_is_invalid.rs
+  |
+  |     let s = SomeEvent {
+  |             ^^^^^^^^^ not found in this scope
+
+error[E0433]: failed to resolve: use of undeclared type `Consensus`
+ --> trybuild/fail_if_attribute_manifest_schema_arg_is_invalid.rs
+  |
+  |         consensus: Consensus::default(),
+  |                    ^^^^^^^^^ use of undeclared type `Consensus`
+  |
+help: consider importing one of these items
+  |
+2  + use crate::fuel::Consensus;
+   |
+2  + use fuel_indexer::prelude::fuel::Consensus;
+   |
+2  + use fuel_indexer_plugin::prelude::fuel::Consensus;
+   |
+2  + use fuel_indexer_types::fuel::Consensus;
+   |
+     and 1 other candidate
+
+error[E0433]: failed to resolve: use of undeclared type `Transaction`
+ --> trybuild/fail_if_attribute_manifest_schema_arg_is_invalid.rs
+  |
+  |             transaction: Transaction::default(),
+  |                          ^^^^^^^^^^^ use of undeclared type `Transaction`
+  |
+help: consider importing one of these items
+  |
+2  + use crate::fuel::Transaction;
+   |
+2  + use fuel_indexer::prelude::fuel::Transaction;
+   |
+2  + use fuel_indexer_plugin::prelude::fuel::Transaction;
+   |
+2  + use fuel_indexer_types::fuel::Transaction;
+   |
+     and 4 other candidates
+
+error[E0560]: struct `fuel_indexer_utils::prelude::fuel::Header` has no field named `output_messages_count`
+ --> trybuild/fail_if_attribute_manifest_schema_arg_is_invalid.rs
+  |
+  |             output_messages_count: 1,
+  |             ^^^^^^^^^^^^^^^^^^^^^ `fuel_indexer_utils::prelude::fuel::Header` does not have this field
+  |
+  = note: available fields are: `message_receipt_count`, `message_receipt_root`
+
+error[E0560]: struct `fuel_indexer_utils::prelude::fuel::Header` has no field named `output_messages_root`
+ --> trybuild/fail_if_attribute_manifest_schema_arg_is_invalid.rs
+  |
+  |             output_messages_root: [0u8; 32].into(),
+  |             ^^^^^^^^^^^^^^^^^^^^ `fuel_indexer_utils::prelude::fuel::Header` does not have this field
+  |
+  = note: available fields are: `message_receipt_count`, `message_receipt_root`
+
+error[E0308]: mismatched types
+  --> trybuild/fail_if_attribute_manifest_schema_arg_is_invalid.rs
+   |
+   |                     data: bytes,
+   |                           ^^^^^ expected `Option<Vec<u8>>`, found `Vec<u8>`
+   |
+   = note: expected enum `std::option::Option<Vec<_>>`
+            found struct `Vec<_>`
+help: try wrapping the expression in `Some`
+   |
+65 |                     data: Some(bytes),
+   |                           +++++     +
+
+error[E0063]: missing field `producer` in initializer of `fuel_indexer_utils::prelude::BlockData`
+ --> trybuild/fail_if_attribute_manifest_schema_arg_is_invalid.rs
+  |
+  |     let data: Vec<BlockData> = vec![BlockData {
+  |                                     ^^^^^^^^^ missing `producer`
+
+error[E0425]: cannot find function `handle_events` in this scope
+ --> trybuild/fail_if_attribute_manifest_schema_arg_is_invalid.rs
+  |
+  |     handle_events(ptr, len);
+  |     ^^^^^^^^^^^^^ not found in this scope

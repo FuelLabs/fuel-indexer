@@ -18,7 +18,7 @@ pub use crate::{
     defaults,
     utils::*,
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::{fs::File, path::Path, str::FromStr};
 use strum::{AsRefStr, EnumString};
 use thiserror::Error;
@@ -113,7 +113,7 @@ impl Default for IndexerArgs {
 }
 
 /// Fuel indexer service configuration.
-#[derive(Clone, Deserialize, Debug)]
+#[derive(Clone, Deserialize, Debug, Serialize)]
 pub struct IndexerConfig {
     pub metering_points: Option<u64>,
     pub log_level: String,
@@ -447,7 +447,8 @@ impl IndexerConfig {
                 section.get(&serde_yaml::Value::String("max_body_size".into()));
 
             if let Some(max_body_size) = max_body_size {
-                config.web_api.max_body_size = max_body_size.as_u64().unwrap() as usize;
+                let size = max_body_size.as_str().unwrap();
+                config.web_api.max_body_size = usize::from_str(size).unwrap();
             }
         }
 

@@ -436,7 +436,7 @@ pub async fn get_indexer(
         Some(row) => {
             let created_at: DateTime<Utc> = {
                 let created_at: NaiveDateTime = row.get(4);
-                DateTime::<Utc>::from_utc(created_at, Utc)
+                DateTime::<Utc>::from_naive_utc_and_offset(created_at, Utc)
             };
 
             Ok(Some(RegisteredIndexer {
@@ -484,7 +484,7 @@ pub async fn register_indexer(
     let pubkey = row.get(3);
     let created_at: DateTime<Utc> = {
         let created_at: NaiveDateTime = row.get(4);
-        DateTime::<Utc>::from_utc(created_at, Utc)
+        DateTime::<Utc>::from_naive_utc_and_offset(created_at, Utc)
     };
 
     Ok(RegisteredIndexer {
@@ -542,7 +542,7 @@ pub async fn all_registered_indexers(
             let pubkey = row.get(3);
             let created_at: DateTime<Utc> = {
                 let created_at: NaiveDateTime = row.get(4);
-                DateTime::<Utc>::from_utc(created_at, Utc)
+                DateTime::<Utc>::from_naive_utc_and_offset(created_at, Utc)
             };
 
             RegisteredIndexer {

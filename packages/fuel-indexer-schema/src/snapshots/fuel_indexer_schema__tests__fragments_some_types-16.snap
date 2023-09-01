@@ -1,6 +1,6 @@
 ---
 source: packages/fuel-indexer-schema/src/lib.rs
-expression: message_id.query_fragment()
+expression: int16.query_fragment()
 ---
-"'0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f'"
+"160132878551029865159235109379655628920"
 

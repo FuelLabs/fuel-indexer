@@ -57,6 +57,13 @@ pub struct IndexingTestComponents {
     pub manifest: Manifest,
 }
 
+impl Drop for IndexingTestComponents {
+    fn drop(&mut self) {
+        // FIXME: cancel the tokio task
+        self.node.abort();
+    }
+}
+
 pub struct WebTestComponents {
     pub node: JoinHandle<Result<(), ()>>,
     pub db: TestPostgresDb,

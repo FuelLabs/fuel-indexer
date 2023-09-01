@@ -4,11 +4,11 @@ use crate::{
 };
 pub use clap::Parser;
 use http::Uri;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 
 /// Fuel GraphQL API configuration.
-#[derive(Clone, Deserialize, Debug)]
+#[derive(Clone, Deserialize, Debug, Serialize)]
 pub struct FuelClientConfig {
     /// Host of the running Fuel node.
     #[serde(default)]

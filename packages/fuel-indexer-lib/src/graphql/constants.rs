@@ -68,57 +68,6 @@ lazy_static! {
         "Identity"
     ]);
 
-    /// Fuel-specific receipt-related type names.
-    pub static ref FUEL_PRIMITIVES: HashSet<&'static str> = HashSet::from([
-        "BlockData",
-        "Call",
-        "Log",
-        "LogData",
-        "MessageOut",
-        "Panic",
-        "Return",
-        "Revert",
-        "ScriptResult",
-        "Transfer",
-        "TransferOut",
-        "Mint",
-        "Burn",
-    ]);
-
-    /// ABI types not allowed in the contract ABI.
-    pub static ref DISALLOWED_ABI_JSON_TYPES: HashSet<&'static str> = HashSet::from([]);
-
-    /// Sway ABI types we don't support and won't in the near future.
-    pub static ref IGNORED_ABI_JSON_TYPES: HashSet<&'static str> =
-        HashSet::from(["()", "struct Vec"]);
-
-    /// Generic Sway ABI types.
-    pub static ref GENERIC_TYPES: HashSet<&'static str> = HashSet::from([
-        "generic T",
-        "raw untyped ptr",
-        "struct RawVec",
-        "struct Vec"
-    ]);
-
-    /// Fuel VM receipt-related types.
-    pub static ref FUEL_RECEIPT_TYPES: HashSet<&'static str> = HashSet::from([
-        "Call",
-        "Log",
-        "LogData",
-        "MessageOut",
-        "Panic",
-        "Return",
-        "Revert",
-        "ScriptResult",
-        "Transfer",
-        "TransferOut",
-        "Mint",
-        "Burn",
-    ]);
-
-    /// Set of Rust primitive types.
-    pub static ref RUST_PRIMITIVES: HashSet<&'static str> =
-        HashSet::from(["u8", "u16", "u32", "u64", "bool", "String"]);
 
     /// Set of types that should be copied instead of referenced.
     pub static ref COPY_TYPES: HashSet<&'static str> = HashSet::from([
@@ -134,71 +83,5 @@ lazy_static! {
         "Option<Identity>",
         "Option<Json>",
         "Option<Virtual>",
-    ]);
-
-    /// Type names that are not allowed in GraphQL schema.
-    pub static ref DISALLOWED_OBJECT_NAMES: HashSet<&'static str> = HashSet::from([
-        // Scalars.
-        "Address",
-        "AssetId",
-        "Blob",
-        "BlockHeight",
-        "BlockId",
-        "Boolean",
-        "Bytes",
-        "Bytes32",
-        "Bytes4",
-        "Bytes64",
-        "Bytes8",
-        "Charfield",
-        "Color",
-        "ContractId",
-        "HexString",
-        "ID",
-        "Identity",
-        "Int1",
-        "Int16",
-        "Int4",
-        "Int8",
-        "Json",
-        "MessageId",
-        "Nonce",
-        "Virtual",
-        "Salt",
-        "Signature",
-        "Tai64Timestamp",
-        "Timestamp",
-        "TxId",
-        "UInt1",
-        "UInt16",
-        "UInt4",
-        "UInt8",
-
-        // Imports for transaction fields.
-        // https://github.com/FuelLabs/fuel-indexer/issues/286
-        "BlockData",
-        "BytecodeLength",
-        "BytecodeWitnessIndex",
-        "FieldTxPointer",
-        "GasLimit",
-        "GasPrice",
-        "Inputs",
-        "Log",
-        "LogData",
-        "Maturity",
-        "MessageId",
-        "Outputs",
-        "ReceiptsRoot",
-        "Script",
-        "ScriptData",
-        "ScriptResult",
-        "StorageSlots",
-        "TransactionData",
-        "Transfer",
-        "TransferOut",
-        "TxFieldSalt",
-        "TxFieldScript",
-        "TxId",
-        "Witnesses",
     ]);
 }

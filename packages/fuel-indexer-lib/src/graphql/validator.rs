@@ -1,4 +1,4 @@
-use crate::graphql::constants::*;
+use crate::constants::*;
 use async_graphql_parser::types::{FieldDefinition, TypeDefinition, TypeKind};
 use std::collections::HashSet;
 
@@ -8,7 +8,7 @@ pub struct GraphQLSchemaValidator;
 impl GraphQLSchemaValidator {
     /// Check that the given name is not a reserved object name.
     pub fn check_disallowed_graphql_typedef_name(name: &str) {
-        if DISALLOWED_OBJECT_NAMES.contains(name) {
+        if RESERVED_TYPEDEF_NAMES.contains(name) {
             panic!("TypeDefinition name '{name}' is reserved.");
         }
     }

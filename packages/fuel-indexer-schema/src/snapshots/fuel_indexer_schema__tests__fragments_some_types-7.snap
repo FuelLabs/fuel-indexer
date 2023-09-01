@@ -1,6 +1,6 @@
 ---
 source: packages/fuel-indexer-schema/src/lib.rs
-expression: contractid.query_fragment()
+expression: nonce.query_fragment()
 ---
-"'7878787878787878787878787878787878787878787878787878787878787878'"
+"'1212121212121212121212121212121212121212121212121212121212121212'"
 
