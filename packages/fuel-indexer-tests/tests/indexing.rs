@@ -610,6 +610,9 @@ async fn test_start_block() {
         db.pool.acquire().await.unwrap(),
     ));
 
+    // Allow the indexer to start and process blocks.
+    tokio::time::sleep(std::time::Duration::from_secs(2));
+
     let start = fuel_indexer::get_start_block(&mut conn, &manifest)
         .await
         .unwrap();
@@ -623,6 +626,8 @@ async fn test_start_block() {
     // We create two more blocks, 2, and 3, which are processed by the indexer.
     mock_request("/block").await;
     mock_request("/block").await;
+
+    tokio::time::sleep(std::time::Duration::from_secs(2));
 
     let start = fuel_indexer::get_start_block(&mut conn, &manifest)
         .await

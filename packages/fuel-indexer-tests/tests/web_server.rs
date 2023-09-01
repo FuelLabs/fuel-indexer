@@ -337,6 +337,8 @@ async fn test_ensure_no_missing_blocks() {
     mock_request("/block").await;
     mock_request("/block").await;
 
+    tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+
     let last = last_block_height_for_indexer(
         &mut conn,
         manifest.namespace(),
@@ -366,6 +368,8 @@ async fn test_ensure_no_missing_blocks() {
 
     // Trigger the next block #5.
     mock_request("/block").await;
+
+    tokio::time::sleep(std::time::Duration::from_secs(2)).await;
 
     let last = last_block_height_for_indexer(
         &mut conn,
