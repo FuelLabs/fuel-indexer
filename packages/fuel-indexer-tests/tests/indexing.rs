@@ -611,7 +611,7 @@ async fn test_start_block() {
     ));
 
     // Allow the indexer to start and process blocks.
-    tokio::time::sleep(std::time::Duration::from_secs(2));
+    tokio::time::sleep(std::time::Duration::from_secs(2)).await;
 
     let start = fuel_indexer::get_start_block(&mut conn, &manifest)
         .await
@@ -627,7 +627,7 @@ async fn test_start_block() {
     mock_request("/block").await;
     mock_request("/block").await;
 
-    tokio::time::sleep(std::time::Duration::from_secs(2));
+    tokio::time::sleep(std::time::Duration::from_secs(2)).await;
 
     let start = fuel_indexer::get_start_block(&mut conn, &manifest)
         .await
