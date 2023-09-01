@@ -258,12 +258,6 @@ impl IndexerService {
             handles.into_values(),
         )));
 
-        if config.enable_blockstore {
-            tokio::spawn(create_block_sync_task(config.clone(), pool.clone()))
-                .await
-                .unwrap();
-        }
-
         let _ = tokio::spawn(create_service_task(
             rx,
             config.clone(),
@@ -282,7 +276,10 @@ impl IndexerService {
 
 /// Create a tokio task for retrieving blocks from Fuel Node and saving them in
 /// the database.
-async fn create_block_sync_task(config: IndexerConfig, pool: IndexerConnectionPool) {
+pub(crate) async fn create_block_sync_task(
+    config: IndexerConfig,
+    pool: IndexerConnectionPool,
+) {
     let mut conn = pool.acquire().await.unwrap();
 
     let start_block_height = queries::last_block_height_for_stored_blocks(&mut conn)
@@ -298,7 +295,6 @@ async fn create_block_sync_task(config: IndexerConfig, pool: IndexerConnectionPo
             .unwrap_or_else(|e| panic!("Client node connection failed: {e}."));
 
     loop {
-        info!("Block sync: cursor {:?}", cursor);
         // Get the next page of blocks, and the starting cursor for the subsequent page
         let (block_info, next_cursor, _has_next_page) =
             match crate::executor::retrieve_blocks_from_node(
@@ -314,10 +310,7 @@ async fn create_block_sync_task(config: IndexerConfig, pool: IndexerConnectionPo
                     if !block_info.is_empty() {
                         let first = block_info[0].height;
                         let last = block_info.last().unwrap().height;
-                        info!(
-                            "Block sync: retrieved blocks: {}-{}. Has next page? {}",
-                            first, last, _has_next_page
-                        );
+                        info!("Block sync: retrieved blocks: {}-{}.", first, last);
                     }
                     (block_info, next_cursor, _has_next_page)
                 }

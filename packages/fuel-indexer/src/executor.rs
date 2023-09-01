@@ -79,8 +79,7 @@ pub async fn load_blocks(
 ) -> IndexerResult<Vec<BlockData>> {
     use sqlx::Row;
 
-    let end_condition =
-        end_block
+    let end_condition = end_block
         .map(|x| format!("AND block_height <= {x}"))
         .unwrap_or("".to_string());
     let query = format!("SELECT block_data FROM index_block_data WHERE block_height >= {start_block} {end_condition} ORDER BY block_height ASC LIMIT {limit}");
@@ -175,11 +174,15 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
 
             // Fetch the next page of blocks, and the starting cursor for the subsequent page
             let (block_info, next_cursor, _has_next_page) = if enable_blockstore {
-                let result = load_blocks(&pool, start_block, manifest.end_block(), node_block_page_size).await;
+                let result = load_blocks(
+                    &pool,
+                    start_block,
+                    manifest.end_block(),
+                    node_block_page_size,
+                )
+                .await;
                 match result {
-                    Ok(blocks) => {
-                        (blocks, None, false)
-                    },
+                    Ok(blocks) => (blocks, None, false),
                     Err(e) => {
                         error!("Indexer({indexer_uid}) failed to load blocks from the database: {e:?}",);
                         continue;

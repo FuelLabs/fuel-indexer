@@ -121,6 +121,15 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
 
     let mut service = IndexerService::new(config.clone(), pool.clone(), rx).await?;
 
+    let block_sync = if config.enable_blockstore {
+        tokio::spawn(crate::service::create_block_sync_task(
+            config.clone(),
+            pool.clone(),
+        ))
+    } else {
+        tokio::spawn(futures::future::ready(()))
+    };
+
     match manifest.map(|p| {
         info!("Using manifest file located at '{}'", p.display());
         Manifest::from_file(&p).unwrap()
@@ -172,7 +181,7 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
     tokio::spawn({
         let cancel_token = cancel_token.clone();
         async move {
-            let _ = tokio::join!(service_handle, node_handle, web_handle);
+            let _ = tokio::join!(service_handle, node_handle, web_handle, block_sync);
             cancel_token.cancel();
         }
     });
