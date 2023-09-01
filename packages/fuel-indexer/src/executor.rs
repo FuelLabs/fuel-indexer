@@ -73,17 +73,16 @@ impl From<ExecutorSource> for Vec<u8> {
 
 pub async fn load_blocks(
     pool: &IndexerConnectionPool,
-    manifest: &Manifest,
+    start_block: u32,
+    end_block: Option<u32>,
     limit: usize,
 ) -> IndexerResult<Vec<BlockData>> {
     use sqlx::Row;
 
-    let end_condition = manifest
-        .end_block()
+    let end_condition =
+        end_block
         .map(|x| format!("AND block_height <= {x}"))
         .unwrap_or("".to_string());
-    let mut conn = pool.acquire().await?;
-    let start_block = crate::get_start_block(&mut conn, manifest).await?;
     let query = format!("SELECT block_data FROM index_block_data WHERE block_height >= {start_block} {end_condition} ORDER BY block_height ASC LIMIT {limit}");
 
     let pool = match pool {
@@ -163,10 +162,9 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
         // Keep track of how many empty pages we've received from the client.
         let mut num_empty_block_reqs = 0;
 
-        let mut cursor = {
-            let start_block = crate::get_start_block(&mut conn, &manifest).await.unwrap();
-            Some((start_block - 1).to_string())
-        };
+        let mut start_block = crate::get_start_block(&mut conn, &manifest).await.unwrap();
+
+        let mut cursor = Some((start_block - 1).to_string());
 
         loop {
             // If something else has signaled that this indexer should stop, then stop.
@@ -177,12 +175,13 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
 
             // Fetch the next page of blocks, and the starting cursor for the subsequent page
             let (block_info, next_cursor, _has_next_page) = if enable_blockstore {
-                let result = load_blocks(&pool, &manifest, node_block_page_size).await;
+                let result = load_blocks(&pool, start_block, manifest.end_block(), node_block_page_size).await;
                 match result {
-                    Ok(blocks) => (blocks, None, false),
+                    Ok(blocks) => {
+                        (blocks, None, false)
+                    },
                     Err(e) => {
                         error!("Indexer({indexer_uid}) failed to load blocks from the database: {e:?}",);
-                        sleep(Duration::from_secs(DELAY_FOR_SERVICE_ERROR)).await;
                         continue;
                     }
                 }
@@ -224,6 +223,8 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                 sleep(Duration::from_secs(IDLE_SERVICE_WAIT_SECS)).await;
                 continue;
             }
+
+            let last_block_height = block_info.last().map(|x| x.height);
 
             // The client responded with actual blocks, so attempt to index them.
             let result = executor
@@ -270,6 +271,10 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
 
             // If we make it this far, we always go to the next page.
             cursor = next_cursor;
+
+            // What cursor does for retrieving blocks from Fuel Node,
+            // start_block does for retrieving blocks from the database
+            start_block = last_block_height.map(|x| x + 1).unwrap_or(start_block);
 
             // Again, check if something else has signaled that this indexer should stop, then stop.
             if kill_switch.load(Ordering::SeqCst) {
