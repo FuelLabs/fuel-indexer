@@ -13,7 +13,7 @@ members = [
    "packages/fuel-indexer-database/database-types",
    "packages/fuel-indexer-database/postgres",
    "packages/fuel-indexer-graphql",
-   "packages/fuel-indexer-graphql-lib",
+   "packages/fuel-indexer-graphql-dyn",
    "packages/fuel-indexer-lib",
    "packages/fuel-indexer-macros",
    "packages/fuel-indexer-macros/macro-utils",
@@ -39,7 +39,7 @@ default-members = [
    "packages/fuel-indexer-database/database-types",
    "packages/fuel-indexer-database/postgres",
    "packages/fuel-indexer-graphql",
-   "packages/fuel-indexer-graphql-lib",
+   "packages/fuel-indexer-graphql-dyn",
    "packages/fuel-indexer-lib",
    "packages/fuel-indexer-macros",
    "packages/fuel-indexer-metrics",
@@ -66,8 +66,10 @@ rust-version = "1.72.0"
 version = "0.20.8"
 
 [workspace.dependencies]
-async-graphql-parser = "5.0"
-async-graphql-value = "5.0"
+async-graphql = "6.0"
+async-graphql-parser = "6.0"
+async-graphql-value = "6.0"
+async-graphql-axum = "6.0"
 bincode = "1.3"
 clap = "3.1"
 forc-index = { version = "0.20.8", path = "./plugins/forc-index" }
