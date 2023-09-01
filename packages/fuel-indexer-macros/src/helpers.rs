@@ -96,19 +96,9 @@ pub fn is_ignored_type(typ: &TypeDeclaration) -> bool {
 
 /// Whether the TypeDeclaration should be used to build struct fields and decoders
 pub fn is_non_decodable_type(typ: &TypeDeclaration) -> bool {
-    if GENERIC_TYPES.contains(typ.type_field.as_str()) {
-        return true;
-    }
-
-    if is_ignored_type(typ) {
-        return true;
-    }
-
-    if is_unit_type(typ) {
-        return true;
-    }
-
-    false
+    is_ignored_type(typ)
+        || is_unit_type(typ)
+        || GENERIC_TYPES.contains(typ.type_field.as_str())
 }
 
 /// Derive Ident for decoded type

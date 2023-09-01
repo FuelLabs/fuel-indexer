@@ -5,10 +5,7 @@ use async_graphql_parser::types::{
 use async_graphql_parser::{Pos, Positioned};
 use async_graphql_value::Name;
 use fuel_indexer_lib::{
-    graphql::{
-        field_id, types::IdCol, GraphQLSchemaValidator, ParsedGraphQLSchema,
-        MAX_FOREIGN_KEY_LIST_FIELDS,
-    },
+    graphql::{field_id, types::IdCol, ParsedGraphQLSchema, MAX_FOREIGN_KEY_LIST_FIELDS},
     ExecutionSource,
 };
 use fuel_indexer_types::type_id;
@@ -510,8 +507,6 @@ impl Decoder for ObjectDecoder {
         match &typ.kind {
             TypeKind::Object(o) => {
                 let obj_name = typ.name.to_string();
-
-                GraphQLSchemaValidator::check_disallowed_graphql_typedef_name(&obj_name);
 
                 let ident = format_ident!("{obj_name}");
                 let type_id = type_id(&parsed.fully_qualified_namespace(), &obj_name);
