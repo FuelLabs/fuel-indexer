@@ -10,7 +10,7 @@ use std::{collections::HashSet, str::FromStr};
 
 const REVERT_VM_CODE: u64 = 0x0004;
 const EXPECTED_CONTRACT_ID: &str =
-    "50936e53d4dd4e04617cc77df4d06674c6c2c6738912632dabc96e004bccad19";
+    "b97c8abbce1b99e3f5b43038684738fc5e682f8040a0eaf181ed91e212e769f5";
 const TRANSFER_BASE_ASSET_ID: &str =
     "0000000000000000000000000000000000000000000000000000000000000000";
 
@@ -636,4 +636,28 @@ async fn test_start_block() {
         .unwrap();
 
     assert_eq!(start, 3);
+}
+
+#[actix_web::test]
+async fn test_generics() {
+    let IndexingTestComponents { ref db, .. } =
+        setup_indexing_test_components(None).await;
+
+    mock_request("/generics").await;
+
+    let mut conn = db.pool.acquire().await.unwrap();
+    let expected_id = "4405f11f2e332ea850a884ce208d97d0cd68dc5bc0fd124a1a7b7f99962ff99b";
+    let row = sqlx::query(&format!(
+        "SELECT * FROM fuel_indexer_test_index1.pingentity where id = '{expected_id}'"
+    ))
+    .fetch_one(&mut conn)
+    .await
+    .unwrap();
+
+    assert_eq!(row.get::<&str, usize>(0), expected_id);
+    assert_eq!(row.get::<BigDecimal, usize>(1).to_u64().unwrap(), 8888);
+    assert_eq!(
+        row.get::<&str, usize>(2),
+        "aaaasdfsdfasdfsdfaasdfsdfasdfsdf"
+    );
 }

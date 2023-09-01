@@ -1,16 +1,19 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
-use async_graphql_parser::types::{BaseType, FieldDefinition, Type};
+use async_graphql_parser::types::{BaseType, FieldDefinition, Type as AsyncGraphQLType};
 use async_graphql_value::Name;
-use fuel_abi_types::abi::program::{ProgramABI, TypeDeclaration};
+use fuel_abi_types::abi::program::{
+    ABIFunction, LoggedType, ProgramABI, TypeDeclaration,
+};
 use fuel_indexer_lib::{
     constants::*,
     graphql::{list_field_type_name, types::IdCol, ParsedGraphQLSchema},
 };
+use fuel_indexer_types::{type_id, FUEL_TYPES_NAMESPACE};
 use fuels_code_gen::utils::Source;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
-use syn::Ident;
+use syn::{GenericArgument, Ident, PathArguments, Type, TypePath};
 
 /// Provides a TokenStream to be used for unwrapping `Option`s for external types.
 ///
@@ -76,7 +79,6 @@ pub fn get_json_abi(abi_path: Option<String>) -> Option<ProgramABI> {
 /// Whether a `TypeDeclaration` is tuple type
 pub fn is_tuple_type(typ: &TypeDeclaration) -> bool {
     let mut type_field_chars = typ.type_field.chars();
-
     type_field_chars.next().is_some_and(|c| c == '(')
         && type_field_chars.next().is_some_and(|c| c != ')')
 }
@@ -84,100 +86,62 @@ pub fn is_tuple_type(typ: &TypeDeclaration) -> bool {
 /// Whether a `TypeDeclaration` is a unit type
 pub fn is_unit_type(typ: &TypeDeclaration) -> bool {
     let mut type_field_chars = typ.type_field.chars();
-
     type_field_chars.next().is_some_and(|c| c == '(')
         && type_field_chars.next().is_some_and(|c| c == ')')
 }
 
-/// Whether this TypeDeclaration should be used in the codegen
-pub fn is_ignored_type(typ: &TypeDeclaration) -> bool {
-    is_tuple_type(typ)
-}
-
 /// Whether the TypeDeclaration should be used to build struct fields and decoders
 pub fn is_non_decodable_type(typ: &TypeDeclaration) -> bool {
-    is_ignored_type(typ)
+    is_tuple_type(typ)
         || is_unit_type(typ)
-        || GENERIC_TYPES.contains(typ.type_field.as_str())
+        || IGNORED_GENERIC_METADATA.contains(typ.type_field.as_str())
 }
 
 /// Derive Ident for decoded type
-pub fn decoded_ident(ty: &str) -> Ident {
-    format_ident! { "{}_decoded", ty.to_ascii_lowercase() }
+///
+/// These idents are used as fields for the `Decoder` struct.
+fn decoded_ident(typ: &TypeDeclaration) -> Ident {
+    let name = {
+        let name = derive_type_name(typ);
+        if typ.components.is_some() {
+            name
+        } else if name.starts_with("Option") {
+            typ.type_field.replace(['<', '>'], "_")
+        } else {
+            typ.type_field.replace(['[', ']'], "_")
+        }
+    };
+
+    if is_generic_type(typ) {
+        let gt = GenericType::from(name.as_str());
+        match gt {
+            GenericType::Vec => {
+                let name = name.replace(['<', '>'], "_").to_ascii_lowercase();
+                format_ident! { "{}decoded", name }
+            }
+            GenericType::Option => {
+                let name = name.replace(['<', '>'], "_").to_ascii_lowercase();
+                format_ident! { "{}decoded", name }
+            }
+            _ => proc_macro_error::abort_call_site!(
+                "Could not derive decoded ident for generic type: {:?}.",
+                name
+            ),
+        }
+    } else {
+        format_ident! { "{}_decoded", name.to_ascii_lowercase() }
+    }
 }
 
-/// Return type field name for complex type
-fn derive_type_field(ty: &TypeDeclaration) -> String {
-    ty.type_field
+/// Given a `TypeDeclaration`, return name of the base of its typed path.
+///
+/// `Vec<T>` returns `Vec`, `Option<T>` returns `Option`, `u8` returns `u8`, etc.
+pub fn derive_type_name(typ: &TypeDeclaration) -> String {
+    typ.type_field
         .split(' ')
         .last()
-        .expect("Could not parse TypeDeclaration for Rust name.")
+        .expect("Type field name expected")
         .to_string()
-}
-
-/// Derive Ident for given TypeDeclaration
-pub fn rust_type_ident(ty: &TypeDeclaration) -> Ident {
-    if ty.components.is_some() {
-        if is_tuple_type(ty) {
-            proc_macro_error::abort_call_site!(
-                "Cannot derive rust_type_ident of tuple type."
-            );
-        }
-
-        let name = derive_type_field(ty);
-        decoded_ident(&name)
-    } else {
-        let name = ty.type_field.replace(['[', ']'], "_");
-        decoded_ident(&name)
-    }
-}
-
-/// Derive Rust type tokens for a given TypeDeclaration
-pub fn rust_type_token(ty: &TypeDeclaration) -> proc_macro2::TokenStream {
-    if ty.components.is_some() {
-        let ty_str = ty
-            .type_field
-            .split(' ')
-            .last()
-            .expect("Could not parse TypeDeclaration for Rust type.")
-            .to_string();
-
-        let ident = format_ident! { "{}", ty_str };
-        quote! { #ident }
-    } else {
-        match ty.type_field.as_str() {
-            "()" => quote! {},
-            "b256" => quote! { B256 },
-            "BlockData" => quote! { BlockData },
-            "bool" => quote! { bool },
-            "Burn" => quote! { Burn },
-            "Call" => quote! { Call },
-            "generic T" => quote! {},
-            "Identity" => quote! { Identity },
-            "Log" => quote! { Log },
-            "LogData" => quote! { LogData },
-            "MessageOut" => quote! { MessageOut },
-            "Mint" => quote! { Mint },
-            "Panic" => quote! { Panic },
-            "raw untyped ptr" => quote! {},
-            "Return" => quote! { Return },
-            "Revert" => quote! { Revert },
-            "ScriptResult" => quote! { ScriptResult },
-            "Transfer" => quote! { Transfer },
-            "TransferOut" => quote! { TransferOut },
-            "u16" => quote! { u16 },
-            "u32" => quote! { u32 },
-            "u64" => quote! { u64 },
-            "u8" => quote! { u8 },
-            o if o.starts_with("str[") => quote! { String },
-            o => {
-                proc_macro_error::abort_call_site!(
-                    "Unrecognized primitive type: {:?}.",
-                    o
-                )
-            }
-        }
-    }
 }
 
 /// Whether or not the given token is a Fuel primitive
@@ -185,9 +149,9 @@ pub fn rust_type_token(ty: &TypeDeclaration) -> proc_macro2::TokenStream {
 /// These differ from `RESERVED_TYPEDEF_NAMES` in that `FUEL_PRIMITIVES` are type names
 /// that are checked against the contract JSON ABI, while `RESERVED_TYPEDEF_NAMES` are
 /// checked against the GraphQL schema.
-pub fn is_fuel_primitive(ty: &proc_macro2::TokenStream) -> bool {
-    let ident_str = ty.to_string();
-    FUEL_PRIMITIVES.contains(ident_str.as_str())
+pub fn is_fuel_primitive(typ: &TypeDeclaration) -> bool {
+    let name = derive_type_name(typ);
+    FUEL_PRIMITIVES.contains(name.as_str())
 }
 
 /// Whether or not the given token is a Rust primitive
@@ -196,61 +160,131 @@ pub fn is_rust_primitive(ty: &proc_macro2::TokenStream) -> bool {
     RUST_PRIMITIVES.contains(ident_str.as_str())
 }
 
-/// Given a type ID, a type token, and a type Ident, return a decoder snippet
-/// as a set of tokens
+/// Whether or not the given tokens are a generic type
+pub fn is_generic_type(typ: &TypeDeclaration) -> bool {
+    let gt = GenericType::from(typ);
+    matches!(gt, GenericType::Vec | GenericType::Option)
+}
+
+/// Given a `TokenStream` representing this `TypeDeclaration`'s fully typed path,
+/// return the associated `match` arm for decoding this type in the `Decoder`.
 pub fn decode_snippet(
-    ty_id: usize,
-    ty: &proc_macro2::TokenStream,
-    name: &Ident,
+    type_tokens: &proc_macro2::TokenStream,
+    typ: &TypeDeclaration,
 ) -> proc_macro2::TokenStream {
-    if is_fuel_primitive(ty) {
+    let name = typ.decoder_field_ident();
+    let ty_id = typ.type_id;
+
+    if is_fuel_primitive(typ) {
         quote! {
             #ty_id => {
-                let obj: #ty = bincode::deserialize(&data).expect("Bad bincode.");
+                let obj: #type_tokens = bincode::deserialize(&data).expect("Bad bincode.");
                 self.#name.push(obj);
             }
         }
-    } else if is_rust_primitive(ty) {
+    } else if is_rust_primitive(type_tokens) {
         quote! {
             #ty_id => {
                 Logger::warn("Skipping primitive decoder.");
             }
         }
+    } else if is_generic_type(typ) {
+        let gt = GenericType::from(typ);
+        match gt {
+            GenericType::Vec => {
+                // https://github.com/FuelLabs/fuel-indexer/issues/503
+                quote! {
+                    #ty_id => {
+                        Logger::warn("Skipping unsupported vec decoder.");
+                    }
+                }
+            }
+            GenericType::Option => {
+                let (inner, typ) = inner_typedef(typ);
+                let inner = format_ident! { "{}", inner };
+                quote! {
+                    #ty_id => {
+                        let decoded = ABIDecoder::decode_single(&#typ::<#inner>::param_type(), &data).expect("Failed decoding.");
+                        let obj = #typ::<#inner>::from_token(decoded).expect("Failed detokenizing.");
+                        self.#name.push(obj);
+                    }
+                }
+            }
+            _ => proc_macro_error::abort_call_site!(
+                "Decoder snippet is unsupported for generic type: {:?}.",
+                gt
+            ),
+        }
     } else {
         quote! {
             #ty_id => {
-                let decoded = ABIDecoder::decode_single(&#ty::param_type(), &data).expect("Failed decoding.");
-                let obj = #ty::from_token(decoded).expect("Failed detokenizing.");
+                let decoded = ABIDecoder::decode_single(&#type_tokens::param_type(), &data).expect("Failed decoding.");
+                let obj = #type_tokens::from_token(decoded).expect("Failed detokenizing.");
                 self.#name.push(obj);
             }
         }
     }
 }
 
-/// A wrapper trait for helper functions such as rust_type_ident,
-/// rust_type_token, and rust_type_ident
+/// A hacky wrapper trait for helper functions.
 pub trait Codegen {
-    fn decoded_ident(&self) -> Ident;
-    fn rust_type_token(&self) -> proc_macro2::TokenStream;
-    fn rust_type_ident(&self) -> Ident;
-    fn rust_type_token_string(&self) -> String;
+    /// Return the derived name for this `TypeDeclaration`.
+    fn name(&self) -> String;
+
+    /// Return the `TokenStream` for this `TypeDeclaration`.
+    fn rust_tokens(&self) -> proc_macro2::TokenStream;
+
+    /// Return the `Ident` for this `TypeDeclaration`'s decoder field.
+    fn decoder_field_ident(&self) -> Ident;
 }
 
 impl Codegen for TypeDeclaration {
-    fn decoded_ident(&self) -> Ident {
-        decoded_ident(&self.rust_type_token().to_string())
+    fn name(&self) -> String {
+        derive_type_name(self)
     }
 
-    fn rust_type_token(&self) -> proc_macro2::TokenStream {
-        rust_type_token(self)
+    fn rust_tokens(&self) -> proc_macro2::TokenStream {
+        if self.components.is_some() {
+            let name = derive_type_name(self);
+            let ident = format_ident! { "{}", name };
+            quote! { #ident }
+        } else {
+            match self.type_field.as_str() {
+                "()" => quote! {},
+                "b256" => quote! { B256 },
+                "BlockData" => quote! { BlockData },
+                "bool" => quote! { bool },
+                "Burn" => quote! { Burn },
+                "Call" => quote! { Call },
+                "generic T" => quote! {},
+                "Identity" => quote! { Identity },
+                "Log" => quote! { Log },
+                "LogData" => quote! { LogData },
+                "MessageOut" => quote! { MessageOut },
+                "Mint" => quote! { Mint },
+                "Panic" => quote! { Panic },
+                "Return" => quote! { Return },
+                "Revert" => quote! { Revert },
+                "ScriptResult" => quote! { ScriptResult },
+                "Transfer" => quote! { Transfer },
+                "TransferOut" => quote! { TransferOut },
+                "u16" => quote! { u16 },
+                "u32" => quote! { u32 },
+                "u64" => quote! { u64 },
+                "u8" => quote! { u8 },
+                o if o.starts_with("str[") => quote! { String },
+                o => {
+                    proc_macro_error::abort_call_site!(
+                        "Unrecognized primitive type: {:?}.",
+                        o
+                    )
+                }
+            }
+        }
     }
 
-    fn rust_type_ident(&self) -> Ident {
-        rust_type_ident(self)
-    }
-
-    fn rust_type_token_string(&self) -> String {
-        self.rust_type_token().to_string()
+    fn decoder_field_ident(&self) -> Ident {
+        decoded_ident(self)
     }
 }
 
@@ -429,15 +463,15 @@ pub fn process_typedef_field(
     let field_typ_name = &parsed.scalar_type_for(&field_def);
 
     if parsed.is_list_field_type(&list_field_type_name(&field_def)) {
-        field_def.ty.node = Type {
-            base: BaseType::List(Box::new(Type {
+        field_def.ty.node = AsyncGraphQLType {
+            base: BaseType::List(Box::new(AsyncGraphQLType {
                 base: BaseType::Named(Name::new(field_typ_name)),
                 nullable: inner_nullable,
             })),
             nullable,
         };
     } else {
-        field_def.ty.node = Type {
+        field_def.ty.node = AsyncGraphQLType {
             base: BaseType::Named(Name::new(field_typ_name)),
             nullable,
         };
@@ -710,4 +744,361 @@ pub fn field_decoder_tokens(
 pub fn can_derive_id(field_set: &HashSet<String>, field_name: &str) -> bool {
     field_set.contains(IdCol::to_lowercase_str())
         && field_name != IdCol::to_lowercase_str()
+}
+
+/// Simply represents a value for a generic type.
+#[derive(Debug)]
+pub enum GenericType {
+    /// `Vec<T>`
+    Vec,
+
+    /// `Option<T>`
+    Option,
+    #[allow(unused)]
+    Other,
+}
+
+impl From<&TypeDeclaration> for GenericType {
+    fn from(t: &TypeDeclaration) -> Self {
+        Self::from(derive_type_name(t))
+    }
+}
+
+impl From<String> for GenericType {
+    fn from(s: String) -> Self {
+        if s.starts_with("Vec") {
+            GenericType::Vec
+        } else if s.starts_with("Option") {
+            GenericType::Option
+        } else {
+            GenericType::Other
+        }
+    }
+}
+
+impl From<GenericType> for &str {
+    fn from(t: GenericType) -> Self {
+        match t {
+            GenericType::Vec => "Vec",
+            GenericType::Option => "Option",
+            GenericType::Other => unimplemented!("Generic type not implemented."),
+        }
+    }
+}
+
+impl From<&str> for GenericType {
+    fn from(s: &str) -> Self {
+        if s.starts_with("Vec") {
+            GenericType::Vec
+        } else if s.starts_with("Option") {
+            GenericType::Option
+        } else {
+            GenericType::Other
+        }
+    }
+}
+
+impl From<GenericType> for TokenStream {
+    fn from(t: GenericType) -> Self {
+        match t {
+            GenericType::Vec => quote! { Vec },
+            GenericType::Option => quote! { Option },
+            GenericType::Other => unimplemented!("Generic type not implemented."),
+        }
+    }
+}
+
+/// Same as `derive_generic_inner_typedefs` but specifically for log types.
+///
+/// Where as `derive_generic_inner_typedefs` can return multiple inner types, this
+/// only returns the single inner type associated with this log specific logged type
+pub fn derive_log_generic_inner_typedefs<'a>(
+    typ: &'a LoggedType,
+    abi: &ProgramABI,
+    abi_types: &'a HashMap<usize, TypeDeclaration>,
+) -> &'a TypeDeclaration {
+    let result =
+        abi.logged_types
+            .iter()
+            .flatten()
+            .filter_map(|log| {
+                if log.log_id == typ.log_id && log.application.type_arguments.is_some() {
+                    let args = log.application.type_arguments.as_ref().unwrap();
+                    let inner = args.first().expect("No type args found.");
+                    return Some(abi_types.get(&inner.type_id).unwrap_or_else(|| {
+                        panic!("Inner type not in ABI: {:?}", inner)
+                    }));
+                }
+                None
+            })
+            .collect::<Vec<_>>();
+
+    result.first().expect("No inner type found.")
+}
+
+/// Derive the inner ident names for collections types.
+///
+/// Given a `GenericType`, and ABI JSON metadata, derive the inner `TypeDefinition`s associated with the given
+/// generic `TypeDefinition`.
+///
+/// So this function will parsed all function inputs/outputs and log types, find all generics (e.g., `Vec<T>`, `Option<U>`),
+/// and return the inner `TypeDefinition`s associated with those generics (e.g., `T` and `U`)
+pub fn derive_generic_inner_typedefs<'a>(
+    typ: &'a TypeDeclaration,
+    funcs: &[ABIFunction],
+    log_types: &[LoggedType],
+    abi_types: &'a HashMap<usize, TypeDeclaration>,
+) -> Vec<&'a TypeDeclaration> {
+    let name = typ.type_field.split(' ').last().unwrap();
+    let t = GenericType::from(name);
+
+    // Per Ahmed from fuels-rs:
+    //
+    // "So if you wish to see all the various Ts used with SomeStruct<T> (in this case Vec<T>)
+    // you have no choice but to go through all functions and find inputs/outputs that reference
+    // SomeStruct<T> and see what the typeArguments are. Those will replace the typeParameters inside
+    // the type declaration."
+    match t {
+        GenericType::Option | GenericType::Vec => {
+            let mut typs = funcs
+                .iter()
+                .flat_map(|func| {
+                    func.inputs
+                        .iter()
+                        .filter_map(|i| {
+                            if i.type_id == typ.type_id && i.type_arguments.is_some() {
+                                let args = i.type_arguments.as_ref().unwrap();
+                                let inner = args.first().expect("No type args found.");
+                                return Some(
+                                    abi_types.get(&inner.type_id).unwrap_or_else(|| {
+                                        panic!("Inner type not in ABI: {:?}", inner)
+                                    }),
+                                );
+                            }
+                            None
+                        })
+                        .collect::<Vec<_>>()
+                })
+                .collect::<Vec<_>>();
+
+            let mut output_typs = funcs
+                .iter()
+                .flat_map(|func| {
+                    if func.output.type_id == typ.type_id
+                        && func.output.type_arguments.is_some()
+                    {
+                        let args = func.output.type_arguments.as_ref().unwrap();
+                        let inner = args.first().expect("No type args found.");
+                        return Some(abi_types.get(&inner.type_id).unwrap_or_else(
+                            || panic!("Inner type not in ABI: {:?}", inner),
+                        ));
+                    }
+                    None
+                })
+                .collect::<Vec<_>>();
+
+            // Parse these as well because we will need to add them to our
+            // mapping of type IDs and `TypeDeclaration`s so we can use them when
+            // we parse log types.
+            let mut log_types = log_types
+                .iter()
+                .filter_map(|log| {
+                    if log.application.type_id == typ.type_id
+                        && log.application.type_arguments.is_some()
+                    {
+                        let args = log.application.type_arguments.as_ref().unwrap();
+                        let inner = args.first().expect("No type args found.");
+                        return Some(abi_types.get(&inner.type_id).unwrap_or_else(
+                            || panic!("Inner type not in ABI: {:?}", inner),
+                        ));
+                    }
+                    None
+                })
+                .collect::<Vec<_>>();
+
+            typs.append(&mut output_typs);
+            typs.append(&mut log_types);
+            typs
+        }
+        _ => proc_macro_error::abort_call_site!(
+            "Can't derive idents for unsupported generic type: {:?}",
+            t
+        ),
+    }
+}
+
+/// Extract the full type ident from a given path.
+pub fn typed_path_name(p: &TypePath) -> String {
+    let base = p
+        .path
+        .segments
+        .last()
+        .expect("Could not get last path segment.");
+
+    let base_name = base.ident.to_string();
+
+    if GENERIC_STRUCTS.contains(base_name.as_str()) {
+        typed_path_string(p)
+    } else {
+        base_name
+    }
+}
+
+/// Extract the fully typed path for this generic type.
+///
+/// When given a generic's `TypedPath` (e.g., `Vec<T>`), we need to extract the struct type (e.g., `Vec`)
+/// and also inner type `T`.
+///
+/// The following assumes a generic type definition format of:
+///      `$struct_name $bracket(open) $inner_t_name  $bracket(close)` (e.g., `Vec<T>` or `Option<T>`)
+fn typed_path_string(p: &TypePath) -> String {
+    let mut result = String::new();
+
+    let base = p
+        .path
+        .segments
+        .last()
+        .expect("Could not get last path segment.");
+
+    result.push_str(&base.ident.to_string());
+    result.push('<');
+
+    match base.arguments {
+        PathArguments::AngleBracketed(ref inner) => {
+            let _ = inner
+                .args
+                .iter()
+                .map(|arg| match arg {
+                    GenericArgument::Type(Type::Path(p)) => {
+                        let segment = p
+                            .path
+                            .segments
+                            .last()
+                            .expect("Could not get last path segment.");
+                        let name = segment.ident.to_string();
+                        result.push_str(&name);
+                        result.push('>');
+                    }
+                    _ => panic!("Unsupported generic argument."),
+                })
+                .collect::<Vec<_>>();
+        }
+        _ => panic!("Unsupported generic argument."),
+    }
+    result
+}
+
+/// Retrieve the inner `T` from the given generic `TypeDefinition`s type field.
+///
+/// E.g., extrac `T` from `Vec<T>`
+pub fn inner_typedef(typ: &TypeDeclaration) -> (String, proc_macro2::TokenStream) {
+    let name = derive_type_name(typ);
+    let gt = GenericType::from(name.clone());
+    match gt {
+        GenericType::Vec => (name[4..name.len() - 1].to_string(), gt.into()),
+        GenericType::Option => (name[7..name.len() - 1].to_string(), gt.into()),
+        _ => proc_macro_error::abort_call_site!("Unsupported generic type: {:?}", gt),
+    }
+}
+
+/// Derive the output type ID for a given ABI function.
+///
+/// For non-generic `TypeDeclaration`s, we can just return the `type_id` associated with
+/// that function output. But for generic `TypeDeclaration`s, we need to derive the `type_id`
+/// using the fully typed path of the generic type (e.g., `Vec<T>`) in order to match
+/// the type ID of the `TypeDefinition` we manually inserted into the `#[indexer]` `abi_types_tyid`
+/// mapping.
+pub fn function_output_type_id(
+    f: &ABIFunction,
+    abi_types: &HashMap<usize, TypeDeclaration>,
+) -> usize {
+    let outer_typ = abi_types.get(&f.output.type_id).unwrap_or_else(|| {
+        panic!(
+            "function_output_type_id: Type with TypeID({}) is missing from the JSON ABI",
+            f.output.type_id
+        )
+    });
+    if is_generic_type(outer_typ) {
+        let name = derive_type_name(outer_typ);
+        let gt = GenericType::from(name);
+        let inner = f
+            .output
+            .type_arguments
+            .as_ref()
+            .unwrap()
+            .first()
+            .expect("Missing inner type.");
+
+        match gt {
+            GenericType::Option | GenericType::Vec => {
+                let inner_typ = abi_types.get(&inner.type_id).unwrap_or_else(|| {
+                    panic!("function_output_type_id: Generic inner type with TypeID({}) is missing from the JSON ABI", inner.type_id)
+                });
+                let (typ_name, _) =
+                    typed_path_components(outer_typ, inner_typ, abi_types);
+                type_id(FUEL_TYPES_NAMESPACE, &typ_name) as usize
+            }
+            _ => proc_macro_error::abort_call_site!(
+                "Unsupported generic type for function outputs: {:?}",
+                gt
+            ),
+        }
+    } else {
+        f.output.type_id
+    }
+}
+
+/// Given two `TypeDeclaration`s for a generic struct (e.g., `Vec`) and an inner type (e.g., `T`),
+/// return the associated fully typed path. (e.g., `Vec<T>`)
+///
+/// We do this by recursively deriving the inner `T` for the provided inner `T`, so long as
+/// the inner `T` is itself, generic.
+pub fn typed_path_components(
+    outer: &TypeDeclaration,
+    inner: &TypeDeclaration,
+    abi_types: &HashMap<usize, TypeDeclaration>,
+) -> (String, TokenStream) {
+    let outer_name = derive_type_name(outer);
+    let outer_ident = format_ident! { "{}", outer_name };
+    let inner_name = derive_type_name(inner);
+    let inner_ident = format_ident! { "{}", inner_name };
+    let mut tokens = quote! { #inner_ident };
+
+    let mut curr = inner;
+    while is_generic_type(curr) {
+        let gt = GenericType::from(curr);
+        match gt {
+            GenericType::Option | GenericType::Vec => {
+                curr = abi_types.get(&inner.type_id).unwrap_or_else(|| {
+                    panic!("typed_path_components: Generic inner type with TypeID({}) is missing from the JSON ABI", inner.type_id)
+                });
+                let name = derive_type_name(curr);
+                let ident = format_ident! { "{}", name };
+                tokens = quote! { #tokens<#ident> }
+            }
+            _ => proc_macro_error::abort_call_site!(
+                "Unsupported generic type for typed path: {:?}",
+                gt
+            ),
+        }
+    }
+
+    tokens = quote! { #outer_ident<#tokens> };
+
+    // Remove white space from path`
+    let name = tokens.to_string().replace(' ', "");
+
+    (name, tokens)
+}
+
+/// Determine whether or not the given type name is an unsupported type.
+///
+/// Since we allow unsupported types in the ABI JSON, this check is only
+/// performed on indexer handler function arg typed paths.
+pub fn is_unsupported_type(type_name: &str) -> bool {
+    let gt = GenericType::from(type_name);
+    match gt {
+        GenericType::Vec => UNSUPPORTED_ABI_JSON_TYPES.contains(gt.into()),
+        _ => UNSUPPORTED_ABI_JSON_TYPES.contains(type_name),
+    }
 }

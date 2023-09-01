@@ -99,16 +99,7 @@ module:
             "simple_wasm.yaml",
             TestKind::Pass,
             // Using a custom manifest here
-            format!(
-                r#"
-        namespace: test_namespace
-        identifier: simple_wasm_executor
-        abi: {tests_root_str}/contracts/simple-wasm/out/debug/contracts-abi-unsupported.json
-        graphql_schema: {tests_root_str}/indexers/simple-wasm/schema/simple_wasm.graphql
-        contract_id: ~
-        module:
-            wasm: {project_root_str}/target/wasm32-unknown-unknown/release/simple_wasm.wasm"#
-            ),
+            manifest_content.clone(),
         ),
         (
             "fail_if_abi_contains_reserved_fuel_type.rs",
@@ -134,6 +125,12 @@ module:
         ),
         (
             "fail_if_non_function_patterns_included_in_module.rs",
+            "simple_wasm.yaml",
+            TestKind::Fail,
+            manifest_content.clone(),
+        ),
+        (
+            "fail_if_unsupported_type_used_in_handler_args.rs",
             "simple_wasm.yaml",
             TestKind::Fail,
             manifest_content.clone(),

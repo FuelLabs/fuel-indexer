@@ -48,7 +48,7 @@ fn wasm_prelude() -> proc_macro2::TokenStream {
         use fuel_indexer_utils::plugin::serde::{Deserialize, Serialize};
         use fuels::{
             core::{codec::ABIDecoder, Configurables, traits::{Parameterize, Tokenizable}},
-            types::{StringToken},
+            types::{StringToken, param_types::ParamType},
         };
     }
 }

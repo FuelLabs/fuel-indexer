@@ -5,6 +5,7 @@ use std::{address::Address, hash::sha256};
 abi Simple {
     fn gimme_someevent(num: u64) -> SomeEvent;
     fn gimme_anotherevent(num: u64) -> AnotherEvent;
+    fn gimme_an_unsupported_type() -> Vec<SomeEvent>;
 }
 
 fn make_someevent(num: u64) -> SomeEvent {
@@ -41,5 +42,13 @@ impl Simple for Contract {
             account: some_event.account,
             hash: sha256(num >> 2),
         }
+    }
+
+    fn gimme_an_unsupported_type() -> Vec<SomeEvent> {
+        let mut v: Vec<SomeEvent> = Vec::new();
+        v.push(make_someevent(1));
+        v.push(make_someevent(2));
+        v.push(make_someevent(3));
+        v
     }
 }
