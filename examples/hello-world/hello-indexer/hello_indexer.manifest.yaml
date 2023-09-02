@@ -22,6 +22,7 @@ end_block: ~
 fuel_client: ~
 
 # The contract_id specifies which particular contract you would like your index to subscribe to.
+# The contract_id specifies which particular contract you would like your index to subscribe to.
 contract_id: fuel18hchrf7f4hnpkl84sqf8k0sk8gcauzeemzwgweea8dgr7eachv4s86r9t9
 
 # The graphql_schema field contains the file path that points to the GraphQL schema for the
