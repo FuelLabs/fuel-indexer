@@ -1,0 +1,6 @@
+---
+source: packages/fuel-indexer-schema/src/lib.rs
+expression: array.query_fragment()
+---
+"ARRAY [1]"
+

@@ -165,8 +165,7 @@ jobs:
         run: cargo test --locked --all-targets --workspace --exclude fuel-indexer-tests
           --exclude plugin-tests --exclude fuel-indexer-benchmarks
   integration-tests:
-    if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_DEVELOP_OR_SEMVER !=
-      'true'
+    if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_DEVELOP_OR_SEMVER != 'true'
     needs:
       - set-env-vars
       - cargo-toml-fmt-check
@@ -207,126 +206,30 @@ jobs:
       - name: Install wasm-snip
         run: |
           if ! which wasm-snip; then cargo install wasm-snip; fi
+      - name: Build fuel-indexer* and forc-index binaries
+        run: cargo build -p forc-index -p fuel-indexer -p fuel-indexer-api-server --locked --release
+      - name: Build and test examples
+        run: |
+          export PATH=$PATH:$PWD/target/release
+          bash ./packages/fuel-indexer-tests/scripts/test-examples.bash
       - name: Build fuel-indexer-test WASM
-        run: >
-          cargo build -p fuel-indexer-test --release --target
-          wasm32-unknown-unknown
-
+        run: |
+          cargo build -p fuel-indexer-test --release --target wasm32-unknown-unknown
           bash scripts/stripper.bash fuel_indexer_test.wasm
-
           cp fuel_indexer_test.wasm target/wasm32-unknown-unknown/release/
       - name: Build simple-wasm WASM
         run: |
           cargo build -p simple-wasm --release --target wasm32-unknown-unknown
           bash scripts/stripper.bash simple_wasm.wasm
           cp simple_wasm.wasm target/wasm32-unknown-unknown/release/
-      - name: Run E2E and integration tests
-        run: cargo test --locked --all-targets --features postgres -p
-          fuel-indexer-tests -- --test-threads=1
-      - name: Run trybuild tests
-        run: cargo test --locked --all-targets --features trybuild -p
-          fuel-indexer-tests
-  forc-index-tests:
-    if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_DEVELOP_OR_SEMVER != 'true'
-    needs:
-      - set-env-vars
-      - cargo-toml-fmt-check
-      - cargo-fmt-check
-    runs-on: buildjet-4vcpu-ubuntu-2204
-    steps:
-      - uses: actions/checkout@v3
-      - name: Install toolchain
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: wasm32-unknown-unknown
-      - uses: buildjet/cache@v3
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: ${{ matrix.command }}-${{ matrix.args }}-${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-      - name: Install wasm-snip
-        run: |
-          if ! which wasm-snip; then cargo install wasm-snip; fi
-      - name: cargo build -p forc-index -p fuel-indexer --locked --release
-        run: cargo build -p forc-index -p fuel-indexer --locked --release
-      - name: forc-index-* commands (wasm + native)
+      - name: Integration tests
         run: |
           export PATH=$PATH:$PWD/target/release
-          echo $PATH
-          which forc-index
-          which fuel-indexer
-
-          forc-index check
-
-          mkdir -pv /tmp/indexer
-          cd /tmp/indexer
-
-          # WASM indexer
-          forc-index new indexer-test --namespace fuel
-          cd indexer-test
-          forc-index build
-          cd ..
-          rm -rfv indexer-test
-
-          # Native indexer
-          forc-index new indexer-test --namespace fuel --native
-          cd indexer-test
-          forc-index build --native
-          cd ..
-          rm -rfv indexer-test
-  build-and-test-examples:
-    if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER_OR_DEVELOP_OR_SEMVER != 'true'
-    needs:
-      - set-env-vars
-      - cargo-toml-fmt-check
-      - cargo-fmt-check
-    runs-on: buildjet-4vcpu-ubuntu-2204
-    services:
-      postgres:
-        image: postgres:latest
-        env:
-          POSTGRES_PASSWORD: my-secret
-          POSTGRES_DB: postgres
-          POSTGRES_USER: postgres
-        ports:
-          - 5432:5432
-        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s
-          --health-retries 5
-        credentials:
-          username: fuellabs
-          password: ${{ secrets.DOCKER_IO_READ_ONLY_TOKEN }}
-    steps:
-      - uses: actions/checkout@v3
-      - name: Install toolchain
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: wasm32-unknown-unknown
-      - uses: buildjet/cache@v3
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: ${{ matrix.command }}-${{ matrix.args }}-${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-      - name: Install wasm-snip
-        run: |
-          if ! which wasm-snip; then cargo install wasm-snip; fi
-      - name: cargo build -p forc-index -p fuel-indexer --locked --release
-        run: cargo build -p forc-index -p fuel-indexer --locked --release
-      - name: Build and test examples
+          cargo test --locked --all-targets --features postgres -p fuel-indexer-tests -- --test-threads=1
+      - name: trybuild tests
         run: |
           export PATH=$PATH:$PWD/target/release
-          echo $PATH
-          which forc-index
-          which fuel-indexer
-
-          bash ./ci/test-examples.bash
+          cargo test --locked --all-targets --features trybuild -p fuel-indexer-tests
   publish-docker-image:
     needs:
       - set-env-vars
@@ -655,9 +558,6 @@ jobs:
       - cargo-clippy-no-default-features
       - cargo-clippy-all-features-all-targets
       - cargo-fmt-check
-      - cargo-toml-fmt-check
-      - forc-index-tests
-      - build-and-test-examples
     runs-on: buildjet-4vcpu-ubuntu-2204
     steps:
       - run: true

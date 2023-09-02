@@ -1,5 +1,5 @@
 error: Type with ident 'Ident { ident: "BadType", span: #0 bytes(225..232) }' not defined in the ABI.
- --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
+ --> trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
   |
   | #[indexer(manifest = "packages/fuel-indexer-tests/trybuild/simple_wasm.yaml")]
   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -7,19 +7,19 @@ error: Type with ident 'Ident { ident: "BadType", span: #0 bytes(225..232) }' no
   = note: this error originates in the attribute macro `indexer` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0432]: unresolved import `fuels::types::traits`
- --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
+ --> trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
   |
   |     use fuels::types::traits::Tokenizable;
   |                       ^^^^^^ could not find `traits` in `types`
 
 error[E0422]: cannot find struct, variant or union type `SomeEvent` in this scope
- --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
+ --> trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
   |
   |     let s = SomeEvent {
   |             ^^^^^^^^^ not found in this scope
 
 error[E0412]: cannot find type `BlockData` in this scope
- --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
+ --> trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
   |
   |     let data: Vec<BlockData> = vec![BlockData {
   |                   ^^^^^^^^^ not found in this scope
@@ -36,7 +36,7 @@ help: consider importing one of these items
    |
 
 error[E0422]: cannot find struct, variant or union type `BlockData` in this scope
- --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
+ --> trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
   |
   |     let data: Vec<BlockData> = vec![BlockData {
   |                                     ^^^^^^^^^ not found in this scope
@@ -53,7 +53,7 @@ help: consider importing one of these items
    |
 
 error[E0433]: failed to resolve: use of undeclared crate or module `fuel`
-  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
+  --> trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
    |
    |         header: fuel::Header {
    |                 ^^^^ use of undeclared crate or module `fuel`
@@ -74,7 +74,7 @@ help: consider importing one of these items
    |
 
 error[E0433]: failed to resolve: use of undeclared crate or module `fuel`
-  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
+  --> trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
    |
    |         transactions: vec![fuel::TransactionData {
    |                            ^^^^ use of undeclared crate or module `fuel`
@@ -95,7 +95,7 @@ help: consider importing one of these items
    |
 
 error[E0433]: failed to resolve: use of undeclared crate or module `fuel`
-  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
+  --> trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
    |
    |             status: fuel::TransactionStatus::default(),
    |                     ^^^^ use of undeclared crate or module `fuel`
@@ -122,7 +122,7 @@ help: if you import `TransactionStatus`, refer to it directly
    |
 
 error[E0433]: failed to resolve: use of undeclared crate or module `fuel`
-  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
+  --> trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
    |
    |                 fuel::Receipt::Call {
    |                 ^^^^ use of undeclared crate or module `fuel`
@@ -149,7 +149,7 @@ help: if you import `Receipt`, refer to it directly
    |
 
 error[E0433]: failed to resolve: use of undeclared crate or module `fuel`
-  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
+  --> trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
    |
    |                 fuel::Receipt::ReturnData {
    |                 ^^^^ use of undeclared crate or module `fuel`
@@ -176,7 +176,7 @@ help: if you import `Receipt`, refer to it directly
    |
 
 error[E0433]: failed to resolve: use of undeclared type `Transaction`
- --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
+ --> trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
   |
   |             transaction: Transaction::default(),
   |                          ^^^^^^^^^^^ use of undeclared type `Transaction`
@@ -194,7 +194,7 @@ help: consider importing one of these items
      and 3 other candidates
 
 error[E0425]: cannot find function `serialize` in this scope
- --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
+ --> trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
   |
   |     let mut bytes = serialize(&data);
   |                     ^^^^^^^^^ not found in this scope
@@ -212,7 +212,7 @@ help: consider importing one of these items
      and 16 other candidates
 
 error[E0425]: cannot find function `handle_events` in this scope
- --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
+ --> trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
   |
   |     handle_events(ptr, len);
   |     ^^^^^^^^^^^^^ not found in this scope

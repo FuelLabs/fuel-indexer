@@ -5,14 +5,17 @@ use crate::{
 };
 pub use clap::Parser;
 use serde::{Deserialize, Serialize};
-use std::fmt::{Debug, Formatter};
+use std::{
+    fmt::{Debug, Formatter},
+    str::FromStr,
+};
 use strum::{AsRefStr, EnumString};
 
 const JWT_SECRET_KEY: &str = "JWT_SECRET";
 const JWT_ISSUER_KEY: &str = "JWT_ISSUER";
 
 /// Indexer service authentication configuration.
-#[derive(Clone, Deserialize)]
+#[derive(Clone, Deserialize, Serialize)]
 pub struct AuthenticationConfig {
     /// Require users to authenticate for some operations.
     pub enabled: bool,
@@ -35,10 +38,13 @@ impl Default for AuthenticationConfig {
     fn default() -> Self {
         Self {
             enabled: defaults::AUTH_ENABLED,
-            strategy: None,
-            jwt_secret: None,
-            jwt_issuer: None,
-            jwt_expiry: None,
+            strategy: Some(
+                AuthenticationStrategy::from_str(defaults::AUTH_STRATEGY)
+                    .expect("Invalid auth strategy."),
+            ),
+            jwt_secret: Some(defaults::JWT_SECRET.to_string()),
+            jwt_issuer: Some(defaults::JWT_ISSUER.to_string()),
+            jwt_expiry: Some(defaults::JWT_EXPIRY_SECS),
         }
     }
 }

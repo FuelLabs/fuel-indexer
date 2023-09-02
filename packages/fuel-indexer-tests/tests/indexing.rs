@@ -10,14 +10,15 @@ use std::{collections::HashSet, str::FromStr};
 
 const REVERT_VM_CODE: u64 = 0x0004;
 const EXPECTED_CONTRACT_ID: &str =
-    "0d50f87096474f43aabfa9abaa5fa65a3d3d0ff94998a5e2e7eb288d0c87384d";
+    "50936e53d4dd4e04617cc77df4d06674c6c2c6738912632dabc96e004bccad19";
 const TRANSFER_BASE_ASSET_ID: &str =
     "0000000000000000000000000000000000000000000000000000000000000000";
 
 #[actix_web::test]
 async fn test_index_events_with_multiple_args_in_index_handler() {
-    let IndexingTestComponents { node, db, .. } =
-        setup_indexing_test_components(None).await;
+    let IndexingTestComponents {
+        ref node, ref db, ..
+    } = setup_indexing_test_components(None).await;
 
     mock_request("/multiarg").await;
 
@@ -75,8 +76,9 @@ async fn test_index_events_with_multiple_args_in_index_handler() {
 
 #[actix_web::test]
 async fn test_index_blocks_and_transactions() {
-    let IndexingTestComponents { node, db, .. } =
-        setup_indexing_test_components(None).await;
+    let IndexingTestComponents {
+        ref node, ref db, ..
+    } = setup_indexing_test_components(None).await;
 
     mock_request("/block").await;
 
@@ -110,8 +112,9 @@ async fn test_index_blocks_and_transactions() {
 
 #[actix_web::test]
 async fn test_index_receipt_types() {
-    let IndexingTestComponents { node, db, .. } =
-        setup_indexing_test_components(None).await;
+    let IndexingTestComponents {
+        ref node, ref db, ..
+    } = setup_indexing_test_components(None).await;
     let mut conn = db.pool.acquire().await.unwrap();
 
     mock_request("/call").await;
@@ -286,8 +289,9 @@ async fn test_index_receipt_types() {
 
 #[actix_web::test]
 async fn test_index_128_bit_integers() {
-    let IndexingTestComponents { node, db, .. } =
-        setup_indexing_test_components(None).await;
+    let IndexingTestComponents {
+        ref node, ref db, ..
+    } = setup_indexing_test_components(None).await;
 
     mock_request("/ping").await;
 
@@ -312,8 +316,9 @@ async fn test_index_128_bit_integers() {
 
 #[actix_web::test]
 async fn test_index_optional_types() {
-    let IndexingTestComponents { node, db, .. } =
-        setup_indexing_test_components(None).await;
+    let IndexingTestComponents {
+        ref node, ref db, ..
+    } = setup_indexing_test_components(None).await;
 
     mock_request("/ping").await;
 
@@ -346,8 +351,9 @@ async fn test_index_optional_types() {
 #[actix_web::test]
 #[ignore]
 async fn test_can_trigger_and_index_transferout_event_postgres() {
-    let IndexingTestComponents { node, db, .. } =
-        setup_indexing_test_components(None).await;
+    let IndexingTestComponents {
+        ref node, ref db, ..
+    } = setup_indexing_test_components(None).await;
 
     mock_request("/transferout").await;
 
@@ -370,8 +376,9 @@ async fn test_can_trigger_and_index_transferout_event_postgres() {
 
 #[actix_web::test]
 async fn test_index_tuples() {
-    let IndexingTestComponents { node, db, .. } =
-        setup_indexing_test_components(None).await;
+    let IndexingTestComponents {
+        ref node, ref db, ..
+    } = setup_indexing_test_components(None).await;
 
     mock_request("/tuples").await;
 
@@ -410,8 +417,9 @@ struct ListFKType {
 
 #[actix_web::test]
 async fn test_index_types_for_block_explorer() {
-    let IndexingTestComponents { node, db, .. } =
-        setup_indexing_test_components(None).await;
+    let IndexingTestComponents {
+        ref node, ref db, ..
+    } = setup_indexing_test_components(None).await;
 
     mock_request("/block").await;
 
@@ -573,8 +581,9 @@ async fn test_index_types_for_block_explorer() {
 
 #[actix_web::test]
 async fn test_index_sway_enums() {
-    let IndexingTestComponents { node, db, .. } =
-        setup_indexing_test_components(None).await;
+    let IndexingTestComponents {
+        ref node, ref db, ..
+    } = setup_indexing_test_components(None).await;
 
     mock_request("/enum").await;
 
@@ -603,8 +612,11 @@ async fn test_index_sway_enums() {
 
 #[actix_web::test]
 async fn test_start_block() {
-    let IndexingTestComponents { db, manifest, .. } =
-        setup_indexing_test_components(None).await;
+    let IndexingTestComponents {
+        ref db,
+        ref manifest,
+        ..
+    } = setup_indexing_test_components(None).await;
 
     let mut conn = fuel_indexer_database::IndexerConnection::Postgres(Box::new(
         db.pool.acquire().await.unwrap(),

@@ -3,10 +3,10 @@ use crate::{
     defaults,
 };
 pub use clap::Parser;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 /// Indexer service rate limit configuration.
-#[derive(Clone, Deserialize, Debug)]
+#[derive(Clone, Deserialize, Serialize, Debug)]
 pub struct RateLimitConfig {
     #[serde(default)]
     /// Enable rate limiting.
@@ -23,8 +23,8 @@ impl Default for RateLimitConfig {
     fn default() -> Self {
         Self {
             enabled: defaults::RATE_LIMIT_ENABLED,
-            request_count: None,
-            window_size: None,
+            request_count: Some(defaults::RATE_LIMIT_REQUEST_COUNT),
+            window_size: Some(defaults::RATE_LIMIT_WINDOW_SIZE),
         }
     }
 }

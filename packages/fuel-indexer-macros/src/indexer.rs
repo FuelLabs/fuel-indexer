@@ -1,11 +1,11 @@
 use crate::{
-    constants::*, helpers::*, native::handler_block_native, parse::IndexerConfig,
+    helpers::*, native::handler_block_native, parse::IndexerConfig,
     schema::process_graphql_schema, wasm::handler_block_wasm,
 };
 use fuel_abi_types::abi::program::TypeDeclaration;
 use fuel_indexer_lib::{
-    graphql::GraphQLSchemaValidator, manifest::ContractIds, manifest::Manifest,
-    utils::local_repository_root, ExecutionSource,
+    constants::*, manifest::ContractIds, manifest::Manifest,
+    utils::workspace_manifest_prefix, ExecutionSource,
 };
 use fuel_indexer_types::{type_id, FUEL_TYPES_NAMESPACE};
 use fuels::{core::codec::resolve_fn_selector, types::param_types::ParamType};
@@ -57,7 +57,7 @@ fn process_fn_items(
         })
         .collect::<HashMap<usize, TypeDeclaration>>();
 
-    let mut type_ids = FUEL_PRIMITIVES
+    let mut type_ids = RESERVED_TYPEDEF_NAMES
         .iter()
         .map(|x| (x.to_string(), type_id(FUEL_TYPES_NAMESPACE, x) as usize))
         .collect::<HashMap<String, usize>>();
@@ -121,8 +121,6 @@ fn process_fn_items(
             if is_fuel_primitive(&ty) {
                 proc_macro_error::abort_call_site!("'{}' is a reserved Fuel type.", ty)
             }
-
-            GraphQLSchemaValidator::check_disallowed_abi_typedef_name(&ty.to_string());
 
             type_ids.insert(ty.to_string(), typ.type_id);
             decoded_abi_types.insert(typ.type_id);
@@ -319,33 +317,34 @@ fn process_fn_items(
                         }
                         FnArg::Typed(PatType { ty, .. }) => {
                             if let Type::Path(path) = &**ty {
-                                let path = path
+                                let typ = path
                                     .path
                                     .segments
                                     .last()
                                     .expect("Could not get last path segment.");
 
-                                let path_ident = path.ident.to_string();
-                                let name = decoded_ident(&path_ident);
+                                let typ_name = typ.ident.to_string();
+                                let dispatcher_name = decoded_ident(&typ_name);
 
-                                if !type_ids.contains_key(&path_ident) {
+                                if !type_ids.contains_key(&typ_name) {
                                     proc_macro_error::abort_call_site!(
                                         "Type with ident '{:?}' not defined in the ABI.",
-                                        path.ident
+                                        typ.ident
                                     );
                                 };
 
-                                if DISALLOWED_ABI_JSON_TYPES.contains(path_ident.as_str())
-                                {
+                                if DISALLOWED_ABI_JSON_TYPES.contains(typ_name.as_str()) {
                                     proc_macro_error::abort_call_site!(
                                         "Type with ident '{:?}' is not currently supported.",
-                                        path.ident
+                                        typ.ident
                                     )
                                 }
 
-                                input_checks.push(quote! { self.#name.len() > 0 });
+                                input_checks
+                                    .push(quote! { self.#dispatcher_name.len() > 0 });
 
-                                arg_list.push(quote! { self.#name[0].clone() });
+                                arg_list
+                                    .push(quote! { self.#dispatcher_name[0].clone() });
                             } else {
                                 proc_macro_error::abort_call_site!(
                                     "Arguments must be types defined in the ABI."
@@ -356,6 +355,13 @@ fn process_fn_items(
                 }
 
                 let fn_name = &fn_item.sig.ident;
+
+                if arg_list.is_empty() {
+                    proc_macro_error::abort_call_site!(
+                        "Handler function '{}' must have at least one argument.",
+                        fn_name.to_string(),
+                    );
+                }
 
                 abi_dispatchers.push(quote! {
                     if ( #(#input_checks)&&* ) {
@@ -562,6 +568,7 @@ fn process_fn_items(
                                         }
                                     });
 
+
                                 decoder.decode_messagedata(type_id, data.clone());
 
                                 let ty_id = MessageOut::type_id();
@@ -746,7 +753,7 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
 
     let IndexerConfig { manifest } = config;
 
-    let path = local_repository_root()
+    let path = workspace_manifest_prefix()
         .map(|x| Path::new(&x).join(&manifest))
         .unwrap_or_else(|| PathBuf::from(&manifest));
 

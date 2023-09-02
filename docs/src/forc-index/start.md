@@ -7,7 +7,7 @@ forc index start
 ```
 
 ```text
-Standalone binary for the fuel indexer service.
+Standalone binary for the Fuel indexer service
 
 USAGE:
     forc-index start [OPTIONS]
@@ -23,7 +23,7 @@ OPTIONS:
             Authentication scheme used.
 
         --block-page-size <BLOCK_PAGE_SIZE>
-            Amount of blocks to return in a request to a Fuel node. [default: 10]
+            Amount of blocks to return in a request to a Fuel node. [default: 20]
 
     -c, --config <FILE>
             Indexer service config file.
@@ -99,6 +99,9 @@ OPTIONS:
         --rate-limit-window-size <RATE_LIMIT_WINDOW_SIZE>
             Number of seconds over which to allow --rate-limit-rps.
 
+        --remove-data
+            When replacing an indexer, also remove the indexed data.
+
         --replace-indexer
             Whether to allow replacing an existing indexer. If not specified, an attempt to deploy
             over an existing indexer results in an error.
@@ -120,4 +123,5 @@ OPTIONS:
 
         --web-api-port <WEB_API_PORT>
             Web API port. [default: 29987]
+
 ```

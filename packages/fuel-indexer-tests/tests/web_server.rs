@@ -311,10 +311,10 @@ async fn test_replacing_an_indexer_and_keeping_or_removing_data() {
     };
 
     let IndexingTestComponents {
-        node,
-        mut service,
-        mut manifest,
-        db,
+        ref node,
+        ref mut service,
+        ref mut manifest,
+        ref db,
         ..
     } = setup_indexing_test_components(Some(config)).await;
 

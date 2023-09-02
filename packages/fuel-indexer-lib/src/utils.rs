@@ -32,14 +32,22 @@ pub fn deserialize<'a, T: Deserialize<'a>>(bytes: &'a [u8]) -> Result<T, String>
     }
 }
 
-// Testing assets use relative paths, while production assets will use absolute paths
+// Trybuild test indexers reference the manifest using an implicit $CARGO_MANIFEST_DIR, since these
+// tests are a part of cargo's workspace.
+//
+// However, the `#[indexer]` macro is meant to use either relative paths or absolute paths, not
+// paths that require a $CARGO_MANIFEST_DIR prefix.
+//
+// Given this, we have to prefix `#[indexer]` manifest paths in this cargo workspace with some
+// additional path info, so that `#[indexer]` macros _within this project's workspace_ can load
+// manifests correctly.
 //
 // If we can successfully find the local project root, then we're in the repository,
-// and should prefix all relative asset paths with the project root. If we can't find
-// the project root, then it's assumed we're not in a local repository, thus no prefix.
+// and should prefix all relative manifest paths with the absolute path to the project root.
+// If we can't find the project root, then it's assumed we're not in a local repository, thus no prefix.
 //
-// This is specifically required for the trybuild test suite.
-pub fn local_repository_root() -> Option<String> {
+// This is specifically required for the trybuild test suite and the examples.
+pub fn workspace_manifest_prefix() -> Option<String> {
     let curr_filepath = canonicalize(file!()).unwrap();
     let mut curr_dir = Path::new(&curr_filepath);
 

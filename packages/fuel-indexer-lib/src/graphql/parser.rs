@@ -600,6 +600,8 @@ impl SchemaDecoder {
         node: TypeDefinition,
         u: &UnionType,
     ) {
+        GraphQLSchemaValidator::check_disallowed_graphql_typedef_name(&union_name);
+
         self.parsed_graphql_schema
             .parsed_typedef_names
             .insert(union_name.clone());
@@ -611,7 +613,7 @@ impl SchemaDecoder {
             .union_names
             .insert(union_name.clone());
 
-        GraphQLSchemaValidator::check_derived_union_is_well_formed(
+        GraphQLSchemaValidator::check_derived_union_virtuality_is_well_formed(
             &node,
             &mut self.parsed_graphql_schema.virtual_type_names,
         );
@@ -624,6 +626,8 @@ impl SchemaDecoder {
         // In the object, you simply count the fields. However, in a union, you have to
         // count the distinct fields across all members of the union.
         let mut child_position = 0;
+
+        let mut union_member_field_types = HashMap::new();
 
         u.members.iter().for_each(|m| {
             let member_name = m.node.to_string();
@@ -661,11 +665,22 @@ impl SchemaDecoder {
                 let ftype = field_type_name(&f.node);
                 let field_id = field_id(&union_name, &f.node.name.to_string());
 
+                union_member_field_types
+                    .entry(field_id.clone())
+                    .or_insert(HashSet::new())
+                    .insert(ftype.clone());
+
+                GraphQLSchemaValidator::derived_field_type_is_consistent(
+                    &union_name,
+                    &f.node.name.to_string(),
+                    union_member_field_types.get(&field_id).unwrap(),
+                );
+
                 if processed_fields.contains(&field_id) {
                     return;
                 }
 
-                processed_fields.insert(field_id);
+                processed_fields.insert(field_id.clone());
 
                 // Manual foreign key check, same as above
                 if self
@@ -709,11 +724,15 @@ impl SchemaDecoder {
         // we also need to cache them under this derived union name.
         u.members.iter().for_each(|m| {
             let member_name = m.node.to_string();
-            let member_obj = self
-                .parsed_graphql_schema
-                .objects
-                .get(&member_name)
-                .unwrap();
+            let member_obj =
+                self.parsed_graphql_schema
+                    .objects
+                    .get(&member_name)
+                    .unwrap_or_else(|| {
+                        panic!(
+                        "Union member not found in parsed TypeDefinitions: {member_name}")
+                    });
+
             member_obj.fields.iter().for_each(|f| {
                 let fid = field_id(&union_name, &f.node.name.to_string());
                 self.parsed_graphql_schema
@@ -743,6 +762,8 @@ impl SchemaDecoder {
         node: TypeDefinition,
         o: &ObjectType,
     ) {
+        GraphQLSchemaValidator::check_disallowed_graphql_typedef_name(&obj_name);
+
         // Only parse `TypeDefinition`s with the `@entity` directive.
         let is_entity = node
             .directives
@@ -750,7 +771,7 @@ impl SchemaDecoder {
             .any(|d| d.node.name.to_string() == "entity");
 
         if !is_entity {
-            //continue;
+            println!("Skipping TypeDefinition '{obj_name}', which is not marked with an @entity directive.");
             return;
         }
         self.parsed_graphql_schema
@@ -760,11 +781,35 @@ impl SchemaDecoder {
             .parsed_typedef_names
             .insert(obj_name.clone());
 
+        let is_virtual = node
+            .directives
+            .iter()
+            .flat_map(|d| d.node.arguments.clone())
+            .any(|t| t.0.node == "virtual");
+
+        if is_virtual {
+            self.parsed_graphql_schema
+                .virtual_type_names
+                .insert(obj_name.clone());
+
+            GraphQLSchemaValidator::virtual_type_has_no_id_field(o, &obj_name);
+        }
+
+        // Since we have to use this manual `is_list_type` for each field, we might as well
+        // keep track of how many m2m fields we have for this object here. We could also move this
+        // logic to the `GraphQLSchemaValidator` itself, but that means we'd have to copy over the
+        // `is_list_type` logic there as well.
+        let mut m2m_field_count = 0;
+
         let mut field_mapping = BTreeMap::new();
         for (i, field) in o.fields.iter().enumerate() {
+            GraphQLSchemaValidator::id_field_is_type_id(&field.node, &obj_name);
+
             let field_name = field.node.name.to_string();
             let field_typ_name = field.node.ty.to_string();
             let fid = field_id(&obj_name, &field_name);
+
+            GraphQLSchemaValidator::ensure_fielddef_is_not_nested_list(&field.node);
 
             self.parsed_graphql_schema
                 .object_ordered_fields
@@ -772,6 +817,8 @@ impl SchemaDecoder {
                 .or_default()
                 .push(OrderedField(field.node.clone(), i));
 
+            // We need to add these field type names to `GraphQLSchemaValidator::list_field_types` prior to
+            // doing the foreign key check below, (since we need to know whether a field is a FK type)
             if is_list_type(&field.node) {
                 self.parsed_graphql_schema
                     .list_field_types
@@ -782,19 +829,7 @@ impl SchemaDecoder {
                     .insert(obj_name.clone(), node.clone());
             }
 
-            let is_virtual = node
-                .directives
-                .iter()
-                .flat_map(|d| d.node.arguments.clone())
-                .any(|t| t.0.node == "virtual");
-
-            if is_virtual {
-                self.parsed_graphql_schema
-                    .virtual_type_names
-                    .insert(obj_name.clone());
-            }
-
-            // Manual version of `ParsedGraphQLSchema::is_possible_foreign_key`
+            // Manual foreign key check
             let ftype = field_type_name(&field.node);
             if self
                 .parsed_graphql_schema
@@ -807,12 +842,31 @@ impl SchemaDecoder {
                     .virtual_type_names
                     .contains(&ftype)
             {
-                let (_ref_coltype, ref_colname, ref_tablename) = extract_foreign_key_info(
+                GraphQLSchemaValidator::foreign_key_field_contains_no_unique_directive(
+                    &field.node,
+                    &obj_name,
+                );
+
+                let (ref_coltype, ref_colname, ref_tablename) = extract_foreign_key_info(
                     &field.node,
                     &self.parsed_graphql_schema.field_type_mappings,
                 );
 
                 if is_list_type(&field.node) {
+                    GraphQLSchemaValidator::m2m_fk_field_ref_col_is_id(
+                        &field.node,
+                        &obj_name,
+                        &ref_coltype,
+                        &ref_colname,
+                    );
+
+                    m2m_field_count += 1;
+
+                    GraphQLSchemaValidator::verify_m2m_relationship_count(
+                        &obj_name,
+                        m2m_field_count,
+                    );
+
                     self.parsed_graphql_schema
                         .join_table_meta
                         .entry(obj_name.clone())
@@ -992,5 +1046,297 @@ union Storage = Safe | Vault
             parsed.join_table_meta().get("Storage").unwrap()[1],
             JoinTableMeta::new("storage", "id", "user", "id", Some(3))
         );
+    }
+
+    /* Schema validation tests */
+    #[test]
+    #[should_panic(expected = "TypeDefinition name 'TransactionData' is reserved.")]
+    fn test_schema_validator_check_disallowed_graphql_typedef_name() {
+        let schema = r#"
+type Foo @entity {
+    id: ID!
+}
+
+type TransactionData @entity {
+    id: ID!
+}
+"#;
+
+        let _ = ParsedGraphQLSchema::new(
+            "test",
+            "test",
+            ExecutionSource::Wasm,
+            Some(&GraphQLSchema::new(schema.to_string())),
+        )
+        .unwrap();
+    }
+
+    #[test]
+    #[should_panic(
+        expected = "TypeDefinition(Union(Baz)) does not have consistent virtual/non-virtual members."
+    )]
+    fn test_schema_validator_check_derived_union_virtuality_is_well_formed() {
+        let schema = r#"
+type Foo @entity {
+    id: ID!
+    name: Charfield!
+}
+
+type Bar @entity {
+    id: ID!
+    age: UInt8!
+}
+
+type Zoo @entity(virtual: true) {
+    height: UInt8!
+}
+
+union Baz = Foo | Bar | Zoo
+"#;
+
+        let _ = ParsedGraphQLSchema::new(
+            "test",
+            "test",
+            ExecutionSource::Wasm,
+            Some(&GraphQLSchema::new(schema.to_string())),
+        )
+        .unwrap();
+    }
+
+    #[test]
+    #[should_panic(
+        expected = "Derived type from Union(Baz) contains Field(name) which does not have a consistent type across all members."
+    )]
+    fn test_schema_validator_derived_field_type_is_consistent() {
+        let schema = r#"
+type Foo @entity {
+    id: ID!
+    name: Charfield!
+}
+
+type Bar @entity {
+    id: ID!
+    age: UInt8!
+}
+
+type Zoo @entity {
+    id: ID!
+    name: UInt8!
+}
+
+union Baz = Foo | Bar | Zoo
+"#;
+
+        let _ = ParsedGraphQLSchema::new(
+            "test",
+            "test",
+            ExecutionSource::Wasm,
+            Some(&GraphQLSchema::new(schema.to_string())),
+        )
+        .unwrap();
+    }
+
+    #[test]
+    #[should_panic(
+        expected = "FieldDefinition(nested) is a nested list, which is not supported."
+    )]
+    fn test_schema_validator_ensure_fielddef_is_not_nested_list() {
+        let schema = r#"
+type Foo @entity {
+    id: ID!
+    name: Charfield!
+}
+
+type Zoo @entity {
+    id: ID!
+    nested: [[Foo!]!]!
+}
+"#;
+
+        let _ = ParsedGraphQLSchema::new(
+            "test",
+            "test",
+            ExecutionSource::Wasm,
+            Some(&GraphQLSchema::new(schema.to_string())),
+        )
+        .unwrap();
+    }
+
+    #[test]
+    #[should_panic(
+        expected = "FieldDefinition(id) on TypeDefinition(Foo) must be of type `ID!`. Found type `Charfield!`."
+    )]
+    fn test_schema_validator_id_field_is_type_id() {
+        let schema = r#"
+type Foo @entity {
+    id: Charfield!
+    name: Charfield!
+}"#;
+
+        let _ = ParsedGraphQLSchema::new(
+            "test",
+            "test",
+            ExecutionSource::Wasm,
+            Some(&GraphQLSchema::new(schema.to_string())),
+        )
+        .unwrap();
+    }
+
+    #[test]
+    #[should_panic(
+        expected = "Virtual TypeDefinition(Foo) cannot contain an `id: ID!` FieldDefinition."
+    )]
+    fn test_schema_validator_virtual_type_has_no_id_field() {
+        let schema = r#"
+type Foo @entity(virtual: true) {
+    id: ID!
+    name: Charfield!
+}"#;
+
+        let _ = ParsedGraphQLSchema::new(
+            "test",
+            "test",
+            ExecutionSource::Wasm,
+            Some(&GraphQLSchema::new(schema.to_string())),
+        )
+        .unwrap();
+    }
+
+    #[test]
+    #[should_panic(
+        expected = "FieldDefinition(id) on TypeDefinition(Bar) must be of type `ID!`. Found type `ID`."
+    )]
+    fn test_schema_validator_foreign_key_field_contains_no_unique_directive() {
+        let schema = r#"
+type Foo @entity {
+    id: ID!
+    name: Charfield!
+}
+
+type Bar @entity {
+    id: ID
+    foo: Foo! @unique
+}
+"#;
+
+        let _ = ParsedGraphQLSchema::new(
+            "test",
+            "test",
+            ExecutionSource::Wasm,
+            Some(&GraphQLSchema::new(schema.to_string())),
+        )
+        .unwrap();
+    }
+
+    #[test]
+    #[should_panic(
+        expected = "TypeDefinition(Bar) exceeds the allowed number of many-to-many` relationships. The maximum allowed is 10."
+    )]
+    fn test_schema_validator_verify_m2m_relationship_count() {
+        let schema = r#"
+type Type1 @entity {
+    id: ID!
+    name: Charfield!
+}
+
+type Type2 @entity {
+    id: ID!
+    name: Charfield!
+}
+
+type Type3 @entity {
+    id: ID!
+    name: Charfield!
+}
+
+type Type4 @entity {
+    id: ID!
+    name: Charfield!
+}
+
+type Type5 @entity {
+    id: ID!
+    name: Charfield!
+}
+
+type Type6 @entity {
+    id: ID!
+    name: Charfield!
+}
+
+type Type7 @entity {
+    id: ID!
+    name: Charfield!
+}
+
+type Type8 @entity {
+    id: ID!
+    name: Charfield!
+}
+
+type Type9 @entity {
+    id: ID!
+    name: Charfield!
+}
+
+type Type10 @entity {
+    id: ID!
+    name: Charfield!
+}
+
+type Type11 @entity {
+    id: ID!
+    name: Charfield!
+}
+
+type Bar @entity {
+    id: ID!
+    type1: [Type1!]!
+    type2: [Type2!]!
+    type3: [Type3!]!
+    type4: [Type4!]!
+    type5: [Type5!]!
+    type6: [Type6!]!
+    type7: [Type7!]!
+    type8: [Type8!]!
+    type9: [Type9!]!
+    type10: [Type10!]!
+    type11: [Type11!]!
+}
+"#;
+
+        let _ = ParsedGraphQLSchema::new(
+            "test",
+            "test",
+            ExecutionSource::Wasm,
+            Some(&GraphQLSchema::new(schema.to_string())),
+        )
+        .unwrap();
+    }
+
+    #[test]
+    #[should_panic(
+        expected = "FieldDefinition(foo) on TypeDefinition(Bar) is a many-to-many relationship where the inner scalar is of type `name: Charfield!`. However, only inner scalars of type `id: ID!` are allowed."
+    )]
+    fn test_schema_validator_m2m_fk_field_ref_col_is_id() {
+        let schema = r#"
+type Foo @entity {
+    id: ID!
+    name: Charfield!
+}
+
+type Bar @entity {
+    id: ID!
+    foo: [Foo!]! @join(on:name)
+}
+"#;
+
+        let _ = ParsedGraphQLSchema::new(
+            "test",
+            "test",
+            ExecutionSource::Wasm,
+            Some(&GraphQLSchema::new(schema.to_string())),
+        )
+        .unwrap();
     }
 }

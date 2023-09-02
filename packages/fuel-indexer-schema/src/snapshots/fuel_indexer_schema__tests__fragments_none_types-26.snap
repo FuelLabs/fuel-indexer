@@ -1,0 +1,6 @@
+---
+source: packages/fuel-indexer-schema/src/lib.rs
+expression: tai64_timestamp.query_fragment()
+---
+"NULL"
+

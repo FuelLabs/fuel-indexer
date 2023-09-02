@@ -1,0 +1,13 @@
+error: Handler function 'function_one' must have at least one argument.
+ --> trybuild/fail_if_arg_not_passed_to_handler_function.rs
+  |
+  | #[indexer(manifest = "packages/fuel-indexer-tests/trybuild/simple_wasm.yaml")]
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: this error originates in the attribute macro `indexer` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0601]: `main` function not found in crate `$CRATE`
+ --> trybuild/fail_if_arg_not_passed_to_handler_function.rs
+  |
+  | }
+  |  ^ consider adding a `main` function to `$DIR/trybuild/fail_if_arg_not_passed_to_handler_function.rs`

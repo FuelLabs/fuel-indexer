@@ -1,6 +1,6 @@
 ---
 source: packages/fuel-indexer-schema/src/lib.rs
-expression: int4.query_fragment()
+expression: txid.query_fragment()
 ---
-"2021161080"
+"'1212121212121212121212121212121212121212121212121212121212121212'"
 

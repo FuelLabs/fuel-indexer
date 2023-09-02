@@ -1,11 +1,11 @@
 use std::collections::HashSet;
 
-use crate::constants::*;
 use async_graphql_parser::types::{BaseType, FieldDefinition, Type};
 use async_graphql_value::Name;
 use fuel_abi_types::abi::program::{ProgramABI, TypeDeclaration};
-use fuel_indexer_lib::graphql::{
-    list_field_type_name, types::IdCol, ParsedGraphQLSchema,
+use fuel_indexer_lib::{
+    constants::*,
+    graphql::{list_field_type_name, types::IdCol, ParsedGraphQLSchema},
 };
 use fuels_code_gen::utils::Source;
 use proc_macro2::TokenStream;
@@ -33,11 +33,6 @@ pub fn unwrap_or_default_for_external_type(
         }
         _ => panic!("Default is not implemented for {field_type_name}"),
     }
-}
-
-/// Whether or not a `TypeDeclaration` is tuple type
-pub fn is_tuple_type(typ: &TypeDeclaration) -> bool {
-    typ.type_field.as_str().starts_with('(')
 }
 
 /// Extract tokens from JSON ABI file
@@ -78,22 +73,32 @@ pub fn get_json_abi(abi_path: Option<String>) -> Option<ProgramABI> {
     }
 }
 
-/// Whether this TypeDeclaration should be used in the codgen
+/// Whether a `TypeDeclaration` is tuple type
+pub fn is_tuple_type(typ: &TypeDeclaration) -> bool {
+    let mut type_field_chars = typ.type_field.chars();
+
+    type_field_chars.next().is_some_and(|c| c == '(')
+        && type_field_chars.next().is_some_and(|c| c != ')')
+}
+
+/// Whether a `TypeDeclaration` is a unit type
+pub fn is_unit_type(typ: &TypeDeclaration) -> bool {
+    let mut type_field_chars = typ.type_field.chars();
+
+    type_field_chars.next().is_some_and(|c| c == '(')
+        && type_field_chars.next().is_some_and(|c| c == ')')
+}
+
+/// Whether this TypeDeclaration should be used in the codegen
 pub fn is_ignored_type(typ: &TypeDeclaration) -> bool {
     is_tuple_type(typ)
 }
 
 /// Whether the TypeDeclaration should be used to build struct fields and decoders
 pub fn is_non_decodable_type(typ: &TypeDeclaration) -> bool {
-    if GENERIC_TYPES.contains(typ.type_field.as_str()) {
-        return true;
-    }
-
-    if is_ignored_type(typ) {
-        return true;
-    }
-
-    false
+    is_ignored_type(typ)
+        || is_unit_type(typ)
+        || GENERIC_TYPES.contains(typ.type_field.as_str())
 }
 
 /// Derive Ident for decoded type
@@ -142,28 +147,28 @@ pub fn rust_type_token(ty: &TypeDeclaration) -> proc_macro2::TokenStream {
     } else {
         match ty.type_field.as_str() {
             "()" => quote! {},
-            "generic T" => quote! {},
-            "raw untyped ptr" => quote! {},
             "b256" => quote! { B256 },
-            "bool" => quote! { bool },
-            "u16" => quote! { u16 },
-            "u32" => quote! { u32 },
-            "u64" => quote! { u64 },
-            "u8" => quote! { u8 },
             "BlockData" => quote! { BlockData },
+            "bool" => quote! { bool },
+            "Burn" => quote! { Burn },
             "Call" => quote! { Call },
+            "generic T" => quote! {},
             "Identity" => quote! { Identity },
             "Log" => quote! { Log },
             "LogData" => quote! { LogData },
             "MessageOut" => quote! { MessageOut },
+            "Mint" => quote! { Mint },
+            "Panic" => quote! { Panic },
+            "raw untyped ptr" => quote! {},
             "Return" => quote! { Return },
+            "Revert" => quote! { Revert },
             "ScriptResult" => quote! { ScriptResult },
             "Transfer" => quote! { Transfer },
             "TransferOut" => quote! { TransferOut },
-            "Panic" => quote! { Panic },
-            "Revert" => quote! { Revert },
-            "Mint" => quote! { Mint },
-            "Burn" => quote! { Burn },
+            "u16" => quote! { u16 },
+            "u32" => quote! { u32 },
+            "u64" => quote! { u64 },
+            "u8" => quote! { u8 },
             o if o.starts_with("str[") => quote! { String },
             o => {
                 proc_macro_error::abort_call_site!(
@@ -176,6 +181,10 @@ pub fn rust_type_token(ty: &TypeDeclaration) -> proc_macro2::TokenStream {
 }
 
 /// Whether or not the given token is a Fuel primitive
+///
+/// These differ from `RESERVED_TYPEDEF_NAMES` in that `FUEL_PRIMITIVES` are type names
+/// that are checked against the contract JSON ABI, while `RESERVED_TYPEDEF_NAMES` are
+/// checked against the GraphQL schema.
 pub fn is_fuel_primitive(ty: &proc_macro2::TokenStream) -> bool {
     let ident_str = ty.to_string();
     FUEL_PRIMITIVES.contains(ident_str.as_str())
