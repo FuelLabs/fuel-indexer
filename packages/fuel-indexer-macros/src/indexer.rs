@@ -257,8 +257,10 @@ fn process_fn_items(
                 .iter()
                 .map(|id| {
                     quote! {
-                        let id_bytes = <[u8; 32]>::try_from(#id).expect("Could not convert contract ID into bytes");
-                        Bech32ContractId::new("fuel", id_bytes)
+                        Bech32ContractId::from_str(#id).unwrap_or_else(|_| {
+                        let contract_id = ContractId::from_str(&#id).expect("Failed to parse manifest 'contract_id'");
+                        Bech32ContractId::from(contract_id)
+                        })
                     }
                 })
                 .collect::<Vec<proc_macro2::TokenStream>>();
@@ -275,7 +277,10 @@ fn process_fn_items(
                 quote! {
                     let id_bytes = <[u8; 32]>::try_from(id).expect("Could not convert contract ID into bytes");
                     let bech32_id = Bech32ContractId::new("fuel", id_bytes);
-                    let manifest_contract_id = Bech32ContractId::from_str(#contract_id).expect("Failed to parse manifest 'contract_id' as Bech32ContractId");
+                    let manifest_contract_id = Bech32ContractId::from_str(#contract_id).unwrap_or_else(|_| {
+                        let contract_id = ContractId::from_str(&#contract_id).expect("Failed to parse manifest 'contract_id'");
+                        Bech32ContractId::from(contract_id)
+                    });
                     if bech32_id != manifest_contract_id {
                         debug!("Not subscribed to this contract. Will skip this receipt event. <('-'<)");
                         continue;
@@ -836,7 +841,6 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
             let (handler_block, fn_items) =
                 process_fn_items(&manifest, abi, indexer_module);
             let handler_block = handler_block_wasm(handler_block);
-
             quote! {
 
                 #abi_tokens
