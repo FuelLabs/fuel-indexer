@@ -112,7 +112,8 @@ end_block: ~
 fuel_client: ~
 
 # The contract_id specifies which particular contract you would like your index to subscribe to.
-# Both Namespaced contract ID (fuels....) and Not namespaced contract ID (0x0000...) are supported.
+# Both namespaced contract IDs (e.g., 'fuels...') and
+# non-namespaced contract IDs (e.g., '0x0000...') are supported.
 contract_id: ~
 
 # The graphql_schema field contains the file path that points to the GraphQL schema for the
