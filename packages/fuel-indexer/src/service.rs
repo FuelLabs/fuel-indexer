@@ -1,24 +1,21 @@
 use crate::{
-    executor::{ExecutorSource, NativeIndexExecutor, WasmIndexExecutor},
-    Database, IndexerConfig, IndexerError, IndexerResult, Manifest,
+    executor::{NativeIndexExecutor, WasmIndexExecutor},
+    Database, Executor, IndexerConfig, IndexerError, IndexerResult, Manifest,
 };
 use async_std::sync::{Arc, Mutex};
+use async_std::{fs::File, io::ReadExt};
 use fuel_indexer_database::{
     queries, types::IndexerAssetType, IndexerConnection, IndexerConnectionPool,
 };
 use fuel_indexer_lib::{defaults, utils::ServiceRequest};
 use fuel_indexer_schema::db::manager::SchemaManager;
 use fuel_indexer_types::fuel::BlockData;
-use futures::{
-    stream::{FuturesUnordered, StreamExt},
-    Future,
-};
+use futures::Future;
 use std::collections::HashMap;
 use std::marker::Send;
 use std::sync::atomic::{AtomicBool, Ordering};
 use tokio::{
     sync::mpsc::Receiver,
-    task::JoinHandle,
     time::{sleep, Duration},
 };
 use tracing::{debug, error, info, warn};
@@ -34,8 +31,8 @@ pub struct IndexerService {
     /// Schema manager used to manage the database schema.
     manager: SchemaManager,
 
-    /// Handles to the spawned indexers.
-    handles: HashMap<String, JoinHandle<()>>,
+    /// Tasks for the spawned indexers.
+    tasks: tokio::task::JoinSet<()>,
 
     /// Channel used to receive `ServiceRequest`s.
     rx: Receiver<ServiceRequest>,
@@ -57,8 +54,8 @@ impl IndexerService {
             config,
             pool,
             manager,
-            handles: HashMap::default(),
             killers: HashMap::default(),
+            tasks: tokio::task::JoinSet::new(),
             rx,
         })
     }
@@ -128,17 +125,29 @@ impl IndexerService {
         let start_block = get_start_block(&mut conn, &manifest).await?;
         manifest.set_start_block(start_block);
 
-        let (handle, exec_source, killer) = WasmIndexExecutor::create(
+        let wasm_bytes = match manifest.module() {
+            crate::Module::Wasm(ref module) => {
+                let mut bytes = Vec::<u8>::new();
+                let mut file = File::open(module).await?;
+                file.read_to_end(&mut bytes).await?;
+                bytes
+            }
+            crate::Module::Native => {
+                return Err(IndexerError::NativeExecutionInstantiationError)
+            }
+        };
+
+        let executor = WasmIndexExecutor::create(
             &self.config,
             &manifest,
-            ExecutorSource::Manifest,
             self.pool.clone(),
             schema_version,
+            wasm_bytes.clone(),
         )
         .await?;
 
         let mut items = vec![
-            (IndexerAssetType::Wasm, exec_source.into()),
+            (IndexerAssetType::Wasm, wasm_bytes),
             (IndexerAssetType::Manifest, manifest.clone().into()),
             (IndexerAssetType::Schema, schema_bytes),
         ];
@@ -166,8 +175,8 @@ impl IndexerService {
             manifest.namespace(),
             manifest.identifier()
         );
-        self.handles.insert(manifest.uid(), handle);
-        self.killers.insert(manifest.uid(), killer);
+
+        self.start_executor(executor);
 
         Ok(())
     }
@@ -183,18 +192,18 @@ impl IndexerService {
             let start_block = get_start_block(&mut conn, &manifest).await.unwrap_or(1);
             manifest.set_start_block(start_block);
 
-            if let Ok((handle, _module_bytes, killer)) = WasmIndexExecutor::create(
+            if let Ok(executor) = WasmIndexExecutor::create(
                 &self.config,
                 &manifest,
-                ExecutorSource::Registry(assets.wasm.bytes),
                 self.pool.clone(),
                 assets.schema.digest,
+                assets.wasm.bytes,
             )
             .await
             {
                 info!("Registered Indexer({})", manifest.uid());
-                self.handles.insert(manifest.uid(), handle);
-                self.killers.insert(manifest.uid(), killer);
+
+                self.start_executor(executor);
             } else {
                 error!(
                     "Failed to register Indexer({}) from registry.",
@@ -237,7 +246,7 @@ impl IndexerService {
         manifest.set_start_block(start_block);
 
         let uid = manifest.uid();
-        let (handle, _module_bytes, killer) = NativeIndexExecutor::<T>::create(
+        let executor = NativeIndexExecutor::<T>::create(
             &self.config,
             &manifest,
             self.pool.clone(),
@@ -247,130 +256,106 @@ impl IndexerService {
 
         info!("Registered NativeIndex({})", uid);
 
-        self.handles.insert(uid.clone(), handle);
-        self.killers.insert(uid, killer);
+        self.start_executor(executor);
+
         Ok(())
     }
 
-    /// Kick it off!
-    pub async fn run(self) {
-        let IndexerService {
-            handles,
-            rx,
-            pool,
-            config,
-            killers,
-            ..
-        } = self;
+    /// Kick it off! Run the indexer service loop, listening to service messages primarily coming from the web API.
+    pub async fn run(mut self) -> IndexerResult<()> {
+        loop {
+            match self.rx.try_recv() {
+                Ok(service_request) => match service_request {
+                    ServiceRequest::Reload(request) => {
+                        let mut conn = self.pool.acquire().await?;
 
-        let futs = Arc::new(Mutex::new(FuturesUnordered::from_iter(
-            handles.into_values(),
-        )));
+                        match queries::get_indexer_id(
+                            &mut conn,
+                            &request.namespace,
+                            &request.identifier,
+                        )
+                        .await
+                        {
+                            Ok(id) => {
+                                let assets =
+                                    queries::latest_assets_for_indexer(&mut conn, &id)
+                                        .await?;
+                                let mut manifest =
+                                    Manifest::try_from(&assets.manifest.bytes)?;
 
-        let _ = tokio::spawn(create_service_task(
-            rx,
-            config.clone(),
-            pool.clone(),
-            futs.clone(),
-            killers,
-        ))
-        .await
-        .unwrap();
+                                let start_block =
+                                    get_start_block(&mut conn, &manifest).await?;
+                                manifest.set_start_block(start_block);
 
-        while let Some(fut) = futs.lock().await.next().await {
-            info!("Retired a future {fut:?}");
-        }
-    }
-}
+                                if let Some(killer_for_prev_executor) =
+                                    self.killers.remove(&manifest.uid())
+                                {
+                                    let uid = manifest.uid();
+                                    info!("Indexer({uid}) is being replaced. Stopping previous version of Indexer({uid}).");
+                                    killer_for_prev_executor
+                                        .store(true, Ordering::SeqCst);
+                                }
 
-/// Create a tokio task used to listen to service messages primarily coming from the web API.
-async fn create_service_task(
-    mut rx: Receiver<ServiceRequest>,
-    config: IndexerConfig,
-    pool: IndexerConnectionPool,
-    futs: Arc<Mutex<FuturesUnordered<JoinHandle<()>>>>,
-    mut killers: HashMap<String, Arc<AtomicBool>>,
-) -> IndexerResult<()> {
-    loop {
-        let futs = futs.lock().await;
-        match rx.try_recv() {
-            Ok(service_request) => match service_request {
-                ServiceRequest::Reload(request) => {
-                    let mut conn = pool.acquire().await?;
-
-                    match queries::get_indexer_id(
-                        &mut conn,
-                        &request.namespace,
-                        &request.identifier,
-                    )
-                    .await
-                    {
-                        Ok(id) => {
-                            let assets =
-                                queries::latest_assets_for_indexer(&mut conn, &id)
-                                    .await?;
-                            let mut manifest =
-                                Manifest::try_from(&assets.manifest.bytes)?;
-
-                            let start_block =
-                                get_start_block(&mut conn, &manifest).await?;
-                            manifest.set_start_block(start_block);
-
-                            match WasmIndexExecutor::create(
-                                &config,
-                                &manifest,
-                                ExecutorSource::Registry(assets.wasm.bytes),
-                                pool.clone(),
-                                assets.schema.digest,
-                            )
-                            .await
-                            {
-                                Ok((handle, _module_bytes, killer)) => {
-                                    futs.push(handle);
-
-                                    if let Some(killer_for_prev_executor) =
-                                        killers.insert(manifest.uid(), killer)
-                                    {
-                                        let uid = manifest.uid();
-                                        info!("Indexer({uid}) was replaced. Stopping previous version of Indexer({uid}).");
-                                        killer_for_prev_executor
-                                            .store(true, Ordering::SeqCst);
+                                match WasmIndexExecutor::create(
+                                    &self.config,
+                                    &manifest,
+                                    self.pool.clone(),
+                                    assets.schema.digest,
+                                    assets.wasm.bytes,
+                                )
+                                .await
+                                {
+                                    Ok(executor) => self.start_executor(executor),
+                                    Err(e) => {
+                                        error!(
+                                            "Failed to reload Indexer({}.{}): {e:?}",
+                                            &request.namespace, &request.identifier
+                                        );
+                                        return Ok(());
                                     }
                                 }
-                                Err(e) => {
-                                    error!(
-                                        "Failed to reload Indexer({}.{}): {e:?}",
-                                        &request.namespace, &request.identifier
-                                    );
-                                    return Ok(());
-                                }
+                            }
+                            Err(e) => {
+                                error!(
+                                    "Failed to find Indexer({}.{}): {}",
+                                    &request.namespace, &request.identifier, e
+                                );
+
+                                continue;
                             }
                         }
-                        Err(e) => {
-                            error!(
-                                "Failed to find Indexer({}.{}): {}",
-                                &request.namespace, &request.identifier, e
-                            );
+                    }
+                    ServiceRequest::Stop(request) => {
+                        let uid = format!("{}.{}", request.namespace, request.identifier);
 
-                            continue;
+                        if let Some(killer) = self.killers.remove(&uid) {
+                            killer.store(true, Ordering::SeqCst);
+                        } else {
+                            warn!(
+                                "Stop Indexer: No indexer with the name Indexer({uid})"
+                            );
                         }
                     }
+                },
+                Err(e) => {
+                    debug!("No service request to handle: {e:?}.");
+                    sleep(Duration::from_secs(defaults::IDLE_SERVICE_WAIT_SECS)).await;
                 }
-                ServiceRequest::Stop(request) => {
-                    let uid = format!("{}.{}", request.namespace, request.identifier);
-
-                    if let Some(killer) = killers.remove(&uid) {
-                        killer.store(true, Ordering::SeqCst);
-                    } else {
-                        warn!("Stop Indexer: No indexer with the name Indexer({uid})");
-                    }
-                }
-            },
-            Err(e) => {
-                debug!("No service request to handle: {e:?}.");
-                sleep(Duration::from_secs(defaults::IDLE_SERVICE_WAIT_SECS)).await;
             }
         }
+    }
+
+    // Spawn and register a tokio::task running the Executor loop, as well as
+    // the kill switch and the abort handle.ß
+    fn start_executor<T: 'static + Executor + Send + Sync>(&mut self, executor: T) {
+        let uid = executor.manifest().uid();
+
+        self.killers
+            .insert(uid.clone(), executor.kill_switch().clone());
+
+        self
+            .tasks
+            .spawn(crate::executor::run_executor(&self.config, executor));
     }
 }
 

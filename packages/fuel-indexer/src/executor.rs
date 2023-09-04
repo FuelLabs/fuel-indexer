@@ -3,11 +3,7 @@ use crate::{
     database::Database, ffi, queries::ClientExt, IndexerConfig, IndexerError,
     IndexerResult,
 };
-use async_std::{
-    fs::File,
-    io::ReadExt,
-    sync::{Arc, Mutex},
-};
+use async_std::sync::{Arc, Mutex};
 use async_trait::async_trait;
 use fuel_core_client::client::{
     pagination::{PageDirection, PaginatedResult, PaginationRequest},
@@ -33,7 +29,7 @@ use std::{
     sync::atomic::{AtomicBool, Ordering},
 };
 use tokio::{
-    task::{spawn_blocking, JoinHandle},
+    task::spawn_blocking,
     time::{sleep, Duration},
 };
 use tracing::{debug, error, info, warn};
@@ -78,24 +74,23 @@ impl From<ExecutorSource> for Vec<u8> {
 // types in `fuel_core_client` don't compile to WASM.
 pub fn run_executor<T: 'static + Executor + Send + Sync>(
     config: &IndexerConfig,
-    manifest: &Manifest,
     mut executor: T,
-    kill_switch: Arc<AtomicBool>,
 ) -> impl Future<Output = ()> {
     // TODO: https://github.com/FuelLabs/fuel-indexer/issues/286
 
-    let end_block = manifest.end_block();
+    let end_block = executor.manifest().end_block();
     let stop_idle_indexers = config.stop_idle_indexers;
-    let indexer_uid = manifest.uid();
+    let indexer_uid = executor.manifest().uid();
     let node_block_page_size = config.node_block_page_size;
 
-    let fuel_node_addr = manifest
+    let fuel_node_addr = executor
+        .manifest()
         .fuel_client()
         .map(|x| x.to_string())
         .unwrap_or(config.fuel_node.to_string());
 
     // Where should we initially start when fetching blocks from the client?
-    let mut cursor = manifest.start_block().map(|x| {
+    let mut cursor = executor.manifest().start_block().map(|x| {
         if x > 1 {
             let decremented = x - 1;
             decremented.to_string()
@@ -138,7 +133,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
 
         loop {
             // If something else has signaled that this indexer should stop, then stop.
-            if kill_switch.load(Ordering::SeqCst) {
+            if executor.kill_switch().load(Ordering::SeqCst) {
                 info!("Kill switch flipped, stopping Indexer({indexer_uid}). <('.')>");
                 break;
             }
@@ -183,9 +178,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
             }
 
             // The client responded with actual blocks, so attempt to index them.
-            let result = executor
-                .handle_events(kill_switch.clone(), block_info)
-                .await;
+            let result = executor.handle_events(block_info).await;
 
             if let Err(e) = result {
                 // Run time metering is deterministic. There is no point in retrying.
@@ -229,7 +222,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
             cursor = next_cursor;
 
             // Again, check if something else has signaled that this indexer should stop, then stop.
-            if kill_switch.load(Ordering::SeqCst) {
+            if executor.kill_switch().load(Ordering::SeqCst) {
                 info!("Kill switch flipped, stopping Indexer({indexer_uid}). <('.')>");
                 break;
             }
@@ -480,11 +473,11 @@ pub trait Executor
 where
     Self: Sized,
 {
-    async fn handle_events(
-        &mut self,
-        kill_switch: Arc<AtomicBool>,
-        blocks: Vec<BlockData>,
-    ) -> IndexerResult<()>;
+    async fn handle_events(&mut self, blocks: Vec<BlockData>) -> IndexerResult<()>;
+
+    fn manifest(&self) -> &Manifest;
+
+    fn kill_switch(&self) -> &Arc<AtomicBool>;
 }
 
 /// WASM indexer runtime environment responsible for fetching/saving data to and from the database.
@@ -535,6 +528,9 @@ where
 
     /// Function that handles events.
     handle_events_fn: fn(Vec<BlockData>, Arc<Mutex<Database>>) -> F,
+
+    /// Kill switch. When set to true, the indexer must stop execution.
+    kill_switch: Arc<AtomicBool>,
 }
 
 impl<F> NativeIndexExecutor<F>
@@ -557,31 +553,23 @@ where
         )
         .await?;
         db.load_schema(version).await?;
+        let kill_switch = Arc::new(AtomicBool::new(false));
         Ok(Self {
             db: Arc::new(Mutex::new(db)),
             manifest: manifest.to_owned(),
             handle_events_fn,
+            kill_switch,
         })
     }
 
     /// Create a new `NativeIndexExecutor`.
-    pub async fn create<T: Future<Output = IndexerResult<()>> + Send + 'static>(
+    pub async fn create(
         config: &IndexerConfig,
         manifest: &Manifest,
         pool: IndexerConnectionPool,
-        handle_events: fn(Vec<BlockData>, Arc<Mutex<Database>>) -> T,
-    ) -> IndexerResult<(JoinHandle<()>, ExecutorSource, Arc<AtomicBool>)> {
-        let executor =
-            NativeIndexExecutor::new(manifest, pool.clone(), config, handle_events)
-                .await?;
-        let kill_switch = Arc::new(AtomicBool::new(false));
-        let handle = tokio::spawn(run_executor(
-            config,
-            manifest,
-            executor,
-            kill_switch.clone(),
-        ));
-        Ok((handle, ExecutorSource::Manifest, kill_switch))
+        handle_events: fn(Vec<BlockData>, Arc<Mutex<Database>>) -> F,
+    ) -> IndexerResult<Self> {
+        NativeIndexExecutor::new(manifest, pool.clone(), config, handle_events).await
     }
 }
 
@@ -591,11 +579,7 @@ where
     F: Future<Output = IndexerResult<()>> + Send,
 {
     /// Handle events for  native executor.
-    async fn handle_events(
-        &mut self,
-        kill_switch: Arc<AtomicBool>,
-        blocks: Vec<BlockData>,
-    ) -> IndexerResult<()> {
+    async fn handle_events(&mut self, blocks: Vec<BlockData>) -> IndexerResult<()> {
         self.db.lock().await.start_transaction().await?;
         let res = (self.handle_events_fn)(blocks, self.db.clone()).await;
         let uid = self.manifest.uid();
@@ -605,13 +589,21 @@ where
             return Err(IndexerError::NativeExecutionRuntimeError);
         } else {
             // Do not commit if kill switch has been triggered.
-            if kill_switch.load(Ordering::SeqCst) {
+            if self.kill_switch.load(Ordering::SeqCst) {
                 self.db.lock().await.revert_transaction().await?;
             } else {
                 self.db.lock().await.commit_transaction().await?;
             }
         }
         Ok(())
+    }
+
+    fn kill_switch(&self) -> &Arc<AtomicBool> {
+        &self.kill_switch
+    }
+
+    fn manifest(&self) -> &Manifest {
+        &self.manifest
     }
 }
 
@@ -639,6 +631,9 @@ pub struct WasmIndexExecutor {
 
     /// Manifest of the indexer.
     manifest: Manifest,
+
+    /// Kill switch. When set to true, the indexer must stop execution.
+    kill_switch: Arc<AtomicBool>,
 }
 
 impl WasmIndexExecutor {
@@ -715,6 +710,8 @@ impl WasmIndexExecutor {
 
         db.lock().await.load_schema(schema_version).await?;
 
+        let kill_switch = Arc::new(AtomicBool::new(false));
+
         Ok(WasmIndexExecutor {
             instance,
             _module: module,
@@ -722,6 +719,7 @@ impl WasmIndexExecutor {
             db: db.clone(),
             metering_points: config.metering_points,
             manifest: manifest.clone(),
+            kill_switch,
         })
     }
 
@@ -742,76 +740,21 @@ impl WasmIndexExecutor {
     pub async fn create(
         config: &IndexerConfig,
         manifest: &Manifest,
-        exec_source: ExecutorSource,
         pool: IndexerConnectionPool,
         schema_version: String,
-    ) -> IndexerResult<(JoinHandle<()>, ExecutorSource, Arc<AtomicBool>)> {
-        let killer = Arc::new(AtomicBool::new(false));
+        wasm_bytes: impl AsRef<[u8]>,
+    ) -> IndexerResult<Self> {
         let uid = manifest.uid();
 
-        match &exec_source {
-            ExecutorSource::Manifest => match manifest.module() {
-                crate::Module::Wasm(ref module) => {
-                    let mut bytes = Vec::<u8>::new();
-                    let mut file = File::open(module).await?;
-                    file.read_to_end(&mut bytes).await?;
-
-                    match WasmIndexExecutor::new(
-                        config,
-                        manifest,
-                        bytes.clone(),
-                        pool,
-                        schema_version,
-                    )
-                    .await
-                    {
-                        Ok(executor) => {
-                            let handle = tokio::spawn(run_executor(
-                                config,
-                                manifest,
-                                executor,
-                                killer.clone(),
-                            ));
-
-                            Ok((handle, ExecutorSource::Registry(bytes), killer))
-                        }
-                        Err(e) => {
-                            error!(
-                                "Could not instantiate WasmIndexExecutor({uid}) from ExecutorSource::Manifest: {e:?}."
-                            );
-                            Err(IndexerError::WasmExecutionInstantiationError)
-                        }
-                    }
-                }
-                crate::Module::Native => {
-                    Err(IndexerError::NativeExecutionInstantiationError)
-                }
-            },
-            ExecutorSource::Registry(bytes) => {
-                match WasmIndexExecutor::new(
-                    config,
-                    manifest,
-                    bytes,
-                    pool,
-                    schema_version,
-                )
-                .await
-                {
-                    Ok(executor) => {
-                        let handle = tokio::spawn(run_executor(
-                            config,
-                            manifest,
-                            executor,
-                            killer.clone(),
-                        ));
-
-                        Ok((handle, exec_source, killer))
-                    }
-                    Err(e) => {
-                        error!("Could not instantiate WasmIndexExecutor({uid}) from ExecutorSource::Registry: {e:?}.");
-                        Err(IndexerError::WasmExecutionInstantiationError)
-                    }
-                }
+        match WasmIndexExecutor::new(config, manifest, wasm_bytes, pool, schema_version)
+            .await
+        {
+            Ok(executor) => Ok(executor),
+            Err(e) => {
+                error!(
+                    "Could not instantiate WasmIndexExecutor({uid}) from ExecutorSource::Manifest: {e:?}."
+                );
+                Err(IndexerError::WasmExecutionInstantiationError)
             }
         }
     }
@@ -868,11 +811,7 @@ impl WasmIndexExecutor {
 #[async_trait]
 impl Executor for WasmIndexExecutor {
     /// Trigger a WASM event handler, passing in a serialized event struct.
-    async fn handle_events(
-        &mut self,
-        kill_switch: Arc<AtomicBool>,
-        blocks: Vec<BlockData>,
-    ) -> IndexerResult<()> {
+    async fn handle_events(&mut self, blocks: Vec<BlockData>) -> IndexerResult<()> {
         if blocks.is_empty() {
             return Ok(());
         }
@@ -923,7 +862,7 @@ impl Executor for WasmIndexExecutor {
             }
         } else {
             // Do not commit if kill switch has been triggered.
-            if kill_switch.load(Ordering::SeqCst) {
+            if self.kill_switch.load(Ordering::SeqCst) {
                 self.db.lock().await.revert_transaction().await?;
             } else {
                 self.db.lock().await.commit_transaction().await?;
@@ -931,5 +870,13 @@ impl Executor for WasmIndexExecutor {
         }
 
         Ok(())
+    }
+
+    fn kill_switch(&self) -> &Arc<AtomicBool> {
+        &self.kill_switch
+    }
+
+    fn manifest(&self) -> &Manifest {
+        &self.manifest
     }
 }

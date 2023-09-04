@@ -130,7 +130,12 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
         }
     }
 
-    subsystems.spawn(service.run());
+    subsystems.spawn(async {
+        let result = service.run().await;
+        if let Err(e) = result {
+            tracing::error!("Indexer Service failed: {e}");
+        }
+    });
 
     #[cfg(feature = "api-server")]
     subsystems.spawn({
