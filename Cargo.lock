@@ -3227,7 +3227,6 @@ dependencies = [
  "sqlx",
  "thiserror",
  "tokio",
- "tokio-util",
  "tracing",
  "wasmer",
  "wasmer-middlewares",
