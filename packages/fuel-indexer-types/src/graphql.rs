@@ -26,8 +26,8 @@ impl IndexMetadata {
 
 type IndexMetadataEntity @entity {
     id: ID!
-    time: UInt8!
-    block_height: UInt4!
+    time: U64!
+    block_height: U32!
     block_id: Bytes32!
 }
 "#

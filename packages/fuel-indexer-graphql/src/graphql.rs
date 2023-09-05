@@ -756,7 +756,7 @@ mod tests {
         let schema = r#"
 type Block @entity {
     id: ID!
-    height: UInt8!
+    height: U64!
     timestamp: Int8!
 }
 

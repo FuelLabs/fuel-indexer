@@ -856,11 +856,11 @@ type User @entity {
 type Loser @entity {
     id: ID!
     account: Account!
-    age: UInt8!
+    age: U64!
 }
 
 type Metadata @entity(virtual: true) {
-    count: UInt8!
+    count: U64!
 }
 
 union Person = User | Loser

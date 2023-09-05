@@ -58,8 +58,8 @@ pub enum ColumnType {
     Salt = 7,
     Int4 = 8,
     Int8 = 9,
-    UInt4 = 10,
-    UInt8 = 11,
+    U32 = 10,
+    U64 = 11,
     Timestamp = 12,
     Blob = 13,
     ForeignKey = 14,
@@ -69,8 +69,8 @@ pub enum ColumnType {
     Identity = 18,
     Boolean = 19,
     Object = 20,
-    UInt16 = 21,
-    Int16 = 22,
+    U128 = 21,
+    I128 = 22,
     Bytes64 = 23,
     Signature = 24,
     Nonce = 25,
@@ -79,8 +79,8 @@ pub enum ColumnType {
     TxId = 28,
     BlockHeight = 29,
     Enum = 30,
-    Int1 = 31,
-    UInt1 = 32,
+    I8 = 31,
+    U8 = 32,
     Virtual = 33,
     BlockId = 34,
     Array = 35,
@@ -103,8 +103,8 @@ impl From<ColumnType> for i32 {
             ColumnType::Salt => 7,
             ColumnType::Int4 => 8,
             ColumnType::Int8 => 9,
-            ColumnType::UInt4 => 10,
-            ColumnType::UInt8 => 11,
+            ColumnType::U32 => 10,
+            ColumnType::U64 => 11,
             ColumnType::Timestamp => 12,
             ColumnType::Blob => 13,
             ColumnType::ForeignKey => 14,
@@ -114,8 +114,8 @@ impl From<ColumnType> for i32 {
             ColumnType::Identity => 18,
             ColumnType::Boolean => 19,
             ColumnType::Object => 20,
-            ColumnType::UInt16 => 21,
-            ColumnType::Int16 => 22,
+            ColumnType::U128 => 21,
+            ColumnType::I128 => 22,
             ColumnType::Bytes64 => 23,
             ColumnType::Signature => 24,
             ColumnType::Nonce => 25,
@@ -124,8 +124,8 @@ impl From<ColumnType> for i32 {
             ColumnType::TxId => 28,
             ColumnType::BlockHeight => 29,
             ColumnType::Enum => 30,
-            ColumnType::Int1 => 31,
-            ColumnType::UInt1 => 32,
+            ColumnType::I8 => 31,
+            ColumnType::U8 => 32,
             ColumnType::Virtual => 33,
             ColumnType::BlockId => 34,
             ColumnType::Array => 35,
@@ -160,8 +160,8 @@ impl From<i32> for ColumnType {
             7 => ColumnType::Salt,
             8 => ColumnType::Int4,
             9 => ColumnType::Int8,
-            10 => ColumnType::UInt4,
-            11 => ColumnType::UInt8,
+            10 => ColumnType::U32,
+            11 => ColumnType::U64,
             12 => ColumnType::Timestamp,
             13 => ColumnType::Blob,
             14 => ColumnType::ForeignKey,
@@ -171,8 +171,8 @@ impl From<i32> for ColumnType {
             18 => ColumnType::Identity,
             19 => ColumnType::Boolean,
             20 => ColumnType::Object,
-            21 => ColumnType::Int16,
-            22 => ColumnType::UInt16,
+            21 => ColumnType::I128,
+            22 => ColumnType::U128,
             23 => ColumnType::Bytes64,
             24 => ColumnType::Signature,
             25 => ColumnType::Nonce,
@@ -181,8 +181,8 @@ impl From<i32> for ColumnType {
             28 => ColumnType::TxId,
             29 => ColumnType::BlockHeight,
             30 => ColumnType::Enum,
-            31 => ColumnType::Int1,
-            32 => ColumnType::UInt1,
+            31 => ColumnType::I8,
+            32 => ColumnType::U8,
             33 => ColumnType::Virtual,
             34 => ColumnType::BlockId,
             35 => ColumnType::Array,
@@ -195,43 +195,43 @@ impl From<i32> for ColumnType {
 impl From<&str> for ColumnType {
     fn from(name: &str) -> ColumnType {
         match name {
-            "ID" => ColumnType::ID,
             "Address" => ColumnType::Address,
+            "Array" => ColumnType::Array,
             "AssetId" => ColumnType::AssetId,
-            "Bytes4" => ColumnType::Bytes4,
-            "Bytes8" => ColumnType::Bytes8,
+            "Blob" => ColumnType::Blob,
+            "BlockHeight" => ColumnType::BlockHeight,
+            "BlockId" => ColumnType::BlockId,
+            "Boolean" => ColumnType::Boolean,
             "Bytes32" => ColumnType::Bytes32,
+            "Bytes4" => ColumnType::Bytes4,
+            "Bytes64" => ColumnType::Bytes64,
+            "Bytes8" => ColumnType::Bytes8,
+            "Charfield" => ColumnType::Charfield,
             "ContractId" => ColumnType::ContractId,
-            "Salt" => ColumnType::Salt,
+            "Enum" => ColumnType::Enum,
+            "ForeignKey" => ColumnType::ForeignKey,
+            "HexString" => ColumnType::HexString,
+            "I128" => ColumnType::I128,
+            "I8" => ColumnType::I8,
+            "ID" => ColumnType::ID,
+            "Identity" => ColumnType::Identity,
             "Int4" => ColumnType::Int4,
             "Int8" => ColumnType::Int8,
-            "UInt4" => ColumnType::UInt4,
-            "UInt8" => ColumnType::UInt8,
-            "Timestamp" => ColumnType::Timestamp,
-            "Blob" => ColumnType::Blob,
-            "ForeignKey" => ColumnType::ForeignKey,
             "Json" => ColumnType::Json,
             "MessageId" => ColumnType::MessageId,
-            "Charfield" => ColumnType::Charfield,
-            "Identity" => ColumnType::Identity,
-            "Boolean" => ColumnType::Boolean,
-            "Object" => ColumnType::Object,
-            "UInt16" => ColumnType::UInt16,
-            "Int16" => ColumnType::Int16,
-            "Bytes64" => ColumnType::Bytes64,
-            "Signature" => ColumnType::Signature,
             "Nonce" => ColumnType::Nonce,
-            "HexString" => ColumnType::HexString,
+            "Object" => ColumnType::Object,
+            "Salt" => ColumnType::Salt,
+            "Signature" => ColumnType::Signature,
             "Tai64Timestamp" => ColumnType::Tai64Timestamp,
+            "Timestamp" => ColumnType::Timestamp,
             "TxId" => ColumnType::TxId,
-            "BlockHeight" => ColumnType::BlockHeight,
-            "Enum" => ColumnType::Enum,
-            "Int1" => ColumnType::Int1,
-            "UInt1" => ColumnType::UInt1,
-            "Virtual" => ColumnType::Virtual,
-            "BlockId" => ColumnType::BlockId,
-            "Array" => ColumnType::Array,
+            "U128" => ColumnType::U128,
+            "U32" => ColumnType::U32,
+            "U64" => ColumnType::U64,
+            "U8" => ColumnType::U8,
             "UID" => ColumnType::UID,
+            "Virtual" => ColumnType::Virtual,
             _ => unimplemented!("Invalid ColumnType: '{name}'."),
         }
     }
@@ -395,8 +395,8 @@ impl Column {
             ColumnType::HexString => "varchar(10485760)".to_string(),
             ColumnType::ID => "varchar(64) primary key".to_string(),
             ColumnType::Identity => "varchar(66)".to_string(),
-            ColumnType::Int1 => "integer".to_string(),
-            ColumnType::Int16 => "numeric(39, 0)".to_string(),
+            ColumnType::I8 => "integer".to_string(),
+            ColumnType::I128 => "numeric(39, 0)".to_string(),
             ColumnType::Int4 => "integer".to_string(),
             ColumnType::Int8 => "bigint".to_string(),
             ColumnType::Json => "json".to_string(),
@@ -408,25 +408,25 @@ impl Column {
             ColumnType::Tai64Timestamp => "varchar(128)".to_string(),
             ColumnType::Timestamp => "timestamp".to_string(),
             ColumnType::TxId => "varchar(64)".to_string(),
-            ColumnType::UInt1 => "integer".to_string(),
-            ColumnType::UInt16 => "numeric(39, 0)".to_string(),
-            ColumnType::UInt4 => "integer".to_string(),
-            ColumnType::UInt8 => "numeric(20, 0)".to_string(),
+            ColumnType::U8 => "integer".to_string(),
+            ColumnType::U128 => "numeric(39, 0)".to_string(),
+            ColumnType::U32 => "integer".to_string(),
+            ColumnType::U64 => "numeric(20, 0)".to_string(),
             ColumnType::Virtual => "json".to_string(),
             ColumnType::UID => "varchar(64)".to_string(),
             ColumnType::Array => {
                 let t = match self.array_coltype.expect(
                     "Column.array_coltype cannot be None when using `ColumnType::Array`.",
                 ) {
-                    ColumnType::Int1
-                    | ColumnType::UInt1
+                    ColumnType::I8
+                    | ColumnType::U8
                     | ColumnType::Int4
-                    | ColumnType::UInt4
+                    | ColumnType::U32
                     | ColumnType::BlockHeight => "integer",
                     ColumnType::Timestamp => "timestamp",
                     ColumnType::Int8 => "bigint",
-                    ColumnType::UInt8 => "numeric(20, 0)",
-                    ColumnType::UInt16 | ColumnType::Int16 => "numeric(39, 0)",
+                    ColumnType::U64 => "numeric(20, 0)",
+                    ColumnType::U128 | ColumnType::I128 => "numeric(39, 0)",
                     ColumnType::Address
                     | ColumnType::Bytes4
                     | ColumnType::Bytes8
@@ -1280,7 +1280,7 @@ mod tests {
 type Person @entity {
     id: ID!
     name: Charfield! @unique
-    age: UInt1!
+    age: U8!
 }"#;
 
         let fields = [
@@ -1299,7 +1299,7 @@ type Person @entity {
                     },
                 }]),
             ),
-            ("age", "UInt1", None),
+            ("age", "U8", None),
         ]
         .iter()
         .map(|(name, typ, directives)| {
@@ -1358,7 +1358,7 @@ type Person @entity {
 type Person @entity {
     id: ID!
     name: Charfield! @unique
-    age: UInt1!
+    age: U8!
 }"#;
 
         let schema = ParsedGraphQLSchema::new(
@@ -1409,7 +1409,7 @@ type Person @entity {
         let schema = r#"
 type Account @entity {
     id: ID!
-    index: UInt8!
+    index: U64!
 }
 
 type Wallet @entity {

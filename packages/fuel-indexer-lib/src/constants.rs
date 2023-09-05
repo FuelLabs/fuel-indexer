@@ -23,7 +23,7 @@ lazy_static! {
         "Bytes8",
         "Charfield",
         "ContractId",
-        "HexString",
+        "Bytes",
         "Json",
         "MessageId",
         "Nonce",
@@ -40,7 +40,7 @@ lazy_static! {
         "Option<Bytes8>",
         "Option<Charfield>",
         "Option<ContractId>",
-        "Option<HexString>",
+        "Option<Bytes>",
         "Option<Json>",
         "Option<MessageId>",
         "Option<Nonce>",
@@ -70,6 +70,47 @@ lazy_static! {
         "Identity"
     ]);
 
+    /// Sway ABI types we don't support and won't in the near future.
+    pub static ref IGNORED_ABI_JSON_TYPES: HashSet<&'static str> =
+        HashSet::from(["()", "struct Vec"]);
+
+    /// Fuel VM receipt-related types.
+    pub static ref FUEL_RECEIPT_TYPES: HashSet<&'static str> = HashSet::from([
+        "Burn",
+        "Call",
+        "Log",
+        "LogData",
+        "MessageOut",
+        "Mint",
+        "Panic",
+        "Return",
+        "Revert",
+        "ScriptResult",
+        "Transfer",
+        "TransferOut",
+    ]);
+
+    /// Set of types that should be copied instead of referenced.
+    pub static ref COPY_TYPES: HashSet<&'static str> = HashSet::from([
+        "Blob",
+        "Charfield",
+        "Bytes",
+        "ID",
+        "Identity",
+        "Json",
+        "Option<Blob>",
+        "Option<Charfield>",
+        "Option<Bytes>",
+        "Option<ID>",
+        "Option<Identity>",
+        "Option<Json>",
+        "Option<UID>",
+        "Option<Virtual>",
+        "UID",
+        "Vec<FtColumn>",
+        "Virtual",
+    ]);
+
     /// Fuel-specific receipt-related type names.
     pub static ref FUEL_PRIMITIVES: HashSet<&'static str> = HashSet::from([
         "BlockData",
@@ -87,64 +128,8 @@ lazy_static! {
         "Burn",
     ]);
 
-    /// ABI types not allowed in the contract ABI.
-    pub static ref DISALLOWED_ABI_JSON_TYPES: HashSet<&'static str> = HashSet::from([]);
-
-    /// Sway ABI types we don't support and won't in the near future.
-    pub static ref IGNORED_ABI_JSON_TYPES: HashSet<&'static str> =
-        HashSet::from(["()", "struct Vec"]);
-
-    /// Generic Sway ABI types.
-    pub static ref GENERIC_TYPES: HashSet<&'static str> = HashSet::from([
-        "generic T",
-        "raw untyped ptr",
-        "struct RawVec",
-        "struct Vec"
-    ]);
-
-    /// Fuel VM receipt-related types.
-    pub static ref FUEL_RECEIPT_TYPES: HashSet<&'static str> = HashSet::from([
-        "Call",
-        "Log",
-        "LogData",
-        "MessageOut",
-        "Panic",
-        "Return",
-        "Revert",
-        "ScriptResult",
-        "Transfer",
-        "TransferOut",
-        "Mint",
-        "Burn",
-    ]);
-
-    /// Set of Rust primitive types.
-    pub static ref RUST_PRIMITIVES: HashSet<&'static str> =
-        HashSet::from(["u8", "u16", "u32", "u64", "bool", "String"]);
-
-    /// Set of types that should be copied instead of referenced.
-    pub static ref COPY_TYPES: HashSet<&'static str> = HashSet::from([
-        "Blob",
-        "Charfield",
-        "HexString",
-        "ID",
-        "Identity",
-        "Json",
-        "Option<Blob>",
-        "Option<Charfield>",
-        "Option<HexString>",
-        "Option<ID>",
-        "Option<Identity>",
-        "Option<Json>",
-        "Option<UID>",
-        "Option<Virtual>",
-        "UID",
-        "Vec<FtColumn>",
-        "Virtual",
-    ]);
-
     /// Type names that are not allowed in GraphQL schema.
-    pub static ref DISALLOWED_OBJECT_NAMES: HashSet<&'static str> = HashSet::from([
+    pub static ref RESERVED_TYPEDEF_NAMES: HashSet<&'static str> = HashSet::from([
         // Scalars.
         "Address",
         "AssetId",
@@ -160,13 +145,13 @@ lazy_static! {
         "Charfield",
         "Color",
         "ContractId",
-        "HexString",
+        "Bytes",
         "ID",
         "Identity",
         "I8",
         "I128",
-        "Int4",
-        "Int8",
+        "I32",
+        "I64",
         "Json",
         "MessageId",
         "Nonce",
@@ -185,28 +170,60 @@ lazy_static! {
         // Imports for transaction fields.
         // https://github.com/FuelLabs/fuel-indexer/issues/286
         "BlockData",
+        "Burn",
         "BytecodeLength",
         "BytecodeWitnessIndex",
+        "Call",
         "FieldTxPointer",
         "GasLimit",
         "GasPrice",
         "Inputs",
         "Log",
+        "Log",
+        "LogData",
         "LogData",
         "Maturity",
         "MessageId",
+        "MessageOut",
+        "Mint",
         "Outputs",
+        "Panic",
         "ReceiptsRoot",
+        "Return",
+        "Revert",
         "Script",
         "ScriptData",
+        "ScriptResult",
         "ScriptResult",
         "StorageSlots",
         "TransactionData",
         "Transfer",
+        "Transfer",
+        "TransferOut",
         "TransferOut",
         "TxFieldSalt",
         "TxFieldScript",
         "TxId",
         "Witnesses",
     ]);
+
+
+    /// ABI types not allowed in the contract ABI.
+    pub static ref DISALLOWED_ABI_JSON_TYPES: HashSet<&'static str> = HashSet::from([]);
+
+    /// Generic Sway ABI types.
+    pub static ref GENERIC_TYPES: HashSet<&'static str> = HashSet::from([
+        "generic T",
+        "raw untyped ptr",
+        "struct RawVec",
+    ]);
+
+    pub static ref COLLECTION_TYPES: HashSet<&'static str> = HashSet::from([
+        "Vec",
+    ]);
+
+    /// Set of Rust primitive types.
+    pub static ref RUST_PRIMITIVES: HashSet<&'static str> =
+        HashSet::from(["u8", "u16", "u32", "u64", "bool", "String"]);
+
 }

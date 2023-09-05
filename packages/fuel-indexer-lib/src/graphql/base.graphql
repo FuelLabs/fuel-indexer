@@ -13,10 +13,10 @@ scalar Charfield
 scalar Color
 scalar ContractId
 scalar HexString
+scalar I128
+scalar I8
 scalar ID
 scalar Identity
-scalar Int1
-scalar Int16
 scalar Int4
 scalar Int8
 scalar Json
@@ -27,11 +27,11 @@ scalar Signature
 scalar Tai64Timestamp
 scalar Timestamp
 scalar TxId
+scalar U128
+scalar U32
+scalar U64
+scalar U8
 scalar UID
-scalar UInt1
-scalar UInt16
-scalar UInt4
-scalar UInt8
 scalar Virtual
 
 enum IndexType {

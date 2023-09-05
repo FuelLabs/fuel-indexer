@@ -15,9 +15,9 @@ Below is a mapping of GraphQL schema types to their Sway and database equivalent
 | str[32] | AssetId | varchar(64) |
 | str[32] | MessageId | varchar(64) |
 | str[32] | Salt | varchar(64) |
-| u32 | UInt4 | integer |
+| u32 | U32 | integer |
 | u64 | ID | bigint primary key |
-| u64 | UInt8 | bigint |
+| u64 | U64 | bigint |
 |  | Json | json |
 |  | Charfield | varchar(255) |
 |  | Blob | varchar(10485760) |
@@ -40,7 +40,7 @@ The corresponding GraphQL schema to mirror this `Event` struct would resemble:
 type Event @entity {
     id: ID!
     account: Address!
-    block_height: UInt8!
+    block_height: U64!
 }
 ```
 

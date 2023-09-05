@@ -490,39 +490,6 @@ dependencies = [
 
 [[package]]
 name = "async-graphql"
-version = "5.0.10"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b35ef8f9be23ee30fe1eb1cf175c689bc33517c6c6d0fd0669dade611e5ced7f"
-dependencies = [
- "async-graphql-derive 5.0.10",
- "async-graphql-parser 5.0.10",
- "async-graphql-value 5.0.10",
- "async-stream",
- "async-trait",
- "base64 0.13.1",
- "bytes",
- "fast_chemail",
- "fnv",
- "futures-util",
- "handlebars",
- "http",
- "indexmap 1.9.3",
- "mime",
- "multer",
- "num-traits",
- "once_cell",
- "pin-project-lite",
- "regex",
- "serde",
- "serde_json",
- "serde_urlencoded",
- "static_assertions",
- "tempfile",
- "thiserror",
-]
-
-[[package]]
-name = "async-graphql"
 version = "6.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d1a08c6aae08f17556577c8b6964f9a4e63dab9ebb42c6c27990d48c810292f9"
@@ -593,22 +560,6 @@ dependencies = [
 
 [[package]]
 name = "async-graphql-derive"
-version = "5.0.10"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1a0f6ceed3640b4825424da70a5107e79d48d9b2bc6318dfc666b2fc4777f8c4"
-dependencies = [
- "Inflector",
- "async-graphql-parser 5.0.10",
- "darling 0.14.4",
- "proc-macro-crate",
- "proc-macro2",
- "quote",
- "syn 1.0.109",
- "thiserror",
-]
-
-[[package]]
-name = "async-graphql-derive"
 version = "6.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "37bef462c5729e53970def569499cfcad11e5019f634158d015b75ffbc4609c3"
@@ -638,18 +589,6 @@ dependencies = [
 
 [[package]]
 name = "async-graphql-parser"
-version = "5.0.10"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ecc308cd3bc611ee86c9cf19182d2b5ee583da40761970e41207f088be3db18f"
-dependencies = [
- "async-graphql-value 5.0.10",
- "pest",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "async-graphql-parser"
 version = "6.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6b00b7296259479864a53dd32aa4dfbec8ed4c5d3b8c0337334a076fe0791935"
@@ -665,18 +604,6 @@ name = "async-graphql-value"
 version = "4.0.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7a941b499fead4a3fb5392cabf42446566d18c86313f69f2deab69560394d65f"
-dependencies = [
- "bytes",
- "indexmap 1.9.3",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "async-graphql-value"
-version = "5.0.10"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d461325bfb04058070712296601dfe5e5bd6cdff84780a0a8c569ffb15c87eb3"
 dependencies = [
  "bytes",
  "indexmap 1.9.3",
@@ -3397,9 +3324,9 @@ dependencies = [
 name = "fuel-indexer-graphql"
 version = "0.20.5"
 dependencies = [
- "async-graphql 5.0.10",
- "async-graphql-parser 5.0.10",
- "async-graphql-value 5.0.10",
+ "async-graphql 6.0.4",
+ "async-graphql-parser 6.0.4",
+ "async-graphql-value 6.0.4",
  "fuel-indexer-database",
  "fuel-indexer-database-types",
  "fuel-indexer-lib",
@@ -3473,8 +3400,8 @@ dependencies = [
 name = "fuel-indexer-macros"
 version = "0.20.5"
 dependencies = [
- "async-graphql-parser 5.0.10",
- "async-graphql-value 5.0.10",
+ "async-graphql-parser 6.0.4",
+ "async-graphql-value 6.0.4",
  "fuel-abi-types 0.3.0",
  "fuel-indexer-database-types",
  "fuel-indexer-lib",
@@ -3543,7 +3470,7 @@ dependencies = [
 name = "fuel-indexer-schema"
 version = "0.20.5"
 dependencies = [
- "async-graphql-parser 5.0.10",
+ "async-graphql-parser 6.0.4",
  "fuel-indexer-database",
  "fuel-indexer-lib",
  "fuel-indexer-types",

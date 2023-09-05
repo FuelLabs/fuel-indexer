@@ -20,16 +20,16 @@ pub type Int4 = i32;
 pub type Int8 = i64;
 
 /// Scalar for 16-byte signed integers.
-pub type Int16 = i128;
+pub type I128 = i128;
 
 /// Scalar for 4-byte unsigned integers.
-pub type UInt4 = u32;
+pub type U32 = u32;
 
 /// Scalar for 8-byte unsigned integers.
-pub type UInt8 = u64;
+pub type U64 = u64;
 
 /// Scalar for 16-byte unsigned integers.
-pub type UInt16 = u128;
+pub type U128 = u128;
 
 /// Scalar for 8-byte integers aliased as `Timestamp`s.
 pub type Timestamp = u64;
@@ -53,10 +53,10 @@ pub type Tai64Timestamp = Tai64;
 pub type BlockId = Bytes32;
 
 /// Scalar for 1-byte signed integers.
-pub type Int1 = i8;
+pub type I8 = i8;
 
 /// Scalar for 1-byte unsigned integers.
-pub type UInt1 = u8;
+pub type U8 = u8;
 
 /// Blob type used to store arbitrarily sized UTF-8 payloads.
 #[derive(Deserialize, Serialize, Clone, Eq, PartialEq, Debug, Hash, Default)]

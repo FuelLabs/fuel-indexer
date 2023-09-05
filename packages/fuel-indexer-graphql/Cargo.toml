@@ -10,9 +10,9 @@ rust-version = { workspace = true }
 description = "Fuel Indexer GraphQL"
 
 [dependencies]
-async-graphql = { version = "5.0", features = ["dynamic-schema"] }
-async-graphql-parser = "5.0"
-async-graphql-value = "5.0"
+async-graphql = { workspace = true, features = ["dynamic-schema"] }
+async-graphql-parser = { workspace = true }
+async-graphql-value = { workspace = true }
 fuel-indexer-database = { workspace = true }
 fuel-indexer-database-types = { workspace = true }
 fuel-indexer-schema = { workspace = true, features = ["db-models"] }

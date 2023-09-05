@@ -37,8 +37,8 @@ lazy_static! {
         "HexString",
         "ID",
         "Identity",
-        "Int1",
-        "Int16",
+        "I8",
+        "I128",
         "Int4",
         "Int8",
         "Json",
@@ -50,24 +50,24 @@ lazy_static! {
         "Timestamp",
         "TxId",
         "UID",
-        "UInt1",
-        "UInt16",
-        "UInt4",
-        "UInt8",
+        "U8",
+        "U128",
+        "U32",
+        "U64",
         "Virtual",
     ]);
 
     /// Scalar types that are represented by a numeric type. This ensures that the
     /// value type provided for a field filter matches the type of the scalar itself.
     static ref NUMERIC_SCALAR_TYPES: HashSet<&'static str> = HashSet::from([
-        "Int16",
+        "I128",
         "Int4",
         "Int8",
         "Timestamp",
         "Tai64Timestamp",
-        "UInt16",
-        "UInt4",
-        "UInt8",
+        "U128",
+        "U32",
+        "U64",
     ]);
 
     /// Scalar types that are represented by a string type. This ensures that the
@@ -107,7 +107,7 @@ lazy_static! {
         "HexString",
         "ID",
         "Identity",
-        "Int16",
+        "I128",
         "Int4",
         "Int8",
         "MessageId",
@@ -117,9 +117,9 @@ lazy_static! {
         "Tai64Timestamp",
         "Timestamp",
         "UID",
-        "UInt16",
-        "UInt4",
-        "UInt8",
+        "U128",
+        "U32",
+        "U64",
     ]);
 
     /// Entity types that should be ignored when building the dynamic schema,

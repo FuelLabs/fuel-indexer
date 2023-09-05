@@ -156,8 +156,8 @@ lazy_static! {
         "HexString",
         "ID",
         "Identity",
-        "Int1",
-        "Int16",
+        "I8",
+        "I128",
         "Int4",
         "Int8",
         "Json",
@@ -169,10 +169,10 @@ lazy_static! {
         "Tai64Timestamp",
         "Timestamp",
         "TxId",
-        "UInt1",
-        "UInt16",
-        "UInt4",
-        "UInt8",
+        "U8",
+        "U128",
+        "U32",
+        "U64",
 
         // Imports for transaction fields.
         // https://github.com/FuelLabs/fuel-indexer/issues/286

@@ -51,9 +51,11 @@ pub enum IndexerSchemaError {
 #[derive(Debug, PartialEq, Eq, Deserialize, Serialize, Clone, Hash)]
 pub enum FtColumn {
     Address(Option<Address>),
+    Array(Option<Vec<FtColumn>>),
     AssetId(Option<AssetId>),
     Blob(Option<Blob>),
     BlockHeight(Option<BlockHeight>),
+    BlockId(Option<BlockId>),
     Boolean(Option<bool>),
     Bytes32(Option<Bytes32>),
     Bytes4(Option<Bytes4>),
@@ -63,10 +65,10 @@ pub enum FtColumn {
     ContractId(Option<ContractId>),
     Enum(Option<String>),
     HexString(Option<HexString>),
+    I128(Option<I128>),
+    I8(Option<I8>),
     ID(Option<UID>),
     Identity(Option<Identity>),
-    Int1(Option<Int1>),
-    Int16(Option<Int16>),
     Int4(Option<Int4>),
     Int8(Option<Int8>),
     Json(Option<Json>),
@@ -77,14 +79,12 @@ pub enum FtColumn {
     Tai64Timestamp(Option<Tai64Timestamp>),
     Timestamp(Option<Int8>),
     TxId(Option<TxId>),
-    UInt1(Option<UInt1>),
-    UInt16(Option<UInt16>),
-    UInt4(Option<UInt4>),
-    UInt8(Option<UInt8>),
-    Virtual(Option<Virtual>),
-    BlockId(Option<BlockId>),
-    Array(Option<Vec<FtColumn>>),
+    U128(Option<U128>),
+    U32(Option<U32>),
+    U64(Option<U64>),
+    U8(Option<U8>),
     UID(Option<UID>),
+    Virtual(Option<Virtual>),
 }
 
 impl FtColumn {
@@ -153,11 +153,11 @@ impl FtColumn {
                 Some(val) => format!("{val}"),
                 None => String::from(NULL_VALUE),
             },
-            FtColumn::Int1(value) => match value {
+            FtColumn::I8(value) => match value {
                 Some(val) => format!("{val}"),
                 None => String::from(NULL_VALUE),
             },
-            FtColumn::UInt1(value) => match value {
+            FtColumn::U8(value) => match value {
                 Some(val) => format!("{val}"),
                 None => String::from(NULL_VALUE),
             },
@@ -165,11 +165,11 @@ impl FtColumn {
                 Some(val) => format!("{val}"),
                 None => String::from(NULL_VALUE),
             },
-            FtColumn::Int16(value) => match value {
+            FtColumn::I128(value) => match value {
                 Some(val) => format!("{val}"),
                 None => String::from(NULL_VALUE),
             },
-            FtColumn::UInt4(value) => match value {
+            FtColumn::U32(value) => match value {
                 Some(val) => format!("{val}"),
                 None => String::from(NULL_VALUE),
             },
@@ -177,11 +177,11 @@ impl FtColumn {
                 Some(val) => format!("{val}"),
                 None => String::from(NULL_VALUE),
             },
-            FtColumn::UInt8(value) => match value {
+            FtColumn::U64(value) => match value {
                 Some(val) => format!("{val}"),
                 None => String::from(NULL_VALUE),
             },
-            FtColumn::UInt16(value) => match value {
+            FtColumn::U128(value) => match value {
                 Some(val) => format!("{val}"),
                 None => String::from(NULL_VALUE),
             },
@@ -313,10 +313,10 @@ mod tests {
         ));
         let int4 = FtColumn::Int4(Some(i32::from_le_bytes([0x78; 4])));
         let int8 = FtColumn::Int8(Some(i64::from_le_bytes([0x78; 8])));
-        let int16 = FtColumn::Int16(Some(i128::from_le_bytes([0x78; 16])));
-        let uint4 = FtColumn::UInt4(Some(u32::from_le_bytes([0x78; 4])));
-        let uint8 = FtColumn::UInt8(Some(u64::from_le_bytes([0x78; 8])));
-        let uint16 = FtColumn::UInt16(Some(u128::from_le_bytes([0x78; 16])));
+        let int16 = FtColumn::I128(Some(i128::from_le_bytes([0x78; 16])));
+        let uint4 = FtColumn::U32(Some(u32::from_le_bytes([0x78; 4])));
+        let uint8 = FtColumn::U64(Some(u64::from_le_bytes([0x78; 8])));
+        let uint16 = FtColumn::U128(Some(u128::from_le_bytes([0x78; 16])));
         let int64 = FtColumn::Timestamp(Some(i64::from_le_bytes([0x78; 8])));
         let salt = FtColumn::Salt(Some(Salt::try_from([0x31; 32]).expect("Bad bytes")));
         let message_id = FtColumn::MessageId(Some(
@@ -360,9 +360,9 @@ mod tests {
         let int4_none = FtColumn::Int4(None);
         let int8_none = FtColumn::Int8(None);
         let int16_none = FtColumn::Int8(None);
-        let uint4_none = FtColumn::UInt4(None);
-        let uint8_none = FtColumn::UInt8(None);
-        let uint16_none = FtColumn::UInt8(None);
+        let uint4_none = FtColumn::U32(None);
+        let uint8_none = FtColumn::U64(None);
+        let uint16_none = FtColumn::U64(None);
         let int64_none = FtColumn::Timestamp(None);
         let salt_none = FtColumn::Salt(None);
         let message_id_none = FtColumn::MessageId(None);
