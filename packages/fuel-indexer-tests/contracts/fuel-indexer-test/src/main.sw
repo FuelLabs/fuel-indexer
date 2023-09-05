@@ -12,6 +12,10 @@ use std::{
     bytes::Bytes,
 };
 
+configurable {
+    CONFIGURABLE_VALUE: Option<u64> = Option::None,
+}
+
 pub enum UserError {
     Unauthorized: (),
 }
