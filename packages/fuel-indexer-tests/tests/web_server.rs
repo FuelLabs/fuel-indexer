@@ -311,7 +311,10 @@ async fn test_ensure_no_missing_blocks() {
     };
 
     let IndexingTestComponents {
-        ref node, ref manifest, ref db, ..
+        ref node,
+        ref manifest,
+        ref db,
+        ..
     } = setup_indexing_test_components(Some(config)).await;
 
     node.abort();
