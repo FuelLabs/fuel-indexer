@@ -108,10 +108,29 @@ fn process_fn_items(
         }])
         .collect::<Vec<proc_macro2::TokenStream>>();
 
+    let non_decodable = {
+        let mut result = HashSet::new();
+        for t in abi_types.iter() {
+            if is_non_decodable_type(t) {
+                result.insert(t.type_id);
+            }
+        }
+        for t in abi_types.iter() {
+            if let Some(ref type_parameters) = t.type_parameters {
+                for tp in type_parameters {
+                    if result.contains(tp) {
+                        result.insert(t.type_id);
+                    }
+                }
+            }
+        }
+        result
+    };
+
     let abi_type_decoders = abi_types
         .iter()
         .filter_map(|typ| {
-            if is_non_decodable_type(typ) {
+            if non_decodable.contains(&typ.type_id) {
                 return None;
             }
 
@@ -147,7 +166,7 @@ fn process_fn_items(
     let abi_struct_fields = abi_types
         .iter()
         .filter_map(|typ| {
-            if is_non_decodable_type(typ) {
+            if non_decodable.contains(&typ.type_id) {
                 return None;
             }
 
