@@ -7,18 +7,15 @@ use async_std::{fs::File, io::ReadExt};
 use fuel_indexer_database::{
     queries, types::IndexerAssetType, IndexerConnection, IndexerConnectionPool,
 };
-use fuel_indexer_lib::{defaults, utils::ServiceRequest};
+use fuel_indexer_lib::utils::ServiceRequest;
 use fuel_indexer_schema::db::manager::SchemaManager;
 use fuel_indexer_types::fuel::BlockData;
 use futures::Future;
 use std::collections::HashMap;
 use std::marker::Send;
 use std::sync::atomic::{AtomicBool, Ordering};
-use tokio::{
-    sync::mpsc::Receiver,
-    time::{sleep, Duration},
-};
-use tracing::{debug, error, info, warn};
+use tokio::sync::mpsc::Receiver;
+use tracing::{error, info, warn};
 
 /// Primary service used to run one or many indexers.
 pub struct IndexerService {
