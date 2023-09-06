@@ -24,8 +24,8 @@ extern "C" {
     // log_data prints information to stdout.
     fn ff_log_data(ptr: *const u8, len: u32, log_level: u32);
     // Put methods have error codes.
-    fn ff_put_object(type_id: i64, ptr: *const u8, len: u32) -> i32;
-    fn ff_put_many_to_many_record(ptr: *const u8, len: u32) -> i32;
+    fn ff_put_object(type_id: i64, ptr: *const u8, len: u32);
+    fn ff_put_many_to_many_record(ptr: *const u8, len: u32);
 }
 
 // TODO: more to do here, hook up to 'impl log::Log for Logger'
@@ -75,7 +75,7 @@ pub trait Entity<'a>: Sized + PartialEq + Eq + std::fmt::Debug {
     }
 
     /// Saves a record that contains a list of multiple elements.
-    fn save_many_to_many(&self) -> Result<(), WasmIndexerError> {
+    fn save_many_to_many(&self) {
         if let Some(meta) = Self::JOIN_METADATA {
             let items = meta.iter().filter_map(|x| x.clone()).collect::<Vec<_>>();
             let row = self.to_row();
@@ -86,16 +86,8 @@ pub trait Entity<'a>: Sized + PartialEq + Eq + std::fmt::Debug {
                 .collect::<Vec<_>>();
             let bytes = serialize(&queries);
             unsafe {
-                let res = ff_put_many_to_many_record(bytes.as_ptr(), bytes.len() as u32);
-
-                if res != 0 {
-                    return Err(WasmIndexerError::UnableToSaveListType);
-                }
-
-                Ok(())
+                ff_put_many_to_many_record(bytes.as_ptr(), bytes.len() as u32);
             }
-        } else {
-            Ok(())
         }
     }
 
@@ -135,17 +127,14 @@ pub trait Entity<'a>: Sized + PartialEq + Eq + std::fmt::Debug {
 
     /// Saves a record.
     fn save(&self) {
-        self.save_unsafe().unwrap()
+        self.save_unsafe()
     }
 
     /// Saves a record through the FFI with the WASM runtime and checks for errors.
-    fn save_unsafe(&self) -> Result<(), WasmIndexerError> {
+    fn save_unsafe(&self) {
         unsafe {
             let buf = serialize(&self.to_row());
-            let res = ff_put_object(Self::TYPE_ID, buf.as_ptr(), buf.len() as u32);
-            if res != 0 {
-                return Err(WasmIndexerError::from(res));
-            }
+            ff_put_object(Self::TYPE_ID, buf.as_ptr(), buf.len() as u32);
         }
 
         self.save_many_to_many()

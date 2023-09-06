@@ -833,7 +833,7 @@ impl From<ObjectDecoder> for TokenStream {
                                             .map(|query| query.to_string())
                                             .collect::<Vec<_>>();
 
-                                        d.lock().await.put_many_to_many_record(queries).await;
+                                        d.lock().await.put_many_to_many_record(queries).await.unwrap();
                                     }
                                 }
                                 None => {}
@@ -868,7 +868,7 @@ impl From<ObjectDecoder> for TokenStream {
                                         Self::TYPE_ID,
                                         self.to_row(),
                                         serialize(&self.to_row())
-                                    ).await;
+                                    ).await.unwrap();
                                 }
                                 None => {},
                             }

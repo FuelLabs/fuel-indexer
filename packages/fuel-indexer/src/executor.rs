@@ -16,7 +16,9 @@ use fuel_core_client::client::{
     FuelClient,
 };
 use fuel_indexer_database::IndexerConnectionPool;
-use fuel_indexer_lib::{defaults::*, manifest::Manifest, utils::serialize};
+use fuel_indexer_lib::{
+    defaults::*, manifest::Manifest, utils::serialize, WasmIndexerError,
+};
 use fuel_indexer_types::{
     fuel::{field::*, *},
     scalar::{Bytes32, HexString},
@@ -27,6 +29,7 @@ use fuel_vm::state::ProgramState as ClientProgramState;
 use futures::Future;
 use itertools::Itertools;
 use std::{
+    error::Error,
     marker::{Send, Sync},
     path::Path,
     str::FromStr,
@@ -187,6 +190,12 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                 .handle_events(kill_switch.clone(), block_info)
                 .await;
 
+            // If the kill switch has been triggered, the executor exits early.
+            if kill_switch.load(Ordering::SeqCst) {
+                info!("Kill switch flipped, stopping Indexer({indexer_uid}). <('.')>");
+                break;
+            }
+
             if let Err(e) = result {
                 // Run time metering is deterministic. There is no point in retrying.
                 if let IndexerError::RunTimeLimitExceededError = e {
@@ -227,12 +236,6 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
 
             // If we make it this far, we always go to the next page.
             cursor = next_cursor;
-
-            // Again, check if something else has signaled that this indexer should stop, then stop.
-            if kill_switch.load(Ordering::SeqCst) {
-                info!("Kill switch flipped, stopping Indexer({indexer_uid}). <('.')>");
-                break;
-            }
 
             // Since we had successful call, we reset the retry count.
             consecutive_retries = 0;
@@ -501,6 +504,10 @@ pub struct IndexEnv {
 
     /// Reference to the connected database.
     pub db: Arc<Mutex<Database>>,
+
+    /// Kill switch for this indexer. When true, the indexer service indicated
+    /// that the indexer is being terminated.
+    pub kill_switch: Arc<AtomicBool>,
 }
 
 impl IndexEnv {
@@ -509,6 +516,7 @@ impl IndexEnv {
         pool: IndexerConnectionPool,
         manifest: &Manifest,
         config: &IndexerConfig,
+        kill_switch: Arc<AtomicBool>,
     ) -> IndexerResult<IndexEnv> {
         let db = Database::new(pool, manifest, config).await;
         Ok(IndexEnv {
@@ -516,6 +524,7 @@ impl IndexEnv {
             alloc: None,
             dealloc: None,
             db: Arc::new(Mutex::new(db)),
+            kill_switch,
         })
     }
 }
@@ -649,6 +658,7 @@ impl WasmIndexExecutor {
         wasm_bytes: impl AsRef<[u8]>,
         pool: IndexerConnectionPool,
         schema_version: String,
+        kill_switch: Arc<AtomicBool>,
     ) -> IndexerResult<Self> {
         let mut compiler_config = Cranelift::new();
 
@@ -661,7 +671,7 @@ impl WasmIndexExecutor {
             compiler_config.push_middleware(metering);
         }
 
-        let idx_env = IndexEnv::new(pool, manifest, config).await?;
+        let idx_env = IndexEnv::new(pool, manifest, config, kill_switch).await?;
 
         let db: Arc<Mutex<Database>> = idx_env.db.clone();
 
@@ -730,12 +740,13 @@ impl WasmIndexExecutor {
         p: impl AsRef<Path>,
         config: Option<IndexerConfig>,
         pool: IndexerConnectionPool,
+        kill_switch: Arc<AtomicBool>,
     ) -> IndexerResult<WasmIndexExecutor> {
         let config = config.unwrap_or_default();
         let manifest = Manifest::from_file(p)?;
         let bytes = manifest.module_bytes()?;
         let schema_version = manifest.graphql_schema_content()?.version().to_string();
-        Self::new(&config, &manifest, bytes, pool, schema_version).await
+        Self::new(&config, &manifest, bytes, pool, schema_version, kill_switch).await
     }
 
     /// Create a new `WasmIndexExecutor`.
@@ -762,6 +773,7 @@ impl WasmIndexExecutor {
                         bytes.clone(),
                         pool,
                         schema_version,
+                        killer.clone(),
                     )
                     .await
                     {
@@ -794,6 +806,7 @@ impl WasmIndexExecutor {
                     bytes,
                     pool,
                     schema_version,
+                    killer.clone(),
                 )
                 .await
                 {
@@ -917,7 +930,14 @@ impl Executor for WasmIndexExecutor {
                 self.db.lock().await.revert_transaction().await?;
                 return Err(IndexerError::RunTimeLimitExceededError);
             } else {
-                error!("WasmIndexExecutor({uid}) WASM execution failed: {e:?}.");
+                if let Some(e) = e
+                    .source()
+                    .and_then(|e| e.downcast_ref::<WasmIndexerError>())
+                {
+                    error!("Indexer({uid}) WASM execution failed: {e}.");
+                } else {
+                    error!("Indexer({uid}) WASM execution failed: {e:?}.");
+                };
                 self.db.lock().await.revert_transaction().await?;
                 return Err(IndexerError::from(e));
             }

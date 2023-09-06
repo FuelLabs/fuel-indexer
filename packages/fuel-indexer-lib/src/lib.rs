@@ -44,6 +44,8 @@ pub enum WasmIndexerError {
     UnableToSaveListType,
     UninitializedMemory,
     UnableToFetchLogString,
+    KillSwitch,
+    DatabaseError,
     GeneralError,
 }
 
@@ -57,6 +59,8 @@ impl From<i32> for WasmIndexerError {
             4 => Self::UnableToSaveListType,
             5 => Self::UninitializedMemory,
             6 => Self::UnableToFetchLogString,
+            7 => Self::KillSwitch,
+            8 => Self::DatabaseError,
             _ => Self::GeneralError,
         }
     }
@@ -82,6 +86,12 @@ impl std::fmt::Display for WasmIndexerError {
             }
             Self::UnableToFetchLogString => {
                 write!(f, "Failed to fetch log string")
+            }
+            Self::KillSwitch => {
+                write!(f, "Kill switch has been triggered")
+            }
+            Self::DatabaseError => {
+                write!(f, "Failed performing a database operation")
             }
             Self::GeneralError => write!(f, "A WASM error occurred"),
         }

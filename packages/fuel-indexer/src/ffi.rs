@@ -70,8 +70,23 @@ fn get_object_id(mem: &MemoryView, ptr: u32, len: u32) -> FFIResult<String> {
 }
 
 /// Log the string at the given pointer to stdout.
-fn log_data(mut env: FunctionEnvMut<IndexEnv>, ptr: u32, len: u32, log_level: u32) {
+fn log_data(
+    mut env: FunctionEnvMut<IndexEnv>,
+    ptr: u32,
+    len: u32,
+    log_level: u32,
+) -> Result<(), WasmIndexerError> {
     let (idx_env, store) = env.data_and_store_mut();
+
+    if idx_env
+        .kill_switch
+        .load(std::sync::atomic::Ordering::SeqCst)
+    {
+        // If the kill switch has been flipped, returning an error will cause an
+        // early termination of WASM execution.
+        return Err(WasmIndexerError::KillSwitch);
+    }
+
     let mem = idx_env
         .memory
         .as_mut()
@@ -89,6 +104,8 @@ fn log_data(mut env: FunctionEnvMut<IndexEnv>, ptr: u32, len: u32, log_level: u3
         LOG_LEVEL_TRACE => trace!("{log_string}",),
         l => panic!("Invalid log level: {l}"),
     }
+
+    Ok(())
 }
 
 /// Fetch the given type at the given pointer from memory.
@@ -99,8 +116,17 @@ fn get_object(
     type_id: i64,
     ptr: u32,
     len_ptr: u32,
-) -> u32 {
+) -> Result<u32, WasmIndexerError> {
     let (idx_env, mut store) = env.data_and_store_mut();
+
+    if idx_env
+        .kill_switch
+        .load(std::sync::atomic::Ordering::SeqCst)
+    {
+        // If the kill switch has been flipped, returning an error will cause an
+        // early termination of WASM execution.
+        return Err(WasmIndexerError::KillSwitch);
+    }
 
     let mem = idx_env
         .memory
@@ -138,9 +164,9 @@ fn get_object(
             mem.data_unchecked_mut()[range].copy_from_slice(&bytes);
         }
 
-        result
+        Ok(result)
     } else {
-        0
+        Ok(0)
     }
 }
 
@@ -152,13 +178,22 @@ fn put_object(
     type_id: i64,
     ptr: u32,
     len: u32,
-) -> i32 {
+) -> Result<(), WasmIndexerError> {
     let (idx_env, store) = env.data_and_store_mut();
+
+    if idx_env
+        .kill_switch
+        .load(std::sync::atomic::Ordering::SeqCst)
+    {
+        // If the kill switch has been flipped, returning an error will cause an
+        // early termination of WASM execution.
+        return Err(WasmIndexerError::KillSwitch);
+    }
 
     let mem = if let Some(memory) = idx_env.memory.as_mut() {
         memory.view(&store)
     } else {
-        return WasmIndexerError::UninitializedMemory as i32;
+        return Err(WasmIndexerError::UninitializedMemory);
     };
 
     let mut bytes = Vec::with_capacity(len as usize);
@@ -172,12 +207,12 @@ fn put_object(
         Ok(columns) => columns,
         Err(e) => {
             error!("Failed to deserialize Vec<FtColumn> for put_object: {e:?}",);
-            return WasmIndexerError::DeserializationError as i32;
+            return Err(WasmIndexerError::DeserializationError);
         }
     };
 
     let rt = tokio::runtime::Handle::current();
-    rt.block_on(async {
+    let result = rt.block_on(async {
         idx_env
             .db
             .lock()
@@ -186,19 +221,37 @@ fn put_object(
             .await
     });
 
-    0
+    if let Err(e) = result {
+        error!("Failed to put_object: {e}");
+        return Err(WasmIndexerError::DatabaseError);
+    };
+
+    Ok(())
 }
 
 /// Execute the arbitrary query at the given pointer.
 ///
 /// This function is fallible, and will panic if the query cannot be executed.
-fn put_many_to_many_record(mut env: FunctionEnvMut<IndexEnv>, ptr: u32, len: u32) -> i32 {
+fn put_many_to_many_record(
+    mut env: FunctionEnvMut<IndexEnv>,
+    ptr: u32,
+    len: u32,
+) -> Result<(), WasmIndexerError> {
     let (idx_env, store) = env.data_and_store_mut();
+
+    if idx_env
+        .kill_switch
+        .load(std::sync::atomic::Ordering::SeqCst)
+    {
+        // If the kill switch has been flipped, returning an error will cause an
+        // early termination of WASM execution.
+        return Err(WasmIndexerError::KillSwitch);
+    }
 
     let mem = if let Some(memory) = idx_env.memory.as_mut() {
         memory.view(&store)
     } else {
-        return WasmIndexerError::UninitializedMemory as i32;
+        return Err(WasmIndexerError::UninitializedMemory);
     };
 
     let mut bytes = Vec::with_capacity(len as usize);
@@ -212,12 +265,12 @@ fn put_many_to_many_record(mut env: FunctionEnvMut<IndexEnv>, ptr: u32, len: u32
         Ok(queries) => queries.iter().map(|q| q.to_string()).collect(),
         Err(e) => {
             error!("Failed to deserialize queries: {e:?}");
-            return WasmIndexerError::DeserializationError as i32;
+            return Err(WasmIndexerError::DeserializationError);
         }
     };
 
     let rt = tokio::runtime::Handle::current();
-    rt.block_on(async {
+    let result = rt.block_on(async {
         idx_env
             .db
             .lock()
@@ -226,7 +279,12 @@ fn put_many_to_many_record(mut env: FunctionEnvMut<IndexEnv>, ptr: u32, len: u32
             .await
     });
 
-    0
+    if let Err(e) = result {
+        error!("Failed to put_many_to_many_record: {e:?}");
+        return Err(WasmIndexerError::DatabaseError);
+    }
+
+    Ok(())
 }
 
 /// Get the exports for the given store and environment.

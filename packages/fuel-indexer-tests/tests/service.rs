@@ -3,7 +3,7 @@ use fuel_indexer::{Executor, IndexerConfig, WasmIndexExecutor};
 use fuel_indexer_lib::{config::DatabaseConfig, manifest::Manifest};
 use fuel_indexer_tests::fixtures::TestPostgresDb;
 use std::str::FromStr;
-use std::sync::atomic::AtomicBool;
+use std::sync::{atomic::AtomicBool, Arc};
 
 #[tokio::test]
 async fn test_wasm_executor_can_meter_execution() {
@@ -48,12 +48,14 @@ async fn test_wasm_executor_can_meter_execution() {
                 .version()
                 .to_string();
 
+            let kill_switch = Arc::new(AtomicBool::new(false));
             let mut executor = WasmIndexExecutor::new(
                 &config,
                 &manifest,
                 bytes.clone(),
                 pool,
                 schema_version,
+                kill_switch,
             )
             .await
             .unwrap();
