@@ -48,6 +48,8 @@ The `contract_id` specifies the particular contract to which you would like an i
 
 > Important: Contract IDs are unique to the content of a contract. If you are subscribing to a certain contract and then the contract itself is changed or updated, you will need to change the `contract_id` field of the manifest to the new ID.
 
+> Note: This parameter supports both Bech32 contract IDs and non-Bech32 contract IDs
+
 ## `graphql_schema`
 
 _Required._
