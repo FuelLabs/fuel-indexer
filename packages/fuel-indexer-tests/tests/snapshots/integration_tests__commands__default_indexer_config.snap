@@ -39,4 +39,5 @@ rate_limit:
 replace_indexer: false
 accept_sql_queries: false
 node_block_page_size: 20
+enable_blockstore: false
 
