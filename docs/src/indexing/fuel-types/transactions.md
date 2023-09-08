@@ -25,9 +25,14 @@ mod my_indexer {
         let height = block_data.header.height;
         if !block_data.transactions.is_empty() {
             let transaction = block_data.transactions[0];
-            info!("Transaction {} in block at height {} has {} receipts", transaction.id, block_data.header.height, transaction.receipts.len());
+            info!(
+                "Transaction {} in block at height {} has {} receipts",
+                transaction.id,
+                block_data.header.height,
+                transaction.receipts.len()
+            );
         }
-
     }
 }
+
 ```

@@ -38,21 +38,19 @@ mod my_indexer {
         if !block_data.transactions.is_empty() {
             let transaction = block_data.transactions[0];
             match transaction.transaction {
-                fuel::Transaction::Script(tx) => {
-                    match tx.status {
-                        fuel::TransactionStatus::Success {
-                            block_id, time
-                        } => {
-                            info!("Transaction {} in block {} was successful at {}", tx.id, block_id, time);
-                        }
+                fuel::Transaction::Script(tx) => match tx.status {
+                    fuel::TransactionStatus::Success { block_id, time } => {
+                        info!(
+                            "Transaction {} in block {} was successful at {}",
+                            tx.id, block_id, time
+                        );
                     }
-                }
+                },
                 _ => {
                     info!("We don't care about this transaction type");
                 }
             }
         }
-
     }
 }
 ```
