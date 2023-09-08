@@ -150,9 +150,10 @@ pub fn touch_file(path: &Path) -> std::io::Result<()> {
 
 /// Set src/lib.rs' atime and mtime to now and thus ensure the WASM module is
 /// rebuilt if schema file has changed.
-pub fn ensure_rebuild_if_schema_changed(
+pub fn ensure_rebuild_if_schema_or_manifest_changed(
     project_dir: &Path,
     schema: &Path,
+    manifest: &Path,
     exec_source: ExecutionSource,
 ) -> std::io::Result<()> {
     let schema_mtime = {
@@ -160,25 +161,29 @@ pub fn ensure_rebuild_if_schema_changed(
         filetime::FileTime::from_last_modification_time(&metadata)
     };
 
-    let sourcefile = match exec_source {
-        ExecutionSource::Native => "main.rs",
-        ExecutionSource::Wasm => "lib.rs",
+    let manifest_mtime = {
+        let metadata = std::fs::metadata(manifest).unwrap();
+        filetime::FileTime::from_last_modification_time(&metadata)
     };
 
-    let lib_rs = {
+    let entrypoint_rs = {
+        let sourcefile = match exec_source {
+            ExecutionSource::Native => "main.rs",
+            ExecutionSource::Wasm => "lib.rs",
+        };
         let mut path = project_dir.to_owned();
         path.push("src");
         path.push(sourcefile);
         path
     };
 
-    let lib_rs_mtime = {
-        let metadata = std::fs::metadata(lib_rs.as_path()).unwrap();
+    let entrypoint_rs_mtime = {
+        let metadata = std::fs::metadata(entrypoint_rs.as_path()).unwrap();
         filetime::FileTime::from_last_modification_time(&metadata)
     };
 
-    if schema_mtime > lib_rs_mtime {
-        touch_file(lib_rs.as_path())?;
+    if schema_mtime > entrypoint_rs_mtime || manifest_mtime > entrypoint_rs_mtime {
+        touch_file(entrypoint_rs.as_path())?;
     }
 
     Ok(())
