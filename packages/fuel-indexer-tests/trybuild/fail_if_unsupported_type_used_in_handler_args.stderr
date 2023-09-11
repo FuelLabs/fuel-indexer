@@ -1,0 +1,13 @@
+error: Type with ident 'Ident { ident: "Vec", span: #0 bytes(177..180) }' is not currently supported.
+ --> trybuild/fail_if_unsupported_type_used_in_handler_args.rs
+  |
+  | #[indexer(manifest = "packages/fuel-indexer-tests/trybuild/simple_wasm.yaml")]
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: this error originates in the attribute macro `indexer` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0601]: `main` function not found in crate `$CRATE`
+ --> trybuild/fail_if_unsupported_type_used_in_handler_args.rs
+  |
+  | }
+  |  ^ consider adding a `main` function to `$DIR/trybuild/fail_if_unsupported_type_used_in_handler_args.rs`

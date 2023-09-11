@@ -714,7 +714,40 @@ impl From<fuel::Receipt> for Receipt {
 
                 Self::from(receipt)
             }
-            fuel::Receipt::Mint { .. } | fuel::Receipt::Burn { .. } => todo!(),
+            fuel::Receipt::Mint {
+                sub_id,
+                contract_id,
+                val,
+                pc,
+                is,
+            } => {
+                let receipt = MintReceipt {
+                    sub_id,
+                    contract_id,
+                    val,
+                    pc,
+                    isr: is,
+                };
+
+                Self::from(receipt)
+            }
+            fuel::Receipt::Burn {
+                sub_id,
+                contract_id,
+                val,
+                pc,
+                is,
+            } => {
+                let receipt = BurnReceipt {
+                    sub_id,
+                    contract_id,
+                    val,
+                    pc,
+                    isr: is,
+                };
+
+                Self::from(receipt)
+            }
         }
     }
 }
