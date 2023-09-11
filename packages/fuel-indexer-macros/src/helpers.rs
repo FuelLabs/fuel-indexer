@@ -841,7 +841,7 @@ pub fn derive_log_generic_inner_typedefs<'a>(
 /// Given a `GenericType`, and ABI JSON metadata, derive the inner `TypeDefinition`s associated with the given
 /// generic `TypeDefinition`.
 ///
-/// So this function will parsed all function inputs/outputs and log types, find all generics (e.g., `Vec<T>`, `Option<U>`),
+/// So this function will parse all function inputs/outputs and log types, find all generics (e.g., `Vec<T>`, `Option<U>`),
 /// and return the inner `TypeDefinition`s associated with those generics (e.g., `T` and `U`)
 pub fn derive_generic_inner_typedefs<'a>(
     typ: &'a TypeDeclaration,
