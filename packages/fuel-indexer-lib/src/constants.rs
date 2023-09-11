@@ -72,7 +72,7 @@ lazy_static! {
 
     /// Sway ABI types we don't support and won't in the near future.
     pub static ref IGNORED_ABI_JSON_TYPES: HashSet<&'static str> =
-        HashSet::from(["()", "struct Vec"]);
+        HashSet::from(["()"]);
 
     /// Fuel VM receipt-related types.
     pub static ref FUEL_RECEIPT_TYPES: HashSet<&'static str> = HashSet::from([
@@ -209,14 +209,18 @@ lazy_static! {
 
 
     /// ABI types not allowed in the contract ABI.
-    pub static ref DISALLOWED_ABI_JSON_TYPES: HashSet<&'static str> = HashSet::from([]);
+    pub static ref UNSUPPORTED_ABI_JSON_TYPES: HashSet<&'static str> = HashSet::from(["Vec"]);
 
     /// Generic Sway ABI types.
-    pub static ref GENERIC_TYPES: HashSet<&'static str> = HashSet::from([
+    pub static ref IGNORED_GENERIC_METADATA: HashSet<&'static str> = HashSet::from([
         "generic T",
         "raw untyped ptr",
         "struct RawVec",
-        "struct Vec"
+    ]);
+
+    pub static ref GENERIC_STRUCTS: HashSet<&'static str> = HashSet::from([
+        "Vec",
+        "Option"
     ]);
 
     /// Set of Rust primitive types.

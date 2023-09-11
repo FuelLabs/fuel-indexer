@@ -12,12 +12,12 @@
       "components": [
         {
           "name": "__tuple_element",
-          "type": 16,
+          "type": 17,
           "typeArguments": null
         },
         {
           "name": "__tuple_element",
-          "type": 29,
+          "type": 30,
           "typeArguments": null
         }
       ],
@@ -29,7 +29,7 @@
       "components": [
         {
           "name": "__tuple_element",
-          "type": 31,
+          "type": 32,
           "typeArguments": null
         },
         {
@@ -46,7 +46,7 @@
       "components": [
         {
           "name": "__tuple_element",
-          "type": 32,
+          "type": 33,
           "typeArguments": null
         },
         {
@@ -68,17 +68,17 @@
       "components": [
         {
           "name": "__tuple_element",
-          "type": 31,
-          "typeArguments": null
-        },
-        {
-          "name": "__tuple_element",
           "type": 32,
           "typeArguments": null
         },
         {
           "name": "__tuple_element",
-          "type": 14,
+          "type": 33,
+          "typeArguments": null
+        },
+        {
+          "name": "__tuple_element",
+          "type": 15,
           "typeArguments": null
         }
       ],
@@ -102,17 +102,17 @@
       "components": [
         {
           "name": "Ping",
-          "type": 23,
+          "type": 24,
           "typeArguments": null
         },
         {
           "name": "Pung",
-          "type": 25,
+          "type": 26,
           "typeArguments": null
         },
         {
           "name": "Call",
-          "type": 10,
+          "type": 11,
           "typeArguments": null
         }
       ],
@@ -124,12 +124,12 @@
       "components": [
         {
           "name": "Address",
-          "type": 18,
+          "type": 19,
           "typeArguments": null
         },
         {
           "name": "ContractId",
-          "type": 20,
+          "type": 21,
           "typeArguments": null
         }
       ],
@@ -149,6 +149,25 @@
     },
     {
       "typeId": 10,
+      "type": "enum Option",
+      "components": [
+        {
+          "name": "None",
+          "type": 0,
+          "typeArguments": null
+        },
+        {
+          "name": "Some",
+          "type": 13,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": [
+        13
+      ]
+    },
+    {
+      "typeId": 11,
       "type": "enum SimpleEnum",
       "components": [
         {
@@ -170,7 +189,7 @@
       "typeParameters": null
     },
     {
-      "typeId": 11,
+      "typeId": 12,
       "type": "enum UserError",
       "components": [
         {
@@ -182,43 +201,43 @@
       "typeParameters": null
     },
     {
-      "typeId": 12,
+      "typeId": 13,
       "type": "generic T",
       "components": null,
       "typeParameters": null
     },
     {
-      "typeId": 13,
+      "typeId": 14,
       "type": "raw untyped ptr",
       "components": null,
       "typeParameters": null
     },
     {
-      "typeId": 14,
+      "typeId": 15,
       "type": "str[12]",
       "components": null,
       "typeParameters": null
     },
     {
-      "typeId": 15,
+      "typeId": 16,
       "type": "str[32]",
       "components": null,
       "typeParameters": null
     },
     {
-      "typeId": 16,
+      "typeId": 17,
       "type": "str[5]",
       "components": null,
       "typeParameters": null
     },
     {
-      "typeId": 17,
+      "typeId": 18,
       "type": "str[78]",
       "components": null,
       "typeParameters": null
     },
     {
-      "typeId": 18,
+      "typeId": 19,
       "type": "struct Address",
       "components": [
         {
@@ -230,7 +249,7 @@
       "typeParameters": null
     },
     {
-      "typeId": 19,
+      "typeId": 20,
       "type": "struct ComplexTupleStruct",
       "components": [
         {
@@ -242,7 +261,7 @@
       "typeParameters": null
     },
     {
-      "typeId": 20,
+      "typeId": 21,
       "type": "struct ContractId",
       "components": [
         {
@@ -254,29 +273,17 @@
       "typeParameters": null
     },
     {
-      "typeId": 21,
+      "typeId": 22,
       "type": "struct ExampleMessageStruct",
       "components": [
         {
           "name": "id",
-          "type": 32,
+          "type": 33,
           "typeArguments": null
         },
         {
           "name": "message",
-          "type": 15,
-          "typeArguments": null
-        }
-      ],
-      "typeParameters": null
-    },
-    {
-      "typeId": 22,
-      "type": "struct ExplicitQueryStruct",
-      "components": [
-        {
-          "name": "id",
-          "type": 32,
+          "type": 16,
           "typeArguments": null
         }
       ],
@@ -284,21 +291,11 @@
     },
     {
       "typeId": 23,
-      "type": "struct Ping",
+      "type": "struct ExplicitQueryStruct",
       "components": [
         {
           "name": "id",
-          "type": 32,
-          "typeArguments": null
-        },
-        {
-          "name": "value",
-          "type": 32,
-          "typeArguments": null
-        },
-        {
-          "name": "message",
-          "type": 15,
+          "type": 33,
           "typeArguments": null
         }
       ],
@@ -306,16 +303,21 @@
     },
     {
       "typeId": 24,
-      "type": "struct Pong",
+      "type": "struct Ping",
       "components": [
         {
           "name": "id",
-          "type": 32,
+          "type": 33,
           "typeArguments": null
         },
         {
           "name": "value",
-          "type": 32,
+          "type": 33,
+          "typeArguments": null
+        },
+        {
+          "name": "message",
+          "type": 16,
           "typeArguments": null
         }
       ],
@@ -323,16 +325,33 @@
     },
     {
       "typeId": 25,
-      "type": "struct Pung",
+      "type": "struct Pong",
       "components": [
         {
           "name": "id",
-          "type": 32,
+          "type": 33,
           "typeArguments": null
         },
         {
           "name": "value",
-          "type": 32,
+          "type": 33,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 26,
+      "type": "struct Pung",
+      "components": [
+        {
+          "name": "id",
+          "type": 33,
+          "typeArguments": null
+        },
+        {
+          "name": "value",
+          "type": 33,
           "typeArguments": null
         },
         {
@@ -349,38 +368,38 @@
       "typeParameters": null
     },
     {
-      "typeId": 26,
+      "typeId": 27,
       "type": "struct RawVec",
       "components": [
         {
           "name": "ptr",
-          "type": 13,
+          "type": 14,
           "typeArguments": null
         },
         {
           "name": "cap",
-          "type": 32,
+          "type": 33,
           "typeArguments": null
         }
       ],
       "typeParameters": [
-        12
+        13
       ]
     },
     {
-      "typeId": 27,
+      "typeId": 28,
       "type": "struct SimpleQueryStruct",
       "components": [
         {
           "name": "id",
-          "type": 32,
+          "type": 33,
           "typeArguments": null
         }
       ],
       "typeParameters": null
     },
     {
-      "typeId": 28,
+      "typeId": 29,
       "type": "struct SimpleTupleStruct",
       "components": [
         {
@@ -392,56 +411,56 @@
       "typeParameters": null
     },
     {
-      "typeId": 29,
+      "typeId": 30,
       "type": "struct TupleStructItem",
       "components": [
         {
           "name": "id",
-          "type": 32,
+          "type": 33,
           "typeArguments": null
         }
       ],
       "typeParameters": null
     },
     {
-      "typeId": 30,
+      "typeId": 31,
       "type": "struct Vec",
       "components": [
         {
           "name": "buf",
-          "type": 26,
+          "type": 27,
           "typeArguments": [
             {
               "name": "",
-              "type": 12,
+              "type": 13,
               "typeArguments": null
             }
           ]
         },
         {
           "name": "len",
-          "type": 32,
+          "type": 33,
           "typeArguments": null
         }
       ],
       "typeParameters": [
-        12
+        13
       ]
     },
     {
-      "typeId": 31,
+      "typeId": 32,
       "type": "u32",
       "components": null,
       "typeParameters": null
     },
     {
-      "typeId": 32,
+      "typeId": 33,
       "type": "u64",
       "components": null,
       "typeParameters": null
     },
     {
-      "typeId": 33,
+      "typeId": 34,
       "type": "u8",
       "components": null,
       "typeParameters": null
@@ -468,7 +487,7 @@
       "name": "trigger_callreturn",
       "output": {
         "name": "",
-        "type": 25,
+        "type": 26,
         "typeArguments": null
       },
       "attributes": null
@@ -478,7 +497,7 @@
       "name": "trigger_deeply_nested",
       "output": {
         "name": "",
-        "type": 27,
+        "type": 28,
         "typeArguments": null
       },
       "attributes": null
@@ -497,7 +516,7 @@
       "inputs": [
         {
           "name": "num",
-          "type": 32,
+          "type": 33,
           "typeArguments": null
         }
       ],
@@ -514,8 +533,24 @@
       "name": "trigger_explicit",
       "output": {
         "name": "",
-        "type": 22,
+        "type": 23,
         "typeArguments": null
+      },
+      "attributes": null
+    },
+    {
+      "inputs": [],
+      "name": "trigger_generics",
+      "output": {
+        "name": "",
+        "type": 10,
+        "typeArguments": [
+          {
+            "name": "",
+            "type": 24,
+            "typeArguments": null
+          }
+        ]
       },
       "attributes": null
     },
@@ -569,7 +604,7 @@
       "name": "trigger_multiargs",
       "output": {
         "name": "",
-        "type": 23,
+        "type": 24,
         "typeArguments": null
       },
       "attributes": null
@@ -579,7 +614,7 @@
       "name": "trigger_panic",
       "output": {
         "name": "",
-        "type": 32,
+        "type": 33,
         "typeArguments": null
       },
       "attributes": null
@@ -589,7 +624,7 @@
       "name": "trigger_ping",
       "output": {
         "name": "",
-        "type": 23,
+        "type": 24,
         "typeArguments": null
       },
       "attributes": null
@@ -599,7 +634,7 @@
       "name": "trigger_ping_for_optional",
       "output": {
         "name": "",
-        "type": 23,
+        "type": 24,
         "typeArguments": null
       },
       "attributes": null
@@ -609,7 +644,7 @@
       "name": "trigger_pong",
       "output": {
         "name": "",
-        "type": 24,
+        "type": 25,
         "typeArguments": null
       },
       "attributes": null
@@ -679,7 +714,7 @@
       "name": "trigger_tuple",
       "output": {
         "name": "",
-        "type": 19,
+        "type": 20,
         "typeArguments": null
       },
       "attributes": null
@@ -688,11 +723,11 @@
       "inputs": [
         {
           "name": "v",
-          "type": 30,
+          "type": 31,
           "typeArguments": [
             {
               "name": "",
-              "type": 33,
+              "type": 34,
               "typeArguments": null
             }
           ]
@@ -738,7 +773,7 @@
       "logId": 2,
       "loggedType": {
         "name": "",
-        "type": 11,
+        "type": 12,
         "typeArguments": []
       }
     },
@@ -746,31 +781,43 @@
       "logId": 3,
       "loggedType": {
         "name": "",
-        "type": 32,
-        "typeArguments": null
+        "type": 10,
+        "typeArguments": [
+          {
+            "name": "",
+            "type": 24,
+            "typeArguments": []
+          }
+        ]
       }
     },
     {
       "logId": 4,
       "loggedType": {
         "name": "",
-        "type": 25,
-        "typeArguments": []
+        "type": 31,
+        "typeArguments": [
+          {
+            "name": "",
+            "type": 24,
+            "typeArguments": []
+          }
+        ]
       }
     },
     {
       "logId": 5,
       "loggedType": {
         "name": "",
-        "type": 25,
-        "typeArguments": []
+        "type": 33,
+        "typeArguments": null
       }
     },
     {
       "logId": 6,
       "loggedType": {
         "name": "",
-        "type": 24,
+        "type": 26,
         "typeArguments": []
       }
     },
@@ -778,15 +825,15 @@
       "logId": 7,
       "loggedType": {
         "name": "",
-        "type": 32,
-        "typeArguments": null
+        "type": 26,
+        "typeArguments": []
       }
     },
     {
       "logId": 8,
       "loggedType": {
         "name": "",
-        "type": 28,
+        "type": 25,
         "typeArguments": []
       }
     },
@@ -794,7 +841,7 @@
       "logId": 9,
       "loggedType": {
         "name": "",
-        "type": 17,
+        "type": 33,
         "typeArguments": null
       }
     },
@@ -802,11 +849,27 @@
       "logId": 10,
       "loggedType": {
         "name": "",
-        "type": 30,
+        "type": 29,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 11,
+      "loggedType": {
+        "name": "",
+        "type": 18,
+        "typeArguments": null
+      }
+    },
+    {
+      "logId": 12,
+      "loggedType": {
+        "name": "",
+        "type": 31,
         "typeArguments": [
           {
             "name": "",
-            "type": 24,
+            "type": 25,
             "typeArguments": []
           }
         ]
@@ -818,7 +881,7 @@
       "messageId": 0,
       "messageType": {
         "name": "",
-        "type": 21,
+        "type": 22,
         "typeArguments": []
       }
     }

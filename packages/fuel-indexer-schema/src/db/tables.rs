@@ -203,12 +203,9 @@ impl IndexerSchema {
 
         let indexer_id =
             queries::get_indexer_id(&mut conn, namespace, identifier).await?;
-        let IndexerAsset { bytes, .. } = queries::latest_asset_for_indexer(
-            &mut conn,
-            &indexer_id,
-            IndexerAssetType::Manifest,
-        )
-        .await?;
+        let IndexerAsset { bytes, .. } =
+            queries::indexer_asset(&mut conn, &indexer_id, IndexerAssetType::Manifest)
+                .await?;
         let manifest = Manifest::try_from(&bytes)?;
 
         let schema = GraphQLSchema::new(root.schema.clone());

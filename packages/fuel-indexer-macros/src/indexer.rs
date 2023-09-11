@@ -1,6 +1,9 @@
 use crate::{
-    helpers::*, native::handler_block_native, parse::IndexerConfig,
-    schema::process_graphql_schema, wasm::handler_block_wasm,
+    helpers::*,
+    native::{handler_block_native, native_main},
+    parse::IndexerConfig,
+    schema::process_graphql_schema,
+    wasm::handler_block_wasm,
 };
 use fuel_abi_types::abi::program::TypeDeclaration;
 use fuel_indexer_lib::{
@@ -34,15 +37,17 @@ fn process_fn_items(
         )
     }
 
-    let abi = get_json_abi(abi_path);
+    let abi = get_json_abi(abi_path).unwrap_or_default();
 
-    let mut decoded_abi_types = HashSet::new();
+    let mut decoded_type_snippets = HashSet::new();
+    let mut decoded_log_match_arms = HashSet::new();
+    let mut decoded_type_fields = HashSet::new();
     let mut abi_dispatchers = Vec::new();
 
-    let funcs = abi.clone().unwrap_or_default().functions;
-    let abi_types = abi.clone().unwrap_or_default().types;
-    let abi_log_types = abi.clone().unwrap_or_default().logged_types;
-    let abi_msg_types = abi.unwrap_or_default().messages_types;
+    let funcs = abi.clone().functions;
+    let abi_types = abi.clone().types;
+    let abi_log_types = abi.clone().logged_types.unwrap_or_default();
+    let abi_msg_types = abi.clone().messages_types.unwrap_or_default();
     let fuel_types = FUEL_PRIMITIVES
         .iter()
         .map(|x| {
@@ -57,40 +62,30 @@ fn process_fn_items(
         })
         .collect::<HashMap<usize, TypeDeclaration>>();
 
+    let _tuple_types_tyid = abi_types
+        .iter()
+        .filter_map(|typ| {
+            if is_tuple_type(typ) {
+                return Some((typ.type_id, typ.clone()));
+            }
+
+            None
+        })
+        .collect::<HashMap<usize, TypeDeclaration>>();
+
+    // Used to do a reverse lookup of typed path names to ABI type IDs.
     let mut type_ids = RESERVED_TYPEDEF_NAMES
         .iter()
         .map(|x| (x.to_string(), type_id(FUEL_TYPES_NAMESPACE, x) as usize))
         .collect::<HashMap<String, usize>>();
 
-    let abi_types_tyid = abi_types
+    let mut abi_types_tyid = abi_types
         .iter()
-        .filter(|typ| {
-            if is_ignored_type(typ) {
-                return false;
-            }
-            true
-        })
         .map(|typ| (typ.type_id, typ.clone()))
         .collect::<HashMap<usize, TypeDeclaration>>();
 
-    let log_type_decoders = abi_log_types
-        .iter()
-        .flatten()
-        .map(|typ| {
-            let ty_id = typ.application.type_id;
-            let log_id = typ.log_id as usize;
-
-            quote! {
-                #log_id => {
-                    self.decode_type(#ty_id, data);
-                }
-            }
-        })
-        .collect::<Vec<proc_macro2::TokenStream>>();
-
     let message_types_decoders = abi_msg_types
         .iter()
-        .flatten()
         .map(|typ| {
             let message_type_id = typ.message_id;
             let ty_id = typ.application.type_id;
@@ -115,30 +110,78 @@ fn process_fn_items(
                 return None;
             }
 
-            let name = typ.rust_type_ident();
-            let ty = typ.rust_type_token();
-
-            if is_fuel_primitive(&ty) {
-                proc_macro_error::abort_call_site!("'{}' is a reserved Fuel type.", ty)
+            if is_fuel_primitive(typ) {
+                proc_macro_error::abort_call_site!(
+                    "'{}' is a reserved Fuel type.",
+                    typ.name()
+                )
             }
 
-            type_ids.insert(ty.to_string(), typ.type_id);
-            decoded_abi_types.insert(typ.type_id);
+            if is_generic_type(typ) {
+                let gt = GenericType::from(typ);
+                match gt {
+                    GenericType::Vec | GenericType::Option => {
+                        let ab_types = abi_types_tyid.clone();
+                        let inner_typs = derive_generic_inner_typedefs(
+                            typ,
+                            &funcs,
+                            &abi_log_types,
+                            &ab_types,
+                        );
 
-            Some(decode_snippet(typ.type_id, &ty, &name))
+                        return Some(
+                            inner_typs
+                                .iter()
+                                .filter_map(|inner_typ| {
+                                    let (typ_name, type_tokens) = typed_path_components(
+                                        typ,
+                                        inner_typ,
+                                        &abi_types_tyid,
+                                    );
+                                    let ty_id =
+                                        type_id(FUEL_TYPES_NAMESPACE, &typ_name) as usize;
+
+                                    let typ = TypeDeclaration {
+                                        type_id: ty_id,
+                                        type_field: typ_name.clone(),
+                                        ..typ.clone()
+                                    };
+
+                                    if decoded_type_snippets.contains(&ty_id) {
+                                        return None;
+                                    }
+
+                                    abi_types_tyid.insert(ty_id, typ.clone());
+                                    type_ids.insert(typ_name.clone(), ty_id);
+
+                                    decoded_type_snippets.insert(ty_id);
+
+                                    Some(decode_snippet(&type_tokens, &typ))
+                                })
+                                .collect::<Vec<proc_macro2::TokenStream>>(),
+                        );
+                    }
+                    _ => unimplemented!("Unsupported decoder generic type: {:?}", gt),
+                }
+            } else {
+                let type_tokens = typ.rust_tokens();
+                type_ids.insert(type_tokens.to_string(), typ.type_id);
+                decoded_type_snippets.insert(typ.type_id);
+                Some(vec![decode_snippet(&type_tokens, typ)])
+            }
         })
+        .flatten()
         .collect::<Vec<proc_macro2::TokenStream>>();
 
     let fuel_type_decoders = fuel_types
         .values()
         .map(|typ| {
-            let name = typ.rust_type_ident();
-            let ty = typ.rust_type_token();
+            let type_tokens = typ.rust_tokens();
 
-            type_ids.insert(ty.to_string(), typ.type_id);
-            decoded_abi_types.insert(typ.type_id);
+            type_ids.insert(type_tokens.to_string(), typ.type_id);
+            decoded_type_snippets.insert(typ.type_id);
 
-            decode_snippet(typ.type_id, &ty, &name)
+            decode_snippet(&type_tokens, typ)
         })
         .collect::<Vec<proc_macro2::TokenStream>>();
 
@@ -151,20 +194,62 @@ fn process_fn_items(
                 return None;
             }
 
-            let name = typ.rust_type_ident();
-            let ty = typ.rust_type_token();
-
-            if is_fuel_primitive(&ty) {
-                proc_macro_error::abort_call_site!("'{}' is a reserved Fuel type.", ty)
+            if is_fuel_primitive(typ) {
+                proc_macro_error::abort_call_site!(
+                    "'{}' is a reserved Fuel type.",
+                    typ.name()
+                )
             }
 
-            type_ids.insert(ty.to_string(), typ.type_id);
-            decoded_abi_types.insert(typ.type_id);
+            if is_generic_type(typ) {
+                let inner_typs = derive_generic_inner_typedefs(
+                    typ,
+                    &funcs,
+                    &abi_log_types,
+                    &abi_types_tyid,
+                );
 
-            Some(quote! {
-                #name: Vec<#ty>
-            })
+                return Some(
+                    inner_typs
+                        .iter()
+                        .filter_map(|inner_typ| {
+                            let (typ_name, type_tokens) =
+                                typed_path_components(typ, inner_typ, &abi_types_tyid);
+                            let ty_id = type_id(FUEL_TYPES_NAMESPACE, &typ_name) as usize;
+
+                            if decoded_type_fields.contains(&ty_id) {
+                                return None;
+                            }
+
+                            let typ = TypeDeclaration {
+                                type_id: ty_id,
+                                type_field: typ_name.clone(),
+                                ..typ.clone()
+                            };
+
+                            let ident = typ.decoder_field_ident();
+
+                            type_ids.insert(typ_name.clone(), ty_id);
+                            decoded_type_fields.insert(ty_id);
+
+                            Some(quote! {
+                                #ident: Vec<#type_tokens>
+                            })
+                        })
+                        .collect::<Vec<proc_macro2::TokenStream>>(),
+                );
+            } else {
+                let ident = typ.decoder_field_ident();
+                let type_tokens = typ.rust_tokens();
+                type_ids.insert(typ.rust_tokens().to_string(), typ.type_id);
+                decoded_type_fields.insert(typ.type_id);
+
+                Some(vec![quote! {
+                    #ident: Vec<#type_tokens>
+                }])
+            }
         })
+        .flatten()
         .collect::<Vec<proc_macro2::TokenStream>>();
 
     let fuel_struct_fields = fuel_types
@@ -174,11 +259,15 @@ fn process_fn_items(
                 return None;
             }
 
-            let name = typ.rust_type_ident();
-            let ty = typ.rust_type_token();
+            let name = typ.decoder_field_ident();
+            let ty = typ.rust_tokens();
 
             type_ids.insert(ty.to_string(), typ.type_id);
-            decoded_abi_types.insert(typ.type_id);
+            decoded_type_snippets.insert(typ.type_id);
+
+            if decoded_type_fields.contains(&typ.type_id) {
+                return None;
+            }
 
             Some(quote! {
                 #name: Vec<#ty>
@@ -187,6 +276,56 @@ fn process_fn_items(
         .collect::<Vec<proc_macro2::TokenStream>>();
 
     let decoder_struct_fields = [abi_struct_fields, fuel_struct_fields].concat();
+
+    // Since log type decoders use `TypeDeclaration`s that were manually created specifically
+    // for generics, we parsed log types after other ABI types.
+    let log_type_decoders = abi_log_types
+        .iter()
+        .filter_map(|log| {
+            let ty_id = log.application.type_id;
+            let log_id = log.log_id as usize;
+            let typ = abi_types_tyid.get(&log.application.type_id).unwrap();
+
+            if is_non_decodable_type(typ) {
+                return None;
+            }
+
+            if is_generic_type(typ) {
+                let gt = GenericType::from(typ);
+                match gt {
+                    GenericType::Vec | GenericType::Option => {
+                        let inner_typ =
+                            derive_log_generic_inner_typedefs(log, &abi, &abi_types_tyid);
+
+                        let (typ_name, _) =
+                            typed_path_components(typ, inner_typ, &abi_types_tyid);
+
+                        let ty_id = type_id(FUEL_TYPES_NAMESPACE, &typ_name) as usize;
+                        let _typ = abi_types_tyid.get(&ty_id).expect(
+                            "Could not get generic log type reference from ABI types.",
+                        );
+
+                        decoded_log_match_arms.insert(log_id);
+
+                        Some(quote! {
+                            #log_id => {
+                                self.decode_type(#ty_id, data);
+                            }
+                        })
+                    }
+                    _ => unimplemented!("Unsupported decoder generic type: {:?}", gt),
+                }
+            } else {
+                decoded_log_match_arms.insert(log_id);
+
+                Some(quote! {
+                    #log_id => {
+                        self.decode_type(#ty_id, data);
+                    }
+                })
+            }
+        })
+        .collect::<Vec<proc_macro2::TokenStream>>();
 
     let abi_selectors = funcs
         .iter()
@@ -201,7 +340,7 @@ fn process_fn_items(
                 .collect();
             let sig = resolve_fn_selector(&function.name, &params[..]);
             let selector = u64::from_be_bytes(sig);
-            let ty_id = function.output.type_id;
+            let ty_id = function_output_type_id(function, &abi_types_tyid);
 
             quote! {
                 #selector => #ty_id,
@@ -317,28 +456,35 @@ fn process_fn_items(
                         }
                         FnArg::Typed(PatType { ty, .. }) => {
                             if let Type::Path(path) = &**ty {
-                                let typ = path
+                                let path_seg = path
                                     .path
                                     .segments
                                     .last()
                                     .expect("Could not get last path segment.");
 
-                                let typ_name = typ.ident.to_string();
-                                let dispatcher_name = decoded_ident(&typ_name);
+                                let path_type_name = typed_path_name(path);
 
-                                if !type_ids.contains_key(&typ_name) {
+                                if is_unsupported_type(&path_type_name) {
+                                    proc_macro_error::abort_call_site!(
+                                        "Type with ident '{:?}' is not currently supported.",
+                                        path_seg.ident
+                                    )
+                                }
+
+                                if !type_ids.contains_key(&path_type_name) {
                                     proc_macro_error::abort_call_site!(
                                         "Type with ident '{:?}' not defined in the ABI.",
-                                        typ.ident
+                                        path_seg.ident
                                     );
                                 };
 
-                                if DISALLOWED_ABI_JSON_TYPES.contains(typ_name.as_str()) {
-                                    proc_macro_error::abort_call_site!(
-                                        "Type with ident '{:?}' is not currently supported.",
-                                        typ.ident
-                                    )
-                                }
+                                let ty_id = type_ids.get(&path_type_name).unwrap();
+                                let typ = match abi_types_tyid.get(ty_id) {
+                                    Some(typ) => typ,
+                                    None => fuel_types.get(ty_id).unwrap(),
+                                };
+
+                                let dispatcher_name = typ.decoder_field_ident();
 
                                 input_checks
                                     .push(quote! { self.#dispatcher_name.len() > 0 });
@@ -784,6 +930,7 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
             let (handler_block, fn_items) =
                 process_fn_items(&manifest, abi, indexer_module);
             let handler_block = handler_block_native(handler_block);
+            let naitve_main_tokens = native_main();
 
             quote! {
 
@@ -795,53 +942,7 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
 
                 #fn_items
 
-                #[tokio::main]
-                async fn main() -> anyhow::Result<()> {
-
-                    let args = IndexerArgs::parse();
-
-                    let IndexerArgs { manifest, .. } = args.clone();
-
-
-                    let config = args
-                    .config
-                    .as_ref()
-                    .map(IndexerConfig::from_file)
-                    .unwrap_or(Ok(IndexerConfig::from(args)))?;
-
-                    init_logging(&config).await?;
-
-                    info!("Configuration: {:?}", config);
-
-                    let (tx, rx) = channel::<ServiceRequest>(SERVICE_REQUEST_CHANNEL_SIZE);
-
-                    let pool = IndexerConnectionPool::connect(&config.database.to_string()).await?;
-
-                    if config.run_migrations {
-                        let mut c = pool.acquire().await?;
-                        queries::run_migration(&mut c).await?;
-                    }
-
-                    let mut service = IndexerService::new(config.clone(), pool.clone(), rx).await?;
-
-                    if manifest.is_none() {
-                        panic!("Manifest required to use native execution.");
-                    }
-
-                    let p = manifest.unwrap();
-                    if config.verbose {
-                        info!("Using manifest file located at '{}'", p.display());
-                    }
-                    let manifest = Manifest::from_file(&p)?;
-                    service.register_native_indexer(manifest, handle_events).await?;
-
-                    let service_handle = tokio::spawn(service.run());
-                    let web_handle = tokio::spawn(WebApi::build_and_run(config.clone(), pool, tx));
-
-                    let _ = tokio::join!(service_handle, web_handle);
-
-                    Ok(())
-                }
+                #naitve_main_tokens
             }
         }
         ExecutionSource::Wasm => {

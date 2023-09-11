@@ -566,9 +566,6 @@ pub struct IndexerAsset {
     /// Database ID of the indexer.
     pub index_id: i64,
 
-    /// Version associated with this indexer asset.
-    pub version: i32,
-
     /// Digest of the asset's bytes.
     pub digest: String,
 
