@@ -140,8 +140,12 @@ fn get_object(
     let id = get_object_id(&mem, ptr + offset, len + padding + offset).unwrap();
 
     let rt = tokio::runtime::Handle::current();
-    let bytes =
-        rt.block_on(async { idx_env.db.lock().await.get_object(type_id, id).await });
+    let bytes = rt
+        .block_on(async { idx_env.db.lock().await.get_object(type_id, id).await })
+        .map_err(|e| {
+            error!("Failed to get_object: {e}");
+            WasmIndexerError::DatabaseError
+        })?;
 
     if let Some(bytes) = bytes {
         let alloc_fn = idx_env.alloc.as_mut().expect("Alloc export is missing.");

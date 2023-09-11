@@ -17,13 +17,11 @@ pub use hex::FromHex;
 pub use sha2::{Digest, Sha256};
 pub use std::collections::{HashMap, HashSet};
 
+// All these methods have return type `Result<T, WasmIndexerError>`. `wasmer`
+// uses the Err variant for ealy exit.
 extern "C" {
-    // TODO: How do we want to return an error code for
-    // a function that returns a u32 but actually uses a u8?
     fn ff_get_object(type_id: i64, ptr: *const u8, len: *mut u8) -> *mut u8;
-    // log_data prints information to stdout.
     fn ff_log_data(ptr: *const u8, len: u32, log_level: u32);
-    // Put methods have error codes.
     fn ff_put_object(type_id: i64, ptr: *const u8, len: u32);
     fn ff_put_many_to_many_record(ptr: *const u8, len: u32);
 }

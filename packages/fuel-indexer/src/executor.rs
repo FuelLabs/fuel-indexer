@@ -934,7 +934,15 @@ impl Executor for WasmIndexExecutor {
                     .source()
                     .and_then(|e| e.downcast_ref::<WasmIndexerError>())
                 {
-                    error!("Indexer({uid}) WASM execution failed: {e}.");
+                    match e {
+                        // Termination due to kill switch is an expected behavior.
+                        WasmIndexerError::KillSwitch => {
+                            info!("Indexer({uid}) WASM execution terminated: {e}.")
+                        }
+                        _ => {
+                            error!("Indexer({uid}) WASM execution failed: {e}.")
+                        }
+                    }
                 } else {
                     error!("Indexer({uid}) WASM execution failed: {e:?}.");
                 };

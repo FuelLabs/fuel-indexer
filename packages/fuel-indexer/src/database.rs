@@ -1,4 +1,4 @@
-use crate::{IndexerConfig, IndexerResult, Manifest};
+use crate::{IndexerConfig, IndexerError, IndexerResult, Manifest};
 use fuel_indexer_database::{queries, IndexerConnection, IndexerConnectionPool};
 use fuel_indexer_lib::{
     fully_qualified_namespace, graphql::types::IdCol, utils::format_sql_query,
@@ -64,28 +64,36 @@ impl Database {
         let conn = self.pool.acquire().await?;
         self.stashed = Some(conn);
         debug!("Connection stashed as: {:?}", self.stashed);
-        let conn = self.stashed.as_mut().ok_or(crate::IndexerError::Unknown(
-            "No stashed connection for start transaction. Was a transaction started?"
-                .to_string(),
-        ))?;
+        let conn =
+            self.stashed
+                .as_mut()
+                .ok_or(crate::IndexerError::NoTransactionError(
+                    "start_transaction".to_string(),
+                ))?;
         let result = queries::start_transaction(conn).await?;
         Ok(result)
     }
 
     /// Commit transaction to database.
     pub async fn commit_transaction(&mut self) -> IndexerResult<usize> {
-        let conn = self.stashed.as_mut().ok_or(crate::IndexerError::Unknown(
-            "No stashed connection for commit. Was a transaction started?".to_string(),
-        ))?;
+        let conn =
+            self.stashed
+                .as_mut()
+                .ok_or(crate::IndexerError::NoTransactionError(
+                    "commit_transaction".to_string(),
+                ))?;
         let res = queries::commit_transaction(conn).await?;
         Ok(res)
     }
 
     /// Revert open transaction.
     pub async fn revert_transaction(&mut self) -> IndexerResult<usize> {
-        let conn = self.stashed.as_mut().ok_or(crate::IndexerError::Unknown(
-            "No stashed connection for revert. Was a transaction started?".to_string(),
-        ))?;
+        let conn =
+            self.stashed
+                .as_mut()
+                .ok_or(crate::IndexerError::NoTransactionError(
+                    "revert_transaction".to_string(),
+                ))?;
         let res = queries::revert_transaction(conn).await?;
         Ok(res)
     }
@@ -135,7 +143,7 @@ impl Database {
         let table = match self.tables.get(&type_id) {
             Some(t) => t,
             None => {
-                return Err(crate::IndexerError::Unknown(format!(
+                return Err(IndexerError::Unknown(format!(
                     r#"TypeId({type_id}) not found in tables: {:?}. 
 
 Does the schema version in SchemaManager::new_schema match the schema version in Database::load_schema?
@@ -160,9 +168,10 @@ Do your WASM modules need to be rebuilt?
         let query_text =
             format_sql_query(self.upsert_query(table, &columns, inserts, updates));
 
-        let conn = self.stashed.as_mut().ok_or(crate::IndexerError::Unknown(
-            "No stashed connection for put. Was a transaction started?".to_string(),
-        ))?;
+        let conn = self
+            .stashed
+            .as_mut()
+            .ok_or(IndexerError::NoTransactionError("put_object".to_string()))?;
 
         if self.config.verbose {
             info!("{query_text}");
@@ -178,23 +187,22 @@ Do your WASM modules need to be rebuilt?
         &mut self,
         type_id: i64,
         object_id: String,
-    ) -> Option<Vec<u8>> {
+    ) -> IndexerResult<Option<Vec<u8>>> {
         let table = &self.tables[&type_id];
         let query = self.get_query(table, &object_id);
         let conn = self
             .stashed
             .as_mut()
-            .expect("No stashed connection for get. Was a transaction started?");
-
+            .ok_or(IndexerError::NoTransactionError("get_object".to_string()))?;
         match queries::get_object(conn, query).await {
-            Ok(v) => Some(v),
+            Ok(v) => Ok(Some(v)),
             Err(e) => {
                 if let sqlx::Error::RowNotFound = e {
                     debug!("Row not found for object ID: {object_id}");
                 } else {
                     error!("Failed to get_object: {e:?}");
                 }
-                None
+                Ok(None)
             }
         }
     }
@@ -262,9 +270,12 @@ Do your WASM modules need to be rebuilt?
         &mut self,
         queries: Vec<String>,
     ) -> IndexerResult<()> {
-        let conn = self.stashed.as_mut().ok_or(crate::IndexerError::Unknown(
-            "No stashed connection for put. Was a transaction started?".to_string(),
-        ))?;
+        let conn = self
+            .stashed
+            .as_mut()
+            .ok_or(IndexerError::NoTransactionError(
+                "put_many_to_many_record".to_string(),
+            ))?;
 
         for query in queries {
             if self.config.verbose {

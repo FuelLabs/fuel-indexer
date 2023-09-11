@@ -68,8 +68,8 @@ pub enum IndexerError {
     HandlerError,
     #[error("Invalid port {0:?}")]
     InvalidPortNumber(#[from] core::num::ParseIntError),
-    #[error("No transaction is open.")]
-    NoTransactionError,
+    #[error("No open transaction for {0}. Was a transaction started?")]
+    NoTransactionError(String),
     #[error("{0}.")]
     Unknown(String),
     #[error("Indexer schema error: {0:?}")]
