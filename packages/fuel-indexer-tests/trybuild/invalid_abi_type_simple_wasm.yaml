@@ -1,8 +1,8 @@
 
-        namespace: test_namespace
-        identifier: simple_wasm_executor
-        abi: /Users/rashad/dev/repos/fuel-indexer/packages/fuel-indexer-tests/contracts/simple-wasm/out/debug/contracts-abi-reserved-name.json
-        graphql_schema: /Users/rashad/dev/repos/fuel-indexer/packages/fuel-indexer-tests/indexers/simple-wasm/schema/simple_wasm.graphql
-        contract_id: ~
-        module:
-            wasm: /Users/rashad/dev/repos/fuel-indexer/target/wasm32-unknown-unknown/release/simple_wasm.wasm
+namespace: test_namespace
+identifier: simple_wasm_executor
+abi: /Users/rashad/dev/repos/fuel-indexer/packages/fuel-indexer-tests/trybuild/abi/contracts-abi-reserved-name.json
+graphql_schema: /Users/rashad/dev/repos/fuel-indexer/packages/fuel-indexer-tests/indexers/simple-wasm/schema/simple_wasm.graphql
+contract_id: ~
+module:
+    wasm: /Users/rashad/dev/repos/fuel-indexer/target/wasm32-unknown-unknown/release/simple_wasm.wasm

@@ -7,6 +7,9 @@ use fuels::types::SizedAsciiString;
 use serde::{Deserialize, Serialize};
 use tai64::Tai64;
 
+/// Scalar for 256-bit value.
+pub type B256 = [u8; 32];
+
 /// Scalar for 32-byte unique ID payloads.
 pub type UID = SizedAsciiString<64>;
 

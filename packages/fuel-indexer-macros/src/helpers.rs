@@ -95,6 +95,7 @@ pub fn is_non_decodable_type(typ: &TypeDeclaration) -> bool {
     is_tuple_type(typ)
         || is_unit_type(typ)
         || IGNORED_GENERIC_METADATA.contains(typ.type_field.as_str())
+        || is_array_type(typ)
 }
 
 /// Derive Ident for decoded type
@@ -1114,6 +1115,12 @@ pub fn typed_path_components(
     let name = tokens.to_string().replace(' ', "");
 
     (name, tokens)
+}
+
+fn is_array_type(typ: &TypeDeclaration) -> bool {
+    typ.type_field.starts_with('[')
+        && typ.type_field.ends_with(']')
+        && typ.type_field.contains(';')
 }
 
 /// Determine whether or not the given type name is an unsupported type.

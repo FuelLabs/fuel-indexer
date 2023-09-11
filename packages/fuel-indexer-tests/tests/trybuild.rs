@@ -8,8 +8,7 @@ enum TestKind {
     Fail,
 }
 
-#[test]
-fn test_success_and_failure_macros() {
+fn test_dirs() -> (String, String, String) {
     let t = trybuild::TestCases::new();
     let manifest_dir = env!("CARGO_MANIFEST_DIR");
     std::env::set_var("COMPILE_TEST_PREFIX", manifest_dir);
@@ -21,7 +20,33 @@ fn test_success_and_failure_macros() {
     let tests_root = project_root.join("packages").join("fuel-indexer-tests");
     let tests_root_str = tests_root.to_str().unwrap();
     let trybuild_root = tests_root.join("trybuild");
+    let abi_root = trybuild_root.join("abi");
+    let abi_root_str = abi_root.to_str().unwrap();
 
+    (
+        abi_root_str.to_string(),
+        tests_root_str.to_string(),
+        project_root_str.to_string(),
+    )
+}
+
+fn manifest_with_contract_abi(contract_name: &str) -> String {
+    let (abi_root_str, tests_root_str, project_root_str) = test_dirs();
+    format!(
+        r#"
+namespace: test_namespace
+identifier: simple_wasm_executor
+abi: {abi_root_str}/{contract_name}
+graphql_schema: {tests_root_str}/indexers/simple-wasm/schema/simple_wasm.graphql
+contract_id: ~
+module:
+    wasm: {project_root_str}/target/wasm32-unknown-unknown/release/simple_wasm.wasm"#
+    )
+}
+
+#[test]
+fn test_success_and_failure_macros() {
+    let (abi_root_str, tests_root_str, project_root_str) = test_dirs();
     let manifest_content = format!(
         r#"
 namespace: test_namespace
@@ -34,12 +59,16 @@ module:
 "#
     );
 
+    // IMPORTANT: Even though in theory we should be able to just re-use the same filename
+    // since we're writing and reading to each file for each test individually, in practice,
+    // these tests will error out if we use the same filename for each test.
+    //
+    // So, we simply change the manifest name according to each test to avoid these flaky errors.
     let tests = vec![
         (
             "fail_if_attribute_manifest_schema_arg_is_invalid.rs",
             "invalid_schema_simple_wasm.yaml",
             TestKind::Fail,
-            // Using a custom manifest here
             format!(
                 r#"
         namespace: test_namespace
@@ -84,38 +113,27 @@ module:
         ),
         (
             "pass_if_indexer_is_valid_single_type.rs",
-            "simple_wasm.yaml",
+            "simple_wasm_single.yaml",
             TestKind::Pass,
             manifest_content.clone(),
         ),
         (
             "pass_if_indexer_is_valid_multi_type.rs",
-            "simple_wasm.yaml",
+            "simple_wasm_multi.yaml",
             TestKind::Pass,
             manifest_content.clone(),
         ),
         (
             "pass_if_unsupported_types_are_used.rs",
-            "simple_wasm.yaml",
+            "simple_wasm_unsupported.yaml",
             TestKind::Pass,
-            // Using a custom manifest here
             manifest_content.clone(),
         ),
         (
             "fail_if_abi_contains_reserved_fuel_type.rs",
             "invalid_abi_type_simple_wasm.yaml",
             TestKind::Fail,
-            // Using a custom manifest here
-            format!(
-                r#"
-        namespace: test_namespace
-        identifier: simple_wasm_executor
-        abi: {tests_root_str}/contracts/simple-wasm/out/debug/contracts-abi-reserved-name.json
-        graphql_schema: {tests_root_str}/indexers/simple-wasm/schema/simple_wasm.graphql
-        contract_id: ~
-        module:
-            wasm: {project_root_str}/target/wasm32-unknown-unknown/release/simple_wasm.wasm"#
-            ),
+            manifest_with_contract_abi("contracts-abi-reserved-name.json"),
         ),
         (
             "fail_if_ident_not_defined_in_abi.rs",
@@ -134,6 +152,73 @@ module:
             "simple_wasm.yaml",
             TestKind::Fail,
             manifest_content.clone(),
+        ),
+        (
+            "pass_if_using_sway_amm_abi.rs",
+            "sway_amm.yaml",
+            TestKind::Pass,
+            manifest_with_contract_abi("AMM-contract-abi.json"),
+        ),
+        (
+            "pass_if_using_sway_dao_abi.rs",
+            "sway_dao.yaml",
+            TestKind::Pass,
+            manifest_with_contract_abi("DAO-contract-abi.json"),
+        ),
+        (
+            "pass_if_using_sway_asset_contract_abi.rs",
+            "asset_contract.yaml",
+            TestKind::Pass,
+            manifest_with_contract_abi("asset-contract-abi.json"),
+        ),
+        (
+            "pass_if_using_sway_distributor_contract_abi.rs",
+            "distributor_contract.yaml",
+            TestKind::Pass,
+            manifest_with_contract_abi("distributor-contract-abi.json"),
+        ),
+        (
+            "pass_if_using_sway_escrow_contract_abi.rs",
+            "escrow_contract.yaml",
+            TestKind::Pass,
+            manifest_with_contract_abi("escrow-contract-abi.json"),
+        ),
+        (
+            "pass_is_using_sway_exchange_contract_abi.rs",
+            "exchange_contract.yaml",
+            TestKind::Pass,
+            manifest_with_contract_abi("exchange-contract-abi.json"),
+        ),
+        // NOTE: I don't think the ABI tokens are being properly generated from this contract JSON
+        // (
+        //     "pass_if_using_sway_multisig_contract_abi.rs",
+        //     "multisig_contract.yaml",
+        //     TestKind::Pass,
+        //     manifest_with_contract_abi("multisig-contract-abi.json"),
+        // ),
+        (
+            "pass_if_using_sway_oracle_contract_abi.rs",
+            "oracle_contract.yaml",
+            TestKind::Pass,
+            manifest_with_contract_abi("oracle-contract-abi.json"),
+        ),
+        (
+            "pass_if_using_sway_registry_contract_abi.rs",
+            "registry_contract.yaml",
+            TestKind::Pass,
+            manifest_with_contract_abi("registry-contract-abi.json"),
+        ),
+        (
+            "pass_if_using_swap_predicate_abi.rs",
+            "predicate_abi.yaml",
+            TestKind::Pass,
+            manifest_with_contract_abi("swap-predicate-abi.json"),
+        ),
+        (
+            "pass_if_using_timelock_contract_abi.rs",
+            "timelock_contract.yaml",
+            TestKind::Pass,
+            manifest_with_contract_abi("timelock-contract-abi.json"),
         ),
     ];
 

@@ -13,14 +13,9 @@ fn ff_put_many_to_many_record(_inp: ()) {}
 #[no_mangle]
 fn ff_early_exit(_inp: ()) {}
 
-#[indexer(manifest = "packages/fuel-indexer-tests/trybuild/simple_wasm_unsupported.yaml")]
+#[indexer(manifest = "packages/fuel-indexer-tests/trybuild/sway_dao.yaml")]
 mod indexer {
-    fn function_one(event: SomeEvent) {
-        let SomeEvent { id, account } = event;
-
-        assert_eq!(id, 9);
-        assert_eq!(account, Bits256([48u8; 32]));
-    }
+    fn function_one(_event: CreateProposalEvent) {}
 }
 
 fn main() {

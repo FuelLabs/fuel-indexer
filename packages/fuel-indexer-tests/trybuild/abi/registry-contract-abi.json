@@ -1,0 +1,756 @@
+{
+  "types": [
+    {
+      "typeId": 0,
+      "type": "()",
+      "components": [],
+      "typeParameters": null
+    },
+    {
+      "typeId": 1,
+      "type": "b256",
+      "components": null,
+      "typeParameters": null
+    },
+    {
+      "typeId": 2,
+      "type": "enum AssetError",
+      "components": [
+        {
+          "name": "InsufficientPayment",
+          "type": 0,
+          "typeArguments": null
+        },
+        {
+          "name": "IncorrectAssetSent",
+          "type": 0,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 3,
+      "type": "enum AuthorizationError",
+      "components": [
+        {
+          "name": "SenderNotOwner",
+          "type": 0,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 4,
+      "type": "enum Identity",
+      "components": [
+        {
+          "name": "Address",
+          "type": 11,
+          "typeArguments": null
+        },
+        {
+          "name": "ContractId",
+          "type": 13,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 5,
+      "type": "enum Option",
+      "components": [
+        {
+          "name": "None",
+          "type": 0,
+          "typeArguments": null
+        },
+        {
+          "name": "Some",
+          "type": 9,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": [
+        9
+      ]
+    },
+    {
+      "typeId": 6,
+      "type": "enum RegistrationValidityError",
+      "components": [
+        {
+          "name": "NameNotRegistered",
+          "type": 0,
+          "typeArguments": null
+        },
+        {
+          "name": "NameExpired",
+          "type": 0,
+          "typeArguments": null
+        },
+        {
+          "name": "NameNotExpired",
+          "type": 0,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 7,
+      "type": "enum Result",
+      "components": [
+        {
+          "name": "Ok",
+          "type": 9,
+          "typeArguments": null
+        },
+        {
+          "name": "Err",
+          "type": 8,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": [
+        9,
+        8
+      ]
+    },
+    {
+      "typeId": 8,
+      "type": "generic E",
+      "components": null,
+      "typeParameters": null
+    },
+    {
+      "typeId": 9,
+      "type": "generic T",
+      "components": null,
+      "typeParameters": null
+    },
+    {
+      "typeId": 10,
+      "type": "str[8]",
+      "components": null,
+      "typeParameters": null
+    },
+    {
+      "typeId": 11,
+      "type": "struct Address",
+      "components": [
+        {
+          "name": "value",
+          "type": 1,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 12,
+      "type": "struct AssetRateEvent",
+      "components": [
+        {
+          "name": "id",
+          "type": 13,
+          "typeArguments": null
+        },
+        {
+          "name": "rate",
+          "type": 5,
+          "typeArguments": [
+            {
+              "name": "",
+              "type": 18,
+              "typeArguments": null
+            }
+          ]
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 13,
+      "type": "struct ContractId",
+      "components": [
+        {
+          "name": "value",
+          "type": 1,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 14,
+      "type": "struct IdentityChangedEvent",
+      "components": [
+        {
+          "name": "name",
+          "type": 10,
+          "typeArguments": null
+        },
+        {
+          "name": "new_identity",
+          "type": 4,
+          "typeArguments": null
+        },
+        {
+          "name": "previous_identity",
+          "type": 4,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 15,
+      "type": "struct NameRegisteredEvent",
+      "components": [
+        {
+          "name": "expiry",
+          "type": 18,
+          "typeArguments": null
+        },
+        {
+          "name": "name",
+          "type": 10,
+          "typeArguments": null
+        },
+        {
+          "name": "owner",
+          "type": 4,
+          "typeArguments": null
+        },
+        {
+          "name": "identity",
+          "type": 4,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 16,
+      "type": "struct OwnerChangedEvent",
+      "components": [
+        {
+          "name": "name",
+          "type": 10,
+          "typeArguments": null
+        },
+        {
+          "name": "new_owner",
+          "type": 4,
+          "typeArguments": null
+        },
+        {
+          "name": "previous_owner",
+          "type": 4,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 17,
+      "type": "struct RegistrationExtendedEvent",
+      "components": [
+        {
+          "name": "duration",
+          "type": 18,
+          "typeArguments": null
+        },
+        {
+          "name": "name",
+          "type": 10,
+          "typeArguments": null
+        },
+        {
+          "name": "new_expiry",
+          "type": 18,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 18,
+      "type": "u64",
+      "components": null,
+      "typeParameters": null
+    }
+  ],
+  "functions": [
+    {
+      "inputs": [
+        {
+          "name": "name",
+          "type": 10,
+          "typeArguments": null
+        },
+        {
+          "name": "duration",
+          "type": 18,
+          "typeArguments": null
+        },
+        {
+          "name": "payment_asset",
+          "type": 13,
+          "typeArguments": null
+        }
+      ],
+      "name": "extend",
+      "output": {
+        "name": "",
+        "type": 0,
+        "typeArguments": null
+      },
+      "attributes": [
+        {
+          "name": "payable",
+          "arguments": []
+        },
+        {
+          "name": "storage",
+          "arguments": [
+            "read",
+            "write"
+          ]
+        }
+      ]
+    },
+    {
+      "inputs": [
+        {
+          "name": "name",
+          "type": 10,
+          "typeArguments": null
+        },
+        {
+          "name": "duration",
+          "type": 18,
+          "typeArguments": null
+        },
+        {
+          "name": "owner",
+          "type": 4,
+          "typeArguments": null
+        },
+        {
+          "name": "identity",
+          "type": 4,
+          "typeArguments": null
+        },
+        {
+          "name": "payment_asset",
+          "type": 13,
+          "typeArguments": null
+        }
+      ],
+      "name": "register",
+      "output": {
+        "name": "",
+        "type": 0,
+        "typeArguments": null
+      },
+      "attributes": [
+        {
+          "name": "payable",
+          "arguments": []
+        },
+        {
+          "name": "storage",
+          "arguments": [
+            "read",
+            "write"
+          ]
+        }
+      ]
+    },
+    {
+      "inputs": [
+        {
+          "name": "id",
+          "type": 13,
+          "typeArguments": null
+        },
+        {
+          "name": "rate",
+          "type": 5,
+          "typeArguments": [
+            {
+              "name": "",
+              "type": 18,
+              "typeArguments": null
+            }
+          ]
+        }
+      ],
+      "name": "set_asset",
+      "output": {
+        "name": "",
+        "type": 0,
+        "typeArguments": null
+      },
+      "attributes": [
+        {
+          "name": "storage",
+          "arguments": [
+            "write"
+          ]
+        }
+      ]
+    },
+    {
+      "inputs": [
+        {
+          "name": "name",
+          "type": 10,
+          "typeArguments": null
+        },
+        {
+          "name": "identity",
+          "type": 4,
+          "typeArguments": null
+        }
+      ],
+      "name": "set_identity",
+      "output": {
+        "name": "",
+        "type": 0,
+        "typeArguments": null
+      },
+      "attributes": [
+        {
+          "name": "storage",
+          "arguments": [
+            "read",
+            "write"
+          ]
+        }
+      ]
+    },
+    {
+      "inputs": [
+        {
+          "name": "name",
+          "type": 10,
+          "typeArguments": null
+        },
+        {
+          "name": "owner",
+          "type": 4,
+          "typeArguments": null
+        }
+      ],
+      "name": "set_owner",
+      "output": {
+        "name": "",
+        "type": 0,
+        "typeArguments": null
+      },
+      "attributes": [
+        {
+          "name": "storage",
+          "arguments": [
+            "read",
+            "write"
+          ]
+        }
+      ]
+    },
+    {
+      "inputs": [
+        {
+          "name": "name",
+          "type": 10,
+          "typeArguments": null
+        }
+      ],
+      "name": "expiry",
+      "output": {
+        "name": "",
+        "type": 7,
+        "typeArguments": [
+          {
+            "name": "",
+            "type": 18,
+            "typeArguments": null
+          },
+          {
+            "name": "",
+            "type": 6,
+            "typeArguments": null
+          }
+        ]
+      },
+      "attributes": [
+        {
+          "name": "storage",
+          "arguments": [
+            "read"
+          ]
+        }
+      ]
+    },
+    {
+      "inputs": [
+        {
+          "name": "name",
+          "type": 10,
+          "typeArguments": null
+        }
+      ],
+      "name": "identity",
+      "output": {
+        "name": "",
+        "type": 7,
+        "typeArguments": [
+          {
+            "name": "",
+            "type": 4,
+            "typeArguments": null
+          },
+          {
+            "name": "",
+            "type": 6,
+            "typeArguments": null
+          }
+        ]
+      },
+      "attributes": [
+        {
+          "name": "storage",
+          "arguments": [
+            "read"
+          ]
+        }
+      ]
+    },
+    {
+      "inputs": [
+        {
+          "name": "name",
+          "type": 10,
+          "typeArguments": null
+        }
+      ],
+      "name": "owner",
+      "output": {
+        "name": "",
+        "type": 7,
+        "typeArguments": [
+          {
+            "name": "",
+            "type": 4,
+            "typeArguments": null
+          },
+          {
+            "name": "",
+            "type": 6,
+            "typeArguments": null
+          }
+        ]
+      },
+      "attributes": [
+        {
+          "name": "storage",
+          "arguments": [
+            "read"
+          ]
+        }
+      ]
+    },
+    {
+      "inputs": [
+        {
+          "name": "id",
+          "type": 13,
+          "typeArguments": null
+        }
+      ],
+      "name": "rate",
+      "output": {
+        "name": "",
+        "type": 5,
+        "typeArguments": [
+          {
+            "name": "",
+            "type": 18,
+            "typeArguments": null
+          }
+        ]
+      },
+      "attributes": [
+        {
+          "name": "storage",
+          "arguments": [
+            "read"
+          ]
+        }
+      ]
+    }
+  ],
+  "loggedTypes": [
+    {
+      "logId": 0,
+      "loggedType": {
+        "name": "",
+        "type": 6,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 1,
+      "loggedType": {
+        "name": "",
+        "type": 2,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 2,
+      "loggedType": {
+        "name": "",
+        "type": 2,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 3,
+      "loggedType": {
+        "name": "",
+        "type": 17,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 4,
+      "loggedType": {
+        "name": "",
+        "type": 6,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 5,
+      "loggedType": {
+        "name": "",
+        "type": 2,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 6,
+      "loggedType": {
+        "name": "",
+        "type": 2,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 7,
+      "loggedType": {
+        "name": "",
+        "type": 15,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 8,
+      "loggedType": {
+        "name": "",
+        "type": 3,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 9,
+      "loggedType": {
+        "name": "",
+        "type": 12,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 10,
+      "loggedType": {
+        "name": "",
+        "type": 6,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 11,
+      "loggedType": {
+        "name": "",
+        "type": 6,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 12,
+      "loggedType": {
+        "name": "",
+        "type": 3,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 13,
+      "loggedType": {
+        "name": "",
+        "type": 14,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 14,
+      "loggedType": {
+        "name": "",
+        "type": 6,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 15,
+      "loggedType": {
+        "name": "",
+        "type": 6,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 16,
+      "loggedType": {
+        "name": "",
+        "type": 3,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 17,
+      "loggedType": {
+        "name": "",
+        "type": 16,
+        "typeArguments": []
+      }
+    }
+  ],
+  "messagesTypes": [],
+  "configurables": [
+    {
+      "name": "OWNER",
+      "configurableType": {
+        "name": "",
+        "type": 4,
+        "typeArguments": []
+      },
+      "offset": 12640
+    }
+  ]
+}
