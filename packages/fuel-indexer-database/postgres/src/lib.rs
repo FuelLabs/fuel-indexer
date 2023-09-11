@@ -526,27 +526,6 @@ pub async fn all_registered_indexers(
         .collect::<Vec<RegisteredIndexer>>())
 }
 
-#[cfg_attr(feature = "metrics", metrics)]
-pub async fn indexer_asset_version(
-    conn: &mut PoolConnection<Postgres>,
-    index_id: &i64,
-    asset_type: &IndexerAssetType,
-) -> sqlx::Result<i64> {
-    match sqlx::query(&format!(
-        "SELECT COUNT(*)
-        FROM index_asset_registry_{}
-        WHERE index_id = {}",
-        asset_type.as_ref(),
-        index_id,
-    ))
-    .fetch_one(conn)
-    .await
-    {
-        Ok(row) => Ok(row.try_get::<i64, usize>(0).unwrap_or(0)),
-        Err(_e) => Ok(0),
-    }
-}
-
 /// Register a single indexer asset.
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn register_indexer_asset(
@@ -577,15 +556,10 @@ pub async fn register_indexer_asset(
         return Ok(asset);
     }
 
-    let current_version = indexer_asset_version(conn, &index.id, &asset_type)
-        .await
-        .expect("Failed to get asset version.");
-
     let query = format!(
-        "INSERT INTO index_asset_registry_{} (index_id, bytes, version, digest) VALUES ({}, $1, {}, '{digest}') RETURNING *",
+        "INSERT INTO index_asset_registry_{} (index_id, bytes, digest) VALUES ({}, $1, '{digest}') RETURNING *",
         asset_type.as_ref(),
         index.id,
-        current_version + 1,
     );
 
     let row = sqlx::QueryBuilder::new(query)
@@ -603,22 +577,20 @@ pub async fn register_indexer_asset(
 
     let id = row.get(0);
     let index_id = row.get(1);
-    let version = row.get(2);
-    let digest = row.get(3);
-    let bytes = row.get(4);
+    let digest = row.get(2);
+    let bytes = row.get(3);
 
     Ok(IndexerAsset {
         id,
         index_id,
-        version,
         digest,
         bytes,
     })
 }
 
-/// Return the latest version for a given indexer asset type.
+/// Returns the requested asset for an indexer with the given id.
 #[cfg_attr(feature = "metrics", metrics)]
-pub async fn latest_asset_for_indexer(
+pub async fn indexer_asset(
     conn: &mut PoolConnection<Postgres>,
     index_id: &i64,
     asset_type: IndexerAssetType,
@@ -633,30 +605,26 @@ pub async fn latest_asset_for_indexer(
 
     let id = row.get(0);
     let index_id = row.get(1);
-    let version = row.get(2);
-    let digest = row.get(3);
-    let bytes = row.get(4);
+    let digest = row.get(2);
+    let bytes = row.get(3);
 
     Ok(IndexerAsset {
         id,
         index_id,
-        version,
         digest,
         bytes,
     })
 }
 
-/// Return the latest version for every indexer asset type.
+/// Return every indexer asset type for an indexer with the give id.
 #[cfg_attr(feature = "metrics", metrics)]
-pub async fn latest_assets_for_indexer(
+pub async fn indexer_assets(
     conn: &mut PoolConnection<Postgres>,
     indexer_id: &i64,
 ) -> sqlx::Result<IndexerAssetBundle> {
-    let wasm = latest_asset_for_indexer(conn, indexer_id, IndexerAssetType::Wasm).await?;
-    let schema =
-        latest_asset_for_indexer(conn, indexer_id, IndexerAssetType::Schema).await?;
-    let manifest =
-        latest_asset_for_indexer(conn, indexer_id, IndexerAssetType::Manifest).await?;
+    let wasm = indexer_asset(conn, indexer_id, IndexerAssetType::Wasm).await?;
+    let schema = indexer_asset(conn, indexer_id, IndexerAssetType::Schema).await?;
+    let manifest = indexer_asset(conn, indexer_id, IndexerAssetType::Manifest).await?;
 
     Ok(IndexerAssetBundle {
         wasm,
@@ -705,14 +673,12 @@ pub async fn asset_already_exists(
         Ok(row) => {
             let id = row.get(0);
             let index_id = row.get(1);
-            let version = row.get(2);
-            let digest = row.get(3);
-            let bytes = row.get(4);
+            let digest = row.get(2);
+            let bytes = row.get(3);
 
             Ok(Some(IndexerAsset {
                 id,
                 index_id,
-                version,
                 digest,
                 bytes,
             }))

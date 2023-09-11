@@ -183,7 +183,7 @@ impl IndexerService {
         let mut conn = self.pool.acquire().await?;
         let indices = queries::all_registered_indexers(&mut conn).await?;
         for index in indices {
-            let assets = queries::latest_assets_for_indexer(&mut conn, &index.id).await?;
+            let assets = queries::indexer_assets(&mut conn, &index.id).await?;
             let mut manifest = Manifest::try_from(&assets.manifest.bytes)?;
 
             let start_block = get_start_block(&mut conn, &manifest).await.unwrap_or(1);
@@ -280,7 +280,7 @@ impl IndexerService {
                             {
                                 Ok(id) => {
                                     let assets =
-                                        queries::latest_assets_for_indexer(&mut conn, &id)
+                                        queries::indexer_assets(&mut conn, &id)
                                             .await?;
                                     let mut manifest =
                                         Manifest::try_from(&assets.manifest.bytes)?;

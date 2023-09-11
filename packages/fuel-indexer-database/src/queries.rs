@@ -230,18 +230,6 @@ pub async fn all_registered_indexers(
     }
 }
 
-pub async fn indexer_asset_version(
-    conn: &mut IndexerConnection,
-    index_id: &i64,
-    asset_type: &IndexerAssetType,
-) -> sqlx::Result<i64> {
-    match conn {
-        IndexerConnection::Postgres(ref mut c) => {
-            postgres::indexer_asset_version(c, index_id, asset_type).await
-        }
-    }
-}
-
 /// Register a single indexer asset.
 pub async fn register_indexer_asset(
     conn: &mut IndexerConnection,
@@ -261,27 +249,27 @@ pub async fn register_indexer_asset(
     }
 }
 
-/// Return the latest version for a given indexer asset type.
-pub async fn latest_asset_for_indexer(
+/// Returns the requested asset for an indexer with the given id.
+pub async fn indexer_asset(
     conn: &mut IndexerConnection,
     index_id: &i64,
     asset_type: IndexerAssetType,
 ) -> sqlx::Result<IndexerAsset> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
-            postgres::latest_asset_for_indexer(c, index_id, asset_type).await
+            postgres::indexer_asset(c, index_id, asset_type).await
         }
     }
 }
 
-/// Return the latest version for every indexer asset type.
-pub async fn latest_assets_for_indexer(
+/// Return every indexer asset type for an indexer with the give id.
+pub async fn indexer_assets(
     conn: &mut IndexerConnection,
     index_id: &i64,
 ) -> sqlx::Result<IndexerAssetBundle> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
-            postgres::latest_assets_for_indexer(c, index_id).await
+            postgres::indexer_assets(c, index_id).await
         }
     }
 }
