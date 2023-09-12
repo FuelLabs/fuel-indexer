@@ -7,6 +7,7 @@
 
 - [Dependencies](./getting-started/dependencies.md)
 - [Service Infrastructure](./getting-started/starting-the-fuel-indexer.md)
+- [How it compares](./getting-started/starting-the-fuel-indexer.md)
 - [Quickstart](./getting-started/quickstart.md)
 
 # Reference Guide
@@ -36,6 +37,10 @@
       - [Transfer](./indexing/fuel-types/receipts/transfer.md)
       - [TransferOut](./indexing/fuel-types/receipts/transferout.md)
 - [GraphQL](./graphql/index.md)
+  - [Types](./graphql/types/index.md)
+    - [Objects](./graphql/types/objects.md)
+    - [Enums](./graphql/types/enums.md)
+    - [Union](./graphql/types/unions.md)
   - [Scalars](./graphql/scalars.md)
   - [Directives](./graphql/directives.md)
   - [Relationships](./graphql/relationships.md)

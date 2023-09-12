@@ -18,8 +18,8 @@ We can look at the function below as an example:
 extern crate alloc;
 use fuel_indexer_utils::prelude::*;
 
-#[indexer(manifest = "my_indexer.manifest.yaml")]
-mod my_indexer {
+#[indexer(manifest = "indexer.manifest.yaml")]
+mod indexer_mod {
 
     // This `log_the_greeting` function will be called, when we find 
     // a `Greeting` in a block.

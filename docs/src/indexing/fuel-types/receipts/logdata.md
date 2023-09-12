@@ -26,8 +26,8 @@ pub struct LogData {
 extern crate alloc;
 use fuel_indexer_utils::prelude::*;
 
-#[indexer(manifest = "my_indexer.manifest.yaml")]
-mod my_indexer {
+#[indexer(manifest = "indexer.manifest.yaml")]
+mod indexer_mod {
     fn handle_log_data(event: MyEvent) {
         info!("Event {event:?} was logged in the contract");
     }
