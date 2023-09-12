@@ -345,7 +345,7 @@ impl IndexerService {
     }
 
     // Spawn and register a tokio::task running the Executor loop, as well as
-    // the kill switch and the abort handle.ß
+    // the kill switch and the abort handle.
     fn start_executor<T: 'static + Executor + Send + Sync>(&mut self, executor: T) {
         let uid = executor.manifest().uid();
 

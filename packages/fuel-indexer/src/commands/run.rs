@@ -13,7 +13,7 @@ use tracing::info;
 #[cfg(feature = "api-server")]
 use fuel_indexer_api_server::api::WebApi;
 
-// Returns a future which completes when a shutdown signal has been reveived.
+// Returns a future which completes when a shutdown signal has been received.
 fn shutdown_signal_handler() -> std::io::Result<impl futures::Future<Output = ()>> {
     let mut sighup: Signal = signal(SignalKind::hangup())?;
     let mut sigterm: Signal = signal(SignalKind::terminate())?;
@@ -159,7 +159,7 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
             };
             subsystems.spawn(async move {
                 if let Err(e) = FuelService::new_node(config).await {
-                    tracing::error!("Fuen Node failed: {e}");
+                    tracing::error!("Fuel Node failed: {e}");
                 };
             });
         }
@@ -168,7 +168,9 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
     // Each subsystem runs its own loop, and we require all subsystems for the
     // Indexer service to operate correctly. If any of the subsystems stops
     // running, the entire Indexer Service exits.
-    subsystems.join_next().await;
+    if let Some(_) = subsystems.join_next().await {
+        subsystems.shutdown().await;
+    }
 
     if embedded_database {
         let name = postgres_database.unwrap_or(defaults::POSTGRES_DATABASE.to_string());
