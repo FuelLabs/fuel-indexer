@@ -136,7 +136,7 @@ pub fn cargo_workspace_root_dir(
     // Use serde to extract the "target_directory" field
     let target_directory = metadata_json["workspace_root"]
         .as_str()
-        .expect("target_directory not found or invalid");
+        .expect("workspace_root not found or invalid");
 
     Ok(target_directory.into())
 }

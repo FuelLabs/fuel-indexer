@@ -1,5 +1,5 @@
 use crate::{IndexerConfig, IndexerError, IndexerResult, Manifest};
-use fuel_indexer_database::{queries, IndexerConnection, IndexerConnectionPool};
+use fuel_indexer_database::{queries, IndexerConnection, IndexerConnectionPool, IndexerDatabaseError};
 use fuel_indexer_lib::{
     fully_qualified_namespace, graphql::types::IdCol, utils::format_sql_query,
 };
@@ -188,7 +188,7 @@ Do your WASM modules need to be rebuilt?
         type_id: i64,
         object_id: String,
     ) -> IndexerResult<Option<Vec<u8>>> {
-        let table = &self.tables[&type_id];
+        let table = &self.tables.get(&type_id).ok_or(IndexerDatabaseError::TableMappingDoesNotExist(type_id))?;
         let query = self.get_query(table, &object_id);
         let conn = self
             .stashed

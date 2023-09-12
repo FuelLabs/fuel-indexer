@@ -36,7 +36,7 @@ impl ExecutionSource {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WasmIndexerError {
     DeserializationError = 1,
     SerializationError,

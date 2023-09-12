@@ -28,6 +28,8 @@ pub enum IndexerDatabaseError {
     Unknown,
     #[error("You don't own this indexer.")]
     NotYourIndexer,
+    #[error("No table mapping exists for TypeId({0:?})")]
+    TableMappingDoesNotExist(i64),
 }
 
 #[derive(Debug)]
