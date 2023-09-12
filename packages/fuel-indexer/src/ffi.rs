@@ -308,7 +308,7 @@ pub fn get_exports(store: &mut Store, env: &wasmer::FunctionEnv<IndexEnv>) -> Ex
         Function::new_typed_with_env(store, env, put_many_to_many_record);
     let f_early_exit = Function::new_typed(store, early_exit);
 
-    exports.insert("ff_early_exit".to_string(), f_early_exit); 
+    exports.insert("ff_early_exit".to_string(), f_early_exit);
     exports.insert("ff_get_object".to_string(), f_get_obj);
     exports.insert("ff_put_object".to_string(), f_put_obj);
     exports.insert(
