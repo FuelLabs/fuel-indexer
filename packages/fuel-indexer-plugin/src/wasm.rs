@@ -17,8 +17,9 @@ pub use hex::FromHex;
 pub use sha2::{Digest, Sha256};
 pub use std::collections::{HashMap, HashSet};
 
-// All these methods have return type `Result<T, WasmIndexerError>`. `wasmer`
-// uses the Err variant for ealy exit.
+// These are instantiated with functions which return
+// `Result<T, WasmIndexerError>`. `wasmer` unwraps the `Result` and uses the
+// `Err` variant for ealy exit.
 extern "C" {
     fn ff_get_object(type_id: i64, ptr: *const u8, len: *mut u8) -> *mut u8;
     fn ff_log_data(ptr: *const u8, len: u32, log_level: u32);
