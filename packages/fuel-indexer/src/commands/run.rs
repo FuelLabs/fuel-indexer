@@ -168,7 +168,7 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
     // Each subsystem runs its own loop, and we require all subsystems for the
     // Indexer service to operate correctly. If any of the subsystems stops
     // running, the entire Indexer Service exits.
-    if let Some(_) = subsystems.join_next().await {
+    if subsystems.join_next().await.is_some() {
         subsystems.shutdown().await;
     }
 
