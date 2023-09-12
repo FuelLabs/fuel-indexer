@@ -93,7 +93,7 @@ impl std::fmt::Display for WasmIndexerError {
             Self::DatabaseError => {
                 write!(f, "Failed performing a database operation")
             }
-            Self::GeneralError => write!(f, "A WASM error occurred"),
+            Self::GeneralError => write!(f, "Some unspecified WASM error occurred."),
         }
     }
 }
