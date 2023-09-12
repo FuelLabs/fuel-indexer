@@ -7,7 +7,7 @@
 
 - [Dependencies](./getting-started/dependencies.md)
 - [Service Infrastructure](./getting-started/starting-the-fuel-indexer.md)
-- [How it compares](./getting-started/starting-the-fuel-indexer.md)
+- [How it compares](./getting-started/how-it-compares.md)
 - [Quickstart](./getting-started/quickstart.md)
 
 # Reference Guide
