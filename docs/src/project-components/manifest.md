@@ -47,6 +47,7 @@ _Optional._
 The `contract_id` specifies the particular contract to which you would like an indexer to subscribe. Setting this field to an empty string will index events from any contract that is currently executing on the network. This field accepts either a single string, or a list of strings. The indexer will index events from all IDs if a list is passed.
 
 > Important: Contract IDs are unique to the content of a contract. If you are subscribing to a certain contract and then the contract itself is changed or updated, you will need to change the `contract_id` field of the manifest to the new ID.
+> Note: This parameter supports both Bech32 contract IDs and non-Bech32 contract IDs
 
 ## `graphql_schema`
 

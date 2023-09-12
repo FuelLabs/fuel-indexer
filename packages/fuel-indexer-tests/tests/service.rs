@@ -6,7 +6,6 @@ use fuel_indexer_lib::{config::DatabaseConfig, manifest::Manifest};
 use fuel_indexer_tests::fixtures::TestPostgresDb;
 use fuel_types::Bytes32;
 use std::str::FromStr;
-use std::sync::{atomic::AtomicBool, Arc};
 
 #[tokio::test]
 async fn test_wasm_executor_can_meter_execution() {
@@ -51,23 +50,19 @@ async fn test_wasm_executor_can_meter_execution() {
                 .version()
                 .to_string();
 
-            let kill_switch = Arc::new(AtomicBool::new(false));
             let mut executor = WasmIndexExecutor::new(
                 &config,
                 &manifest,
                 bytes.clone(),
                 pool,
                 schema_version,
-                kill_switch,
             )
             .await
             .unwrap();
 
-            let kill_switch = std::sync::Arc::new(AtomicBool::new(false));
-
             let blocks: Vec<fuel_indexer_types::fuel::BlockData> = vec![];
 
-            if let Err(e) = executor.handle_events(kill_switch, blocks.clone()).await {
+            if let Err(e) = executor.handle_events(blocks.clone()).await {
                 if let fuel_indexer::IndexerError::RuntimeError(e) = e {
                     if let Some(e) = e.to_trap() {
                         assert_eq!(e, wasmer_types::TrapCode::UnreachableCodeReached);
@@ -132,14 +127,12 @@ async fn test_wasm_executor_exit_codes() {
                 .version()
                 .to_string();
 
-            let kill_switch = Arc::new(AtomicBool::new(false));
             let mut executor = WasmIndexExecutor::new(
                 &config,
                 &manifest,
                 bytes.clone(),
                 pool,
                 schema_version,
-                kill_switch.clone(),
             )
             .await
             .unwrap();
@@ -174,10 +167,7 @@ async fn test_wasm_executor_exit_codes() {
             // Since we are only starting the executor, and not the whole Fuel
             // Indexer Servoce, the database tables are not initialized, and any
             // database operation performed by the executor will fail.
-            if let Err(e) = executor
-                .handle_events(kill_switch.clone(), blocks.clone())
-                .await
-            {
+            if let Err(e) = executor.handle_events(blocks.clone()).await {
                 if let fuel_indexer::IndexerError::RuntimeError(e) = e {
                     match e.downcast::<WasmIndexerError>() {
                         Ok(err_code) => {
@@ -196,9 +186,11 @@ async fn test_wasm_executor_exit_codes() {
 
             // Trigger kill switch.
 
-            kill_switch.store(true, std::sync::atomic::Ordering::SeqCst);
+            executor
+                .kill_switch()
+                .store(true, std::sync::atomic::Ordering::SeqCst);
 
-            if let Err(e) = executor.handle_events(kill_switch, blocks.clone()).await {
+            if let Err(e) = executor.handle_events(blocks.clone()).await {
                 if let fuel_indexer::IndexerError::RuntimeError(e) = e {
                     match e.downcast::<WasmIndexerError>() {
                         Ok(err_code) => {
