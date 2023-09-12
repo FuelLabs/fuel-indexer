@@ -36,9 +36,9 @@ impl ExecutionSource {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(thiserror::Error, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WasmIndexerError {
-    DeserializationError = 1,
+    DeserializationError = 0,
     SerializationError,
     PutObjectError,
     UnableToSaveListType,
@@ -49,18 +49,17 @@ pub enum WasmIndexerError {
     GeneralError,
 }
 
-impl From<i32> for WasmIndexerError {
-    fn from(value: i32) -> Self {
+impl From<u32> for WasmIndexerError {
+    fn from(value: u32) -> Self {
         match value {
-            0 => unreachable!("WasmIndexerError index starts at 1"),
-            1 => Self::DeserializationError,
-            2 => Self::SerializationError,
-            3 => Self::PutObjectError,
-            4 => Self::UnableToSaveListType,
-            5 => Self::UninitializedMemory,
-            6 => Self::UnableToFetchLogString,
-            7 => Self::KillSwitch,
-            8 => Self::DatabaseError,
+            0 => Self::DeserializationError,
+            1 => Self::SerializationError,
+            2 => Self::PutObjectError,
+            3 => Self::UnableToSaveListType,
+            4 => Self::UninitializedMemory,
+            5 => Self::UnableToFetchLogString,
+            6 => Self::KillSwitch,
+            7 => Self::DatabaseError,
             _ => Self::GeneralError,
         }
     }
@@ -97,8 +96,6 @@ impl std::fmt::Display for WasmIndexerError {
         }
     }
 }
-
-impl std::error::Error for WasmIndexerError {}
 
 /// Return a fully qualified indexer namespace.
 pub fn fully_qualified_namespace(namespace: &str, identifier: &str) -> String {

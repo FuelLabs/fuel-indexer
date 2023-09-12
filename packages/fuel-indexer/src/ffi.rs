@@ -293,7 +293,7 @@ fn put_many_to_many_record(
 
 /// When called from WASM it will terminate the execution and return the error
 /// code.
-pub fn early_exit(err_code: i32) -> Result<(), WasmIndexerError> {
+pub fn early_exit(err_code: u32) -> Result<(), WasmIndexerError> {
     Err(WasmIndexerError::from(err_code))
 }
 

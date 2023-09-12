@@ -90,7 +90,7 @@ async fn test_wasm_executor_can_meter_execution() {
 }
 
 #[tokio::test]
-async fn test_wasm_executor_exit_codes() {
+async fn test_wasm_executor_error_codes() {
     use async_std::{fs::File, io::ReadExt};
 
     if let Ok(mut current_dir) = std::env::current_dir() {
