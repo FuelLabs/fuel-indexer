@@ -751,9 +751,7 @@ impl WasmIndexExecutor {
         {
             Ok(executor) => Ok(executor),
             Err(e) => {
-                error!(
-                    "Could not instantiate WasmIndexExecutor({uid}): {e:?}."
-                );
+                error!("Could not instantiate WasmIndexExecutor({uid}): {e:?}.");
                 Err(IndexerError::WasmExecutionInstantiationError)
             }
         }
