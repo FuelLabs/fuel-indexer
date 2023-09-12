@@ -73,7 +73,7 @@ impl std::fmt::Display for WasmIndexerError {
                 write!(f, "Failed to serialize")
             }
             Self::DeserializationError => {
-                write!(f, "Failed to deserialize")
+                write!(f, "Failed to deserialize object.")
             }
             Self::UnableToSaveListType => {
                 write!(f, "Failed to save list")
