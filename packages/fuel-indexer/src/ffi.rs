@@ -291,6 +291,12 @@ fn put_many_to_many_record(
     Ok(())
 }
 
+/// When called from WASM it will terminate the execution and return the error
+/// code.
+pub fn early_exit(err_code: i32) -> Result<(), WasmIndexerError> {
+    Err(WasmIndexerError::from(err_code))
+}
+
 /// Get the exports for the given store and environment.
 pub fn get_exports(store: &mut Store, env: &wasmer::FunctionEnv<IndexEnv>) -> Exports {
     let mut exports = Exports::new();
@@ -300,7 +306,9 @@ pub fn get_exports(store: &mut Store, env: &wasmer::FunctionEnv<IndexEnv>) -> Ex
     let f_log_data = Function::new_typed_with_env(store, env, log_data);
     let f_put_many_to_many_record =
         Function::new_typed_with_env(store, env, put_many_to_many_record);
+    let f_early_exit = Function::new_typed(store, early_exit);
 
+    exports.insert("ff_early_exit".to_string(), f_early_exit); 
     exports.insert("ff_get_object".to_string(), f_get_obj);
     exports.insert("ff_put_object".to_string(), f_put_obj);
     exports.insert(

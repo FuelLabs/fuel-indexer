@@ -25,6 +25,7 @@ extern "C" {
     fn ff_log_data(ptr: *const u8, len: u32, log_level: u32);
     fn ff_put_object(type_id: i64, ptr: *const u8, len: u32);
     fn ff_put_many_to_many_record(ptr: *const u8, len: u32);
+    fn ff_early_exit(err_code: i32);
 }
 
 // TODO: more to do here, hook up to 'impl log::Log for Logger'
@@ -92,16 +93,17 @@ pub trait Entity<'a>: Sized + PartialEq + Eq + std::fmt::Debug {
 
     /// Loads a record given a UID.
     fn load(id: UID) -> Option<Self> {
-        Self::load_unsafe(id).unwrap()
+        Self::load_unsafe(id)
     }
 
     /// Loads a record through the FFI with the WASM runtime and checks for errors.
-    fn load_unsafe(id: UID) -> Result<Option<Self>, WasmIndexerError> {
+    fn load_unsafe(id: UID) -> Option<Self> {
         unsafe {
             let buff = if let Ok(bytes) = bincode::serialize(&id.to_string()) {
                 bytes
             } else {
-                return Err(WasmIndexerError::SerializationError);
+                ff_early_exit(WasmIndexerError::SerializationError as i32);
+                unreachable!();
             };
 
             let mut bufflen = (buff.len() as u32).to_le_bytes();
@@ -111,16 +113,16 @@ pub trait Entity<'a>: Sized + PartialEq + Eq + std::fmt::Debug {
             if !ptr.is_null() {
                 let len = u32::from_le_bytes(bufflen) as usize;
                 let bytes = Vec::from_raw_parts(ptr, len, len);
-                let vec = if let Ok(v) = deserialize(&bytes) {
-                    v
-                } else {
-                    return Err(WasmIndexerError::DeserializationError);
+                match deserialize(&bytes) {
+                    Ok(vec) => Some(Self::from_row(vec)),
+                    Err(_) => {
+                        ff_early_exit(WasmIndexerError::DeserializationError as i32);
+                        unreachable!()
+                    }
                 };
-
-                return Ok(Some(Self::from_row(vec)));
             }
 
-            Ok(None)
+            None
         }
     }
 
