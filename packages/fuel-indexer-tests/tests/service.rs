@@ -3,7 +3,6 @@ use fuel_indexer::{Executor, IndexerConfig, WasmIndexExecutor};
 use fuel_indexer_lib::{config::DatabaseConfig, manifest::Manifest};
 use fuel_indexer_tests::fixtures::TestPostgresDb;
 use std::str::FromStr;
-use std::sync::atomic::AtomicBool;
 
 #[tokio::test]
 async fn test_wasm_executor_can_meter_execution() {
@@ -58,11 +57,9 @@ async fn test_wasm_executor_can_meter_execution() {
             .await
             .unwrap();
 
-            let kill_switch = std::sync::Arc::new(AtomicBool::new(false));
-
             let blocks: Vec<fuel_indexer_types::fuel::BlockData> = vec![];
 
-            if let Err(e) = executor.handle_events(kill_switch, blocks.clone()).await {
+            if let Err(e) = executor.handle_events(blocks.clone()).await {
                 if let fuel_indexer::IndexerError::RuntimeError(e) = e {
                     if let Some(e) = e.to_trap() {
                         assert_eq!(e, wasmer_types::TrapCode::UnreachableCodeReached);
