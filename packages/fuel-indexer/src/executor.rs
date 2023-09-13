@@ -255,6 +255,21 @@ pub async fn retrieve_blocks_from_node(
     end_block: Option<u32>,
     indexer_uid: &str,
 ) -> IndexerResult<(Vec<BlockData>, Option<String>, bool)> {
+    // Let's check if we need less blocks than block_page_size.
+    let page_size = if let (Some(start), Some(end)) = (cursor, end_block) {
+        if let Ok(start) = start.parse::<u32>() {
+            if start >= end {
+                return Err(IndexerError::EndBlockMet);
+            }
+
+            std::cmp::min((end - start) as usize, block_page_size)
+        } else {
+            block_page_size
+        }
+    } else {
+        block_page_size
+    };
+
     debug!("Fetching paginated results from {cursor:?}");
 
     let PaginatedResult {
@@ -265,7 +280,7 @@ pub async fn retrieve_blocks_from_node(
     } = client
         .full_blocks(PaginationRequest {
             cursor: cursor.clone(),
-            results: block_page_size,
+            results: page_size,
             direction: PageDirection::Forward,
         })
         .await
@@ -284,12 +299,6 @@ pub async fn retrieve_blocks_from_node(
 
     let mut block_info = Vec::new();
     for block in results.into_iter() {
-        if let Some(end_block) = end_block {
-            if block.header.height.0 > end_block {
-                return Err(IndexerError::EndBlockMet);
-            }
-        }
-
         let producer: Option<Bytes32> = block.block_producer().map(|pk| pk.hash());
 
         let mut transactions = Vec::new();
