@@ -37,6 +37,7 @@ fn native_prelude() -> proc_macro2::TokenStream {
 
         static mut db: Option<Arc<Mutex<Database>>> = None;
 
+        extern crate alloc;
         use fuel_indexer_utils::plugin::types::*;
         use fuel_indexer_utils::plugin::native::*;
         use fuel_indexer_utils::plugin::{serde_json, serialize, deserialize, bincode};
