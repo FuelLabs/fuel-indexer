@@ -1,0 +1,7 @@
+# Types
+
+## Objects
+
+## Enums
+
+## Unions
