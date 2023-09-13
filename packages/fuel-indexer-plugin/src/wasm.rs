@@ -25,7 +25,7 @@ extern "C" {
     fn ff_log_data(ptr: *const u8, len: u32, log_level: u32);
     fn ff_put_object(type_id: i64, ptr: *const u8, len: u32);
     fn ff_put_many_to_many_record(ptr: *const u8, len: u32);
-    fn ff_early_exit(err_code: i32);
+    fn ff_early_exit(err_code: u32);
 }
 
 // TODO: more to do here, hook up to 'impl log::Log for Logger'
@@ -102,8 +102,7 @@ pub trait Entity<'a>: Sized + PartialEq + Eq + std::fmt::Debug {
             let buff = if let Ok(bytes) = bincode::serialize(&id.to_string()) {
                 bytes
             } else {
-                ff_early_exit(WasmIndexerError::SerializationError as i32);
-                unreachable!();
+                early_exit(WasmIndexerError::SerializationError);
             };
 
             let mut bufflen = (buff.len() as u32).to_le_bytes();
@@ -116,8 +115,7 @@ pub trait Entity<'a>: Sized + PartialEq + Eq + std::fmt::Debug {
                 match deserialize(&bytes) {
                     Ok(vec) => Some(Self::from_row(vec)),
                     Err(_) => {
-                        ff_early_exit(WasmIndexerError::DeserializationError as i32);
-                        unreachable!()
+                        early_exit(WasmIndexerError::DeserializationError);
                     }
                 };
             }
@@ -157,4 +155,11 @@ fn alloc_fn(size: u32) -> *const u8 {
 /// Deallocation function to be called by an executor in a WASM runtime.
 fn dealloc_fn(ptr: *mut u8, len: usize) {
     let _vec = unsafe { Vec::from_raw_parts(ptr, len, len) };
+}
+
+#[no_mangle]
+/// Immediately terminate WASM execution with the specified error code.
+fn early_exit(err_code: WasmIndexerError) -> ! {
+    unsafe { ff_early_exit(err_code as u32) }
+    unreachable!("Expected termination of WASM exetution after a call to ff_early_exit.")
 }
