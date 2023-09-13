@@ -661,3 +661,63 @@ async fn test_generics() {
         "aaaasdfsdfasdfsdfaasdfsdfasdfsdf"
     );
 }
+
+#[actix_web::test]
+async fn test_no_missing_blocks() {
+    let IndexingTestComponents {
+        ref db,
+        ref manifest,
+        ..
+    } = setup_indexing_test_components(None).await;
+
+    let mut conn = fuel_indexer_database::IndexerConnection::Postgres(Box::new(
+        db.pool.acquire().await.unwrap(),
+    ));
+
+    // Allow the indexer to start and process blocks.
+    tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+
+    mock_request("/block").await;
+    mock_request("/block").await;
+
+    let start = fuel_indexer_database::queries::last_block_height_for_indexer(
+        &mut conn,
+        &manifest.namespace(),
+        &manifest.identifier(),
+    )
+    .await
+    .unwrap();
+
+    assert_eq!(start, 3);
+
+    // Remove the last item from indexmetadataentity, simulating missing a block.
+    let mut conn_2 = db.pool.acquire().await.unwrap();
+    sqlx::query(
+        "DELETE FROM fuel_indexer_test_index1.indexmetadataentity WHERE block_height = 3",
+    )
+    .execute(&mut conn_2)
+    .await
+    .unwrap();
+
+    // Trigger more blocks. The indexer will receive blocks 4 and 5. However,
+    // due to a missing item from indexmetadataentity, the indexer can't
+    // progress.
+    mock_request("/block").await;
+    mock_request("/block").await;
+
+    tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+
+    // last_block_height_for_indexer fetches MAX(block_height) from
+    // indexmetadataentity. Thus, if the indexer processed blocks 4 and 5, the
+    // value would be 5. Since the DB trigger stopped the indexer from
+    // progressing, and since we've deleted one row, the expected value is 2.
+    let start = fuel_indexer_database::queries::last_block_height_for_indexer(
+        &mut conn,
+        &manifest.namespace(),
+        &manifest.identifier(),
+    )
+    .await
+    .unwrap();
+
+    assert_eq!(start, 2);
+}
