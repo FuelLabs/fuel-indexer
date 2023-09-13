@@ -25,7 +25,6 @@ use fuel_vm::state::ProgramState as ClientProgramState;
 use futures::Future;
 use itertools::Itertools;
 use std::{
-    error::Error,
     marker::{Send, Sync},
     path::Path,
     str::FromStr,
@@ -869,10 +868,7 @@ impl Executor for WasmIndexExecutor {
                 self.db.lock().await.revert_transaction().await?;
                 return Err(IndexerError::RunTimeLimitExceededError);
             } else {
-                if let Some(e) = e
-                    .source()
-                    .and_then(|e| e.downcast_ref::<WasmIndexerError>())
-                {
+                if let Some(e) = e.downcast_ref::<WasmIndexerError>() {
                     match e {
                         // Termination due to kill switch is an expected behavior.
                         WasmIndexerError::KillSwitch => {
