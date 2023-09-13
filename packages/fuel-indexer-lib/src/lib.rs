@@ -46,6 +46,7 @@ pub enum WasmIndexerError {
     UnableToFetchLogString,
     KillSwitch,
     DatabaseError,
+    MissingBlocksError,
     GeneralError,
 }
 
@@ -60,6 +61,7 @@ impl From<u32> for WasmIndexerError {
             5 => Self::UnableToFetchLogString,
             6 => Self::KillSwitch,
             7 => Self::DatabaseError,
+            8 => Self::MissingBlocksError,
             _ => Self::GeneralError,
         }
     }
@@ -91,6 +93,9 @@ impl std::fmt::Display for WasmIndexerError {
             }
             Self::DatabaseError => {
                 write!(f, "Failed performing a database operation")
+            }
+            Self::MissingBlocksError => {
+                write!(f, "Some blocks are missing")
             }
             Self::GeneralError => write!(f, "Some unspecified WASM error occurred."),
         }
