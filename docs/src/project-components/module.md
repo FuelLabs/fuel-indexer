@@ -1,21 +1,14 @@
 # Indexer modules
 
-> While the Fuel indexer does support native indexer modules, this section will mostly focus on Web Assembly (WASM) modules.
+Indexer modules are compiled binaries that process data from the Fuel blockchain into entity types defined in your schema so that the data can be stored in a database. The Fuel indexer supports both WebAssembly (WASM) and native binaries; however, we **strongly** recommend using WASM binaries.
 
-WebAssembly (WASM) modules are compiled binaries that are registered or deployed to a Fuel indexer at runtime. The WASM bytes are read in by the indexer and _executors_ are created which will essentially pass blocks of on-chain data from the FuelVM to your indexers indefinitely.
+This document describes the process of creating an indexer module.
 
-The WASM module is generated based on your manifest, schema, and your `lib.rs` file.
+## Creating Handlers
 
-## `lib.rs`
-
-You can implement the logic for handling events and saving data to the database in your `lib.rs` file in the `src` folder.
-
-Here, you can define which functions handle different events based on the function parameters. If you add a function parameter of a certain type, the function will handle all blocks, transactions, or transaction receipts that contain a matching type.
-
-We can look at the function below as an example:
+Prior to creating a module for an indexer, both the manifest and schema should be created. At compile time, information will be extracted from both of those assets and combined it with your defined logic to create handlers that save data to storage. Let's look at the following example of a module that will be compiled to WASM:
 
 ```rust, ignore
-extern crate alloc;
 use fuel_indexer_utils::prelude::*;
 
 #[indexer(manifest = "indexer.manifest.yaml")]
@@ -23,13 +16,19 @@ mod indexer_mod {
 
     // This `log_the_greeting` function will be called, when we find 
     // a `Greeting` in a block.
-    fn log_the_greeting(greeter: Greeting) {
-        info!("The greeter is: {greeter:?}");
+    fn log_the_greeting(greeting: Greeting) {
+        info!("The greeting is: {greeting:?}");
     }
 }
 ```
 
-> You can learn more about what data can be indexed in the [Indexing](../indexing/index.md) section.
+The first line imports the [prelude](https://docs.rs/fuel-indexer-utils/latest/fuel_indexer_utils/prelude/index.html) from `fuel_indexer_utils`; this allows you to quickly bootstrap an indexer by using common types and traits. Then, we have a module decorated with the `#[indexer]` macro. This macro processes a manifest at the supplied file path, parses your schema and Sway contract ABI (if supplied), and generates code that is combined with handler functions in order to create a complete indexer module.
+
+
+Finally, we have an example handler function. You can define which functions handle different events by using the function parameters. If you add a function parameter of a certain type `T`, the function will be triggered whenever that type is found as part of a block, transaction, or receipt. In this example, let's say that you have a Sway contract with a function that logs a `Greeting` struct. When that function executes as part of a transaction, the logged struct will be included in the data that is processed from the Fuel blockchain. Your indexer module will see the struct and execute `log_the_greeting`.
+
+
+> You can learn more about what data can be indexed and find example handlers in the [Indexing Fuel Types](../indexing-fuel-types/index.md) and [Indexing Custom Types](../indexing-custom-types/index.md) sections.
 
 ---
 
