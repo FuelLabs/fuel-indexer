@@ -153,9 +153,17 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                         (block_info, next_cursor, has_next_page)
                     }
                     Err(e) => {
-                        error!("Indexer({indexer_uid}) failed to fetch blocks: {e:?}",);
-                        sleep(Duration::from_secs(DELAY_FOR_SERVICE_ERROR)).await;
-                        continue;
+                        if let IndexerError::EndBlockMet = e {
+                            info!("Indexer({indexer_uid}) has met its end block; beginning indexer shutdown process.");
+                            executor.kill_switch().store(true, Ordering::SeqCst);
+                            continue;
+                        } else {
+                            error!(
+                                "Indexer({indexer_uid}) failed to fetch blocks: {e:?}",
+                            );
+                            sleep(Duration::from_secs(DELAY_FOR_SERVICE_ERROR)).await;
+                            continue;
+                        }
                     }
                 };
 
