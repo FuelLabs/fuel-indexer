@@ -3479,6 +3479,7 @@ dependencies = [
  "fuel-indexer-types",
  "fuel-indexer-utils",
  "fuel-tx 0.35.3",
+ "fuel-types 0.35.3",
  "fuels",
  "fuels-macros",
  "futures",

@@ -180,6 +180,12 @@ pub(crate) async fn remove_indexer(
     }))
     .await?;
 
+    // We have early termination on a kill switch. Yet, it is still possible for
+    // the database entries to be removed before the indexer has time to act on
+    // kill switch being triggered. Adding a small delay here should prevent
+    // unnecessary DatabaseError's appearing in the logs.
+    tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+
     // Allways remove data when removing an indexer.
     if let Err(e) =
         queries::remove_indexer(&mut conn, &namespace, &identifier, true).await
