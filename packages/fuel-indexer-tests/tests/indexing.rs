@@ -617,25 +617,36 @@ async fn test_start_block() {
         ref manifest,
         ..
     } = setup_indexing_test_components(None).await;
-
     let mut conn = fuel_indexer_database::IndexerConnection::Postgres(Box::new(
         db.pool.acquire().await.unwrap(),
     ));
 
-    let start = fuel_indexer::get_start_block(&mut conn, &manifest)
-        .await
-        .unwrap();
-
-    assert_eq!(start, 1);
-
-    mock_request("/block").await;
-    mock_request("/block").await;
+    // Allow the indexer to start and process blocks.
+    tokio::time::sleep(std::time::Duration::from_secs(2)).await;
 
     let start = fuel_indexer::get_start_block(&mut conn, &manifest)
         .await
         .unwrap();
 
-    assert_eq!(start, 3);
+    // setup_indexing_test_components deploys a contract, so one block exists.
+    // The indexer should have processed that block. The start block is
+    // therefore 2 (if we started from 1, the indexer would have processed it
+    // twice).
+    assert_eq!(start, 2);
+
+    // We create two more blocks, 2, and 3, which are processed by the indexer.
+    mock_request("/block").await;
+    mock_request("/block").await;
+
+    tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+
+    let start = fuel_indexer::get_start_block(&mut conn, &manifest)
+        .await
+        .unwrap();
+
+    // The next start block is therefore 4. The indexer should have processed
+    // blocks 1, 2, and 3.
+    assert_eq!(start, 4);
 }
 
 #[actix_web::test]
