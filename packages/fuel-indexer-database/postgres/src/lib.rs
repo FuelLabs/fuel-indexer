@@ -633,7 +633,8 @@ pub async fn indexer_assets(
     })
 }
 
-/// Return the last block height that the given indexer has indexed.
+/// Return the last block height that the given indexer has indexed. If the
+/// indexer indexed no blocks, the result is 0.
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn last_block_height_for_indexer(
     conn: &mut PoolConnection<Postgres>,
@@ -649,7 +650,7 @@ pub async fn last_block_height_for_indexer(
     Ok(row
         .try_get::<i32, usize>(0)
         .map(|id| id.to_u32().expect("Bad block height."))
-        .unwrap_or_else(|_e| 1))
+        .unwrap_or(0))
 }
 
 // TODO: https://github.com/FuelLabs/fuel-indexer/issues/251
