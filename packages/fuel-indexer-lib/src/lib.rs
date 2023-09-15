@@ -82,7 +82,10 @@ impl std::fmt::Display for WasmIndexerError {
                 write!(f, "Failed to create MemoryView for indexer")
             }
             Self::KillSwitch => {
-                write!(f, "Indexer kill switch has been triggered. Indexer will halt.")
+                write!(
+                    f,
+                    "Indexer kill switch has been triggered. Indexer will halt."
+                )
             }
             Self::DatabaseError => {
                 write!(f, "Database operation failed.")
