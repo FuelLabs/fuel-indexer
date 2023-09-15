@@ -45,7 +45,12 @@ fn process_fn_items(
     let mut abi_dispatchers = Vec::new();
 
     let funcs = abi.clone().functions;
-    let abi_types = abi.clone().types;
+    let abi_types: Vec<TypeDeclaration> = abi
+        .clone()
+        .types
+        .iter()
+        .map(|t| strip_callpath_from_type_field(t.clone()))
+        .collect();
     let abi_log_types = abi.clone().logged_types.unwrap_or_default();
     let abi_msg_types = abi.clone().messages_types.unwrap_or_default();
     let fuel_types = FUEL_PRIMITIVES

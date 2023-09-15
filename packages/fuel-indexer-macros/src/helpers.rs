@@ -746,6 +746,26 @@ pub fn can_derive_id(field_set: &HashSet<String>, field_name: &str) -> bool {
         && field_name != IdCol::to_lowercase_str()
 }
 
+/// Strip the call path from the type field of a `TypeDeclaration`.
+pub fn strip_callpath_from_type_field(mut typ: TypeDeclaration) -> TypeDeclaration {
+    if is_non_decodable_type(&typ) {
+        return typ;
+    }
+
+    let mut s = typ.type_field.split_whitespace();
+    typ.type_field =
+        if let (Some(keyword), Some(fully_qualified_type_path)) = (s.next(), s.last()) {
+            if let Some(slug) = fully_qualified_type_path.split("::").last() {
+                [keyword, slug].join(" ")
+            } else {
+                unreachable!("All types should be formed with a keyword and call path")
+            }
+        } else {
+            typ.type_field
+        };
+    typ
+}
+
 /// Simply represents a value for a generic type.
 #[derive(Debug)]
 pub enum GenericType {
