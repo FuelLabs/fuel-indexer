@@ -85,7 +85,7 @@ impl std::fmt::Display for WasmIndexerError {
                 write!(f, "Indexer kill switch has been triggered. Indexer will halt.")
             }
             Self::DatabaseError => {
-                write!(f, "Failed performing a database operation")
+                write!(f, "Database operation failed.")
             }
             Self::GeneralError => write!(f, "Some unspecified WASM error occurred."),
         }
