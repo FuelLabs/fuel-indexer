@@ -63,6 +63,10 @@ impl IndexerService {
         mut manifest: Manifest,
         remove_data: bool,
     ) -> IndexerResult<()> {
+        if let Some(killer) = self.killers.get(&manifest.uid()) {
+            killer.store(true, std::sync::atomic::Ordering::SeqCst);
+        }
+
         let mut conn = self.pool.acquire().await?;
 
         let indexer_exists = (queries::get_indexer_id(
