@@ -87,7 +87,7 @@ impl std::fmt::Display for WasmIndexerError {
                 write!(f, "Failed to fetch log string")
             }
             Self::KillSwitch => {
-                write!(f, "Kill switch has been triggered")
+                write!(f, "Indexer kill switch has been triggered. Indexer will halt.")
             }
             Self::DatabaseError => {
                 write!(f, "Failed performing a database operation")
