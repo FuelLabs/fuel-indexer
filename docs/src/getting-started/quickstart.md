@@ -102,7 +102,7 @@ To quickly setup and bootstrap the PostgreSQL database that we'll need, we'll us
 
 We can quickly create a bootstrapped database and start the Fuel indexer service by running the following command:
 
-> IMPORTANT: Below we're specifying our Postgres hostname as `--postgres-host postgresql`, but you might need to change this based on your own Postgres instance details (see `forc index start --help` for more details). 
+> IMPORTANT: Below we're specifying our Postgres hostname as `--postgres-host postgresql`, but you might need to change this based on your own Postgres instance details (see `forc index start --help` for more details).
 >
 > Additionally, you can try using the `--embedded-database` flag in order to quickly use an embedded instance of Postgres, but this flag can be flaky, and its ease of use often depends on what platform you're using.
 

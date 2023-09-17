@@ -19,12 +19,12 @@ While we do our best to maintain compliance with the GraphQL specification and p
 
 | Functionality | Status | Notes |
 |------|----------|-------|
-| Arguments | ✅ | [read the Search and Filtering section](./search-filtering.md) |
+| Arguments | ✅ | [read the Search and Filtering section](../querying/search-and-filtering.md) |
 | Aliases | ✅ | |
 | Fragments | ✅ | inline fragments are currently not supported |
 | Introspection | ✅ | |
-| GraphQL Playground | ✅ | [read the Playground section](./playground.md) |
-| Pagination | ✅ | [read the Pagination section](./pagination.md) |
+| GraphQL Playground | ✅ | [read the Playground section](../querying/playground.md) |
+| Pagination | ✅ | [read the Pagination section](../querying/pagination.md) |
 | Directives | 🚧 | [read the Directives section](./directives.md) |
 | List Types | 🚧 | |
 | Union Types | 🚧 | |

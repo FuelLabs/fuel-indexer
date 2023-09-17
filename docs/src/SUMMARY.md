@@ -6,7 +6,7 @@
 # Getting Started
 
 - [Dependencies](./getting-started/dependencies.md)
-- [Service Infrastructure](./getting-started/starting-the-fuel-indexer.md)
+- [Service Infrastructure](./getting-started/indexer-service-infrastructure.md)
 - [How it Compares](./getting-started/how-it-compares.md)
 - [Quickstart](./getting-started/quickstart.md)
 
@@ -21,7 +21,6 @@
   - [Scalars](./designing-a-schema/scalars.md)
   - [Directives](./designing-a-schema/directives.md)
   - [Relationships](./designing-a-schema/relationships.md)
-  - [API Server](./designing-a-schema/api-server.md)
 - [Indexing Fuel Types](./indexing-fuel-types/index.md)
   - [Blocks](./indexing-fuel-types/blocks.md)
   - [Transactions](./indexing-fuel-types/transactions.md)
@@ -36,7 +35,20 @@
   - [A Full Example](./querying/full-example.md)
 - [Authentication](./authentication/index.md)
 - [forc index](./forc-index/index.md)
+  - [auth](./forc-index/auth.md)
+  - [build](./forc-index/build.md)
+  - [check](./forc-index/check.md)
+  - [deploy](./forc-index/deploy.md)
+  - [kill](./forc-index/kill.md)
+  - [new](./forc-index/new.md)
+  - [remove](./forc-index/remove.md)
+  - [start](./forc-index/start.md)
+  - [status](./forc-index/status.md)
 - [forc postgres](./forc-postgres/index.md)
+  - [create](./forc-postgres/create.md)
+  - [drop](./forc-postgres/drop.md)
+  - [start](./forc-postgres/start.md)
+  - [stop](./forc-postgres/stop.md)
 
 # For Contributors
 

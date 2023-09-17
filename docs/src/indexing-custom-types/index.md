@@ -1,6 +1,6 @@
 # Custom Types
 
-In addition to Fuel-specific types, you can also index custom Sway types as well. To index custom types from a Sway smart contract, you'll need that contract's ABI in JSON format; the JSON ABI is generated as a result of running `forc build` to build your contract. After that, the process is similar to [indexing Fuel types](./indexing-fuel-types.md).
+In addition to Fuel-specific types, you can also index custom Sway types as well. To index custom types from a Sway smart contract, you'll need that contract's ABI in JSON format; the JSON ABI is generated as a result of running `forc build` to build your contract. After that, the process is similar to [indexing Fuel types](../indexing-fuel-types/index.md).
 
 Let's go over an example.
 
@@ -32,7 +32,7 @@ abi ValueStore {
 }
 
 storage {
-	  total: u64 = 1000,
+    total: u64 = 1000,
 }
 
 impl ValueStore for Contract {
@@ -197,6 +197,7 @@ resumable: true
 ## Handler Logic
 
 Finally, we can create handlers to index these particular types and store them in the database. Let's look at the following example:
+
 ```rust, ignore
 use fuel_indexer_utils::prelude::*;
 

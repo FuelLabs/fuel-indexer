@@ -2,7 +2,7 @@
 
 ## Objects
 
-Object types are the most commonly used type in indexer GraphQL schema. Each object type marked with an `@entity` directive will be converted into a SQL table. 
+Object types are the most commonly used type in indexer GraphQL schema. Each object type marked with an `@entity` directive will be converted into a SQL table.
 
 ```graphql
 type Account @entity {
@@ -56,7 +56,7 @@ mod indexer_mod {
 
 ## Unions
 
-Union types are unique in that any type marked as a `union` will be converted into an Object type, who's fields are the unique set of fields over all members of the union. 
+Union types are unique in that any type marked as a `union` will be converted into an Object type, who's fields are the unique set of fields over all members of the union.
 
 ```graphql
 enum TransactionLabel {

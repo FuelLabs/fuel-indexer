@@ -1,7 +1,7 @@
 # Queries
 
-- [Basic Queries](./queries.md)
+- [Basic Queries](./basic-queries.md)
 - [Pagination](./pagination.md)
-- [Search & Filtering](./search-filtering.md)
+- [Search & Filtering](./search-and-filtering.md)
 - [Full Example](./full-example.md)
 - [The GraphQL Playground](./playground.md)

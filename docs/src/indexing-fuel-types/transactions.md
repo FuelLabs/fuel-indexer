@@ -1,3 +1,4 @@
+<!-- markdownlint-disable-file MD024 -->
 # Transactions
 
 ## `TransactionData`
@@ -38,7 +39,6 @@ mod indexer_mod {
 }
 
 ```
-
 
 ## `TransactionStatus`
 

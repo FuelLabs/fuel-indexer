@@ -261,8 +261,7 @@ mod indexer_mod {
 
 ## Return
 
-A `Return` receipt is generated when returning a non-reference type in a Sway contract, specifically `bool`, `u8`, `u16`, `u32`, and `u64`. The `val` field includes the value being returned.
-- [Read more about `Return` in the Fuel protocol spec](https://docs.fuel.network/docs/specs/abi/receipts/#return-receipt).
+A `Return` receipt is generated when returning a non-reference type in a Sway contract, specifically `bool`, `u8`, `u16`, `u32`, and `u64`. The `val` field includes the value being returned. [Read more about `Return` in the Fuel protocol spec](https://docs.fuel.network/docs/specs/abi/receipts/#return-receipt).
 
 ```rust, ignore
 use fuel_types::ContractId;
@@ -273,7 +272,6 @@ pub struct Return {
     pub is: u64,
 }
 ```
-
 
 You can handle functions that produce a `Return` receipt type by adding a parameter with the type `Return`.
 
@@ -338,8 +336,6 @@ pub struct Revert {
 | FailedSendMessage     | 2     |
 | FailedAssertEq        | 3     |
 | FailedAssert          | 4     |
-
-
 
 ```rust, ignore
 extern crate alloc;
