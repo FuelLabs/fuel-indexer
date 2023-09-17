@@ -346,10 +346,7 @@ async fn test_index_optional_types() {
     assert!(row.get::<Option<&str>, usize>(3).is_none());
 }
 
-// FIXME: TransferOut fails due to a failure in the contract,
-// not sure what the problem is yet.
 #[actix_web::test]
-#[ignore]
 async fn test_can_trigger_and_index_transferout_event_postgres() {
     let IndexingTestComponents {
         ref node, ref db, ..

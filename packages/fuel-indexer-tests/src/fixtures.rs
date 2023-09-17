@@ -544,8 +544,6 @@ pub mod test_web {
         HttpResponse::Ok()
     }
 
-    // TODO: TransferOut is  currently ignored due to flakiness;
-    // transfering to an address fails for some unknown reason
     async fn fuel_indexer_test_transferout(
         state: web::Data<Arc<AppState>>,
     ) -> impl Responder {
