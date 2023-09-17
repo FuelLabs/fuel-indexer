@@ -422,7 +422,23 @@ pub async fn retrieve_blocks_from_node(
                     salt: <[u8; 32]>::from(*tx.salt()).into(),
                     metadata: None,
                 }),
-                _ => Transaction::default(),
+                ClientTransaction::Script(tx) => Transaction::Script(Script {
+                    gas_price: *tx.gas_price(),
+                    gas_limit: *tx.gas_limit(),
+                    maturity: *tx.maturity(),
+                    script: (*tx.script().clone()).to_vec(),
+                    script_data: (*tx.script_data().clone()).to_vec(),
+                    inputs: tx.inputs().iter().map(|i| i.to_owned().into()).collect(),
+                    outputs: tx.outputs().iter().map(|o| o.to_owned().into()).collect(),
+                    witnesses: tx.witnesses().to_vec(),
+                    receipts_root: <[u8; 32]>::from(*tx.receipts_root()).into(),
+                    metadata: None,
+                }),
+                ClientTransaction::Mint(tx) => Transaction::Mint(Mint {
+                    tx_pointer: tx.tx_pointer().to_owned().into(),
+                    outputs: tx.outputs().iter().map(|o| o.to_owned().into()).collect(),
+                    metadata: None,
+                }),
             };
 
             let tx_data = TransactionData {
