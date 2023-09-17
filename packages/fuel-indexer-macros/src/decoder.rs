@@ -833,7 +833,7 @@ impl From<ObjectDecoder> for TokenStream {
                                             .map(|query| query.to_string())
                                             .collect::<Vec<_>>();
 
-                                        d.lock().await.put_many_to_many_record(queries).await;
+                                        d.lock().await.put_many_to_many_record(queries).await.expect(&format!("Entity::save_many_to_many for {} failed.", stringify!(#ident)));
                                     }
                                 }
                                 None => {}
@@ -846,12 +846,15 @@ impl From<ObjectDecoder> for TokenStream {
                             match &db {
                                 Some(d) => {
                                     match d.lock().await.get_object(Self::TYPE_ID, id.to_string()).await {
-                                        Some(bytes) => {
+                                        Ok(Some(bytes)) => {
                                             let columns: Vec<FtColumn> = bincode::deserialize(&bytes).expect("Failed to deserialize Vec<FtColumn> for Entity::load.");
                                             let obj = Self::from_row(columns);
                                             Some(obj)
                                         },
-                                        None => None,
+                                        Ok(None) => None,
+                                        Err(e) => {
+                                            panic!("Entity::load for {} failed.", stringify!(#ident))
+                                        }
                                     }
                                 }
                                 None => None,
@@ -868,7 +871,7 @@ impl From<ObjectDecoder> for TokenStream {
                                         Self::TYPE_ID,
                                         self.to_row(),
                                         serialize(&self.to_row())
-                                    ).await;
+                                    ).await.expect(&format!("Entity::save for {} failed.", stringify!(#ident)));
                                 }
                                 None => {},
                             }

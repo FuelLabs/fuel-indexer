@@ -12,7 +12,9 @@ use fuel_core_client::client::{
     FuelClient,
 };
 use fuel_indexer_database::IndexerConnectionPool;
-use fuel_indexer_lib::{defaults::*, manifest::Manifest, utils::serialize};
+use fuel_indexer_lib::{
+    defaults::*, manifest::Manifest, utils::serialize, WasmIndexerError,
+};
 use fuel_indexer_types::{
     fuel::{field::*, *},
     scalar::{Bytes32, HexString},
@@ -187,6 +189,12 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
 
             // The client responded with actual blocks, so attempt to index them.
             let result = executor.handle_events(block_info).await;
+
+            // If the kill switch has been triggered, the executor exits early.
+            if executor.kill_switch().load(Ordering::SeqCst) {
+                info!("Kill switch flipped, stopping Indexer({indexer_uid}). <('.')>");
+                break;
+            }
 
             if let Err(e) = result {
                 // Run time metering is deterministic. There is no point in retrying.
@@ -511,6 +519,10 @@ pub struct IndexEnv {
 
     /// Reference to the connected database.
     pub db: Arc<Mutex<Database>>,
+
+    /// Kill switch for this indexer. When true, the indexer service indicated
+    /// that the indexer is being terminated.
+    pub kill_switch: Arc<AtomicBool>,
 }
 
 impl IndexEnv {
@@ -519,6 +531,7 @@ impl IndexEnv {
         pool: IndexerConnectionPool,
         manifest: &Manifest,
         config: &IndexerConfig,
+        kill_switch: Arc<AtomicBool>,
     ) -> IndexerResult<IndexEnv> {
         let db = Database::new(pool, manifest, config).await;
         Ok(IndexEnv {
@@ -526,6 +539,7 @@ impl IndexEnv {
             alloc: None,
             dealloc: None,
             db: Arc::new(Mutex::new(db)),
+            kill_switch,
         })
     }
 }
@@ -673,7 +687,9 @@ impl WasmIndexExecutor {
             compiler_config.push_middleware(metering);
         }
 
-        let idx_env = IndexEnv::new(pool, manifest, config).await?;
+        let kill_switch = Arc::new(AtomicBool::new(false));
+
+        let idx_env = IndexEnv::new(pool, manifest, config, kill_switch.clone()).await?;
 
         let db: Arc<Mutex<Database>> = idx_env.db.clone();
 
@@ -726,8 +742,6 @@ impl WasmIndexExecutor {
         }
 
         db.lock().await.load_schema(schema_version).await?;
-
-        let kill_switch = Arc::new(AtomicBool::new(false));
 
         Ok(WasmIndexExecutor {
             instance,
@@ -871,7 +885,19 @@ impl Executor for WasmIndexExecutor {
                 self.db.lock().await.revert_transaction().await?;
                 return Err(IndexerError::RunTimeLimitExceededError);
             } else {
-                error!("WasmIndexExecutor({uid}) WASM execution failed: {e:?}.");
+                if let Some(e) = e.downcast_ref::<WasmIndexerError>() {
+                    match e {
+                        // Termination due to kill switch is an expected behavior.
+                        WasmIndexerError::KillSwitch => {
+                            info!("Indexer({uid}) WASM execution terminated: {e}.")
+                        }
+                        _ => {
+                            error!("Indexer({uid}) WASM execution failed: {e}.")
+                        }
+                    }
+                } else {
+                    error!("Indexer({uid}) WASM execution failed: {e:?}.");
+                };
                 self.db.lock().await.revert_transaction().await?;
                 return Err(IndexerError::from(e));
             }

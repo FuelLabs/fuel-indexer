@@ -17,10 +17,9 @@ pub fn handler_block_wasm(
             let blocks: Vec<BlockData> = match deserialize(&bytes) {
                 Ok(blocks) => blocks,
                 Err(msg) => {
-                    // TODO: probably need some error codes to send back to runtime.
                     core::mem::forget(bytes);
                     Logger::error(&msg);
-                    return;
+                    early_exit(WasmIndexerError::DeserializationError)
                 }
             };
             core::mem::forget(bytes);
