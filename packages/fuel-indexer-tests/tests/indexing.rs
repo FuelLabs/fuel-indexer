@@ -365,7 +365,7 @@ async fn test_can_trigger_and_index_transferout_event_postgres() {
 
     assert_eq!(
         row.get::<&str, usize>(2),
-        "532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96"
+        "eb2b3758087983c0d36217befc8f3abf3c140e8090986c8b46382d1b79fa9b3b"
     );
     assert_eq!(row.get::<BigDecimal, usize>(3).to_u64().unwrap(), 1);
     assert_eq!(row.get::<&str, usize>(4), TRANSFER_BASE_ASSET_ID);
