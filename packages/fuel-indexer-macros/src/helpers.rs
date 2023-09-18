@@ -747,6 +747,11 @@ pub fn can_derive_id(field_set: &HashSet<String>, field_name: &str) -> bool {
 }
 
 /// Strip the call path from the type field of a `TypeDeclaration`.
+///
+/// It is possible that the type field for a `TypeDeclaration` contains a
+/// fully-qualified path (e.g. `std::address::Address` as opposed to `Address`).
+/// Path separators are not allowed to be used as part of an identifier, so this
+/// function removes the qualifying path while keeping the type keyword.
 pub fn strip_callpath_from_type_field(mut typ: TypeDeclaration) -> TypeDeclaration {
     if is_non_decodable_type(&typ) {
         return typ;
