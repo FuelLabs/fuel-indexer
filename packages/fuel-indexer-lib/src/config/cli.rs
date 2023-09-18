@@ -63,8 +63,8 @@ pub struct IndexerArgs {
     #[clap(long, help = "Database type.", default_value = defaults::DATABASE, value_parser(["postgres"]))]
     pub database: String,
 
-    /// Max body size for web API requests.
-    #[clap(long, help = "Max body size for web API requests.", default_value_t = defaults::MAX_BODY_SIZE )]
+    /// Max body size for web server requests.
+    #[clap(long, help = "Max body size for web server requests.", default_value_t = defaults::MAX_BODY_SIZE )]
     pub max_body_size: usize,
 
     /// Postgres username.
@@ -184,8 +184,8 @@ pub struct IndexerArgs {
     )]
     pub remove_data: bool,
 
-    /// Allow the web API to accept raw SQL queries.
-    #[clap(long, help = "Allow the web API to accept raw SQL queries.")]
+    /// Allow the web server to accept raw SQL queries.
+    #[clap(long, help = "Allow the web server to accept raw SQL queries.")]
     pub accept_sql_queries: bool,
 
     /// Amount of blocks to return in a request to a Fuel node.
@@ -196,7 +196,7 @@ pub struct IndexerArgs {
 #[derive(Debug, Parser, Clone)]
 #[clap(
     name = "Fuel Indexer API Server",
-    about = "Fuel indexer web API",
+    about = "Fuel indexer web server",
     version
 )]
 pub struct ApiServerArgs {
@@ -236,7 +236,7 @@ pub struct ApiServerArgs {
     #[clap(long, help = "Database type.", default_value = defaults::DATABASE, value_parser(["postgres"]))]
     pub database: String,
 
-    /// Max body size for web API requests.
+    /// Max body size for web server requests.
     #[clap(long, help = "Max body size for web requests.", default_value_t = defaults::MAX_BODY_SIZE )]
     pub max_body_size: usize,
 
@@ -313,7 +313,7 @@ pub struct ApiServerArgs {
     #[clap(long, help = "Number of seconds over which to allow --rate-limit-rps.")]
     pub rate_limit_window_size: Option<u64>,
 
-    /// Allow the web API to accept raw SQL queries.
-    #[clap(long, help = "Allow the web API to accept raw SQL queries.")]
+    /// Allow the web server to accept raw SQL queries.
+    #[clap(long, help = "Allow the web server to accept raw SQL queries.")]
     pub accept_sql_queries: bool,
 }

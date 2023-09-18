@@ -1,6 +1,6 @@
 # GraphQL Schema
 
-The GraphQL schema is a required component of the Fuel indexer. When data is indexed into the database, the actual values that are persisted to the database will be values created using the data structures defined in the schema.
+The GraphQL schema is a required component of the Fuel indexer. When data is indexed into the database, the actual values that are persisted to the database will be values created using the data structures defined in the GraphQL schema.
 
 Below is a sample GraphQL schema for a Fuel indexer.
 

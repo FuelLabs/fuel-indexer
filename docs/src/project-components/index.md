@@ -14,9 +14,32 @@ We'll describe these three different use cases below.
 
 The Fuel indexer provides functionality to make it easy to build and compile abitrary indexers by using the [`forc index`](../forc-index/index.md) CLI tool. Using `forc index`, users can create, build, deploy, and remove indexers, as well as authenticate against a running indexer service, and check the status of running indexers.
 
+#### Example
+
+Create, deploy, and check the status of a new indexer.
+
+```bash
+forc index new fuel && \
+    cd fuel && forc index deploy --url http://indexer.fuel.network && \
+        forc index status --url http://indexer.fuel.network --auth $MY_TOKEN
+```
+
 ### As a standalone service
 
 You can also start the Fuel indexer as a standalone service that connects to a Fuel node in order to monitor the Fuel blockchain for new blocks and transactions. To do so, run the requisite database migrations, adjust the configuration to connect to a Fuel node, and start the service.
+
+#### Example
+
+Create, deploy, and check the status of a new indexer.
+
+```bash
+fuel-indexer run \
+    --fuel-node-host beta-4.fuel.network \
+    --fuel-node-port 80 \
+    --run-migrations \
+    --accept-sql-queries \
+    --replace-indexer
+```
 
 ### As part of a Fuel project
 

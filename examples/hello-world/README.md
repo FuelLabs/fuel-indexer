@@ -50,7 +50,7 @@ query {
 ```
 
 > IMPORTANT: Since this example uses a dockerized indexer service, with the GraphQL
-> web API being bound at interface `0.0.0.0` your LAN IP might differ from the
+> web server being bound at interface `0.0.0.0` your LAN IP might differ from the
 > `192.168.1.34` mentioned above.
 >
 > On *nix platforms you can typically find your LAN IP via `ifconfig | grep inet`
