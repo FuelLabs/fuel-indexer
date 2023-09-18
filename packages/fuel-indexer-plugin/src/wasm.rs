@@ -159,7 +159,7 @@ fn dealloc_fn(ptr: *mut u8, len: usize) {
 
 #[no_mangle]
 /// Immediately terminate WASM execution with the specified error code.
-fn early_exit(err_code: WasmIndexerError) -> ! {
+pub fn early_exit(err_code: WasmIndexerError) -> ! {
     unsafe { ff_early_exit(err_code as u32) }
     unreachable!("Expected termination of WASM exetution after a call to ff_early_exit.")
 }
