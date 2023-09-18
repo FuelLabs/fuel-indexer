@@ -1,13 +1,15 @@
 # Manifest
 
-A manifest serves as the YAML configuration file for a given indexer. A proper manifest has the following structure:
+A manifest is a YAML configuration file that specifies various aspects of how an indexer should function: Where should the indexer start? Where should the indexer end? What contract should the indexer subscribe to?
+
+Below is a sample indexer manifest file
 
 ```yaml
-namespace: fuel
-identifier: index1
+namespace: fuellabs
+identifier: order_book_v1
 fuel_client: beta-4.fuel.network:80
 abi: path/to/my/contract-abi.json
-contract_id: "0x39150017c9e38e5e280432d546fae345d6ce6d8fe4710162c2e3a95a6faff051"
+contract_id: "fuels0x39150017c9e38e5e280432d546fae345d6ce6d8fe4710162c2e3a95a6faff051"
 graphql_schema: path/to/my/schema.graphql
 start_block: 1564
 end_block: 310000

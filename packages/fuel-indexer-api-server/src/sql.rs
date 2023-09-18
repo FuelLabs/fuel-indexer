@@ -15,7 +15,7 @@ pub enum SqlValidatorError {
 
 /// A validator for SQL queries.
 ///
-/// Intended to ensure that users posting raw SQL queries to web API endpoints
+/// Intended to ensure that users posting raw SQL queries to web server endpoints
 /// are not attempting to do anything malicious.
 pub struct SqlQueryValidator;
 

@@ -12,7 +12,7 @@ pub struct VerifySignatureRequest {
     pub message: String,
 }
 
-/// GraphQL web API response.
+/// GraphQL web server response.
 #[derive(Serialize)]
 pub(crate) struct QueryResponse {
     /// Arbitrarily sized JSON response.
@@ -74,7 +74,7 @@ impl Claims {
     }
 }
 
-/// A SQL query posted to the web API.
+/// A SQL query posted to the web server.
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct SqlQuery {
     /// The literal raw SQL query.
