@@ -43,7 +43,6 @@ pub enum WasmIndexerError {
     PutObjectError,
     UnableToSaveListType,
     UninitializedMemory,
-    UnableToFetchLogString,
     KillSwitch,
     DatabaseError,
     MissingBlocksError,
@@ -58,10 +57,9 @@ impl From<u32> for WasmIndexerError {
             2 => Self::PutObjectError,
             3 => Self::UnableToSaveListType,
             4 => Self::UninitializedMemory,
-            5 => Self::UnableToFetchLogString,
-            6 => Self::KillSwitch,
-            7 => Self::DatabaseError,
-            8 => Self::MissingBlocksError,
+            5 => Self::KillSwitch,
+            6 => Self::DatabaseError,
+            7 => Self::MissingBlocksError,
             _ => Self::GeneralError,
         }
     }
@@ -84,9 +82,6 @@ impl std::fmt::Display for WasmIndexerError {
             }
             Self::UninitializedMemory => {
                 write!(f, "Failed to create MemoryView for indexer")
-            }
-            Self::UnableToFetchLogString => {
-                write!(f, "Failed to fetch log string")
             }
             Self::KillSwitch => {
                 write!(
