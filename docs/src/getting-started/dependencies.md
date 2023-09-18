@@ -46,7 +46,7 @@ Once installed, you can add PostgreSQL to your system by running `brew install p
 
 ## Web Assembly (WASM)
 
-Two additonal cargo components will be required to build your indexers: `wasm-snip` and the `wasm32-unknown-unknown` target.
+Two additional cargo components will be required to build your indexers: `wasm-snip` and the `wasm32-unknown-unknown` target.
 
 > As of this writing, there is a small bug in newly built Fuel indexer WASM modules that produces a WASM runtime error due an errant upstream dependency. For now, you can use `wasm-snip` to remove the errant symbols from the WASM module, and prevent this issue from happening. An example can be found in the related script [here](https://github.com/FuelLabs/fuel-indexer/blob/develop/scripts/stripper.bash).
 >
