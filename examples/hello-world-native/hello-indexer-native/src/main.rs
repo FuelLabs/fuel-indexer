@@ -28,22 +28,17 @@ use fuel_indexer_utils::prelude::*;
 )]
 mod hello_world_native {
 
-    async fn index_logged_greeting(event: Greeting, block: BlockData) {
-        let greeting = event.greeting.to_right_trimmed_str().to_string();
+    async fn index_logged_greeting(event: Greeting, block_data: BlockData) {
+        let height = std::cmp::min(0, block_data.header.height - 1);
         let name = event.person.name.to_right_trimmed_str().to_string();
-        let height = block.height;
-        let data = vec![1u8, 2, 3, 4, 5, 6, 7, 8].into();
-        let greeter = Greeter::new(name.clone(), height, height, data)
+        let greeting = event.greeting.to_right_trimmed_str().to_string();
+        let message = format!("{greeting} 👋, my name is {name}");
+
+        let greeter = Greeter::new(name, height).get_or_create().await;
+
+        let salutation = Salutation::new(message, greeter.id.clone(), height)
             .get_or_create()
             .await;
-
-        let message = format!("{greeting} 👋, my name is {name}");
-        let message_hash = bytes32(&message);
-
-        let salutation =
-            Salutation::new(message_hash, message, greeter.id.clone(), height, height)
-                .get_or_create()
-                .await;
 
         greeter.save().await;
         salutation.save().await;

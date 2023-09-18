@@ -2,14 +2,14 @@
 source: packages/fuel-indexer-tests/tests/snapshots.rs
 expression: output
 ---
-Fuel indexer web API
+Fuel indexer web server
 
 USAGE:
     fuel-indexer-api-server run [OPTIONS]
 
 OPTIONS:
         --accept-sql-queries
-            Allow the web API to accept raw SQL queries.
+            Allow the web server to accept raw SQL queries.
 
         --auth-enabled
             Require users to authenticate for some operations.

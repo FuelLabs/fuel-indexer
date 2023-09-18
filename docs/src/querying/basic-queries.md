@@ -1,6 +1,6 @@
 # Queries
 
-Once data has been persisted into your storage backend, you can retrieve it by querying the [GraphQL API server](../graphql/api-server.md). By default, the API server can be reached at `http://localhost:29987/api/graph/:namespace/:identifier`, where `:namespace` and `:identifier` are the values for the respective fields in your indexer's manifest. If you've changed the `WEB_API_HOST` or `WEB_API_PORT` values of your configuration, then you'll need to adjust the URL accordingly.
+Once data has been persisted into your storage backend, you can retrieve it by querying the [GraphQL API server](../getting-started/indexer-service-infrastructure.md#web-api-server). By default, the API server can be reached at `http://localhost:29987/api/graph/:namespace/:identifier`, where `:namespace` and `:identifier` are the values for the respective fields in your indexer's manifest. If you've changed the `WEB_API_HOST` or `WEB_API_PORT` values of your configuration, then you'll need to adjust the URL accordingly.
 
 ## Basic Query
 
@@ -63,7 +63,7 @@ We're requesting the ID, height, and timestamp for each block stored in the back
 
 ## Nested Query
 
-The Fuel indexer supports [foreign keys](../database/foreign-keys.md) on entity types; thus, you can also ask for information about a referenced entity inside of your query. A nested query has the following general structure:
+The Fuel indexer supports [foreign keys](../designing-a-schema/relationships.md) on entity types; thus, you can also ask for information about a referenced entity inside of your query. A nested query has the following general structure:
 
 ```graphql
 query {
@@ -112,7 +112,7 @@ type Character @entity {
 }
 ```
 
-This schema uses implicit foreign keys to reference other entities; for more information on implicit and explicit foreign keys, please refer to the [Foreign Keys](../database/foreign-keys.md) section of the book. In this contrived example, we're storing information about characters that are found in books which are stored in libraries that can be found in cities. This will be the query that we use to retrieve the aforementioned data:
+This schema uses implicit foreign keys to reference other entities; for more information on implicit and explicit foreign keys, please refer to the [Relationships](../designing-a-schema/relationships.md) section of the book. In this contrived example, we're storing information about characters that are found in books which are stored in libraries that can be found in cities. This will be the query that we use to retrieve the aforementioned data:
 
 ```graphql
 query {
