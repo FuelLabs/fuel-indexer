@@ -291,8 +291,9 @@ fn put_many_to_many_record(
     Ok(())
 }
 
-// Takes care of the exception raised by a trigger to ensure no blocks are
-// missed by the indexers.
+// Returns a specialized error code when the database trigger, which ensures
+// indexers can't miss blocks, raises an exception. Otherwise, returns an error
+// code indicating a generic database operation failure.
 fn database_operation_failure(e: crate::IndexerError) -> WasmIndexerError {
     match e {
         crate::IndexerError::SqlxError(e) => {
