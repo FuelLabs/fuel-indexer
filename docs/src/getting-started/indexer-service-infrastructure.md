@@ -167,7 +167,7 @@ OPTIONS:
 
 ## Web API Server
 
-The `fuel-indexer-api-server` crate of the Fuel indexer contains a standalone web server server that acts as a queryable endpoint on top of the database. Note that the main `fuel-indexer` binary of the indexer project also contains the same web server endpoint.
+The `fuel-indexer-api-server` crate of the Fuel indexer contains a standalone web server that acts as a queryable endpoint on top of the database. Note that the main `fuel-indexer` binary of the indexer project also contains the same web server endpoint.
 
 > The `fuel-indexer-api-server` crate offers a _standalone_ web server endpoint, whereas the API endpoint offered in `fuel-indexer` is bundled with other Fuel indexer functionality (e.g., execution, handling, data-layer construction, etc). Offering the API server as a separate piece allows users to separate components and run them on different systems, if desired.
 
