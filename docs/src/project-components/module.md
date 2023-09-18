@@ -14,7 +14,7 @@ use fuel_indexer_utils::prelude::*;
 #[indexer(manifest = "indexer.manifest.yaml")]
 mod indexer_mod {
 
-    // This `log_the_greeting` function will be called, when we find 
+    // This `log_the_greeting` function will be called, when we find
     // a `Greeting` in a block.
     fn log_the_greeting(greeting: Greeting) {
         info!("The greeting is: {greeting:?}");

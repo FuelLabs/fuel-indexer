@@ -1,10 +1,20 @@
 # Custom Types
 
-In addition to Fuel-specific types, you can also index custom Sway types as well. To index custom types from a Sway smart contract, you'll need that contract's ABI in JSON format; the JSON ABI is generated as a result of running `forc build` to build your contract. After that, the process is similar to [indexing Fuel types](../indexing-fuel-types/index.md).
+1. [Contract](#1-contract)
+2. [Schema](#2-schema)
+3. [Manifest](#3-manifest)
+4. [Writing a handler](#4-handler-logic)
 
-Let's go over an example.
+> In addition to Fuel-specific types, you can also index custom types triggered in your Sway smart contract.
 
-## Contract
+To index custom types from a Sway smart contract, you'll need that specific contract's ABI in JSON format; the JSON ABI is generated as a result of running `forc build` to build your contract. After that, the process is similar to [indexing Fuel types](../indexing-fuel-types/index.md).
+
+
+## Example
+
+Let's cover some of these concepts in an example below.
+
+### 1. Contract
 
 First, let's create a Sway contract with some simple types.
 
@@ -26,7 +36,7 @@ struct Subtraction {
 abi ValueStore {
     #[storage(read, write)]
     fn add(value: u64);
-    
+
     #[storage(read, write)]
     fn subtract(value: u64) -> Subtraction;
 }
@@ -61,7 +71,9 @@ impl ValueStore for Contract {
 }
 ```
 
-In this contract, we have two types: `Addition` and `Subtraction`. As we'll soon see, indexers can process custom types that are logged or returned as part of a function. To begin creating an indexer for this contract, let's build the contract and generate a JSON ABI file. Running `forc build` generates a JSON ABI similar to the lightly-edited one below:
+- In this contract, we have two types: `Addition` and `Subtraction`. As we'll soon see, indexers can process custom types that are logged or returned as part of a function.
+- To begin creating an indexer for this contract, let's build the contract and generate a JSON ABI file.
+  - Running `forc build` generates a JSON ABI similar to the lightly-edited one below:
 
 ```json
 {
@@ -130,7 +142,9 @@ In this contract, we have two types: `Addition` and `Subtraction`. As we'll soon
 
 ```
 
-## Schema
+## 2. Schema
+
+Now that we've discussed how to generate the JSON ABI for our Sway smart contract, let's now cover how to create an associated GraphQL schema.
 
 To index the contracts and store information about our Sway types in the database, we should create a schema. Let's design a schema that has an entity for each Sway type:
 
@@ -148,9 +162,17 @@ type SubtractEntity @entity {
 }
 ```
 
-## Manifest
+> Note how the types used here, match the types used in our Sway smart contract. For a detailed mapping of these types, please see the [Storing Records](./../storing-records/index.md) section.
 
-Before writing the handler code for the types, we need to make sure that our indexer manifest contains the necessary information to allow for the compiler to parse our contract types. Specifically, we should ensure that the `contract_abi` and `graphql_schema` fields point to the correct locations, respectively.
+## 3. Manifest
+
+So far we've covered how to (1) write your Sway smart contract and generate its JSON ABI, and (2) create types in your GraphQL schema that align with your Sway types.
+
+Next, we'll cover how to write the manifest file for your indexer.
+
+Before writing any of the handler code for your indexer, we need to make sure that our indexer manifest contains the necessary information to allow for the compiler to parse our contract types.
+
+Specifically, we should ensure that the `contract_abi` and `graphql_schema` fields point to the correct locations, respectively.
 
 ```yaml
 # A namespace is a logical grouping of declared names. Think of the namespace
@@ -194,7 +216,7 @@ module:
 resumable: true
 ```
 
-## Handler Logic
+## 4. Handler Logic
 
 Finally, we can create handlers to index these particular types and store them in the database. Let's look at the following example:
 

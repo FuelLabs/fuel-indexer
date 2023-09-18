@@ -1,6 +1,8 @@
 # Storing Info in a Database
 
-The Fuel indexer uses [PostgreSQL](https://github.com/docker-library/postgres/blob/2f6878ca854713264ebb27c1ba8530c884bcbca5/14/bullseye/Dockerfile) as the primary database. We're open to supporting other storage solutions in the future.
+The Fuel indexer uses [PostgreSQL](https://github.com/docker-library/postgres/blob/2f6878ca854713264ebb27c1ba8530c884bcbca5/14/bullseye/Dockerfile) as the primary database.
+
+> 💡 We're open to supporting other storage solutions in the future.
 
 ## Data Types
 
