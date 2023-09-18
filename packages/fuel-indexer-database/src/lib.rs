@@ -37,6 +37,14 @@ pub enum IndexerConnection {
     Postgres(Box<PoolConnection<sqlx::Postgres>>),
 }
 
+impl IndexerConnection {
+    pub fn database_type(&self) -> DbType {
+        match self {
+            IndexerConnection::Postgres(_) => DbType::Postgres,
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub enum IndexerConnectionPool {
     Postgres(sqlx::Pool<sqlx::Postgres>),

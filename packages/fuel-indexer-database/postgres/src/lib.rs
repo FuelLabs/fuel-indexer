@@ -912,3 +912,20 @@ pub async fn put_many_to_many_record(
     execute_query(conn, query).await?;
     Ok(())
 }
+
+pub async fn create_ensure_block_height_consecutive_trigger(
+    conn: &mut PoolConnection<Postgres>,
+    namespace: &str,
+    identifier: &str,
+) -> sqlx::Result<()> {
+    let query = format!(
+        "CREATE TRIGGER trigger_ensure_block_height_consecutive
+        BEFORE INSERT OR UPDATE ON {namespace}_{identifier}.indexmetadataentity
+        FOR EACH ROW
+        EXECUTE FUNCTION ensure_block_height_consecutive();"
+    );
+
+    execute_query(conn, query).await?;
+
+    Ok(())
+}

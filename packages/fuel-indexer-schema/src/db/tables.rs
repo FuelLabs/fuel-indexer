@@ -183,18 +183,16 @@ impl IndexerSchema {
 
         statements.extend(constraint_stmnts);
 
-        statements.push(format!(
-            "CREATE TRIGGER trigger_ensure_block_height_consecutive
-            BEFORE INSERT OR UPDATE ON {namespace}_{identifier}.indexmetadataentity
-            FOR EACH ROW
-            EXECUTE FUNCTION ensure_block_height_consecutive();",
-            namespace = self.namespace,
-            identifier = self.identifier
-        ));
-
         for stmnt in statements.iter() {
             queries::execute_query(conn, stmnt.to_owned()).await?;
         }
+
+        queries::create_ensure_block_height_consecutive_trigger(
+            conn,
+            &self.namespace,
+            &self.identifier,
+        )
+        .await?;
 
         self.tables = tables;
 
