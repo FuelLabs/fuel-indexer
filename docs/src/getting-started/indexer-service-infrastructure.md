@@ -2,11 +2,11 @@
 
 - [Service Components](#components)
 - [Fuel Indexer Service](#fuel-indexer-service)
-    - [Starting the service via CLI options](#using-cli-options-indexer-service)
-    - [Starting the service via a config file](#using-a-configuration-file-indexer-service)
+  - [Starting the service via CLI options](#using-cli-options-indexer-service)
+  - [Starting the service via a config file](#using-a-configuration-file-indexer-service)
 - [Fuel Indexer Web Server](#web-api-server)
-    - [Starting the service via CLI options](#using-cli-options-web-server)
-    - [Starting the service via a config file](#using-a-configuration-file-web-server)
+  - [Starting the service via CLI options](#using-cli-options-web-server)
+  - [Starting the service via a config file](#using-a-configuration-file-web-server)
 
 A Fuel indexer service instance requires just three components:
 
@@ -163,7 +163,7 @@ OPTIONS:
 {{#include ../../../config.yaml}}
 ```
 
-----
+---
 
 ## Web API Server
 
@@ -278,4 +278,3 @@ fuel-indexer-api-server run --config config.yaml
 ```
 
 In the above example, `config.yaml` is based on [the default service configuration file](https://github.com/FuelLabs/fuel-indexer/blob/develop/config.yaml).
-

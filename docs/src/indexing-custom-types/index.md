@@ -9,7 +9,6 @@
 
 To index custom types from a Sway smart contract, you'll need that specific contract's ABI in JSON format; the JSON ABI is generated as a result of running `forc build` to build your contract. After that, the process is similar to [indexing Fuel types](../indexing-fuel-types/index.md).
 
-
 ## Example
 
 Let's cover some of these concepts in an example below.

@@ -1,6 +1,6 @@
 # Dependencies
 
-> This guide covers some of the basics with regard to installing dependencies for the Fuel indexer service. However, note that this guide is meant to be a general overview for most platforms and by no means covers all platforms. 
+> This guide covers some of the basics with regard to installing dependencies for the Fuel indexer service. However, note that this guide is meant to be a general overview for most platforms and by no means covers all platforms.
 >
 > If you're having trouble with dependencies on your system, we recommend that you use `docker`.
 
@@ -13,12 +13,12 @@ To run the Fuel indexer, you'll need to install a few dependencies on your syste
 5. [`wasm-snip`](#web-assembly-wasm), a utility for stripping symbols from WebAssemly binaries.
 
 > If you don't want to install a database directly onto your system, you can use Docker to run a database in an isolated container. You can install Docker by following its [installation instructions](https://docs.docker.com/get-docker/).
-> 
+>
 > For reference purposes, we provide a [`docker compose` file](https://github.com/FuelLabs/fuel-indexer/blob/develop/scripts/docker-compose.yaml) that comes with a PostgresSQL server and a Fuel indexer service.
 
 ## `fuelup`
 
-We strongly recommend that you use the Fuel indexer that's made available via [`forc`, the Fuel orchestrator](https://fuellabs.github.io/sway/master/book/forc/index.html). You can get `forc` (and other Fuel components) by way of [`fuelup`, the Fuel toolchain manager](https://fuellabs.github.io/fuelup/latest). 
+We strongly recommend that you use the Fuel indexer that's made available via [`forc`, the Fuel orchestrator](https://fuellabs.github.io/sway/master/book/forc/index.html). You can get `forc` (and other Fuel components) by way of [`fuelup`, the Fuel toolchain manager](https://fuellabs.github.io/fuelup/latest).
 
 Install `fuelup` by running the following command, which downloads and runs the installation script.
 

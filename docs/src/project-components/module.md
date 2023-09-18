@@ -25,10 +25,10 @@ mod indexer_mod {
 ## What's going on here?
 
 - The first line imports the [prelude](https://docs.rs/fuel-indexer-utils/latest/fuel_indexer_utils/prelude/index.html) from `fuel_indexer_utils`; this allows you to quickly bootstrap an indexer by using common types and traits. Then, we have a module decorated with the `#[indexer]` macro.
-    - This macro processes a manifest at the supplied file path, parses your schema and Sway contract ABI (if supplied), and generates code that is combined with handler functions in order to create a complete indexer module.
+  - This macro processes a manifest at the supplied file path, parses your schema and Sway contract ABI (if supplied), and generates code that is combined with handler functions in order to create a complete indexer module.
 
 - Finally, we have an example handler function. You can define which functions handle different events by using the function parameters. If you add a function parameter of a certain type `T`, the function will be triggered whenever that type is found as part of a block, transaction, or receipt.
-    - In this example, let's say that you have a Sway contract with a function that logs a `Greeting` struct. When that function executes as part of a transaction, the logged struct will be included in the data that is processed from the Fuel blockchain. Your indexer module will see the struct and execute `log_the_greeting`.
+  - In this example, let's say that you have a Sway contract with a function that logs a `Greeting` struct. When that function executes as part of a transaction, the logged struct will be included in the data that is processed from the Fuel blockchain. Your indexer module will see the struct and execute `log_the_greeting`.
 
 > You can learn more about what data can be indexed and find example handlers in the [Indexing Fuel Types](../indexing-fuel-types/index.md) and [Indexing Custom Types](../indexing-custom-types/index.md) sections.
 

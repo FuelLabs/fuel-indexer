@@ -1,3 +1,4 @@
+<!-- markdownlint-disable-file MD024 -->
 # A Fuel Indexer Project
 
 ## Use Cases
