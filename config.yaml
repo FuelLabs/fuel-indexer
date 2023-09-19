@@ -35,7 +35,7 @@ indexer_net_config: false
 # The number of WASM opcodes after which the indexer will stop execution.
 metering_points: 30000000000
 
-# Allow the web API to accept raw SQL queries.
+# Allow the web server to accept raw SQL queries.
 accept_sql_queries: false
 
 # Amount of blocks to return in a request to a Fuel node.
@@ -64,7 +64,7 @@ web_api:
   # Web API port.
   port: 29987
 
-  # Max body size for web API requests.
+  # Max body size for web server requests.
   max_body_size: "5242880"
 
 # ******************************

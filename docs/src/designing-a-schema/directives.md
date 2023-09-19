@@ -4,10 +4,9 @@
 
 As of this writing, the list of supported Fuel GraphQL schema directives includes:
 
-- `@indexed`
-- `@unique`
-- `@join`
-- `@virtual`
+- `@indexed`: Denotes that a field should include a B-tree index in the database.
+- `@unique`: Denotes that field should include a unique index in the database.
+- `@join`: Denotes that a field has a "relationship" to another object type.
 
 ## `@indexed`
 
@@ -65,23 +64,4 @@ type Library @entity {
 }
 ```
 
-A foreign key constraint will be created on `library.book` that references `book.name`, which relates the `Book`s in a `Library` to the underlying `Book` table.
-
-## `@virtual`
-
-The `@virtual` directive instructs the indexer's SQL schema builder to _not_ build SQL tables from types that include this directive on any field.
-
-```graphql
-type Title @entity {
-    name: CharField! @virtual
-}
-
-type Book @entity {
-    id: ID!
-    title: Title!
-}
-```
-
-When SQL tables are generated for the entities above, a table will be created for `Book`, but no table will be created for `Title`. Rather, the `title` field on the `Book` object will exist on the `book` table as a `JSON` field.
-
-> Important: When using the `@virtual` directive with GraphQL `union` types, each member of the `union` type must either include _only_ types that are not virtual, or _only_ types that are virtual. We do not support mixing and matching virtual types with non-virtual types in unions.
+A foreign key constraint will be created on `library.book` that references `book.name`, which relates the `Book`s in a `Library` to the underlying `Book` table. For more info on what exactly is happening here, please see the [Relationships](./relationships.md) section.
