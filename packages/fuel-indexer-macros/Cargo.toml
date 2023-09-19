@@ -13,8 +13,8 @@ description = "Fuel Indexer Macros"
 proc-macro = true
 
 [dependencies]
-async-graphql-parser = "5.0"
-async-graphql-value = "5.0"
+async-graphql-parser = { workspace = true }
+async-graphql-value = { workspace = true }
 fuel-abi-types = "0.3"
 fuel-indexer-database-types = { workspace = true }
 fuel-indexer-lib = { workspace = true, default-features = true }

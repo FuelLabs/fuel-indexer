@@ -10,7 +10,7 @@ pub mod schema_builder;
 pub mod schema_type;
 pub mod schema_type_builder;
 
-pub(self) mod self_prelude {
+pub mod self_prelude {
     pub use super::super::self_prelude::*;
     pub use crate::spec::*;
     pub use crate::store;

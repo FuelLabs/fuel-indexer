@@ -10,7 +10,7 @@ pub mod store;
 pub mod store_type;
 pub mod store_type_builder;
 
-pub(self) mod self_prelude {
+pub mod self_prelude {
     pub use super::super::self_prelude::*;
     pub use indexmap::IndexMap;
     pub use serde::{Deserialize, Serialize};

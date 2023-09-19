@@ -487,39 +487,6 @@ dependencies = [
 
 [[package]]
 name = "async-graphql"
-version = "5.0.10"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b35ef8f9be23ee30fe1eb1cf175c689bc33517c6c6d0fd0669dade611e5ced7f"
-dependencies = [
- "async-graphql-derive 5.0.10",
- "async-graphql-parser 5.0.10",
- "async-graphql-value 5.0.10",
- "async-stream",
- "async-trait",
- "base64 0.13.1",
- "bytes",
- "fast_chemail",
- "fnv",
- "futures-util",
- "handlebars",
- "http",
- "indexmap 1.9.3",
- "mime",
- "multer",
- "num-traits",
- "once_cell",
- "pin-project-lite",
- "regex",
- "serde",
- "serde_json",
- "serde_urlencoded",
- "static_assertions",
- "tempfile",
- "thiserror",
-]
-
-[[package]]
-name = "async-graphql"
 version = "6.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "738953986114630243230d0961968972ac326530532dca8e46f085a42c26fc31"
@@ -580,22 +547,6 @@ checksum = "c121a894495d7d3fc3d4e15e0a9843e422e4d1d9e3c514d8062a1c94b35b005d"
 dependencies = [
  "Inflector",
  "async-graphql-parser 4.0.16",
- "darling 0.14.4",
- "proc-macro-crate",
- "proc-macro2",
- "quote",
- "syn 1.0.109",
- "thiserror",
-]
-
-[[package]]
-name = "async-graphql-derive"
-version = "5.0.10"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1a0f6ceed3640b4825424da70a5107e79d48d9b2bc6318dfc666b2fc4777f8c4"
-dependencies = [
- "Inflector",
- "async-graphql-parser 5.0.10",
  "darling 0.14.4",
  "proc-macro-crate",
  "proc-macro2",
@@ -3409,9 +3360,9 @@ dependencies = [
 name = "fuel-indexer-graphql"
 version = "0.20.8"
 dependencies = [
- "async-graphql 5.0.10",
- "async-graphql-parser 5.0.10",
- "async-graphql-value 5.0.10",
+ "async-graphql 6.0.6",
+ "async-graphql-parser 6.0.6",
+ "async-graphql-value 6.0.6",
  "fuel-indexer-database",
  "fuel-indexer-database-types",
  "fuel-indexer-lib",
@@ -3485,8 +3436,8 @@ dependencies = [
 name = "fuel-indexer-macros"
 version = "0.20.8"
 dependencies = [
- "async-graphql-parser 5.0.10",
- "async-graphql-value 5.0.10",
+ "async-graphql-parser 6.0.6",
+ "async-graphql-value 6.0.6",
  "fuel-abi-types 0.3.0",
  "fuel-indexer-database-types",
  "fuel-indexer-lib",

@@ -3,7 +3,7 @@ pub mod schema_type;
 pub mod store;
 pub mod store_type;
 
-pub(self) mod self_prelude {
+pub mod self_prelude {
     pub use super::super::self_prelude::*;
     pub use indexmap::IndexMap;
     pub use lazy_static::lazy_static;

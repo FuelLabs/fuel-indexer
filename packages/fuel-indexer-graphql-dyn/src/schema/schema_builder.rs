@@ -25,7 +25,7 @@ impl Default for DynSchemaBuilder {
 impl DynSchemaBuilder {
     pub fn new(schema_type: &DynSchemaType, store: Arc<Mutex<dyn store::Store>>) -> Self {
         let loader = DynLoader::new(store);
-        let resolver = DynResolver::new(&schema_type, Arc::new(Mutex::new(loader)));
+        let resolver = DynResolver::new(schema_type, Arc::new(Mutex::new(loader)));
         let DynSchemaBuilder {
             mut schema,
             mut query,

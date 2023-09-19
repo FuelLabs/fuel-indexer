@@ -14,7 +14,7 @@ pub mod node;
 pub mod paging;
 pub mod query;
 
-pub(self) mod self_prelude {
+pub mod self_prelude {
     pub use super::super::self_prelude::*;
     pub use async_graphql::dynamic::*;
     pub use std::{hash::Hash, str::FromStr};
