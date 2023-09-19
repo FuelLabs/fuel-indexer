@@ -110,7 +110,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
     if let Some(end_block) = end_block {
         info!("Indexer({indexer_uid}) will stop at block #{end_block}.");
     } else {
-        warn!("No end_block specified in manifest. Indexer({indexer_uid}) will run forever.");
+        warn!("No end_block specified in the manifest. Indexer({indexer_uid}) will run forever.");
     }
 
     async move {
