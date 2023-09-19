@@ -1,19 +1,21 @@
 #!/bin/bash
 #
-# Drops the test database, recreates it, and runs migrations
+# Drops the test database, recreates it
 #
 # Usage:
 #   bash scripts/utils/refresh_test_db.bash
 
 set -x
 
-db_arg="${1}"
-db_type=${db_arg:=postgres}
+db=${1:-postgres}
+run_migrations=${2:-false}
 
-if [ $db_type == "postgres" ]; then
+if [ $db == "postgres" ]; then
     dropdb postgres
     createdb postgres
-    DATABASE_URL=postgres://postgres@localhost bash scripts/run_migrations.bash
+    if [ $run_migrations == "true" ]; then
+        DATABASE_URL=postgres://postgres@localhost bash scripts/run_migrations.bash
+    fi
 else
     echo "Invalid db param. Expected 'postgres'. Found '$db_type'"
     exit 1

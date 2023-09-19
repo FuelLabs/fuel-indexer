@@ -262,7 +262,7 @@ impl IndexerService {
         Ok(())
     }
 
-    /// Kick it off! Run the indexer service loop, listening to service messages primarily coming from the web API.
+    /// Kick it off! Run the indexer service loop, listening to service messages primarily coming from the web server.
     pub async fn run(mut self) -> IndexerResult<()> {
         loop {
             tokio::select! {

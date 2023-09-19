@@ -32,19 +32,16 @@ use fuel_indexer_utils::prelude::*;
 #[indexer(manifest = "examples/hello-world/hello-indexer/hello_indexer.manifest.yaml")]
 mod hello_world_indexer {
 
-    fn index_logged_greeting(event: Greeting, block: BlockData) {
-        let greeting = event.greeting.to_right_trimmed_str().to_string();
+    fn index_logged_greeting(event: Greeting, block_data: BlockData) {
+        let height = std::cmp::min(0, block_data.header.height - 1);
         let name = event.person.name.to_right_trimmed_str().to_string();
-        let height = block.height;
-        let data = vec![1u8, 2, 3, 4, 5, 6, 7, 8].into();
-        let greeter = Greeter::new(name.clone(), height, height, data).get_or_create();
-
+        let greeting = event.greeting.to_right_trimmed_str().to_string();
         let message = format!("{greeting} 👋, my name is {name}");
-        let message_hash = bytes32(&message);
+
+        let greeter = Greeter::new(name, height).get_or_create();
 
         let salutation =
-            Salutation::new(message_hash, message, greeter.id.clone(), height, height)
-                .get_or_create();
+            Salutation::new(message, greeter.id.clone(), height).get_or_create();
 
         greeter.save();
         salutation.save();

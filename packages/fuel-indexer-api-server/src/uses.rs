@@ -186,7 +186,7 @@ pub(crate) async fn remove_indexer(
     // unnecessary DatabaseError's appearing in the logs.
     tokio::time::sleep(std::time::Duration::from_secs(1)).await;
 
-    // Allways remove data when removing an indexer.
+    // Always remove data when removing an indexer.
     if let Err(e) =
         queries::remove_indexer(&mut conn, &namespace, &identifier, true).await
     {

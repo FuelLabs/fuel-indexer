@@ -208,6 +208,21 @@ async fn test_index_receipt_types() {
     assert_eq!(row.get::<BigDecimal, usize>(3).to_u64().unwrap(), 1); // value is defined in test contract
     assert_eq!(row.get::<&str, usize>(4), TRANSFER_BASE_ASSET_ID);
 
+    mock_request("/transferout").await;
+
+    let row =
+        sqlx::query("SELECT * FROM fuel_indexer_test_index1.transferoutentity LIMIT 1")
+            .fetch_one(&mut conn)
+            .await
+            .unwrap();
+
+    assert_eq!(
+        row.get::<&str, usize>(2),
+        "eb2b3758087983c0d36217befc8f3abf3c140e8090986c8b46382d1b79fa9b3b"
+    );
+    assert_eq!(row.get::<BigDecimal, usize>(3).to_u64().unwrap(), 1);
+    assert_eq!(row.get::<&str, usize>(4), TRANSFER_BASE_ASSET_ID);
+
     mock_request("/revert").await;
 
     let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.revertentity LIMIT 1")
@@ -344,34 +359,6 @@ async fn test_index_optional_types() {
     assert_eq!(opt_int.unwrap().to_u64().unwrap(), 999);
 
     assert!(row.get::<Option<&str>, usize>(3).is_none());
-}
-
-// FIXME: TransferOut fails due to a failure in the contract,
-// not sure what the problem is yet.
-#[actix_web::test]
-#[ignore]
-async fn test_can_trigger_and_index_transferout_event_postgres() {
-    let IndexingTestComponents {
-        ref node, ref db, ..
-    } = setup_indexing_test_components(None).await;
-
-    mock_request("/transferout").await;
-
-    node.abort();
-
-    let mut conn = db.pool.acquire().await.unwrap();
-    let row =
-        sqlx::query("SELECT * FROM fuel_indexer_test_index1.transferoutentity LIMIT 1")
-            .fetch_one(&mut conn)
-            .await
-            .unwrap();
-
-    assert_eq!(
-        row.get::<&str, usize>(2),
-        "532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96"
-    );
-    assert_eq!(row.get::<BigDecimal, usize>(3).to_u64().unwrap(), 1);
-    assert_eq!(row.get::<&str, usize>(4), TRANSFER_BASE_ASSET_ID);
 }
 
 #[actix_web::test]

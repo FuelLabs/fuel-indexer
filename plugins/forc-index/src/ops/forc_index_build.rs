@@ -155,7 +155,7 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
                     "▪▪▪▪▪",
                 ]),
         );
-        pb.set_message("⏰ Building...");
+        pb.set_message("⏰ Building indexer...");
 
         match cmd.output() {
             Ok(o) => {
