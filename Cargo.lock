@@ -3270,7 +3270,10 @@ dependencies = [
 name = "fuel-indexer-benchmarks"
 version = "0.0.0"
 dependencies = [
+ "chrono",
+ "clap 3.2.25",
  "criterion",
+ "duct",
  "fuel-core-client",
  "fuel-indexer",
  "fuel-indexer-database",
@@ -3279,7 +3282,12 @@ dependencies = [
  "fuel-indexer-schema",
  "fuel-indexer-tests",
  "futures",
+ "reqwest",
+ "serde",
+ "serde_json",
  "tokio",
+ "tracing",
+ "tracing-subscriber 0.2.25",
 ]
 
 [[package]]
