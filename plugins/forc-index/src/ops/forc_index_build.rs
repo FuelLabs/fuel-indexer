@@ -85,9 +85,10 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
     };
 
     // Rebuild the WASM module even if only the schema has changed.
-    crate::utils::ensure_rebuild_if_schema_changed(
+    crate::utils::ensure_rebuild_if_schema_or_manifest_changed(
         root_dir.as_path(),
         Path::new(manifest_schema_file.as_path()),
+        indexer_manifest_path.as_path(),
         manifest.execution_source(),
     )?;
 
@@ -154,7 +155,7 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
                     "▪▪▪▪▪",
                 ]),
         );
-        pb.set_message("⏰ Building...");
+        pb.set_message("⏰ Building indexer...");
 
         match cmd.output() {
             Ok(o) => {

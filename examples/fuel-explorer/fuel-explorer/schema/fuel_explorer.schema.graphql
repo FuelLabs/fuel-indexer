@@ -358,6 +358,23 @@ type MessageOutReceipt @entity(virtual: true) {
   is_message_out: Boolean!
 }
 
+type MintReceipt @entity(virtual: true) {
+  sub_id: Bytes32!
+  contract_id: ContractId!
+  val: UInt8!
+  pc: UInt8!
+  isr: UInt8!
+}
+
+
+type BurnReceipt @entity(virtual: true) {
+  sub_id: Bytes32!
+  contract_id: ContractId!
+  val: UInt8!
+  pc: UInt8!
+  isr: UInt8!
+}
+
 union Receipt =
     CallReceipt
   | ReturnReceipt
@@ -370,6 +387,8 @@ union Receipt =
   | TransferOutReceipt
   | ScriptResultReceipt
   | MessageOutReceipt
+  | MintReceipt
+  | BurnReceipt
 
 type VariableOutput @entity {
   id: ID!

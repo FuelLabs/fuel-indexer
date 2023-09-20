@@ -1,5 +1,5 @@
 use async_std::sync::MutexGuard;
-use fuel_indexer_lib::defaults;
+use fuel_indexer_lib::{defaults, WasmIndexerError};
 use fuel_indexer_schema::{join::RawQuery, FtColumn};
 use fuel_indexer_types::ffi::{
     LOG_LEVEL_DEBUG, LOG_LEVEL_ERROR, LOG_LEVEL_INFO, LOG_LEVEL_TRACE, LOG_LEVEL_WARN,
@@ -70,8 +70,23 @@ fn get_object_id(mem: &MemoryView, ptr: u32, len: u32) -> FFIResult<String> {
 }
 
 /// Log the string at the given pointer to stdout.
-fn log_data(mut env: FunctionEnvMut<IndexEnv>, ptr: u32, len: u32, log_level: u32) {
+fn log_data(
+    mut env: FunctionEnvMut<IndexEnv>,
+    ptr: u32,
+    len: u32,
+    log_level: u32,
+) -> Result<(), WasmIndexerError> {
     let (idx_env, store) = env.data_and_store_mut();
+
+    if idx_env
+        .kill_switch
+        .load(std::sync::atomic::Ordering::SeqCst)
+    {
+        // If the kill switch has been flipped, returning an error will cause an
+        // early termination of WASM execution.
+        return Err(WasmIndexerError::KillSwitch);
+    }
+
     let mem = idx_env
         .memory
         .as_mut()
@@ -89,6 +104,8 @@ fn log_data(mut env: FunctionEnvMut<IndexEnv>, ptr: u32, len: u32, log_level: u3
         LOG_LEVEL_TRACE => trace!("{log_string}",),
         l => panic!("Invalid log level: {l}"),
     }
+
+    Ok(())
 }
 
 /// Fetch the given type at the given pointer from memory.
@@ -99,8 +116,17 @@ fn get_object(
     type_id: i64,
     ptr: u32,
     len_ptr: u32,
-) -> u32 {
+) -> Result<u32, WasmIndexerError> {
     let (idx_env, mut store) = env.data_and_store_mut();
+
+    if idx_env
+        .kill_switch
+        .load(std::sync::atomic::Ordering::SeqCst)
+    {
+        // If the kill switch has been flipped, returning an error will cause an
+        // early termination of WASM execution.
+        return Err(WasmIndexerError::KillSwitch);
+    }
 
     let mem = idx_env
         .memory
@@ -114,8 +140,12 @@ fn get_object(
     let id = get_object_id(&mem, ptr + offset, len + padding + offset).unwrap();
 
     let rt = tokio::runtime::Handle::current();
-    let bytes =
-        rt.block_on(async { idx_env.db.lock().await.get_object(type_id, id).await });
+    let bytes = rt
+        .block_on(async { idx_env.db.lock().await.get_object(type_id, id).await })
+        .map_err(|e| {
+            error!("Failed to get_object: {e}");
+            WasmIndexerError::DatabaseError
+        })?;
 
     if let Some(bytes) = bytes {
         let alloc_fn = idx_env.alloc.as_mut().expect("Alloc export is missing.");
@@ -138,22 +168,37 @@ fn get_object(
             mem.data_unchecked_mut()[range].copy_from_slice(&bytes);
         }
 
-        result
+        Ok(result)
     } else {
-        0
+        Ok(0)
     }
 }
 
 /// Put the given type at the given pointer into memory.
 ///
 /// This function is fallible, and will panic if the type cannot be saved.
-fn put_object(mut env: FunctionEnvMut<IndexEnv>, type_id: i64, ptr: u32, len: u32) {
+fn put_object(
+    mut env: FunctionEnvMut<IndexEnv>,
+    type_id: i64,
+    ptr: u32,
+    len: u32,
+) -> Result<(), WasmIndexerError> {
     let (idx_env, store) = env.data_and_store_mut();
-    let mem = idx_env
-        .memory
-        .as_mut()
-        .expect("Memory unitialized")
-        .view(&store);
+
+    if idx_env
+        .kill_switch
+        .load(std::sync::atomic::Ordering::SeqCst)
+    {
+        // If the kill switch has been flipped, returning an error will cause an
+        // early termination of WASM execution.
+        return Err(WasmIndexerError::KillSwitch);
+    }
+
+    let mem = if let Some(memory) = idx_env.memory.as_mut() {
+        memory.view(&store)
+    } else {
+        return Err(WasmIndexerError::UninitializedMemory);
+    };
 
     let mut bytes = Vec::with_capacity(len as usize);
     let range = ptr as usize..ptr as usize + len as usize;
@@ -166,12 +211,12 @@ fn put_object(mut env: FunctionEnvMut<IndexEnv>, type_id: i64, ptr: u32, len: u3
         Ok(columns) => columns,
         Err(e) => {
             error!("Failed to deserialize Vec<FtColumn> for put_object: {e:?}",);
-            return;
+            return Err(WasmIndexerError::DeserializationError);
         }
     };
 
     let rt = tokio::runtime::Handle::current();
-    rt.block_on(async {
+    let result = rt.block_on(async {
         idx_env
             .db
             .lock()
@@ -179,18 +224,39 @@ fn put_object(mut env: FunctionEnvMut<IndexEnv>, type_id: i64, ptr: u32, len: u3
             .put_object(type_id, columns, bytes)
             .await
     });
+
+    if let Err(e) = result {
+        error!("Failed to put_object: {e}");
+        return Err(WasmIndexerError::DatabaseError);
+    };
+
+    Ok(())
 }
 
 /// Execute the arbitrary query at the given pointer.
 ///
 /// This function is fallible, and will panic if the query cannot be executed.
-fn put_many_to_many_record(mut env: FunctionEnvMut<IndexEnv>, ptr: u32, len: u32) {
+fn put_many_to_many_record(
+    mut env: FunctionEnvMut<IndexEnv>,
+    ptr: u32,
+    len: u32,
+) -> Result<(), WasmIndexerError> {
     let (idx_env, store) = env.data_and_store_mut();
-    let mem = idx_env
-        .memory
-        .as_mut()
-        .expect("Memory unitialized")
-        .view(&store);
+
+    if idx_env
+        .kill_switch
+        .load(std::sync::atomic::Ordering::SeqCst)
+    {
+        // If the kill switch has been flipped, returning an error will cause an
+        // early termination of WASM execution.
+        return Err(WasmIndexerError::KillSwitch);
+    }
+
+    let mem = if let Some(memory) = idx_env.memory.as_mut() {
+        memory.view(&store)
+    } else {
+        return Err(WasmIndexerError::UninitializedMemory);
+    };
 
     let mut bytes = Vec::with_capacity(len as usize);
     let range = ptr as usize..ptr as usize + len as usize;
@@ -199,11 +265,16 @@ fn put_many_to_many_record(mut env: FunctionEnvMut<IndexEnv>, ptr: u32, len: u32
         bytes.extend_from_slice(&mem.data_unchecked()[range]);
     }
 
-    let queries: Vec<RawQuery> =
-        bincode::deserialize(&bytes).expect("Failed to deserialize queries");
-    let queries = queries.iter().map(|q| q.to_string()).collect::<Vec<_>>();
+    let queries: Vec<String> = match bincode::deserialize::<Vec<RawQuery>>(&bytes) {
+        Ok(queries) => queries.iter().map(|q| q.to_string()).collect(),
+        Err(e) => {
+            error!("Failed to deserialize queries: {e:?}");
+            return Err(WasmIndexerError::DeserializationError);
+        }
+    };
+
     let rt = tokio::runtime::Handle::current();
-    rt.block_on(async {
+    let result = rt.block_on(async {
         idx_env
             .db
             .lock()
@@ -211,6 +282,19 @@ fn put_many_to_many_record(mut env: FunctionEnvMut<IndexEnv>, ptr: u32, len: u32
             .put_many_to_many_record(queries)
             .await
     });
+
+    if let Err(e) = result {
+        error!("Failed to put_many_to_many_record: {e:?}");
+        return Err(WasmIndexerError::DatabaseError);
+    }
+
+    Ok(())
+}
+
+/// When called from WASM it will terminate the execution and return the error
+/// code.
+pub fn early_exit(err_code: u32) -> Result<(), WasmIndexerError> {
+    Err(WasmIndexerError::from(err_code))
 }
 
 /// Get the exports for the given store and environment.
@@ -222,7 +306,9 @@ pub fn get_exports(store: &mut Store, env: &wasmer::FunctionEnv<IndexEnv>) -> Ex
     let f_log_data = Function::new_typed_with_env(store, env, log_data);
     let f_put_many_to_many_record =
         Function::new_typed_with_env(store, env, put_many_to_many_record);
+    let f_early_exit = Function::new_typed(store, early_exit);
 
+    exports.insert("ff_early_exit".to_string(), f_early_exit);
     exports.insert("ff_get_object".to_string(), f_get_obj);
     exports.insert("ff_put_object".to_string(), f_put_obj);
     exports.insert(

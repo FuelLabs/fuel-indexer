@@ -2,17 +2,13 @@
 type Greeter @entity {
   id: ID!
   name: Charfield!
-  first_seen: UInt4!
   last_seen: UInt4!
-  visits: Blob!
 }
 
 # Calling this `Salutation` so as to not clash with `Greeting` in the contract
 type Salutation @entity {
   id: ID!
-  message_hash: Bytes32!
   message: Charfield!
   greeter: Greeter!
-  first_seen: UInt4!
   last_seen: UInt4!
 }

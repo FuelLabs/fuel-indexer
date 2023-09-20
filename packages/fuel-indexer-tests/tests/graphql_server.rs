@@ -1,6 +1,4 @@
-use fuel_indexer_tests::fixtures::{
-    mock_request, setup_web_test_components, WebTestComponents,
-};
+use fuel_indexer_tests::fixtures::{mock_request, setup_web_test_components};
 use fuel_indexer_utils::uid;
 use hyper::header::CONTENT_TYPE;
 use serde_json::{Number, Value};
@@ -8,17 +6,13 @@ use std::collections::HashMap;
 
 #[actix_web::test]
 async fn test_entity_with_required_and_optional_fields() {
-    let WebTestComponents {
-        server,
-        db: _db,
-        client,
-        ..
-    } = setup_web_test_components(None).await;
+    let test = setup_web_test_components(None).await;
 
     mock_request("/block").await;
 
     // All required
-    let resp = client
+    let resp = test
+        .client
         .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
         .header(CONTENT_TYPE, "application/graphql".to_owned())
         .body(r#"{ "query": "query { blockentity { id height timestamp }}" }"#)
@@ -37,7 +31,7 @@ async fn test_entity_with_required_and_optional_fields() {
     assert!(data[1]["timestamp"].as_u64().unwrap() > 0);
 
     // Optionals
-    let resp = client
+    let resp = test.client
         .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
         .header(CONTENT_TYPE, "application/graphql".to_owned())
         .body(r#"{ "query": "query { optionentity { int_required int_optional_some addr_optional_none }}"}"#)
@@ -53,22 +47,18 @@ async fn test_entity_with_required_and_optional_fields() {
     assert_eq!(data[0]["int_optional_some"], Value::from(Number::from(999)));
     assert_eq!(data[0]["addr_optional_none"], Value::from(None::<&str>));
 
-    server.abort();
+    test.server.abort();
 }
 
 #[actix_web::test]
 async fn test_entity_with_foreign_keys() {
-    let WebTestComponents {
-        server,
-        db: _db,
-        client,
-        ..
-    } = setup_web_test_components(None).await;
+    let test = setup_web_test_components(None).await;
 
     mock_request("/block").await;
 
     // Implicit foreign keys
-    let resp = client
+    let resp = test
+        .client
         .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
         .header(CONTENT_TYPE, "application/graphql".to_owned())
         .body(r#"{ "query": "query { txentity { block { id height } id timestamp } }" }"#)
@@ -86,7 +76,8 @@ async fn test_entity_with_foreign_keys() {
     assert!(data[0]["block"]["height"].as_i64().unwrap() > 0);
 
     // Explicit foreign keys
-    let resp = client
+    let resp = test
+        .client
         .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
         .header(CONTENT_TYPE, "application/graphql".to_owned())
         .body(
@@ -110,17 +101,12 @@ async fn test_entity_with_foreign_keys() {
         Some("Republic of Indexia")
     );
 
-    server.abort();
+    test.server.abort();
 }
 
 #[actix_web::test]
 async fn test_deeply_nested_entity() {
-    let WebTestComponents {
-        server,
-        db: _db,
-        client,
-        ..
-    } = setup_web_test_components(None).await;
+    let test = setup_web_test_components(None).await;
 
     mock_request("/deeply_nested").await;
 
@@ -185,7 +171,8 @@ async fn test_deeply_nested_entity() {
             }",
     )]);
 
-    let resp = client
+    let resp = test
+        .client
         .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
         .header(CONTENT_TYPE, "application/graphql".to_owned())
         .json(&deeply_nested_query)
@@ -245,17 +232,12 @@ async fn test_deeply_nested_entity() {
         Some("Ava")
     );
 
-    server.abort();
+    test.server.abort();
 }
 
 #[actix_web::test]
 async fn test_filtering() {
-    let WebTestComponents {
-        server,
-        db: _db,
-        client,
-        ..
-    } = setup_web_test_components(None).await;
+    let test = setup_web_test_components(None).await;
 
     mock_request("/ping").await;
 
@@ -263,7 +245,7 @@ async fn test_filtering() {
     let _id = uid([1]).to_string();
 
     // ID selection
-    let resp = client
+    let resp = test.client
         .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
         .header(CONTENT_TYPE, "application/graphql".to_owned())
         .body(r#"{ "query": "query { filterentity(id: \"4bf5122f344554c53bde2ebb8cd2b7e3d1600ad631c385a5d7cce23c7785459a\") { id foola maybe_null_bar bazoo } }" }"#)
@@ -284,7 +266,7 @@ async fn test_filtering() {
     assert_eq!(data[0]["bazoo"].as_i64(), Some(1));
 
     // Set membership
-    let resp = client
+    let resp = test.client
         .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
         .header(CONTENT_TYPE, "application/graphql".to_owned())
         .body(
@@ -308,7 +290,7 @@ async fn test_filtering() {
     assert_eq!(data[1]["bazoo"].as_i64(), Some(5));
 
     // Non-null
-    let resp = client
+    let resp = test.client
         .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
         .header(CONTENT_TYPE, "application/graphql".to_owned())
         .body(
@@ -332,7 +314,7 @@ async fn test_filtering() {
     assert_eq!(data[1]["bazoo"].as_i64(), Some(1000));
 
     // Complex comparison
-    let resp = client
+    let resp = test.client
         .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
         .header(CONTENT_TYPE, "application/graphql".to_owned())
         .body(
@@ -356,7 +338,7 @@ async fn test_filtering() {
     assert_eq!(data[1]["bazoo"].as_i64(), Some(5));
 
     // Simple comparison
-    let resp = client
+    let resp = test.client
         .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
         .header(CONTENT_TYPE, "application/graphql".to_owned())
         .body(r#"{ "query": "query { filterentity(filter: { bazoo: { lt: 1000 } } ) { id foola maybe_null_bar bazoo } }" }"#)
@@ -378,7 +360,7 @@ async fn test_filtering() {
     assert_eq!(data[1]["bazoo"].as_i64(), Some(5));
 
     // Nested filters
-    let resp = client
+    let resp = test.client
         .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
         .header(CONTENT_TYPE, "application/graphql".to_owned())
         .body(
@@ -402,7 +384,7 @@ async fn test_filtering() {
     assert_eq!(data[0]["inner_entity"]["inner_baz"].as_u64(), Some(600));
 
     // Multiple filters on single entity
-    let resp = client
+    let resp = test.client
         .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
         .header(CONTENT_TYPE, "application/graphql".to_owned())
         .body(
@@ -422,7 +404,7 @@ async fn test_filtering() {
     assert_eq!(data[0]["bazoo"].as_i64(), Some(1));
 
     // Negation
-    let resp = client
+    let resp = test.client
         .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
         .header(CONTENT_TYPE, "application/graphql".to_owned())
         .body(
@@ -441,21 +423,16 @@ async fn test_filtering() {
     assert_eq!(data[0]["maybe_null_bar"].as_i64(), Some(456));
     assert_eq!(data[0]["bazoo"].as_i64(), Some(1000));
 
-    server.abort();
+    test.server.abort();
 }
 
 #[actix_web::test]
 async fn test_sorting() {
-    let WebTestComponents {
-        server,
-        db: _db,
-        client,
-        ..
-    } = setup_web_test_components(None).await;
+    let test = setup_web_test_components(None).await;
 
     mock_request("/ping").await;
 
-    let resp = client
+    let resp = test.client
         .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
         .header(CONTENT_TYPE, "application/graphql".to_owned())
         .body(
@@ -476,21 +453,16 @@ async fn test_sorting() {
     assert_eq!(data[2]["id"].as_str().unwrap(), uid([1]).to_string());
     assert_eq!(data[2]["foola"].as_str(), Some("beep"));
 
-    server.abort();
+    test.server.abort();
 }
 
 #[actix_web::test]
 async fn test_aliasing_and_pagination() {
-    let WebTestComponents {
-        server,
-        db: _db,
-        client,
-        ..
-    } = setup_web_test_components(None).await;
+    let test = setup_web_test_components(None).await;
 
     mock_request("/ping").await;
 
-    let resp = client
+    let resp = test.client
         .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
         .header(CONTENT_TYPE, "application/graphql".to_owned())
         .body(
@@ -510,5 +482,5 @@ async fn test_aliasing_and_pagination() {
     );
     assert_eq!(data[0]["page_info"]["pages"].as_i64(), Some(3));
 
-    server.abort();
+    test.server.abort();
 }

@@ -19,7 +19,7 @@ pub struct WebApiConfig {
     #[serde(default)]
     pub port: String,
 
-    /// Max body size for web API requests.
+    /// Max body size for web server requests.
     #[serde(default)]
     pub max_body_size: usize,
 }

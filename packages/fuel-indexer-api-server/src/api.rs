@@ -41,7 +41,7 @@ use tower_http::{
 };
 use tracing::{error, Level};
 
-/// Result type returned by web API operations.
+/// Result type returned by web server operations.
 pub type ApiResult<T> = core::result::Result<T, ApiError>;
 
 /// Size of the buffer for reqeusts being passed to the `RateLimitLayer`.
@@ -70,7 +70,7 @@ impl From<http::Error> for HttpError {
     }
 }
 
-/// Error type returned by web API operations.
+/// Error type returned by web server operations.
 #[derive(Debug, Error)]
 pub enum ApiError {
     #[error("Query builder error {0:?}")]

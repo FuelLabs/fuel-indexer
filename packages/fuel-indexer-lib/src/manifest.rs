@@ -82,7 +82,7 @@ pub struct Manifest {
 
     /// URL to Fuel client.
     ///
-    /// Only set if `--indexer-net-config` is specified in `IndexerArgs`.
+    /// Only used if `--indexer-net-config` is specified in `IndexerArgs`.
     fuel_client: Option<String>,
 
     /// Filepath to this indexer's GraphQL schema.
@@ -192,6 +192,11 @@ impl Manifest {
         self.module = module;
     }
 
+    /// Set the end block for this indexer.
+    pub fn set_end_block(&mut self, block: u32) {
+        self.end_block = Some(block);
+    }
+
     /// Set the GraphQL schema for this indexer.
     pub fn set_graphql_schema(&mut self, schema: String) {
         self.graphql_schema = schema;
@@ -274,6 +279,7 @@ pub enum ContractIds {
     /// Single represents a single contract ID as an `Option<String>`.
     #[serde(alias = "single")]
     Single(Option<String>),
+
     /// Multiple represents a vector of contracts IDs as a Vec<String>.
     #[serde(alias = "multiple")]
     Multiple(Vec<String>),

@@ -450,6 +450,7 @@ pub mod test_web {
     };
     use async_std::sync::Arc;
     use fuels::prelude::{CallParameters, Provider, WalletUnlocked};
+    use fuels::programs::call_utils::TxDependencyExtension;
     use fuels::types::bech32::Bech32ContractId;
     use std::path::Path;
 
@@ -544,8 +545,6 @@ pub mod test_web {
         HttpResponse::Ok()
     }
 
-    // TODO: TransferOut is  currently ignored due to flakiness;
-    // transfering to an address fails for some unknown reason
     async fn fuel_indexer_test_transferout(
         state: web::Data<Arc<AppState>>,
     ) -> impl Responder {
@@ -556,6 +555,7 @@ pub mod test_web {
             .contract
             .methods()
             .trigger_transferout()
+            .append_variable_outputs(1)
             .tx_params(tx_params())
             .call_params(call_params)
             .expect("Could not set call parameters for contract method")
@@ -809,6 +809,21 @@ pub mod test_web {
         HttpResponse::Ok()
     }
 
+    async fn fuel_indexer_test_trigger_generics(
+        state: web::Data<Arc<AppState>>,
+    ) -> impl Responder {
+        let _ = state
+            .contract
+            .methods()
+            .trigger_generics()
+            .tx_params(tx_params())
+            .call()
+            .await
+            .unwrap();
+
+        HttpResponse::Ok()
+    }
+
     pub struct AppState {
         pub contract: FuelIndexerTest<WalletUnlocked>,
     }
@@ -874,6 +889,10 @@ pub mod test_web {
             .route("/enum", web::post().to(fuel_indexer_test_trigger_enum))
             .route("/mint", web::post().to(fuel_indexer_test_trigger_mint))
             .route("/burn", web::post().to(fuel_indexer_test_trigger_burn))
+            .route(
+                "/generics",
+                web::post().to(fuel_indexer_test_trigger_generics),
+            )
     }
 
     pub async fn server() -> Result<(), Box<dyn std::error::Error>> {

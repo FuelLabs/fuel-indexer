@@ -548,4 +548,27 @@ mod fuel_indexer_test {
 
         e.save();
     }
+
+    fn fuel_indexer_test_trigger_generics(ping: Option<Ping>) {
+        info!("fuel_indexer_test_trigger_generics handling trigger_generics event.");
+
+        assert!(ping.is_some());
+
+        let ping = ping.unwrap();
+        assert_eq!(ping.id, 8888);
+        assert_eq!(ping.value, 8888);
+        assert_eq!(
+            ping.message,
+            SizedAsciiString::<32>::new("aaaasdfsdfasdfsdfaasdfsdfasdfsdf".to_string())
+                .unwrap()
+        );
+
+        let ping = PingEntity {
+            id: uid(ping.id.to_le_bytes()),
+            value: ping.value,
+            message: ping.message.to_string(),
+        };
+
+        ping.save();
+    }
 }

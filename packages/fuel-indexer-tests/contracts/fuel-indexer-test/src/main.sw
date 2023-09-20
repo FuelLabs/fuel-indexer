@@ -21,6 +21,7 @@ pub struct Pong {
     value: u64,
 }
 
+
 pub struct Ping {
     id: u64,
     value: u64,
@@ -103,6 +104,7 @@ abi FuelIndexer {
     fn trigger_mint();
     #[payable]
     fn trigger_burn();
+    fn trigger_generics() -> Option<Ping>;
 }
 
 impl FuelIndexer for Contract {
@@ -182,7 +184,7 @@ impl FuelIndexer for Contract {
     #[payable]
     fn trigger_transferout() {
         const RECEIVER = Address::from(0x532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96);
-        transfer(msg_sender().unwrap(), BASE_ASSET_ID, 1);
+        transfer_to_address(RECEIVER, BASE_ASSET_ID, 1);
     }
 
     #[payable]
@@ -215,7 +217,6 @@ impl FuelIndexer for Contract {
         log("This does nothing as we don't handle CallData. But should implement this soon.");
     }
 
-    // NOTE: Keeping this to ensure Vec in ABI JSON is ok, even though we don't support it yet
     fn trigger_vec_pong_logdata() {
         let mut v: Vec<Pong> = Vec::new();
         v.push(Pong{ id: 5555, value: 5555 });
@@ -272,5 +273,19 @@ impl FuelIndexer for Contract {
     #[payable]
     fn trigger_burn() {
         burn(BASE_ASSET_ID, 100);
+    }
+
+    fn trigger_generics() -> Option<Ping> {
+        let x = Some(Ping{ id: 8888, value: 8888, message: "aaaasdfsdfasdfsdfaasdfsdfasdfsdf" });
+
+        let mut v: Vec<Ping> = Vec::new();
+        v.push(Ping{ id: 5555, value: 5555, message: "aaaasdfsdfasdfsdfaasdfsdfasdfsdf" });
+        v.push(Ping{ id: 6666, value: 6666, message: "aaaasdfsdfasdfsdfaasdfsdfasdfsdf" });
+        v.push(Ping{ id: 7777, value: 7777, message: "aaaasdfsdfasdfsdfaasdfsdfasdfsdf" });
+
+        log(x);
+        log(v);
+
+        x
     }
 }
