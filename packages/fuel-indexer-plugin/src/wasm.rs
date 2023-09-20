@@ -1,5 +1,4 @@
 extern crate alloc;
-
 use alloc::vec::Vec;
 use fuel_indexer_lib::{
     graphql::MAX_FOREIGN_KEY_LIST_FIELDS,

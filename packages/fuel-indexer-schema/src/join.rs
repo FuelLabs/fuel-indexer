@@ -2,8 +2,6 @@ use crate::FtColumn;
 use fuel_indexer_lib::join_table_typedefs_name;
 use serde::{Deserialize, Serialize};
 
-extern crate alloc;
-
 /// Details for the many-to-many relationship.
 ///
 /// This is essentially the same as `fuel_indexer_lib::graphql::parser::JoinTableRelation`, just
