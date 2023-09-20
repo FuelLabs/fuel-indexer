@@ -304,8 +304,14 @@ pub struct ReturnData {
 > Note: the example below will run both when the type `MyStruct` is logged as well as when `MyStruct` is returned from a function.
 
 ```rust, ignore
-fn handle_return_data(data: MyStruct) {
-  // handle the emitted ReturnData receipt
+extern crate alloc;
+use fuel_indexer_utils::prelude::*;
+
+#[indexer(manifest = "indexer.manifest.yaml")]
+mod indexer_mod {
+    fn handle_return_data(event: MyStruct) {
+        info!("MyStruct is: {event:#}");
+    }
 }
 ```
 
@@ -318,7 +324,7 @@ use fuel_types::ContractId;
 pub struct Revert {
     pub contract_id: ContractId,
     pub error_val: u64,
-  }
+}
 ```
 
 | Reason                | Value |

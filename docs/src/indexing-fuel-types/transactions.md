@@ -36,7 +36,6 @@ mod indexer_mod {
         }
     }
 }
-
 ```
 
 ## `TransactionStatus`

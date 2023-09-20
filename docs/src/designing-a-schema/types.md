@@ -16,6 +16,7 @@ This `Account` object type from the GraphQL schema, might be used in an indexer 
 
 ```rust, ignore
 use fuel_indexer_utils::prelude::*;
+
 #[indexer(manifest = "indexer.manifest.yaml")]
 mod indexer_mod {
     fn handle_event(event: Event) {
@@ -43,6 +44,7 @@ This `SignatureLabel` object type from the GraphQL schema, might be used in an i
 
 ```rust, ignore
 use fuel_indexer_utils::prelude::*;
+
 #[indexer(manifest = "indexer.manifest.yaml")]
 mod indexer_mod {
     fn handle_event(event: Event) {
@@ -105,6 +107,7 @@ This `Transaction` union type from the GraphQL schema, might be used in an index
 
 ```rust, ignore
 use fuel_indexer_utils::prelude::*;
+
 #[indexer(manifest = "indexer.manifest.yaml")]
 
 mod indexer_mod {
