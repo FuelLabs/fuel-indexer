@@ -1,4 +1,4 @@
-error: Unsupported item in indexer module 'Item::Mod { attrs: [], vis: Visibility::Inherited, unsafety: None, mod_token: Mod, ident: Ident { ident: "some_disallowed_module", span: #0 bytes(159..181) }, content: Some((Brace, [])), semi: None }'.
+error: Unsupported item in indexer module 'Item::Mod { attrs: [], vis: Visibility::Inherited, unsafety: None, mod_token: Mod, ident: Ident { ident: "some_disallowed_module", span: #0 bytes(139..161) }, content: Some((Brace, [])), semi: None }'.
  --> trybuild/fail_if_non_function_patterns_included_in_module.rs
   |
   | #[indexer(manifest = "packages/fuel-indexer-tests/trybuild/simple_wasm.yaml")]

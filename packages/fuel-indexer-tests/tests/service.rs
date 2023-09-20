@@ -1,4 +1,3 @@
-extern crate alloc;
 use fuel_indexer::prelude::fuel::{BlockData, Consensus, Header};
 use fuel_indexer::{Executor, IndexerConfig, WasmIndexExecutor};
 use fuel_indexer_lib::WasmIndexerError;

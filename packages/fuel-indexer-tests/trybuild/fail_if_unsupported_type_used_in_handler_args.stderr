@@ -1,4 +1,4 @@
-error: Type with ident 'Ident { ident: "Vec", span: #0 bytes(177..180) }' is not currently supported.
+error: Type with ident 'Ident { ident: "Vec", span: #0 bytes(157..160) }' is not currently supported.
  --> trybuild/fail_if_unsupported_type_used_in_handler_args.rs
   |
   | #[indexer(manifest = "packages/fuel-indexer-tests/trybuild/simple_wasm.yaml")]

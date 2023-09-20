@@ -15,7 +15,6 @@ type Account @entity {
 This `Account` object type from the GraphQL schema, might be used in an indexer module like so:
 
 ```rust, ignore
-extern crate alloc;
 use fuel_indexer_utils::prelude::*;
 #[indexer(manifest = "indexer.manifest.yaml")]
 mod indexer_mod {
@@ -43,7 +42,6 @@ enum SignatureLabel {
 This `SignatureLabel` object type from the GraphQL schema, might be used in an indexer module like so:
 
 ```rust, ignore
-extern crate alloc;
 use fuel_indexer_utils::prelude::*;
 #[indexer(manifest = "indexer.manifest.yaml")]
 mod indexer_mod {
@@ -106,9 +104,9 @@ type Transaction @entity {
 This `Transaction` union type from the GraphQL schema, might be used in an indexer module like so:
 
 ```rust, ignore
-extern crate alloc;
 use fuel_indexer_utils::prelude::*;
 #[indexer(manifest = "indexer.manifest.yaml")]
+
 mod indexer_mod {
     fn handle_event(event: Event) {
         let bytecode_length = 1024;

@@ -33,6 +33,8 @@ pub fn handler_block_native(
 /// indexer module, not within the scope of the entire lib module.
 fn native_prelude() -> proc_macro2::TokenStream {
     quote! {
+        extern crate alloc;
+
         type B256 = [u8; 32];
 
         static mut db: Option<Arc<Mutex<Database>>> = None;

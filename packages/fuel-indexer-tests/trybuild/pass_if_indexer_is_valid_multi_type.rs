@@ -1,4 +1,3 @@
-extern crate alloc;
 use fuel_indexer_utils::prelude::*;
 
 #[no_mangle]

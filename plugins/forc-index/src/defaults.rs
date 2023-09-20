@@ -148,8 +148,7 @@ pub fn default_indexer_lib(
     let manifest_path = manifest_path.display();
 
     format!(
-        r#"extern crate alloc;
-use fuel_indexer_utils::prelude::*;
+        r#"use fuel_indexer_utils::prelude::*;
 
 #[indexer(manifest = "{manifest_path}")]
 pub mod {indexer_name}_index_mod {{
@@ -186,8 +185,7 @@ pub fn default_indexer_binary(
     let manifest_path = manifest_path.display();
 
     format!(
-        r#"extern crate alloc;
-use fuel_indexer_utils::prelude::*;
+        r#"use fuel_indexer_utils::prelude::*;
 
 #[indexer(manifest = "{manifest_path}")]
 pub mod {indexer_name}_index_mod {{

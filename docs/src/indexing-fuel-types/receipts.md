@@ -34,7 +34,6 @@ pub struct Burn {
 ```
 
 ```rust, ignore
-extern crate alloc;
 use fuel_indexer_utils::prelude::*;
 
 #[indexer(manifest = "indexer.manifest.yaml")]
@@ -72,7 +71,6 @@ pub struct Call {
 ```
 
 ```rust, ignore
-extern crate alloc;
 use fuel_indexer_utils::prelude::*;
 
 #[indexer(manifest = "indexer.manifest.yaml")]
@@ -107,7 +105,6 @@ pub struct Log {
 ```
 
 ```rust, ignore
-extern crate alloc;
 use fuel_indexer_utils::prelude::*;
 
 #[indexer(manifest = "indexer.manifest.yaml")]
@@ -147,7 +144,6 @@ pub struct LogData {
 > Note: the example below will run both when the type `MyEvent` is logged as well as when `MyEvent` is returned from a function.
 
 ```rust, ignore
-extern crate alloc;
 use fuel_indexer_utils::prelude::*;
 
 #[indexer(manifest = "indexer.manifest.yaml")]
@@ -177,7 +173,6 @@ pub struct MessageOut {
 ```
 
 ```rust, ignore
-extern crate alloc;
 use fuel_indexer_utils::prelude::*;
 
 #[indexer(manifest = "indexer.manifest.yaml")]
@@ -204,7 +199,6 @@ pub struct Mint {
 ```
 
 ```rust, ignore
-extern crate alloc;
 use fuel_indexer_utils::prelude::*;
 
 #[indexer(manifest = "indexer.manifest.yaml")]
@@ -238,7 +232,6 @@ pub struct Panic {
 ```
 
 ```rust, ignore
-extern crate alloc;
 use fuel_indexer_utils::prelude::*;
 
 #[indexer(manifest = "indexer.manifest.yaml")]
@@ -276,7 +269,6 @@ pub struct Return {
 You can handle functions that produce a `Return` receipt type by adding a parameter with the type `Return`.
 
 ```rust, ignore
-extern crate alloc;
 use fuel_indexer_utils::prelude::*;
 
 #[indexer(manifest = "indexer.manifest.yaml")]
@@ -338,7 +330,6 @@ pub struct Revert {
 | FailedAssert          | 4     |
 
 ```rust, ignore
-extern crate alloc;
 use fuel_indexer_utils::prelude::*;
 
 #[indexer(manifest = "indexer.manifest.yaml")]
@@ -371,7 +362,6 @@ pub struct ScriptResult {
 ```
 
 ```rust, ignore
-extern crate alloc;
 use fuel_indexer_utils::prelude::*;
 
 #[indexer(manifest = "indexer.manifest.yaml")]
@@ -409,7 +399,6 @@ pub struct Transfer {
 ```
 
 ```rust, ignore
-extern crate alloc;
 use fuel_indexer_utils::prelude::*;
 
 #[indexer(manifest = "indexer.manifest.yaml")]
@@ -447,7 +436,6 @@ pub struct TransferOut {
 ```
 
 ```rust, ignore
-extern crate alloc;
 use fuel_indexer_utils::prelude::*;
 
 #[indexer(manifest = "indexer.manifest.yaml")]

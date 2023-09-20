@@ -1,4 +1,3 @@
-extern crate alloc;
 use fuel_indexer_utils::prelude::*;
 
 #[indexer(manifest = "packages/fuel-indexer-tests/indexers/simple-wasm/simple_wasm.yaml")]
