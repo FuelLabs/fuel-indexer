@@ -29,15 +29,34 @@ pub async fn status(
                 return Ok(());
             }
 
-            let res_json = res
+            let result = res
                 .json::<Map<String, Value>>()
                 .await
                 .expect("Failed to read JSON response.");
 
-            info!(
-                "\n✅ Sucessfully fetched service health:\n\n{}",
-                to_string_pretty(&res_json).unwrap()
-            );
+            info!("\n✅ Successfully fetched service health:\n");
+
+            let client_status = result
+                .get("client_status")
+                .and_then(|x| x.as_str())
+                .unwrap_or("missing");
+            let database_status = result
+                .get("database_status")
+                .and_then(|x| x.as_str())
+                .unwrap_or("missing");
+            let uptime = result
+                .get("uptime")
+                .and_then(|x| x.as_str())
+                .and_then(|x| x.to_string().parse::<u64>().ok())
+                .map(|x| {
+                    humantime::format_duration(std::time::Duration::from_secs(x))
+                        .to_string()
+                })
+                .unwrap_or("missing".to_string());
+
+            info!("client status: {client_status}");
+            info!("database status: {database_status}");
+            info!("uptime: {uptime}\n");
         }
         Err(e) => {
             error!("\n❌ Could not connect to indexer service:\n'{e}'");
@@ -70,6 +89,7 @@ pub async fn status(
                 .await
                 .expect("Failed to read JSON response.");
 
+            info!("indexers:");
             print_indexers(result);
         }
         Err(e) => {
@@ -121,7 +141,7 @@ fn print_indexers(indexers: Vec<RegisteredIndexer>) {
             };
             println!("{}  {} {}", ng2, ig1, indexer.identifier);
             println!("{}  {}  • id: {}", ng2, ig2, indexer.id);
-            println!("{}  {}  • created_at: {}", ng2, ig2, indexer.created_at);
+            println!("{}  {}  • created at: {}", ng2, ig2, indexer.created_at);
             println!("{}  {}  • pubkey: {:?}", ng2, ig2, indexer.pubkey);
         }
         if !is_last_namespace {
