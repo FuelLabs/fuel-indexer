@@ -323,6 +323,9 @@ async fn test_replacing_an_indexer_and_keeping_or_removing_data() {
     let mut conn =
         IndexerConnection::Postgres(Box::new(db.pool.acquire().await.unwrap()));
 
+    // Allow the indexer to start and process blocks.
+    tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+
     let last = last_block_height_for_indexer(
         &mut conn,
         manifest.namespace(),
@@ -359,6 +362,9 @@ async fn test_replacing_an_indexer_and_keeping_or_removing_data() {
         .await
         .unwrap();
 
+    // Allow the old indexer to shut down and the new indexer to start.
+    tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+
     let last = last_block_height_for_indexer(
         &mut conn,
         manifest.namespace(),
@@ -386,8 +392,8 @@ async fn test_replacing_an_indexer_and_keeping_or_removing_data() {
     .unwrap();
 
     // We removed the data, and the new indexer sould not start until block 5 is
-    // present. The last block must be 1.
-    assert_eq!(last, 1);
+    // present. The last block must be 0.
+    assert_eq!(last, 0);
 
     // Increase blocks to 5. The new indexer should start.
     mock_request("/block").await;

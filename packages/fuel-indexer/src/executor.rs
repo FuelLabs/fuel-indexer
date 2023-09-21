@@ -199,6 +199,16 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
             }
 
             if let Err(e) = result {
+                if let IndexerError::RuntimeError(ref e) = e {
+                    if let Some(&WasmIndexerError::MissingBlocksError) =
+                        e.downcast_ref::<WasmIndexerError>()
+                    {
+                        error!(
+                            "Indexer({indexer_uid}) terminating due to missing blocks."
+                        );
+                        break;
+                    }
+                }
                 // Run time metering is deterministic. There is no point in retrying.
                 if let IndexerError::RunTimeLimitExceededError = e {
                     error!("Indexer({indexer_uid}) executor run time limit exceeded. Giving up. <('.')>. Consider increasing metering points");

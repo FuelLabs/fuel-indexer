@@ -409,3 +409,18 @@ pub async fn put_many_to_many_record(
         }
     }
 }
+
+pub async fn create_ensure_block_height_consecutive_trigger(
+    conn: &mut IndexerConnection,
+    namespace: &str,
+    identifier: &str,
+) -> sqlx::Result<()> {
+    match conn {
+        IndexerConnection::Postgres(ref mut c) => {
+            postgres::create_ensure_block_height_consecutive_trigger(
+                c, namespace, identifier,
+            )
+            .await
+        }
+    }
+}

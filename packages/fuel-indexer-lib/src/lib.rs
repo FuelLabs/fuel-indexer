@@ -45,6 +45,7 @@ pub enum WasmIndexerError {
     UninitializedMemory,
     KillSwitch,
     DatabaseError,
+    MissingBlocksError,
     GeneralError,
 }
 
@@ -56,8 +57,9 @@ impl From<u32> for WasmIndexerError {
             2 => Self::PutObjectError,
             3 => Self::UnableToSaveListType,
             4 => Self::UninitializedMemory,
-            6 => Self::KillSwitch,
-            7 => Self::DatabaseError,
+            5 => Self::KillSwitch,
+            6 => Self::DatabaseError,
+            7 => Self::MissingBlocksError,
             _ => Self::GeneralError,
         }
     }
@@ -88,7 +90,10 @@ impl std::fmt::Display for WasmIndexerError {
                 )
             }
             Self::DatabaseError => {
-                write!(f, "Database operation failed.")
+                write!(f, "Failed performing a database operation")
+            }
+            Self::MissingBlocksError => {
+                write!(f, "Some blocks are missing")
             }
             Self::GeneralError => write!(f, "Some unspecified WASM error occurred."),
         }

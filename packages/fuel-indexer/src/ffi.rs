@@ -227,7 +227,7 @@ fn put_object(
 
     if let Err(e) = result {
         error!("Failed to put_object: {e}");
-        return Err(WasmIndexerError::DatabaseError);
+        return Err(database_operation_failure(e));
     };
 
     Ok(())
@@ -285,10 +285,31 @@ fn put_many_to_many_record(
 
     if let Err(e) = result {
         error!("Failed to put_many_to_many_record: {e:?}");
-        return Err(WasmIndexerError::DatabaseError);
+        return Err(database_operation_failure(e));
     }
 
     Ok(())
+}
+
+// Returns a specialized error code when the database trigger, which ensures
+// indexers can't miss blocks, raises an exception. Otherwise, returns an error
+// code indicating a generic database operation failure.
+fn database_operation_failure(e: crate::IndexerError) -> WasmIndexerError {
+    match e {
+        crate::IndexerError::SqlxError(e) => {
+            if let Some(e) = e.as_database_error() {
+                if let Some(e) = e.try_downcast_ref::<sqlx::postgres::PgDatabaseError>() {
+                    if let Some(source) = e.r#where() {
+                        if source.contains("PL/pgSQL function ensure_block_height_consecutive() line 8 at RAISE") {
+                            return WasmIndexerError::MissingBlocksError
+                        }
+                    }
+                }
+            }
+            WasmIndexerError::DatabaseError
+        }
+        _ => WasmIndexerError::DatabaseError,
+    }
 }
 
 /// When called from WASM it will terminate the execution and return the error

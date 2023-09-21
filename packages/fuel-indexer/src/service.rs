@@ -63,6 +63,10 @@ impl IndexerService {
         mut manifest: Manifest,
         remove_data: bool,
     ) -> IndexerResult<()> {
+        if let Some(killer) = self.killers.get(&manifest.uid()) {
+            killer.store(true, std::sync::atomic::Ordering::SeqCst);
+        }
+
         let mut conn = self.pool.acquire().await?;
 
         let indexer_exists = (queries::get_indexer_id(
@@ -372,7 +376,10 @@ pub async fn get_start_block(
             .await?;
             let start = manifest.start_block().unwrap_or(last);
             let block = if *resumable {
-                std::cmp::max(start, last)
+                // If the last processed block is N, we want to resume from N+1.
+                // A database trigger prevents the indexer from processing the
+                // same block twice.
+                std::cmp::max(start, last + 1)
             } else {
                 start
             };

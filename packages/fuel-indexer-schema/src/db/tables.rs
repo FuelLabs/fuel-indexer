@@ -187,6 +187,13 @@ impl IndexerSchema {
             queries::execute_query(conn, stmnt.to_owned()).await?;
         }
 
+        queries::create_ensure_block_height_consecutive_trigger(
+            conn,
+            &self.namespace,
+            &self.identifier,
+        )
+        .await?;
+
         self.tables = tables;
 
         Ok(self)
