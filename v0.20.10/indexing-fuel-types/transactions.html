@@ -1,0 +1,297 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Transactions - The Fuel Indexer Service</title>
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="icon" href="../favicon.svg">
+        <link rel="shortcut icon" href="../favicon.png">
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+        <link rel="stylesheet" href="../css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="../highlight.css">
+        <link rel="stylesheet" href="../tomorrow-night.css">
+        <link rel="stylesheet" href="../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+    </head>
+    <body>
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "../";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var html = document.querySelector('html');
+            var sidebar = null;
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../index.html">The Fuel Indexer</a></li><li class="chapter-item expanded affix "><li class="part-title">Getting Started</li><li class="chapter-item expanded "><a href="../getting-started/dependencies.html"><strong aria-hidden="true">1.</strong> Dependencies</a></li><li class="chapter-item expanded "><a href="../getting-started/indexer-service-infrastructure.html"><strong aria-hidden="true">2.</strong> Service Infrastructure</a></li><li class="chapter-item expanded "><a href="../getting-started/how-it-compares.html"><strong aria-hidden="true">3.</strong> How it Compares</a></li><li class="chapter-item expanded "><a href="../getting-started/quickstart.html"><strong aria-hidden="true">4.</strong> Quickstart</a></li><li class="chapter-item expanded affix "><li class="part-title">Reference Guide</li><li class="chapter-item expanded "><a href="../project-components/index.html"><strong aria-hidden="true">5.</strong> Project Components</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../project-components/manifest.html"><strong aria-hidden="true">5.1.</strong> Manifest</a></li><li class="chapter-item expanded "><a href="../project-components/schema.html"><strong aria-hidden="true">5.2.</strong> Schema</a></li><li class="chapter-item expanded "><a href="../project-components/module.html"><strong aria-hidden="true">5.3.</strong> Module</a></li></ol></li><li class="chapter-item expanded "><a href="../designing-a-schema/index.html"><strong aria-hidden="true">6.</strong> Designing a Schema</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../designing-a-schema/types.html"><strong aria-hidden="true">6.1.</strong> Types</a></li><li class="chapter-item expanded "><a href="../designing-a-schema/scalars.html"><strong aria-hidden="true">6.2.</strong> Scalars</a></li><li class="chapter-item expanded "><a href="../designing-a-schema/directives.html"><strong aria-hidden="true">6.3.</strong> Directives</a></li><li class="chapter-item expanded "><a href="../designing-a-schema/relationships.html"><strong aria-hidden="true">6.4.</strong> Relationships</a></li></ol></li><li class="chapter-item expanded "><a href="../indexing-fuel-types/index.html"><strong aria-hidden="true">7.</strong> Indexing Fuel Types</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../indexing-fuel-types/blocks.html"><strong aria-hidden="true">7.1.</strong> Blocks</a></li><li class="chapter-item expanded "><a href="../indexing-fuel-types/transactions.html" class="active"><strong aria-hidden="true">7.2.</strong> Transactions</a></li><li class="chapter-item expanded "><a href="../indexing-fuel-types/receipts.html"><strong aria-hidden="true">7.3.</strong> Receipts</a></li></ol></li><li class="chapter-item expanded "><a href="../indexing-custom-types/index.html"><strong aria-hidden="true">8.</strong> Indexing Custom Types</a></li><li class="chapter-item expanded "><a href="../storing-records/index.html"><strong aria-hidden="true">9.</strong> Storing Records</a></li><li class="chapter-item expanded "><a href="../querying/index.html"><strong aria-hidden="true">10.</strong> Querying</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../querying/basic-queries.html"><strong aria-hidden="true">10.1.</strong> Basic Queries</a></li><li class="chapter-item expanded "><a href="../querying/playground.html"><strong aria-hidden="true">10.2.</strong> Playground</a></li><li class="chapter-item expanded "><a href="../querying/search-and-filtering.html"><strong aria-hidden="true">10.3.</strong> Search and Filtering</a></li><li class="chapter-item expanded "><a href="../querying/pagination.html"><strong aria-hidden="true">10.4.</strong> Pagination</a></li><li class="chapter-item expanded "><a href="../querying/full-example.html"><strong aria-hidden="true">10.5.</strong> A Full Example</a></li></ol></li><li class="chapter-item expanded "><a href="../authentication/index.html"><strong aria-hidden="true">11.</strong> Authentication</a></li><li class="chapter-item expanded "><a href="../forc-index/index.html"><strong aria-hidden="true">12.</strong> forc index</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../forc-index/auth.html"><strong aria-hidden="true">12.1.</strong> auth</a></li><li class="chapter-item expanded "><a href="../forc-index/build.html"><strong aria-hidden="true">12.2.</strong> build</a></li><li class="chapter-item expanded "><a href="../forc-index/check.html"><strong aria-hidden="true">12.3.</strong> check</a></li><li class="chapter-item expanded "><a href="../forc-index/deploy.html"><strong aria-hidden="true">12.4.</strong> deploy</a></li><li class="chapter-item expanded "><a href="../forc-index/kill.html"><strong aria-hidden="true">12.5.</strong> kill</a></li><li class="chapter-item expanded "><a href="../forc-index/new.html"><strong aria-hidden="true">12.6.</strong> new</a></li><li class="chapter-item expanded "><a href="../forc-index/remove.html"><strong aria-hidden="true">12.7.</strong> remove</a></li><li class="chapter-item expanded "><a href="../forc-index/start.html"><strong aria-hidden="true">12.8.</strong> start</a></li><li class="chapter-item expanded "><a href="../forc-index/status.html"><strong aria-hidden="true">12.9.</strong> status</a></li></ol></li><li class="chapter-item expanded "><a href="../forc-postgres/index.html"><strong aria-hidden="true">13.</strong> forc postgres</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../forc-postgres/create.html"><strong aria-hidden="true">13.1.</strong> create</a></li><li class="chapter-item expanded "><a href="../forc-postgres/drop.html"><strong aria-hidden="true">13.2.</strong> drop</a></li><li class="chapter-item expanded "><a href="../forc-postgres/start.html"><strong aria-hidden="true">13.3.</strong> start</a></li><li class="chapter-item expanded "><a href="../forc-postgres/stop.html"><strong aria-hidden="true">13.4.</strong> stop</a></li></ol></li><li class="chapter-item expanded "><li class="part-title">For Contributors</li><li class="chapter-item expanded "><a href="../for-contributors/index.html"><strong aria-hidden="true">14.</strong> Environment Setup</a></li><li class="chapter-item expanded "><a href="../for-contributors/contributing-standards.html"><strong aria-hidden="true">15.</strong> Contributing Standards</a></li><li class="chapter-item expanded "><a href="../for-contributors/release-schedule.html"><strong aria-hidden="true">16.</strong> Release Schedule</a></li><li class="chapter-item expanded "><a href="../for-contributors/building-from-source.html"><strong aria-hidden="true">17.</strong> Building From Source</a></li><li class="chapter-item expanded "><a href="../for-contributors/system-dependencies.html"><strong aria-hidden="true">18.</strong> System Dependencides</a></li><li class="chapter-item expanded affix "><li class="part-title">Appendix</li><li class="chapter-item expanded "><a href="../glossary.html"><strong aria-hidden="true">19.</strong> A: Glossary</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <!-- Track and set sidebar scroll position -->
+        <script>
+            var sidebarScrollbox = document.querySelector('#sidebar .sidebar-scrollbox');
+            sidebarScrollbox.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A') {
+                    sessionStorage.setItem('sidebar-scroll', sidebarScrollbox.scrollTop);
+                }
+            }, { passive: true });
+            var sidebarScrollTop = sessionStorage.getItem('sidebar-scroll');
+            sessionStorage.removeItem('sidebar-scroll');
+            if (sidebarScrollTop) {
+                // preserve sidebar scroll position when navigating via links within sidebar
+                sidebarScrollbox.scrollTop = sidebarScrollTop;
+            } else {
+                // scroll sidebar to current active section when navigating via "next/previous chapter" buttons
+                var activeSection = document.querySelector('#sidebar .active');
+                if (activeSection) {
+                    activeSection.scrollIntoView({ block: 'center' });
+                }
+            }
+        </script>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">The Fuel Indexer Service</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/FuelLabs/fuel-indexer" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <!-- markdownlint-disable-file MD024 -->
+<h1 id="transactions"><a class="header" href="#transactions">Transactions</a></h1>
+<h2 id="transactiondata"><a class="header" href="#transactiondata"><code>TransactionData</code></a></h2>
+<p>The <code>TransactionData</code> struct contains important information about a transaction in the Fuel network. The <code>id</code> field is the transaction hash, which is a 32-byte string. The <code>receipts</code> field contains a list of <code>Receipts</code>, which are generated by a Fuel node during the execution of a Sway smart contract; you can find more information in the <a href="./receipts.html">Receipts</a> section.</p>
+<h3 id="definition"><a class="header" href="#definition">Definition</a></h3>
+<pre><code class="language-rust ignore">pub struct TransactionData {
+    pub transaction: Transaction,
+    pub status: TransactionStatus,
+    pub receipts: Vec&lt;Receipt&gt;,
+    pub id: TxId,
+}</code></pre>
+<h3 id="usage"><a class="header" href="#usage">Usage</a></h3>
+<pre><code class="language-rust ignore">use fuel_indexer_utils::prelude::*;
+
+#[indexer(manifest = &quot;indexer.manifest.yaml&quot;)]
+mod indexer_mod {
+    fn handle_transaction(block_data: BlockData) {
+        let height = block_data.header.height;
+        if !block_data.transactions.is_empty() {
+            let transaction = block_data.transactions[0];
+            info!(
+                &quot;Transaction {} in block at height {} has {} receipts&quot;,
+                transaction.id,
+                block_data.header.height,
+                transaction.receipts.len()
+            );
+        }
+    }
+}</code></pre>
+<h2 id="transactionstatus"><a class="header" href="#transactionstatus"><code>TransactionStatus</code></a></h2>
+<p><code>TransactionStatus</code> refers to the status of a <code>Transaction</code> in the Fuel network.</p>
+<h3 id="definition-1"><a class="header" href="#definition-1">Definition</a></h3>
+<pre><code class="language-rust ignore">pub enum TransactionStatus {
+    Failure {
+        block_id: String,
+        time: DateTime&lt;Utc&gt;,
+        reason: String,
+    },
+    SqueezedOut {
+        reason: String,
+    },
+    Submitted {
+        submitted_at: DateTime&lt;Utc&gt;,
+    },
+    Success {
+        block_id: String,
+        time: DateTime&lt;Utc&gt;,
+    },
+}</code></pre>
+<h3 id="usage-1"><a class="header" href="#usage-1">Usage</a></h3>
+<pre><code class="language-rust ignore">use fuel_indexer_utils::prelude::*;
+
+#[indexer(manifest = &quot;indexer.manifest.yaml&quot;)]
+mod indexer_mod {
+    fn handle_transaction(block_data: BlockData) {
+        let height = block_data.header.height;
+        if !block_data.transactions.is_empty() {
+            let transaction = block_data.transactions[0];
+            match transaction.transaction {
+                fuel::Transaction::Script(tx) =&gt; match tx.status {
+                    fuel::TransactionStatus::Success { block_id, time } =&gt; {
+                        info!(
+                            &quot;Transaction {} in block {} was successful at {}&quot;,
+                            tx.id, block_id, time
+                        );
+                    }
+                },
+                _ =&gt; {
+                    info!(&quot;We don't care about this transaction type&quot;);
+                }
+            }
+        }
+    }
+}</code></pre>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../indexing-fuel-types/blocks.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next" href="../indexing-fuel-types/receipts.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../indexing-fuel-types/blocks.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next" href="../indexing-fuel-types/receipts.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr.min.js"></script>
+        <script src="../mark.min.js"></script>
+        <script src="../searcher.js"></script>
+
+        <script src="../clipboard.min.js"></script>
+        <script src="../highlight.js"></script>
+        <script src="../book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+    </div>
+    </body>
+</html>
