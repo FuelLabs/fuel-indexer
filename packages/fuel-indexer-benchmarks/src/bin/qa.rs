@@ -490,9 +490,8 @@ async fn main() {
 
     let mani_path = explorer_root.join("fuel_explorer.manifest.yaml");
 
-    // TODO: replace this with forc-index start after/during https://github.com/FuelLabs/fuel-indexer/pull/1348
-    let _proc = Command::new("fuel-indexer")
-        .arg("run")
+    let _proc = Command::new("forc-index")
+        .arg("start")
         .arg("--run-migrations")
         .arg("--fuel-node-host")
         .arg("beta-4.fuel.network")

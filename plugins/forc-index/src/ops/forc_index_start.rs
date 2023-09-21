@@ -1,33 +1,44 @@
 use crate::cli::StartCommand;
-use std::process::Command;
+use fuel_indexer_lib::defaults;
+use std::{ffi::OsStr, process::Command};
 use tracing::info;
 
 pub async fn init(command: StartCommand) -> anyhow::Result<()> {
     let StartCommand {
-        log_level,
+        manifest,
         config,
         fuel_node_host,
         fuel_node_port,
         web_api_host,
         web_api_port,
-        database,
-        postgres_user,
-        postgres_password,
-        postgres_database,
-        postgres_host,
-        postgres_port,
-        local_fuel_node,
+        log_level,
         run_migrations,
         metrics,
-        manifest,
-        embedded_database,
         auth_enabled,
         auth_strategy,
         jwt_secret,
         jwt_issuer,
         jwt_expiry,
+        database,
+        postgres_user,
+        postgres_password,
+        postgres_host,
+        postgres_port,
+        postgres_database,
+        embedded_database,
         verbose,
-        ..
+        local_fuel_node,
+        max_body_size,
+        stop_idle_indexers,
+        indexer_net_config,
+        rate_limit,
+        rate_limit_request_count,
+        rate_limit_window_size,
+        metering_points,
+        replace_indexer,
+        remove_data,
+        accept_sql_queries,
+        block_page_size,
     } = command;
 
     let mut cmd = Command::new("fuel-indexer");
@@ -36,6 +47,15 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
     if let Some(m) = &manifest {
         cmd.arg("--manifest").arg(m);
     }
+
+    let rate_limit_window_size = rate_limit_window_size
+        .map(|x| x.to_string())
+        .unwrap_or(defaults::RATE_LIMIT_WINDOW_SIZE.to_string());
+    let rate_limit_window_size = OsStr::new(&rate_limit_window_size);
+    let rate_limit_request_count = rate_limit_request_count
+        .map(|x| x.to_string())
+        .unwrap_or(defaults::RATE_LIMIT_REQUEST_COUNT.to_string());
+    let rate_limit_request_count = OsStr::new(&rate_limit_request_count);
 
     if let Some(c) = &config {
         cmd.arg("--config").arg(c);
@@ -46,9 +66,26 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
         cmd.arg("--web-api-host").arg(&web_api_host);
         cmd.arg("--web-api-port").arg(&web_api_port);
         cmd.arg("--log-level").arg(&log_level);
+        cmd.arg("--max-body-size")
+            .arg(OsStr::new(&max_body_size.to_string()));
+        cmd.arg("--rate-limit-request-count")
+            .arg(rate_limit_request_count);
+        cmd.arg("--rate-limit-window-size")
+            .arg(rate_limit_window_size);
+        cmd.arg("--metering-points")
+            .arg(OsStr::new(&metering_points.to_string()));
+        cmd.arg("--block-page-size")
+            .arg(OsStr::new(&block_page_size.to_string()));
 
         // Bool options
         let options = [
+            ("--embedded-database", embedded_database),
+            ("--rate-limit", rate_limit),
+            ("--indexer-net-config", indexer_net_config),
+            ("--stop-idle-indexers", stop_idle_indexers),
+            ("--replace-indexer", replace_indexer),
+            ("--remove-data", remove_data),
+            ("--accept-sql-queries", accept_sql_queries),
             ("--run-migrations", run_migrations),
             ("--metrics", metrics),
             ("--auth-enabled", auth_enabled),
@@ -76,10 +113,6 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
 
         match database.as_ref() {
             "postgres" => {
-                if embedded_database {
-                    cmd.arg("--embedded-database");
-                }
-
                 // Postgres optional values
                 let postgres_optionals = [
                     ("--postgres-user", postgres_user),

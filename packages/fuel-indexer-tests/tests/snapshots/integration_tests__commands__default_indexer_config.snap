@@ -38,5 +38,5 @@ rate_limit:
   window_size: 5
 replace_indexer: false
 accept_sql_queries: false
-node_block_page_size: 20
+block_page_size: 20
 

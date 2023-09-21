@@ -83,7 +83,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
     let end_block = executor.manifest().end_block();
     let stop_idle_indexers = config.stop_idle_indexers;
     let indexer_uid = executor.manifest().uid();
-    let node_block_page_size = config.node_block_page_size;
+    let block_page_size = config.block_page_size;
 
     let fuel_node_addr = executor
         .manifest()
@@ -146,7 +146,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
             let (block_info, next_cursor, _has_next_page) =
                 match retrieve_blocks_from_node(
                     &client,
-                    node_block_page_size,
+                    block_page_size,
                     &cursor,
                     end_block,
                     &indexer_uid,
@@ -227,7 +227,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                     // TODO: https://github.com/FuelLabs/fuel-indexer/issues/1093
                     if inner.constraint().is_some() {
                         // Just bump the cursor and keep going. These errors do not count towards `INDEXER_FAILED_CALLS`
-                        warn!("Constraint violation. This is not a retry-able error. Continuing...");
+                        warn!("Constraint violation: {inner:?}. This is not a retry-able error. Continuing...");
                         cursor = next_cursor;
                         continue;
                     }
