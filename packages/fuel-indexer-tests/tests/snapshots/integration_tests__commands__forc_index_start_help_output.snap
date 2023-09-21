@@ -29,6 +29,10 @@ OPTIONS:
         --embedded-database
             Automatically create and start database using provided options or defaults.
 
+        --enable-block-store
+            Store blocks in the database and use these stored blocks to fast-forward an indexer
+            starting it up.
+
         --fuel-node-host <FUEL_NODE_HOST>
             Host of the running Fuel node. [default: localhost]
 

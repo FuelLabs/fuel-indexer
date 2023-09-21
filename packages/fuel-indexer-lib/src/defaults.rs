@@ -134,3 +134,7 @@ pub const REMOVE_DATA: bool = false;
 
 /// Allow the web server to accept raw SQL queries.
 pub const ACCEPT_SQL: bool = false;
+
+/// Store blocks in the database and use these stored blocks to fast-forward an
+/// indexer starting it up.
+pub const ENABLE_BLOCK_STORE: bool = false;

@@ -13,6 +13,7 @@ description = "Fuel Indexer Database"
 fuel-indexer-database-types = { workspace = true }
 fuel-indexer-lib = { workspace = true }
 fuel-indexer-postgres = { workspace = true }
+fuel-indexer-types = { workspace = true }
 sqlx = { version = "0.6" }
 thiserror = { workspace = true }
 url = "2.2"

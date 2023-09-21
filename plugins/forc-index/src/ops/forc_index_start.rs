@@ -39,6 +39,7 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
         remove_data,
         accept_sql_queries,
         block_page_size,
+        enable_block_store: _,
     } = command;
 
     let mut cmd = Command::new("fuel-indexer");

@@ -496,6 +496,36 @@ pub async fn register_indexer(
     })
 }
 
+pub async fn save_blockdata(
+    conn: &mut PoolConnection<Postgres>,
+    blockdata: &[fuel_indexer_types::fuel::BlockData],
+) -> sqlx::Result<()> {
+    if blockdata.is_empty() {
+        return Ok(());
+    }
+
+    let mut query_string =
+        "INSERT INTO index_block_data (block_height, block_data) VALUES ".to_string();
+    for i in (0..blockdata.len() * 2).step_by(2) {
+        query_string += &format!("(${}, ${}), ", i + 1, i + 2);
+    }
+    query_string.pop();
+    query_string.pop();
+    query_string += " ON CONFLICT DO NOTHING";
+
+    let mut query = sqlx::query(&query_string);
+
+    for bd in blockdata {
+        let height = bd.height.to_i32().unwrap();
+        let block = fuel_indexer_lib::utils::serialize(bd);
+        query = query.bind(height).bind(block);
+    }
+
+    query.execute(conn).await?;
+
+    Ok(())
+}
+
 /// Return all indexers registered to this indexer serivce.
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn all_registered_indexers(
@@ -651,6 +681,23 @@ pub async fn last_block_height_for_indexer(
         .try_get::<i32, usize>(0)
         .map(|id| id.to_u32().expect("Bad block height."))
         .unwrap_or(0))
+}
+
+/// Return the last block height for stored blocks.
+#[cfg_attr(feature = "metrics", metrics)]
+pub async fn last_block_height_for_stored_blocks(
+    conn: &mut PoolConnection<Postgres>,
+) -> sqlx::Result<u32> {
+    let query = "SELECT MAX(block_height) FROM index_block_data LIMIT 1".to_string();
+
+    let row = sqlx::query(&query).fetch_one(conn).await?;
+
+    let result = row
+        .try_get::<i32, usize>(0)
+        .map(|id| id.to_u32().expect("Bad block height."))
+        .unwrap_or(0);
+
+    Ok(result)
 }
 
 // TODO: https://github.com/FuelLabs/fuel-indexer/issues/251

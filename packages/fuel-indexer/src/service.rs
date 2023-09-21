@@ -356,8 +356,11 @@ impl IndexerService {
         self.killers
             .insert(uid.clone(), executor.kill_switch().clone());
 
-        self.tasks
-            .spawn(crate::executor::run_executor(&self.config, executor));
+        self.tasks.spawn(crate::executor::run_executor(
+            &self.config,
+            self.pool.clone(),
+            executor,
+        ));
     }
 }
 
@@ -393,6 +396,77 @@ pub async fn get_start_block(
             let block = manifest.start_block().unwrap_or(1);
             info!("Starting Indexer({}) from block {block}", manifest.uid());
             Ok(block)
+        }
+    }
+}
+
+/// Create a tokio task for retrieving blocks from Fuel Node and saving them in
+/// the database.
+pub(crate) async fn create_block_sync_task(
+    config: IndexerConfig,
+    pool: IndexerConnectionPool,
+) {
+    let mut conn = pool.acquire().await.unwrap();
+
+    let start_block_height = queries::last_block_height_for_stored_blocks(&mut conn)
+        .await
+        .unwrap();
+
+    let mut cursor = Some(start_block_height.to_string());
+
+    info!("Block sync: starting from Block#{}", start_block_height + 1);
+
+    let client =
+        fuel_core_client::client::FuelClient::new(config.fuel_node.uri().to_string())
+            .unwrap_or_else(|e| panic!("Client node connection failed: {e}."));
+
+    let task_id = "Block Sync";
+
+    loop {
+        // Get the next page of blocks, and the starting cursor for the subsequent page
+        let (block_info, next_cursor, _has_next_page) =
+            match crate::executor::retrieve_blocks_from_node(
+                &client,
+                config.block_page_size,
+                &cursor,
+                None,
+                task_id,
+            )
+            .await
+            {
+                Ok((block_info, next_cursor, _has_next_page)) => {
+                    if !block_info.is_empty() {
+                        let first = block_info[0].height;
+                        let last = block_info.last().unwrap().height;
+                        info!("{task_id}: retrieved blocks: {}-{}.", first, last);
+                    }
+                    (block_info, next_cursor, _has_next_page)
+                }
+                Err(e) => {
+                    error!("{task_id}: failed to retrieve blocks: {e:?}");
+                    tokio::time::sleep(std::time::Duration::from_secs(
+                        fuel_indexer_lib::defaults::DELAY_FOR_SERVICE_ERROR,
+                    ))
+                    .await;
+                    continue;
+                }
+            };
+
+        if block_info.is_empty() {
+            info!("{task_id}: no new blocks to process, sleeping zzZZ.");
+            tokio::time::sleep(std::time::Duration::from_secs(
+                fuel_indexer_lib::defaults::IDLE_SERVICE_WAIT_SECS,
+            ))
+            .await;
+        } else {
+            // Blocks must be in order, and there can be no missing blocks. This
+            // is enforced when saving to the database by a trigger. If
+            // `save_blockdata` succeeds, all is well.
+            fuel_indexer_database::queries::save_blockdata(&mut conn, &block_info)
+                .await
+                .unwrap();
+
+            cursor = next_cursor;
         }
     }
 }

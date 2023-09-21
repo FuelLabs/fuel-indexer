@@ -69,6 +69,34 @@ impl From<ExecutorSource> for Vec<u8> {
     }
 }
 
+pub async fn load_blocks(
+    pool: &IndexerConnectionPool,
+    start_block: u32,
+    end_block: Option<u32>,
+    limit: usize,
+) -> IndexerResult<Vec<BlockData>> {
+    use sqlx::Row;
+
+    let end_condition = end_block
+        .map(|x| format!("AND block_height <= {x}"))
+        .unwrap_or("".to_string());
+    let query = format!("SELECT block_data FROM index_block_data WHERE block_height >= {start_block} {end_condition} ORDER BY block_height ASC LIMIT {limit}");
+
+    let pool = match pool {
+        IndexerConnectionPool::Postgres(pool) => pool.clone(),
+    };
+
+    let rows = sqlx::query(&query).fetch_all(&pool).await?;
+
+    let mut blocks = Vec::new();
+    for row in rows {
+        let bytes = row.get::<Vec<u8>, usize>(0);
+        let blockdata: BlockData = fuel_indexer_lib::utils::deserialize(&bytes).unwrap();
+        blocks.push(blockdata);
+    }
+    Ok(blocks)
+}
+
 /// Run the executor task until the kill switch is flipped, or until some other
 /// stop criteria is met.
 //
@@ -76,6 +104,7 @@ impl From<ExecutorSource> for Vec<u8> {
 // types in `fuel_core_client` don't compile to WASM.
 pub fn run_executor<T: 'static + Executor + Send + Sync>(
     config: &IndexerConfig,
+    pool: IndexerConnectionPool,
     mut executor: T,
 ) -> impl Future<Output = ()> {
     // TODO: https://github.com/FuelLabs/fuel-indexer/issues/286
@@ -91,16 +120,6 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
         .map(|x| x.to_string())
         .unwrap_or(config.fuel_node.to_string());
 
-    // Where should we initially start when fetching blocks from the client?
-    let mut cursor = executor.manifest().start_block().map(|x| {
-        if x > 1 {
-            let decremented = x - 1;
-            decremented.to_string()
-        } else {
-            "0".to_string()
-        }
-    });
-
     info!("Indexer({indexer_uid}) subscribing to Fuel node at {fuel_node_addr}");
 
     let client = FuelClient::from_str(&fuel_node_addr).unwrap_or_else(|e| {
@@ -113,7 +132,11 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
         warn!("No end_block specified in the manifest. Indexer({indexer_uid}) will run forever.");
     }
 
+    let enable_block_store = config.enable_block_store;
+
     async move {
+        let mut conn = pool.acquire().await.unwrap();
+
         // If we reach an issue that continues to fail, we'll retry a few times before giving up, as
         // we don't want to quit on the first error. But also don't want to waste CPU.
         //
@@ -135,6 +158,13 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
         // Keep track of how many empty pages we've received from the client.
         let mut num_empty_block_reqs = 0;
 
+        let mut start_block = crate::get_start_block(&mut conn, executor.manifest())
+            .await
+            .unwrap();
+
+        // Where should we initially start when fetching blocks from the client?
+        let mut cursor = Some((start_block - 1).to_string());
+
         loop {
             // If something else has signaled that this indexer should stop, then stop.
             if executor.kill_switch().load(Ordering::SeqCst) {
@@ -143,13 +173,28 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
             }
 
             // Fetch the next page of blocks, and the starting cursor for the subsequent page
-            let (block_info, next_cursor, _has_next_page) =
+            let (block_info, next_cursor, _has_next_page) = if enable_block_store {
+                let result = load_blocks(
+                    &pool,
+                    start_block,
+                    executor.manifest().end_block(),
+                    block_page_size,
+                )
+                .await;
+                match result {
+                    Ok(blocks) => (blocks, None, false),
+                    Err(e) => {
+                        error!("Indexer({indexer_uid}) failed to load blocks from the database: {e:?}",);
+                        continue;
+                    }
+                }
+            } else {
                 match retrieve_blocks_from_node(
                     &client,
                     block_page_size,
                     &cursor,
                     end_block,
-                    &indexer_uid,
+                    &format!("Indexer({indexer_uid})"),
                 )
                 .await
                 {
@@ -169,7 +214,8 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                             continue;
                         }
                     }
-                };
+                }
+            };
 
             // If our block page request from the client returns empty, we sleep for a bit, and then continue.
             if block_info.is_empty() {
@@ -188,6 +234,8 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                 sleep(Duration::from_secs(IDLE_SERVICE_WAIT_SECS)).await;
                 continue;
             }
+
+            let last_block_height = block_info.last().map(|x| x.height);
 
             // The client responded with actual blocks, so attempt to index them.
             let result = executor.handle_events(block_info).await;
@@ -249,6 +297,10 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
             // If we make it this far, we always go to the next page.
             cursor = next_cursor;
 
+            // What cursor does for retrieving blocks from the Fuel Node,
+            // start_block does for retrieving blocks from the database
+            start_block = last_block_height.map(|x| x + 1).unwrap_or(start_block);
+
             // Again, check if something else has signaled that this indexer should stop, then stop.
             if executor.kill_switch().load(Ordering::SeqCst) {
                 info!("Kill switch flipped, stopping Indexer({indexer_uid}). <('.')>");
@@ -273,7 +325,7 @@ pub async fn retrieve_blocks_from_node(
     block_page_size: usize,
     cursor: &Option<String>,
     end_block: Option<u32>,
-    indexer_uid: &str,
+    task_id: &str,
 ) -> IndexerResult<(Vec<BlockData>, Option<String>, bool)> {
     // Let's check if we need less blocks than block_page_size.
     let page_size = if let (Some(start), Some(end)) = (cursor, end_block) {
@@ -305,7 +357,7 @@ pub async fn retrieve_blocks_from_node(
         })
         .await
         .unwrap_or_else(|e| {
-            error!("Indexer({indexer_uid}) failed to retrieve blocks: {e:?}");
+            error!("{task_id}: failed to retrieve blocks: {e:?}");
             // Setting an empty cursor will cause the indexer to sleep for a bit and try again.
             PaginatedResult {
                 cursor: None,

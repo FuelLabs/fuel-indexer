@@ -140,12 +140,20 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
     #[cfg(feature = "api-server")]
     subsystems.spawn({
         let config = config.clone();
+        let pool = pool.clone();
         async {
             if let Err(e) = WebApi::build_and_run(config, pool, tx).await {
                 tracing::error!("Api Server failed: {e}");
             }
         }
     });
+
+    if config.enable_block_store {
+        subsystems.spawn(crate::service::create_block_sync_task(
+            config.clone(),
+            pool.clone(),
+        ));
+    };
 
     #[cfg(feature = "fuel-core-lib")]
     {

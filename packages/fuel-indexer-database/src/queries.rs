@@ -219,6 +219,17 @@ pub async fn register_indexer(
     }
 }
 
+pub async fn save_blockdata(
+    conn: &mut IndexerConnection,
+    blockdata: &[fuel_indexer_types::fuel::BlockData],
+) -> sqlx::Result<()> {
+    match conn {
+        IndexerConnection::Postgres(ref mut c) => {
+            postgres::save_blockdata(c, blockdata).await
+        }
+    }
+}
+
 /// Return all indexers registered to this indexer serivce.
 pub async fn all_registered_indexers(
     conn: &mut IndexerConnection,
@@ -283,6 +294,17 @@ pub async fn last_block_height_for_indexer(
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
             postgres::last_block_height_for_indexer(c, namespace, identifier).await
+        }
+    }
+}
+
+/// Return the last block height that the given indexer has indexed.
+pub async fn last_block_height_for_stored_blocks(
+    conn: &mut IndexerConnection,
+) -> sqlx::Result<u32> {
+    match conn {
+        IndexerConnection::Postgres(ref mut c) => {
+            postgres::last_block_height_for_stored_blocks(c).await
         }
     }
 }
