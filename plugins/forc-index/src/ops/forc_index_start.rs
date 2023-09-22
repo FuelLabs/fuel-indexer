@@ -39,7 +39,8 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
         remove_data,
         accept_sql_queries,
         block_page_size,
-        enable_block_store: _,
+        enable_block_store,
+        remove_stored_blocks,
     } = command;
 
     let mut cmd = Command::new("fuel-indexer");
@@ -92,6 +93,8 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
             ("--auth-enabled", auth_enabled),
             ("--verbose", verbose),
             ("--local-fuel-node", local_fuel_node),
+            ("--enable-block-store", enable_block_store),
+            ("--remove-stored-blocks", remove_stored_blocks),
         ];
         for (opt, value) in options.iter() {
             if *value {

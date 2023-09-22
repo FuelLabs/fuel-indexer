@@ -552,7 +552,7 @@ pub async fn load_block_data(
 pub async fn remove_block_data(
     conn: &mut PoolConnection<Postgres>,
 ) -> sqlx::Result<usize> {
-    execute_query(conn, format!("DELETE FROM index_block_data;")).await
+    execute_query(conn, "DELETE FROM index_block_data;".to_string()).await
 }
 
 /// Return all indexers registered to this indexer serivce.

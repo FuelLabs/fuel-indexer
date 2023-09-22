@@ -117,6 +117,7 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
         ));
     };
 
+    #[allow(unused)]
     let (tx, rx) = channel::<ServiceRequest>(defaults::SERVICE_REQUEST_CHANNEL_SIZE);
 
     if config.run_migrations {
