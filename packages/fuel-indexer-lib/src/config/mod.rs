@@ -334,7 +334,7 @@ impl From<ApiServerArgs> for IndexerConfig {
             accept_sql_queries: args.accept_sql_queries,
             block_page_size: defaults::NODE_BLOCK_PAGE_SIZE,
             enable_block_store: defaults::ENABLE_BLOCK_STORE,
-            remove_stored_blocks: defaults::REMOVE_STORED_BLOCKS
+            remove_stored_blocks: defaults::REMOVE_STORED_BLOCKS,
         };
 
         config
