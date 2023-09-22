@@ -137,3 +137,6 @@ pub const ACCEPT_SQL: bool = false;
 
 /// Store blocks in the database and use these stored blocks to fast-forward an indexer starting up.
 pub const ENABLE_BLOCK_STORE: bool = false;
+
+/// Remove all stored blocks from the database.
+pub const REMOVE_STORED_BLOCKS: bool = false;

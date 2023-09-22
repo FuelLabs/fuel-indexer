@@ -198,6 +198,13 @@ pub struct IndexerArgs {
         help = "Store blocks in the database and use these stored blocks to fast-forward an indexer starting up."
     )]
     pub enable_block_store: bool,
+
+    /// Remove all stored blocks. Use this flag together with --enable-block-store to redownload block data afresh.
+    #[clap(
+        long,
+        help = "Remove all stored blocks. Use this flag together with --enable-block-store to redownload block data afresh."
+    )]
+    pub remove_stored_blocks: bool,
 }
 
 #[derive(Debug, Parser, Clone)]

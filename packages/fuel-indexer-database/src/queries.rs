@@ -246,6 +246,17 @@ pub async fn load_block_data(
     }
 }
 
+/// Remove all stored `BlockData` from the database.
+pub async fn remove_block_data(
+    conn: &mut IndexerConnection,
+) -> sqlx::Result<usize> {
+    match conn {
+        IndexerConnection::Postgres(ref mut c) => {
+            postgres::remove_block_data(c).await
+        }
+    }
+}
+
 /// Return all indexers registered to this indexer serivce.
 pub async fn all_registered_indexers(
     conn: &mut IndexerConnection,

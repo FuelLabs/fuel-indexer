@@ -101,10 +101,23 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
 
     info!("Configuration: {:?}", config);
 
-    #[allow(unused)]
-    let (tx, rx) = channel::<ServiceRequest>(defaults::SERVICE_REQUEST_CHANNEL_SIZE);
-
     let pool = IndexerConnectionPool::connect(&config.database.to_string()).await?;
+
+    if config.remove_stored_blocks {
+        info!("Removing stored blocks.");
+        let mut conn = pool.acquire().await?;
+        let count = queries::remove_block_data(&mut conn).await?;
+        info!("Succesfully removed {count} blocks.");
+    }
+
+    if config.enable_block_store {
+        subsystems.spawn(crate::service::create_block_sync_task(
+            config.clone(),
+            pool.clone(),
+        ));
+    };
+
+    let (tx, rx) = channel::<ServiceRequest>(defaults::SERVICE_REQUEST_CHANNEL_SIZE);
 
     if config.run_migrations {
         let mut c = pool.acquire().await?;
@@ -147,13 +160,6 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
             }
         }
     });
-
-    if config.enable_block_store {
-        subsystems.spawn(crate::service::create_block_sync_task(
-            config.clone(),
-            pool.clone(),
-        ));
-    };
 
     #[cfg(feature = "fuel-core-lib")]
     {
