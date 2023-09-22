@@ -408,19 +408,19 @@ pub(crate) async fn create_block_sync_task(
 ) {
     let mut conn = pool.acquire().await.unwrap();
 
-    let start_block_height = queries::last_block_height_for_stored_blocks(&mut conn)
+    let last_height = queries::last_block_height_for_stored_blocks(&mut conn)
         .await
         .unwrap();
 
-    let mut cursor = Some(start_block_height.to_string());
+    let mut cursor = Some(last_height.to_string());
 
-    info!("Block sync: starting from Block#{}", start_block_height + 1);
+    let task_id = "Block Sync";
+
+    info!("{task_id}: starting from Block#{}", last_height + 1);
 
     let client =
         fuel_core_client::client::FuelClient::new(config.fuel_node.uri().to_string())
             .unwrap_or_else(|e| panic!("Client node connection failed: {e}."));
-
-    let task_id = "Block Sync";
 
     loop {
         // Get the next page of blocks, and the starting cursor for the subsequent page
@@ -462,7 +462,7 @@ pub(crate) async fn create_block_sync_task(
             // Blocks must be in order, and there can be no missing blocks. This
             // is enforced when saving to the database by a trigger. If
             // `save_blockdata` succeeds, all is well.
-            fuel_indexer_database::queries::save_blockdata(&mut conn, &block_info)
+            fuel_indexer_database::queries::save_block_data(&mut conn, &block_info)
                 .await
                 .unwrap();
 

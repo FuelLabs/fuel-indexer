@@ -1,5 +1,6 @@
 use crate::{types::*, IndexerConnection};
 use fuel_indexer_postgres as postgres;
+use fuel_indexer_types::fuel::BlockData;
 use sqlx::types::{
     chrono::{DateTime, Utc},
     JsonValue,
@@ -219,13 +220,28 @@ pub async fn register_indexer(
     }
 }
 
-pub async fn save_blockdata(
+/// Save `BlockData` in the database.
+pub async fn save_block_data(
     conn: &mut IndexerConnection,
-    blockdata: &[fuel_indexer_types::fuel::BlockData],
+    blockdata: &[BlockData],
 ) -> sqlx::Result<()> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
-            postgres::save_blockdata(c, blockdata).await
+            postgres::save_block_data(c, blockdata).await
+        }
+    }
+}
+
+/// Load `BlockData` from the database.
+pub async fn load_block_data(
+    conn: &mut IndexerConnection,
+    start_block: u32,
+    end_block: Option<u32>,
+    limit: usize,
+) -> sqlx::Result<Vec<BlockData>> {
+    match conn {
+        IndexerConnection::Postgres(ref mut c) => {
+            postgres::load_block_data(c, start_block, end_block, limit).await
         }
     }
 }

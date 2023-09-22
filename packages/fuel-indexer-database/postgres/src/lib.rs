@@ -3,6 +3,7 @@
 use bigdecimal::ToPrimitive;
 use fuel_indexer_database_types::*;
 use fuel_indexer_lib::utils::sha256_digest;
+use fuel_indexer_types::fuel::BlockData;
 use sqlx::{pool::PoolConnection, postgres::PgRow, types::JsonValue, Postgres, Row};
 use std::str::FromStr;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -496,9 +497,9 @@ pub async fn register_indexer(
     })
 }
 
-pub async fn save_blockdata(
+pub async fn save_block_data(
     conn: &mut PoolConnection<Postgres>,
-    blockdata: &[fuel_indexer_types::fuel::BlockData],
+    blockdata: &[BlockData],
 ) -> sqlx::Result<()> {
     if blockdata.is_empty() {
         return Ok(());
@@ -524,6 +525,28 @@ pub async fn save_blockdata(
     query.execute(conn).await?;
 
     Ok(())
+}
+
+pub async fn load_block_data(
+    conn: &mut PoolConnection<Postgres>,
+    start_block: u32,
+    end_block: Option<u32>,
+    limit: usize,
+) -> sqlx::Result<Vec<BlockData>> {
+    let end_condition = end_block
+        .map(|x| format!("AND block_height <= {x}"))
+        .unwrap_or("".to_string());
+    let query = format!("SELECT block_data FROM index_block_data WHERE block_height >= {start_block} {end_condition} ORDER BY block_height ASC LIMIT {limit}");
+
+    let rows = sqlx::query(&query).fetch_all(conn).await?;
+
+    let mut blocks = Vec::new();
+    for row in rows {
+        let bytes = row.get::<Vec<u8>, usize>(0);
+        let blockdata: BlockData = fuel_indexer_lib::utils::deserialize(&bytes).unwrap();
+        blocks.push(blockdata);
+    }
+    Ok(blocks)
 }
 
 /// Return all indexers registered to this indexer serivce.
