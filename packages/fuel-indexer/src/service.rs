@@ -406,15 +406,15 @@ pub(crate) async fn create_block_sync_task(
     config: IndexerConfig,
     pool: IndexerConnectionPool,
 ) {
+    let task_id = "Block Sync";
+
     let mut conn = pool.acquire().await.unwrap();
 
     let last_height = queries::last_block_height_for_stored_blocks(&mut conn)
         .await
-        .unwrap();
+        .unwrap_or_else(|_| panic!("{task_id} was unable to determine the last block height for stored blocks."));
 
     let mut cursor = Some(last_height.to_string());
-
-    let task_id = "Block Sync";
 
     info!("{task_id}: starting from Block#{}", last_height + 1);
 
@@ -464,7 +464,7 @@ pub(crate) async fn create_block_sync_task(
             // `save_blockdata` succeeds, all is well.
             fuel_indexer_database::queries::save_block_data(&mut conn, &block_info)
                 .await
-                .unwrap();
+                .unwrap_or_else(|_| panic!("{task_id} was unable to save block data."));
 
             cursor = next_cursor;
         }

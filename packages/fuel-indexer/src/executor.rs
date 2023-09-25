@@ -107,9 +107,9 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
     let enable_block_store = config.enable_block_store;
 
     async move {
-        let mut conn = pool.acquire().await.expect(&format!(
-            "Indexer({indexer_uid}) was unable to acquire a database connection."
-        ));
+        let mut conn = pool.acquire().await.unwrap_or_else(|_| {
+            panic!("Indexer({indexer_uid}) was unable to acquire a database connection.")
+        });
 
         // If we reach an issue that continues to fail, we'll retry a few times before giving up, as
         // we don't want to quit on the first error. But also don't want to waste CPU.
@@ -134,9 +134,9 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
 
         let mut start_block = crate::get_start_block(&mut conn, executor.manifest())
             .await
-            .expect(&format!(
-                "Indexer({indexer_uid}) was unable to determine the start block"
-            ));
+            .unwrap_or_else(|_| {
+                panic!("Indexer({indexer_uid}) was unable to determine the start block")
+            });
 
         // Where should we initially start when fetching blocks from the client?
         let mut cursor = Some((start_block - 1).to_string());
