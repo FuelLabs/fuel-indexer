@@ -19,6 +19,7 @@ pub struct TransactionData {
 ### Usage
 
 ```rust,ignore
+extern crate alloc;
 use fuel_indexer_utils::prelude::*;
 
 #[indexer(manifest = "indexer.manifest.yaml")]
@@ -67,6 +68,7 @@ pub enum TransactionStatus {
 ### Usage
 
 ```rust,ignore
+extern crate alloc;
 use fuel_indexer_utils::prelude::*;
 
 #[indexer(manifest = "indexer.manifest.yaml")]

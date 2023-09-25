@@ -5,6 +5,8 @@
 
 // TODO: Deny `clippy::unused_crate_dependencies` when including feature-flagged dependency `itertools`
 
+extern crate alloc;
+
 use fuel_indexer_lib::MAX_ARRAY_LENGTH;
 use fuel_indexer_types::{fuel::*, scalar::*, Identity};
 use serde::{Deserialize, Serialize};

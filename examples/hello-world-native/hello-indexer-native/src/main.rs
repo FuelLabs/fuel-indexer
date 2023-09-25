@@ -20,6 +20,7 @@
 //! ```bash
 //! cargo run -p hello-world-data --bin hello-world-data
 //! ```
+extern crate alloc;
 use fuel_indexer_utils::prelude::*;
 
 #[indexer(
