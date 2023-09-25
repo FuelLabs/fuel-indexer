@@ -4,6 +4,7 @@ use bigdecimal::ToPrimitive;
 use fuel_indexer_database_types::*;
 use fuel_indexer_lib::utils::sha256_digest;
 use fuel_indexer_types::fuel::BlockData;
+use sqlx::QueryBuilder;
 use sqlx::{pool::PoolConnection, postgres::PgRow, types::JsonValue, Postgres, Row};
 use std::str::FromStr;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -505,24 +506,16 @@ pub async fn save_block_data(
         return Ok(());
     }
 
-    let mut query_string =
-        "INSERT INTO index_block_data (block_height, block_data) VALUES ".to_string();
-    for i in (0..blockdata.len() * 2).step_by(2) {
-        query_string += &format!("(${}, ${}), ", i + 1, i + 2);
-    }
-    query_string.pop();
-    query_string.pop();
-    query_string += " ON CONFLICT DO NOTHING";
-
-    let mut query = sqlx::query(&query_string);
-
-    for bd in blockdata {
-        let height = bd.height.to_i32().unwrap();
+    let mut qb =
+        QueryBuilder::new("INSERT INTO index_block_data (block_height, block_data) ");
+    qb.push_values(blockdata, |mut b, bd| {
+        let height = bd.height as i32;
         let block = fuel_indexer_lib::utils::serialize(bd);
-        query = query.bind(height).bind(block);
-    }
+        b.push_bind(height);
+        b.push_bind(block);
+    });
 
-    query.execute(conn).await?;
+    qb.build().execute(conn).await?;
 
     Ok(())
 }
