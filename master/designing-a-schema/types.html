@@ -179,7 +179,8 @@
 }
 </code></pre>
 <p>This <code>Account</code> object type from the GraphQL schema, might be used in an indexer module like so:</p>
-<pre><code class="language-rust  ignore">use fuel_indexer_utils::prelude::*;
+<pre><code class="language-rust  ignore">extern crate alloc;
+use fuel_indexer_utils::prelude::*;
 
 #[indexer(manifest = &quot;indexer.manifest.yaml&quot;)]
 mod indexer_mod {
@@ -201,7 +202,8 @@ mod indexer_mod {
 <p>Enum types in relation to Fuel indexer's implementation are just <code>String</code> types used primarily to label object types. There is no other way that <code>enum</code> types should be used at this time.
 This <code>SignatureLabel</code> object type from the GraphQL schema, might be used in an indexer module like so:</p>
 </blockquote>
-<pre><code class="language-rust  ignore">use fuel_indexer_utils::prelude::*;
+<pre><code class="language-rust  ignore">extern crate alloc;
+use fuel_indexer_utils::prelude::*;
 
 #[indexer(manifest = &quot;indexer.manifest.yaml&quot;)]
 mod indexer_mod {
@@ -254,10 +256,10 @@ union Transaction = CreateTransaction | ScriptTransaction | MintTransaction
 <p>The <code>id</code>, <code>bytecode_length</code>, <code>contract_id</code>, and <code>label</code> fields come first, from the <code>CreateTransaction</code> object type. Next comes the <code>maturity</code> field from the <code>ScriptTransaction</code> object - because the <code>ScriptTransaction</code>'s <code>id</code> and <code>label</code> fiels are already a part of the derived <code>Transaction</code> object, courtesy of the <code>CreateTransaction</code> object type. Finally, comes the <code>metadata</code> field, as part of the <code>MintTransaction</code> object type.
 This <code>Transaction</code> union type from the GraphQL schema, might be used in an indexer module like so:</p>
 </blockquote>
-<pre><code class="language-rust  ignore">use fuel_indexer_utils::prelude::*;
+<pre><code class="language-rust  ignore">extern crate alloc;
+use fuel_indexer_utils::prelude::*;
 
 #[indexer(manifest = &quot;indexer.manifest.yaml&quot;)]
-
 mod indexer_mod {
     fn handle_event(event: Event) {
         let bytecode_length = 1024;

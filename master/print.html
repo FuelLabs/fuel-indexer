@@ -1135,7 +1135,8 @@ mod indexer_mod {
 }
 </code></pre>
 <p>This <code>Account</code> object type from the GraphQL schema, might be used in an indexer module like so:</p>
-<pre><code class="language-rust  ignore">use fuel_indexer_utils::prelude::*;
+<pre><code class="language-rust  ignore">extern crate alloc;
+use fuel_indexer_utils::prelude::*;
 
 #[indexer(manifest = &quot;indexer.manifest.yaml&quot;)]
 mod indexer_mod {
@@ -1157,7 +1158,8 @@ mod indexer_mod {
 <p>Enum types in relation to Fuel indexer's implementation are just <code>String</code> types used primarily to label object types. There is no other way that <code>enum</code> types should be used at this time.
 This <code>SignatureLabel</code> object type from the GraphQL schema, might be used in an indexer module like so:</p>
 </blockquote>
-<pre><code class="language-rust  ignore">use fuel_indexer_utils::prelude::*;
+<pre><code class="language-rust  ignore">extern crate alloc;
+use fuel_indexer_utils::prelude::*;
 
 #[indexer(manifest = &quot;indexer.manifest.yaml&quot;)]
 mod indexer_mod {
@@ -1210,10 +1212,10 @@ union Transaction = CreateTransaction | ScriptTransaction | MintTransaction
 <p>The <code>id</code>, <code>bytecode_length</code>, <code>contract_id</code>, and <code>label</code> fields come first, from the <code>CreateTransaction</code> object type. Next comes the <code>maturity</code> field from the <code>ScriptTransaction</code> object - because the <code>ScriptTransaction</code>'s <code>id</code> and <code>label</code> fiels are already a part of the derived <code>Transaction</code> object, courtesy of the <code>CreateTransaction</code> object type. Finally, comes the <code>metadata</code> field, as part of the <code>MintTransaction</code> object type.
 This <code>Transaction</code> union type from the GraphQL schema, might be used in an indexer module like so:</p>
 </blockquote>
-<pre><code class="language-rust  ignore">use fuel_indexer_utils::prelude::*;
+<pre><code class="language-rust  ignore">extern crate alloc;
+use fuel_indexer_utils::prelude::*;
 
 #[indexer(manifest = &quot;indexer.manifest.yaml&quot;)]
-
 mod indexer_mod {
     fn handle_event(event: Event) {
         let bytecode_length = 1024;
@@ -1370,7 +1372,8 @@ type Book @entity {
     pub transactions: Vec&lt;TransactionData&gt;,
 }</code></pre>
 <h2 id="usage-2"><a class="header" href="#usage-2">Usage</a></h2>
-<pre><code class="language-rust ignore">use fuel_indexer_utils::prelude::*;
+<pre><code class="language-rust ignore">extern crate alloc;
+use fuel_indexer_utils::prelude::*;
 
 #[indexer(manifest = &quot;indexer.manifest.yaml&quot;)]
 mod indexer_mod {
@@ -1391,7 +1394,8 @@ mod indexer_mod {
     pub id: TxId,
 }</code></pre>
 <h3 id="usage-3"><a class="header" href="#usage-3">Usage</a></h3>
-<pre><code class="language-rust ignore">use fuel_indexer_utils::prelude::*;
+<pre><code class="language-rust ignore">extern crate alloc;
+use fuel_indexer_utils::prelude::*;
 
 #[indexer(manifest = &quot;indexer.manifest.yaml&quot;)]
 mod indexer_mod {
@@ -1429,7 +1433,8 @@ mod indexer_mod {
     },
 }</code></pre>
 <h3 id="usage-4"><a class="header" href="#usage-4">Usage</a></h3>
-<pre><code class="language-rust ignore">use fuel_indexer_utils::prelude::*;
+<pre><code class="language-rust ignore">extern crate alloc;
+use fuel_indexer_utils::prelude::*;
 
 #[indexer(manifest = &quot;indexer.manifest.yaml&quot;)]
 mod indexer_mod {
@@ -1481,10 +1486,7 @@ pub struct Burn {
     pub pc: u64,
     pub is: u64,
 }</code></pre>
-<pre><code class="language-rust  ignore">use fuel_indexer_utils::prelude::*;
-
-#[indexer(manifest = &quot;indexer.manifest.yaml&quot;)]
-mod indexer_mod {
+<pre><code class="language-rust  ignore">mod indexer_mod {
     fn handle_burn_receipt(block_data: BlockData) {
         let height = block_data.header.height;
         if !block_data.transactions.is_empty() {
@@ -1510,7 +1512,8 @@ pub struct Call {
     pub gas: u64,
     pub fn_name: String,
 }</code></pre>
-<pre><code class="language-rust  ignore">use fuel_indexer_utils::prelude::*;
+<pre><code class="language-rust  ignore">extern crate alloc;
+use fuel_indexer_utils::prelude::*;
 
 #[indexer(manifest = &quot;indexer.manifest.yaml&quot;)]
 mod indexer_mod {
@@ -1536,7 +1539,8 @@ pub struct Log {
     pub ra: u64,
     pub rb: u64,
 }</code></pre>
-<pre><code class="language-rust  ignore">use fuel_indexer_utils::prelude::*;
+<pre><code class="language-rust  ignore">extern crate alloc;
+use fuel_indexer_utils::prelude::*;
 
 #[indexer(manifest = &quot;indexer.manifest.yaml&quot;)]
 mod indexer_mod {
@@ -1568,7 +1572,8 @@ pub struct LogData {
 <blockquote>
 <p>Note: the example below will run both when the type <code>MyEvent</code> is logged as well as when <code>MyEvent</code> is returned from a function.</p>
 </blockquote>
-<pre><code class="language-rust  ignore">use fuel_indexer_utils::prelude::*;
+<pre><code class="language-rust  ignore">extern crate alloc;
+use fuel_indexer_utils::prelude::*;
 
 #[indexer(manifest = &quot;indexer.manifest.yaml&quot;)]
 mod indexer_mod {
@@ -1589,7 +1594,8 @@ pub struct MessageOut {
     pub digest: Bytes32,
     pub data: Vec&lt;u8&gt;,
 }</code></pre>
-<pre><code class="language-rust  ignore">use fuel_indexer_utils::prelude::*;
+<pre><code class="language-rust  ignore">extern crate alloc;
+use fuel_indexer_utils::prelude::*;
 
 #[indexer(manifest = &quot;indexer.manifest.yaml&quot;)]
 mod indexer_mod {
@@ -1607,7 +1613,8 @@ pub struct Mint {
     pub pc: u64,
     pub is: u64,
 }</code></pre>
-<pre><code class="language-rust  ignore">use fuel_indexer_utils::prelude::*;
+<pre><code class="language-rust  ignore">extern crate alloc;
+use fuel_indexer_utils::prelude::*;
 
 #[indexer(manifest = &quot;indexer.manifest.yaml&quot;)]
 mod indexer_mod {
@@ -1632,7 +1639,8 @@ pub struct Panic {
     pub contract_id: ContractId, 
     pub reason: u32, 
 }</code></pre>
-<pre><code class="language-rust  ignore">use fuel_indexer_utils::prelude::*;
+<pre><code class="language-rust  ignore">extern crate alloc;
+use fuel_indexer_utils::prelude::*;
 
 #[indexer(manifest = &quot;indexer.manifest.yaml&quot;)]
 mod indexer_mod {
@@ -1660,7 +1668,8 @@ pub struct Return {
     pub is: u64,
 }</code></pre>
 <p>You can handle functions that produce a <code>Return</code> receipt type by adding a parameter with the type <code>Return</code>.</p>
-<pre><code class="language-rust  ignore">use fuel_indexer_utils::prelude::*;
+<pre><code class="language-rust  ignore">extern crate alloc;
+use fuel_indexer_utils::prelude::*;
 
 #[indexer(manifest = &quot;indexer.manifest.yaml&quot;)]
 mod indexer_mod {
@@ -1712,7 +1721,8 @@ pub struct Revert {
 <tr><td>FailedAssert</td><td>4</td></tr>
 </tbody></table>
 </div>
-<pre><code class="language-rust  ignore">use fuel_indexer_utils::prelude::*;
+<pre><code class="language-rust  ignore">extern crate alloc;
+use fuel_indexer_utils::prelude::*;
 
 #[indexer(manifest = &quot;indexer.manifest.yaml&quot;)]
 mod indexer_mod {
@@ -1736,7 +1746,8 @@ mod indexer_mod {
     pub result: u64,
     pub gas_used: u64,
 }</code></pre>
-<pre><code class="language-rust  ignore">use fuel_indexer_utils::prelude::*;
+<pre><code class="language-rust  ignore">extern crate alloc;
+use fuel_indexer_utils::prelude::*;
 
 #[indexer(manifest = &quot;indexer.manifest.yaml&quot;)]
 mod indexer_mod {
@@ -1765,7 +1776,8 @@ pub struct Transfer {
     pub pc: u64,
     pub is: u64,
 }</code></pre>
-<pre><code class="language-rust  ignore">use fuel_indexer_utils::prelude::*;
+<pre><code class="language-rust  ignore">extern crate alloc;
+use fuel_indexer_utils::prelude::*;
 
 #[indexer(manifest = &quot;indexer.manifest.yaml&quot;)]
 mod indexer_mod {
@@ -1794,7 +1806,8 @@ pub struct TransferOut {
     pub pc: u64,
     pub is: u64,
 }</code></pre>
-<pre><code class="language-rust  ignore">use fuel_indexer_utils::prelude::*;
+<pre><code class="language-rust  ignore">extern crate alloc;
+use fuel_indexer_utils::prelude::*;
 
 #[indexer(manifest = &quot;indexer.manifest.yaml&quot;)]
 mod indexer_mod {
