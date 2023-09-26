@@ -50,12 +50,14 @@ itertools = "0.10"
 lazy_static = "1.4"
 rand = "0.8"
 reqwest = { version = "0.11", default-features = false, features = ["json", "rustls-tls", "multipart"] }
+rustc_version = "0.4"
 serde = { features = ["derive"], workspace = true }
 serde_json = { workspace = true }
 serde_yaml = "0.8"
 sqlx = { version = "0.6", features = ["bigdecimal"] }
 thiserror = { workspace = true }
 tokio = { features = ["macros", "rt-multi-thread"], workspace = true }
+toml = "0.8"
 tracing = { workspace = true }
 tracing-subscriber = { version = "0.2", features = ["env-filter"] }
 trybuild = "1.0"
