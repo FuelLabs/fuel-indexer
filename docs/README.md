@@ -35,7 +35,7 @@ The Fuel indexer is a standalone service that can be used to index various compo
 Write your Sway contract.
 
 ```sway
-struct Account {
+struct UserAccount {
   name: str[255],
   owner: Identity
 }
@@ -50,12 +50,20 @@ impl Sway for Contract {
 }
 ```
 
-### Define your data
+### Create your project
+
+Create your project.
+
+```graphql
+forc index new my-indexer --namespace fuellabs
+```
+
+### Define your data model
 
 Define your data model using GraphQL schema.
 
 ```graphql
-type FuelAccount @entity {
+type Account @entity {
   id: ID!
   name: Charfield!
   address: Address!
