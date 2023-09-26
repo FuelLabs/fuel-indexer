@@ -8,7 +8,6 @@ pub async fn init() -> anyhow::Result<()> {
     let docker = "docker";
     let fuelup = "fuelup";
     let wasm_snip = "wasm-snip";
-    let forc_pg = "forc-postgres";
     let rustc = "rustc";
     let forc_wallet = "forc-wallet";
 
@@ -19,7 +18,6 @@ pub async fn init() -> anyhow::Result<()> {
         find_executable_with_msg(fuel_core);
     let (docker_emoji, _docker_path, docker_msg) = find_executable_with_msg(docker);
     let (fuelup_emoji, _fuelup_path, fuelup_msg) = find_executable_with_msg(fuelup);
-    let (forc_pg_emoji, _forc_pg_path, forc_pg_msg) = find_executable_with_msg(forc_pg);
     let (wasm_snip_emoji, _wasm_snip_path, wasm_snip_msg) =
         find_executable_with_msg(wasm_snip);
     let (rustc_emoji, _rustc_path, rustc_msg) = find_executable_with_msg(rustc);
@@ -38,7 +36,6 @@ pub async fn init() -> anyhow::Result<()> {
     let docker_header = rightpad_whitespace(docker, defaults::HEADER_PADDING);
     let fuelup_header = rightpad_whitespace(fuelup, defaults::HEADER_PADDING);
     let wasm_snip_header = rightpad_whitespace(wasm_snip, defaults::HEADER_PADDING);
-    let forc_pg_header = rightpad_whitespace(forc_pg, defaults::HEADER_PADDING);
     let rustc_header = rightpad_whitespace(rustc, defaults::HEADER_PADDING);
     let forc_wallet_header = rightpad_whitespace(forc_wallet, defaults::HEADER_PADDING);
 
@@ -58,8 +55,6 @@ pub async fn init() -> anyhow::Result<()> {
 |  {fuelup_emoji}  | {fuelup_header}   |  {fuelup_msg}|
 +--------+------------------------+---------------------------------------------------------+
 |  {wasm_snip_emoji}  | {wasm_snip_header}   |  {wasm_snip_msg}|
-+--------+------------------------+---------------------------------------------------------+
-|  {forc_pg_emoji}  | {forc_pg_header}   |  {forc_pg_msg}|
 +--------+------------------------+---------------------------------------------------------+
 |  {rustc_emoji}  | {rustc_header}   |  {rustc_msg}|
 +--------+------------------------+---------------------------------------------------------+
