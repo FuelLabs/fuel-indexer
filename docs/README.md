@@ -26,7 +26,7 @@
     </a>
 </p>
 
-### [Read the Quickstart! ➡️](https://docs.fuel.network/docs/indexer/getting-started/quickstart/)
+### [➡️ Read the Quickstart! ➡️](https://docs.fuel.network/docs/indexer/getting-started/quickstart/)
 
 ## What is the Fuel indexer?
 
@@ -83,8 +83,7 @@ SUBCOMMANDS:
 
 ```
 
-
-> [For more details on how to build Fuel indexers, please read the Quickstart!](https://docs.fuel.network/docs/indexer/getting-started/quickstart/)
+#### [➡️ For more details on how to build Fuel indexers, read the docs! ➡️](https://docs.fuel.network/docs/indexer/)
 
 ## Contributing
 
