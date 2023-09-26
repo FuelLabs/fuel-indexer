@@ -498,6 +498,7 @@ async fn main() {
         .arg("--fuel-node-port")
         .arg("80")
         .arg("--replace-indexer")
+        .arg("--allow-non-sequential-blocks")
         .spawn()
         .unwrap();
 

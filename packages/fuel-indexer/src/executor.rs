@@ -11,7 +11,7 @@ use fuel_core_client::client::{
     types::TransactionStatus as ClientTransactionStatus,
     FuelClient,
 };
-use fuel_indexer_database::IndexerConnectionPool;
+use fuel_indexer_database::{queries, IndexerConnectionPool};
 use fuel_indexer_lib::{
     defaults::*, manifest::Manifest, utils::serialize, WasmIndexerError,
 };
@@ -76,6 +76,7 @@ impl From<ExecutorSource> for Vec<u8> {
 // types in `fuel_core_client` don't compile to WASM.
 pub fn run_executor<T: 'static + Executor + Send + Sync>(
     config: &IndexerConfig,
+    pool: IndexerConnectionPool,
     mut executor: T,
 ) -> impl Future<Output = ()> {
     // TODO: https://github.com/FuelLabs/fuel-indexer/issues/286
@@ -113,7 +114,31 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
         warn!("No end_block specified in the manifest. Indexer({indexer_uid}) will run forever.");
     }
 
+    let allow_non_sequential_blocks = config.allow_non_sequential_blocks;
+
     async move {
+        let mut conn = pool.acquire().await.unwrap_or_else(|_| {
+            panic!("Indexer({indexer_uid}) was unable to acquire a database connection.")
+        });
+
+        if allow_non_sequential_blocks {
+            queries::remove_ensure_block_height_consecutive_trigger(
+                &mut conn,
+                executor.manifest().namespace(),
+                executor.manifest().identifier(),
+            )
+            .await
+            .unwrap_or_else(|_| panic!("Unable to remove the sequential blocks trigger for Indexer({indexer_uid})"));
+        } else {
+            queries::create_ensure_block_height_consecutive_trigger(
+                &mut conn,
+                executor.manifest().namespace(),
+                executor.manifest().identifier(),
+            )
+            .await
+            .unwrap_or_else(|_| panic!("Unable to create the sequential blocks trigger for Indexer({indexer_uid})"));
+        }
+
         // If we reach an issue that continues to fail, we'll retry a few times before giving up, as
         // we don't want to quit on the first error. But also don't want to waste CPU.
         //
