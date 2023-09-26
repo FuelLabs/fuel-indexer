@@ -134,3 +134,6 @@ pub const REMOVE_DATA: bool = false;
 
 /// Allow the web server to accept raw SQL queries.
 pub const ACCEPT_SQL: bool = false;
+
+/// Allow missing blocks or non-sequential block processing.
+pub const ALLOW_NON_SEQUENTIAL_BLOCKS: bool = false;

@@ -356,8 +356,11 @@ impl IndexerService {
         self.killers
             .insert(uid.clone(), executor.kill_switch().clone());
 
-        self.tasks
-            .spawn(crate::executor::run_executor(&self.config, executor));
+        self.tasks.spawn(crate::executor::run_executor(
+            &self.config,
+            self.pool.clone(),
+            executor,
+        ));
     }
 }
 

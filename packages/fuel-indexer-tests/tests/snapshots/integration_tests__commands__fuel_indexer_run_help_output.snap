@@ -11,6 +11,9 @@ OPTIONS:
         --accept-sql-queries
             Allow the web server to accept raw SQL queries.
 
+        --allow-non-sequential-blocks
+            Allow missing blocks or non-sequential block processing.
+
         --auth-enabled
             Require users to authenticate for some operations.
 
