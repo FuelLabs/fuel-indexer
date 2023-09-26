@@ -8,13 +8,18 @@ Below is a sample indexer manifest file
 namespace: fuellabs
 identifier: order_book_v1
 fuel_client: beta-4.fuel.network:80
-abi: path/to/my/contract-abi.json
-contract_id: "fuels0x39150017c9e38e5e280432d546fae345d6ce6d8fe4710162c2e3a95a6faff051"
-graphql_schema: path/to/my/schema.graphql
+contract:
+  abi: path/to/my/contract-abi.json
+  subscriptions:
+    - fuels0x39150017c9e38e5e280432d546fae345d6ce6d8fe4710162c2e3a95a6faff051
+schema: path/to/my/schema.graphql
 start_block: 1564
 end_block: 310000
 module:
   wasm: path/to/my/wasm_module.wasm
+predicates:
+  abis: ~
+  templates: ~
 ```
 
 ## `namespace`
@@ -35,19 +40,26 @@ _Optional._
 
 The `fuel_client` denotes the address (host, port combination) of the running Fuel client that you would like your indexer to index events from. In order to use this per-indexer `fuel_client` option, the indexer service at which your indexer is deployed will have to run with the `--indexer_net_config` option.
 
-## `abi`
+## `contract`
 
 _Optional._
 
-The `abi` option is used to provide a link to the Sway JSON application binary interface (ABI) that is generated when you build your Sway project. This generated ABI contains all types, type IDs, logged types, and message types used in your Sway contract.
+Indexer contract settings.
 
-## `contract_id`
+### `abi`
 
 _Optional._
 
-The `contract_id` specifies the particular contract to which you would like an indexer to subscribe. Setting this field to an empty string will index events from any contract that is currently executing on the network. This field accepts either a single string, or a list of strings. The indexer will index events from all IDs if a list is passed.
+The `abi` is used to provide a link to the contract JSON application binary interface (ABI) that is generated when you build your contract project.
 
-> Important: Contract IDs are unique to the content of a contract. If you are subscribing to a certain contract and then the contract itself is changed or updated, you will need to change the `contract_id` field of the manifest to the new ID.
+### `subscriptions`
+
+_Optional._
+
+The `contract_subscriptions` specifies the particular contract to which you would like an indexer to subscribe. Setting this field to an empty string will index events from any contract that is currently executing on the network. This field accepts either a single string, or a list of strings. The indexer will index events from all IDs if a list is passed.
+
+> Important: Contract IDs are unique to the content of a contract. If you are subscribing to a certain contract and then the contract itself is changed or updated, you will need to change the `subscriptions` field of the manifest with the new contract ID.
+>
 > Note: This parameter supports both Bech32 contract IDs and non-Bech32 contract IDs
 
 ## `graphql_schema`
@@ -83,3 +95,37 @@ The `module` field contains a file path that points to code that will be run as 
 _Optional._
 
 The `resumable` field contains a boolean value and specifies whether the indexer should synchronise with the latest block if it has fallen out of sync.
+
+## `predicates`
+
+_Optional._
+
+Indexer predicate settings.
+
+### `templates`
+
+_Optional._
+
+A list of predicate template configurations.
+
+#### `name`
+
+_Required._
+
+The name of the predicate template.
+
+> This name follow the name of the predicate listed in the predicate's `Forc.toml`
+
+#### `id`
+
+_Required._
+
+The SHA-256 hash of the predicate bytecode.
+
+> This can be found in your predicate's `[predicate-name]-bin-root` file after building your predicate with `forc build`
+
+#### `abi`
+
+_Required._
+
+The `abi` is used to provide a link to the predicate JSON application binary interface (ABI) that is generated when you build your predicate project.

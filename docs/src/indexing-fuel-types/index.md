@@ -5,3 +5,4 @@ This document provides information about Fuel-specific types and provides exampl
 - [Blocks](./blocks.md)
 - [Transactions](./transactions.md)
 - [Receipts](./receipts.md)
+- [Predicates](./predicates.md)

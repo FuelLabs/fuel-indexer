@@ -6,6 +6,7 @@ pub(crate) mod helpers;
 pub(crate) mod indexer;
 pub(crate) mod parse;
 pub(crate) mod schema;
+pub(crate) mod tokens;
 pub(crate) mod wasm;
 
 use indexer::process_indexer_module;

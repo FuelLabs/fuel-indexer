@@ -765,7 +765,7 @@ impl WasmIndexExecutor {
         let config = config.unwrap_or_default();
         let manifest = Manifest::from_file(p)?;
         let bytes = manifest.module_bytes()?;
-        let schema_version = manifest.graphql_schema_content()?.version().to_string();
+        let schema_version = manifest.schema_content()?.version().to_string();
         Self::new(&config, &manifest, bytes, pool, schema_version).await
     }
 

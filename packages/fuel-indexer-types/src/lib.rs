@@ -1,6 +1,6 @@
 pub mod ffi;
 pub mod fuel;
-pub mod graphql;
+pub mod indexer;
 pub mod receipt;
 pub mod scalar;
 
@@ -16,6 +16,13 @@ pub use fuels::{
 
 pub const FUEL_TYPES_NAMESPACE: &str = "fuel";
 
+/// Chain ID for the beta4 network.
+pub const BETA4_CHAIN_ID: u64 = 0x00;
+
+/// 256-bit alias.
+#[allow(non_camel_case_types)]
+pub type b256 = Bits256;
+
 pub trait TypeId {
     fn type_id() -> usize;
 }
@@ -23,12 +30,12 @@ pub trait TypeId {
 pub mod prelude {
     pub use crate::ffi::*;
     pub use crate::fuel;
-    pub use crate::graphql::*;
+    pub use crate::indexer::*;
     pub use crate::receipt::*;
     pub use crate::scalar::*;
     pub use crate::{
-        type_id, Bech32Address, Bech32ContractId, Bits256, Identity, SizedAsciiString,
-        TypeId, FUEL_TYPES_NAMESPACE,
+        b256, type_id, Bech32Address, Bech32ContractId, Bits256, Identity,
+        SizedAsciiString, TypeId, BETA4_CHAIN_ID, FUEL_TYPES_NAMESPACE,
     };
 }
 

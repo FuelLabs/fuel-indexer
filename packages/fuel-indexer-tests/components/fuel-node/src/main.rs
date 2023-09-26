@@ -4,8 +4,8 @@ use fuels::macros::abigen;
 use std::path::{Path, PathBuf};
 
 abigen!(Contract(
-    name = "FuelIndexerTest",
-    abi = "packages/fuel-indexer-tests/contracts/fuel-indexer-test/out/debug/fuel-indexer-test-abi.json"
+    name = "FuelIndexer",
+    abi = "packages/fuel-indexer-tests/sway/test-contract1/out/debug/test-contract1-abi.json"
 ));
 
 #[derive(Debug, Parser, Clone)]
@@ -38,11 +38,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Path::new(&manifest_dir)
             .join("..")
             .join("..")
-            .join("contracts")
-            .join("fuel-indexer-test")
+            .join("sway")
+            .join("test-contract1")
             .join("out")
             .join("debug")
-            .join("fuel-indexer-test.bin")
+            .join("test-contract1.bin")
     });
 
     let host = opts

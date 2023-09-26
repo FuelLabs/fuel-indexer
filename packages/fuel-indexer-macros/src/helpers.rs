@@ -1,18 +1,19 @@
-use std::collections::{HashMap, HashSet};
-
 use async_graphql_parser::types::{BaseType, FieldDefinition, Type as AsyncGraphQLType};
 use async_graphql_value::Name;
 use fuel_abi_types::abi::program::{
-    ABIFunction, LoggedType, ProgramABI, TypeDeclaration,
+    ABIFunction, Configurable, LoggedType, ProgramABI, TypeDeclaration,
 };
 use fuel_indexer_lib::{
     constants::*,
     graphql::{list_field_type_name, types::IdCol, ParsedGraphQLSchema},
+    manifest::Manifest,
 };
 use fuel_indexer_types::{type_id, FUEL_TYPES_NAMESPACE};
 use fuels_code_gen::utils::Source;
+use inflections::case::to_pascal_case;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
+use std::collections::{HashMap, HashSet};
 use syn::{GenericArgument, Ident, PathArguments, Type, TypePath};
 
 /// Provides a TokenStream to be used for unwrapping `Option`s for external types.
@@ -39,14 +40,14 @@ pub fn unwrap_or_default_for_external_type(
 }
 
 /// Extract tokens from JSON ABI file
-pub fn get_json_abi(abi_path: Option<String>) -> Option<ProgramABI> {
+pub fn get_json_abi(abi_path: Option<&str>) -> Option<ProgramABI> {
     match abi_path {
         Some(abi) => {
             let src = match Source::parse(abi) {
                 Ok(src) => src,
                 Err(e) => {
                     proc_macro_error::abort_call_site!(
-                        "`abi` must be a file path to valid json abi: {:?}.",
+                        "`abi` must be a file path to valid json contract_abi:{:?}.",
                         e
                     )
                 }
@@ -81,6 +82,12 @@ pub fn is_tuple_type(typ: &TypeDeclaration) -> bool {
     let mut type_field_chars = typ.type_field.chars();
     type_field_chars.next().is_some_and(|c| c == '(')
         && type_field_chars.next().is_some_and(|c| c != ')')
+}
+
+/// Whether a `TypeDeclaration` is a copy-able type.
+pub fn is_copy_type(typ: &TypeDeclaration) -> bool {
+    let name = typ.type_field.split_whitespace().next().unwrap();
+    name == "struct" || name == "enum"
 }
 
 /// Whether a `TypeDeclaration` is a unit type
@@ -183,6 +190,10 @@ pub fn is_generic_type(typ: &TypeDeclaration) -> bool {
     matches!(gt, GenericType::Vec | GenericType::Option)
 }
 
+pub fn is_predicate_primitive(typ: &TypeDeclaration) -> bool {
+    typ.type_field.as_str() == "Predicate" || typ.type_field.as_str() == "Predicates"
+}
+
 /// Given a `TokenStream` representing this `TypeDeclaration`'s fully typed path,
 /// return the associated `match` arm for decoding this type in the `Decoder`.
 pub fn decode_snippet(
@@ -194,10 +205,18 @@ pub fn decode_snippet(
     let ty_id = typ.type_id;
 
     if is_fuel_primitive(typ) {
-        quote! {
-            #ty_id => {
-                let obj: #type_tokens = bincode::deserialize(&data).expect("Bad bincode.");
-                self.#name.push(obj);
+        if is_predicate_primitive(typ) {
+            quote! {
+                #ty_id => {
+                    Logger::warn("Skipping predicate decoder.");
+                }
+            }
+        } else {
+            quote! {
+                #ty_id => {
+                    let obj: #type_tokens = bincode::deserialize(&data).expect("Bad bincode.");
+                    self.#name.push(obj);
+                }
             }
         }
     } else if is_rust_primitive(type_tokens) {
@@ -301,16 +320,18 @@ impl Codegen for TypeDeclaration {
                 "MessageOut" => quote! { MessageOut },
                 "Mint" => quote! { Mint },
                 "Panic" => quote! { Panic },
+                "Predicate" => quote! { Predicate },
+                "Predicates" => quote! { Predicates },
                 "Return" => quote! { Return },
                 "Revert" => quote! { Revert },
                 "ScriptResult" => quote! { ScriptResult },
+                "str" => quote! { String },
                 "Transfer" => quote! { Transfer },
                 "TransferOut" => quote! { TransferOut },
                 "u16" => quote! { u16 },
                 "u32" => quote! { u32 },
                 "u64" => quote! { u64 },
                 "u8" => quote! { u8 },
-                "str" => quote! { String },
                 o if o.starts_with("str[") => quote! { String },
                 o => {
                     proc_macro_error::abort_call_site!(
@@ -878,13 +899,12 @@ impl From<GenericType> for TokenStream {
 /// only returns the single inner type associated with this log specific logged type
 pub fn derive_log_generic_inner_typedefs<'a>(
     typ: &'a LoggedType,
-    abi: &ProgramABI,
+    logged_types: &[LoggedType],
     abi_types: &'a HashMap<usize, TypeDeclaration>,
 ) -> &'a TypeDeclaration {
     let result =
-        abi.logged_types
+        logged_types
             .iter()
-            .flatten()
             .filter_map(|log| {
                 if log.log_id == typ.log_id && log.application.type_arguments.is_some() {
                     let args = log
@@ -1174,6 +1194,7 @@ pub fn typed_path_components(
     (name, tokens)
 }
 
+/// Whether or not the given `TypeDeclaration` is an array-like type.
 pub fn is_array_type(typ: &TypeDeclaration) -> bool {
     typ.type_field.starts_with('[')
         && typ.type_field.ends_with(']')
@@ -1190,4 +1211,92 @@ pub fn is_unsupported_type(type_name: &str) -> bool {
         GenericType::Vec => UNSUPPORTED_ABI_JSON_TYPES.contains(gt.into()),
         _ => UNSUPPORTED_ABI_JSON_TYPES.contains(type_name),
     }
+}
+
+/// Prefix both schema and ABI paths with `std::env::COMPILE_TEST_PREFIX` if it exists.
+pub fn prefix_abi_and_schema_paths(
+    abi_path: Option<&str>,
+    schema: Option<&str>,
+) -> (Option<String>, Option<String>) {
+    if let Some(abi_path) = abi_path {
+        match std::env::var("COMPILE_TEST_PREFIX") {
+            Ok(prefix) => {
+                let prefixed = std::path::Path::new(&prefix).join(abi_path);
+                let abi_string = prefixed
+                    .into_os_string()
+                    .to_str()
+                    .expect("Could not parse prefixed ABI path.")
+                    .to_string();
+
+                if let Some(schema) = schema {
+                    let prefixed = std::path::Path::new(&prefix).join(schema);
+                    let schema = prefixed
+                        .into_os_string()
+                        .to_str()
+                        .expect("Could not parse prefixed GraphQL schema path.")
+                        .to_string();
+
+                    return (Some(abi_string), Some(schema));
+                }
+
+                return (Some(abi_string), None);
+            }
+            Err(_) => {
+                return (Some(abi_path.to_string()), schema.map(|s| s.to_string()));
+            }
+        };
+    }
+
+    (None, schema.map(|s| s.to_string()))
+}
+
+/// Return the name of the configurable type of a given predicate's `TypeDeclaration`.
+pub fn configurable_fn_type_name(configurable: &Configurable) -> Option<String> {
+    let name = configurable
+        .name
+        .split_whitespace()
+        .next()
+        .unwrap()
+        .to_uppercase();
+    if name.as_str() == "()" {
+        return None;
+    }
+    Some(name)
+}
+
+/// Derive a mapping of input type IDs to their corresponding names for a given set of predicates.
+pub fn predicate_inputs_names_map(manifest: &Manifest) -> HashMap<usize, String> {
+    let mut output = HashMap::new();
+    if let Some(predicate) = manifest.predicates() {
+        if predicate.is_empty() {
+            return output;
+        }
+
+        if let Some(templates) = predicate.templates() {
+            for template in templates {
+                let abi = get_json_abi(Some(template.abi()))
+                    .expect("Could not derive predicate JSON ABI.");
+                let main = abi
+                    .functions
+                    .iter()
+                    .find(|f| f.name == "main")
+                    .expect("ABI missing main function.");
+                for input in main.inputs.iter() {
+                    output.insert(input.type_id, input.name.clone());
+                }
+            }
+        }
+    }
+
+    output
+}
+
+/// Derive the name of the set of indexer-specific configurables for this predicate template.
+pub fn predicate_inputs_name(template_name: &str) -> String {
+    format!("{}Inputs", to_pascal_case(template_name))
+}
+
+/// Derive the name of the set of configurables for this predicate template.
+pub fn configurables_name(template_name: &str) -> String {
+    format!("{}Configurables", to_pascal_case(template_name))
 }

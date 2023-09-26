@@ -1,5 +1,4 @@
 extern crate alloc;
-
 use fuel_indexer_utils::prelude::*;
 
 #[indexer(
@@ -13,8 +12,12 @@ mod fuel_indexer_test {
         let input_data = r#"{"foo":"bar"}"#.to_string();
 
         for _tx in block_data.transactions.iter() {
-            TxEntity::new(block.id.clone(), Json(input_data.clone()), block_data.time)
-                .get_or_create();
+            TxEntity::new(
+                block.id.clone(),
+                Json::new(input_data.clone()),
+                block_data.time,
+            )
+            .get_or_create();
         }
     }
 
@@ -146,7 +149,7 @@ mod fuel_indexer_test {
         block_data: BlockData,
     ) {
         info!(
-            "fuel_indexer_test_multiargs handling Pung, Pong, Ping, and BlockData events."
+            "fuel_indexer_test_multiargs handling Pung, Pong, Ping, and BlockData events.."
         );
 
         BlockEntity::new(block_data.height, block_data.time).get_or_create();
@@ -685,5 +688,12 @@ mod fuel_indexer_test {
             IndexMetadataEntity::find(IndexMetadataEntity::block_height().eq(777))
                 .unwrap();
         }
+    }
+
+    fn fuel_indexer_test_predicates(
+        _predicates: Predicates,
+        _inputs: TestPredicate1Inputs,
+    ) {
+        info!("fuel_indexer_test_predicates handling trigger_predicates event");
     }
 }

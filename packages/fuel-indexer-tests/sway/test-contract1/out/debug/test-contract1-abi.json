@@ -17,7 +17,7 @@
         },
         {
           "name": "__tuple_element",
-          "type": 33,
+          "type": 32,
           "typeArguments": null
         }
       ],
@@ -29,7 +29,7 @@
       "components": [
         {
           "name": "__tuple_element",
-          "type": 35,
+          "type": 34,
           "typeArguments": null
         },
         {
@@ -46,7 +46,7 @@
       "components": [
         {
           "name": "__tuple_element",
-          "type": 36,
+          "type": 35,
           "typeArguments": null
         },
         {
@@ -68,12 +68,12 @@
       "components": [
         {
           "name": "__tuple_element",
-          "type": 35,
+          "type": 34,
           "typeArguments": null
         },
         {
           "name": "__tuple_element",
-          "type": 36,
+          "type": 35,
           "typeArguments": null
         },
         {
@@ -90,7 +90,7 @@
       "components": [
         {
           "name": "__array_element",
-          "type": 37,
+          "type": 36,
           "typeArguments": null
         }
       ],
@@ -114,12 +114,12 @@
       "components": [
         {
           "name": "Ping",
-          "type": 27,
+          "type": 26,
           "typeArguments": null
         },
         {
           "name": "Pung",
-          "type": 29,
+          "type": 28,
           "typeArguments": null
         },
         {
@@ -141,7 +141,7 @@
         },
         {
           "name": "ContractId",
-          "type": 23,
+          "type": 22,
           "typeArguments": null
         }
       ],
@@ -262,18 +262,6 @@
     },
     {
       "typeId": 21,
-      "type": "struct AssetId",
-      "components": [
-        {
-          "name": "value",
-          "type": 6,
-          "typeArguments": null
-        }
-      ],
-      "typeParameters": null
-    },
-    {
-      "typeId": 22,
       "type": "struct ComplexTupleStruct",
       "components": [
         {
@@ -285,7 +273,7 @@
       "typeParameters": null
     },
     {
-      "typeId": 23,
+      "typeId": 22,
       "type": "struct ContractId",
       "components": [
         {
@@ -297,17 +285,29 @@
       "typeParameters": null
     },
     {
-      "typeId": 24,
+      "typeId": 23,
       "type": "struct ExampleMessageStruct",
       "components": [
         {
           "name": "id",
-          "type": 36,
+          "type": 35,
           "typeArguments": null
         },
         {
           "name": "message",
           "type": 18,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 24,
+      "type": "struct ExplicitQueryStruct",
+      "components": [
+        {
+          "name": "id",
+          "type": 35,
           "typeArguments": null
         }
       ],
@@ -315,34 +315,22 @@
     },
     {
       "typeId": 25,
-      "type": "struct ExplicitQueryStruct",
-      "components": [
-        {
-          "name": "id",
-          "type": 36,
-          "typeArguments": null
-        }
-      ],
-      "typeParameters": null
-    },
-    {
-      "typeId": 26,
       "type": "struct Find",
       "components": [],
       "typeParameters": null
     },
     {
-      "typeId": 27,
+      "typeId": 26,
       "type": "struct Ping",
       "components": [
         {
           "name": "id",
-          "type": 36,
+          "type": 35,
           "typeArguments": null
         },
         {
           "name": "value",
-          "type": 36,
+          "type": 35,
           "typeArguments": null
         },
         {
@@ -354,34 +342,34 @@
       "typeParameters": null
     },
     {
-      "typeId": 28,
+      "typeId": 27,
       "type": "struct Pong",
       "components": [
         {
           "name": "id",
-          "type": 36,
+          "type": 35,
           "typeArguments": null
         },
         {
           "name": "value",
-          "type": 36,
+          "type": 35,
           "typeArguments": null
         }
       ],
       "typeParameters": null
     },
     {
-      "typeId": 29,
+      "typeId": 28,
       "type": "struct Pung",
       "components": [
         {
           "name": "id",
-          "type": 36,
+          "type": 35,
           "typeArguments": null
         },
         {
           "name": "value",
-          "type": 36,
+          "type": 35,
           "typeArguments": null
         },
         {
@@ -398,7 +386,7 @@
       "typeParameters": null
     },
     {
-      "typeId": 30,
+      "typeId": 29,
       "type": "struct RawVec",
       "components": [
         {
@@ -408,7 +396,7 @@
         },
         {
           "name": "cap",
-          "type": 36,
+          "type": 35,
           "typeArguments": null
         }
       ],
@@ -417,19 +405,19 @@
       ]
     },
     {
-      "typeId": 31,
+      "typeId": 30,
       "type": "struct SimpleQueryStruct",
       "components": [
         {
           "name": "id",
-          "type": 36,
+          "type": 35,
           "typeArguments": null
         }
       ],
       "typeParameters": null
     },
     {
-      "typeId": 32,
+      "typeId": 31,
       "type": "struct SimpleTupleStruct",
       "components": [
         {
@@ -441,12 +429,12 @@
       "typeParameters": null
     },
     {
-      "typeId": 33,
+      "typeId": 32,
       "type": "struct TupleStructItem",
       "components": [
         {
           "name": "id",
-          "type": 36,
+          "type": 35,
           "typeArguments": null
         },
         {
@@ -458,12 +446,12 @@
       "typeParameters": null
     },
     {
-      "typeId": 34,
+      "typeId": 33,
       "type": "struct Vec",
       "components": [
         {
           "name": "buf",
-          "type": 30,
+          "type": 29,
           "typeArguments": [
             {
               "name": "",
@@ -474,7 +462,7 @@
         },
         {
           "name": "len",
-          "type": 36,
+          "type": 35,
           "typeArguments": null
         }
       ],
@@ -483,19 +471,19 @@
       ]
     },
     {
-      "typeId": 35,
+      "typeId": 34,
       "type": "u32",
       "components": null,
       "typeParameters": null
     },
     {
-      "typeId": 36,
+      "typeId": 35,
       "type": "u64",
       "components": null,
       "typeParameters": null
     },
     {
-      "typeId": 37,
+      "typeId": 36,
       "type": "u8",
       "components": null,
       "typeParameters": null
@@ -522,7 +510,7 @@
       "name": "trigger_callreturn",
       "output": {
         "name": "",
-        "type": 29,
+        "type": 28,
         "typeArguments": null
       },
       "attributes": null
@@ -532,7 +520,7 @@
       "name": "trigger_deeply_nested",
       "output": {
         "name": "",
-        "type": 31,
+        "type": 30,
         "typeArguments": null
       },
       "attributes": null
@@ -551,7 +539,7 @@
       "inputs": [
         {
           "name": "num",
-          "type": 36,
+          "type": 35,
           "typeArguments": null
         }
       ],
@@ -568,7 +556,7 @@
       "name": "trigger_explicit",
       "output": {
         "name": "",
-        "type": 25,
+        "type": 24,
         "typeArguments": null
       },
       "attributes": null
@@ -578,7 +566,7 @@
       "name": "trigger_find",
       "output": {
         "name": "",
-        "type": 26,
+        "type": 25,
         "typeArguments": null
       },
       "attributes": null
@@ -592,7 +580,7 @@
         "typeArguments": [
           {
             "name": "",
-            "type": 27,
+            "type": 26,
             "typeArguments": null
           }
         ]
@@ -649,7 +637,7 @@
       "name": "trigger_multiargs",
       "output": {
         "name": "",
-        "type": 27,
+        "type": 26,
         "typeArguments": null
       },
       "attributes": null
@@ -659,7 +647,7 @@
       "name": "trigger_panic",
       "output": {
         "name": "",
-        "type": 36,
+        "type": 35,
         "typeArguments": null
       },
       "attributes": null
@@ -669,7 +657,7 @@
       "name": "trigger_ping",
       "output": {
         "name": "",
-        "type": 27,
+        "type": 26,
         "typeArguments": null
       },
       "attributes": null
@@ -679,7 +667,7 @@
       "name": "trigger_ping_for_optional",
       "output": {
         "name": "",
-        "type": 27,
+        "type": 26,
         "typeArguments": null
       },
       "attributes": null
@@ -689,7 +677,7 @@
       "name": "trigger_pong",
       "output": {
         "name": "",
-        "type": 28,
+        "type": 27,
         "typeArguments": null
       },
       "attributes": null
@@ -759,7 +747,7 @@
       "name": "trigger_tuple",
       "output": {
         "name": "",
-        "type": 22,
+        "type": 21,
         "typeArguments": null
       },
       "attributes": null
@@ -768,11 +756,11 @@
       "inputs": [
         {
           "name": "_v",
-          "type": 34,
+          "type": 33,
           "typeArguments": [
             {
               "name": "",
-              "type": 37,
+              "type": 36,
               "typeArguments": null
             }
           ]
@@ -830,7 +818,7 @@
         "typeArguments": [
           {
             "name": "",
-            "type": 27,
+            "type": 26,
             "typeArguments": []
           }
         ]
@@ -840,11 +828,11 @@
       "logId": 4,
       "loggedType": {
         "name": "",
-        "type": 34,
+        "type": 33,
         "typeArguments": [
           {
             "name": "",
-            "type": 27,
+            "type": 26,
             "typeArguments": []
           }
         ]
@@ -854,7 +842,7 @@
       "logId": 5,
       "loggedType": {
         "name": "",
-        "type": 36,
+        "type": 35,
         "typeArguments": null
       }
     },
@@ -862,7 +850,7 @@
       "logId": 6,
       "loggedType": {
         "name": "",
-        "type": 29,
+        "type": 28,
         "typeArguments": []
       }
     },
@@ -870,7 +858,7 @@
       "logId": 7,
       "loggedType": {
         "name": "",
-        "type": 29,
+        "type": 28,
         "typeArguments": []
       }
     },
@@ -878,7 +866,7 @@
       "logId": 8,
       "loggedType": {
         "name": "",
-        "type": 28,
+        "type": 27,
         "typeArguments": []
       }
     },
@@ -886,7 +874,7 @@
       "logId": 9,
       "loggedType": {
         "name": "",
-        "type": 36,
+        "type": 35,
         "typeArguments": null
       }
     },
@@ -894,7 +882,7 @@
       "logId": 10,
       "loggedType": {
         "name": "",
-        "type": 32,
+        "type": 31,
         "typeArguments": []
       }
     },
@@ -910,11 +898,11 @@
       "logId": 12,
       "loggedType": {
         "name": "",
-        "type": 34,
+        "type": 33,
         "typeArguments": [
           {
             "name": "",
-            "type": 28,
+            "type": 27,
             "typeArguments": []
           }
         ]
@@ -926,7 +914,7 @@
       "messageId": 0,
       "messageType": {
         "name": "",
-        "type": 24,
+        "type": 23,
         "typeArguments": []
       }
     }

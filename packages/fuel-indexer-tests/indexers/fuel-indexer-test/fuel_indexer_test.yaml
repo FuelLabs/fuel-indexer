@@ -1,11 +1,21 @@
 namespace: fuel_indexer_test
 fuel_client: ~
-graphql_schema: packages/fuel-indexer-tests/indexers/fuel-indexer-test/schema/fuel_indexer_test.graphql
-abi: packages/fuel-indexer-tests/contracts/fuel-indexer-test/out/debug/fuel-indexer-test-abi.json
+schema: packages/fuel-indexer-tests/indexers/fuel-indexer-test/schema/fuel_indexer_test.graphql
 start_block: ~
 end_block: ~
-contract_id: fuel1tqz66m7p2slrzlxgd4x6zxzm3cfzcxpcvxleu9g68qv6c03xzq7svf2y5a
+contract:
+  abi: packages/fuel-indexer-tests/sway/test-contract1/out/debug/test-contract1-abi.json
+  subscriptions:
+    - fuel1vrwlw55qkc8xgn5sljjlawhlkqjgstczqwcyakx8a80c42tpqc8qv23p4k
 identifier: index1
 module:
   wasm: target/wasm32-unknown-unknown/release/fuel_indexer_test.wasm
 resumable: true
+predicates:
+  templates:
+    - name: TestPredicate1
+      abi: packages/fuel-indexer-tests/sway/test-predicate1/out/debug/test-predicate1-abi.json
+      id: 0xcfd60aa414972babde16215e0cb5a2739628831405a7ae81a9fc1d2ebce87145
+    - name: TestPredicate2
+      id: 0xb16545fd38b82ab5178d79c71ad0ce54712cbdcee22f722b08db278e77d1bcbc
+      abi: packages/fuel-indexer-tests/sway/test-predicate2/out/debug/test-predicate2-abi.json

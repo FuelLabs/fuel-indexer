@@ -1,11 +1,11 @@
 use crate::graphql::GraphQLSchema;
 use anyhow::Result;
+use inflections::case::to_pascal_case;
 use serde::{Deserialize, Serialize};
 use std::{
     fs::File,
     io::{Read, Write},
     path::{Path, PathBuf},
-    str::FromStr,
 };
 use thiserror::Error;
 
@@ -55,6 +55,76 @@ impl AsRef<Path> for Module {
     }
 }
 
+/// Predicates used by this indexer.
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct Predicates {
+    /// Predicate templates
+    templates: Option<Vec<PredicateTemplate>>,
+}
+
+impl Predicates {
+    /// Get the predicate templates.
+    pub fn templates(&self) -> Option<&[PredicateTemplate]> {
+        self.templates.as_deref()
+    }
+
+    /// Check if this predicate set is empty.
+    pub fn is_empty(&self) -> bool {
+        self.templates.is_none()
+    }
+}
+
+/// Represents a predicate template.
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct PredicateTemplate {
+    /// Name of predicate.
+    name: String,
+
+    /// Hash of predicate bytecode used to uniquely identify predicate.
+    id: String,
+
+    /// Filepath to Sway predicate ABI.
+    abi: String,
+}
+
+impl PredicateTemplate {
+    /// Get the predicate name.
+    pub fn name(&self) -> String {
+        to_pascal_case(&self.name)
+    }
+
+    /// Get the predicate ID.
+    pub fn id(&self) -> &str {
+        &self.id
+    }
+
+    /// Get the predicate ABI.
+    pub fn abi(&self) -> &str {
+        &self.abi
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct Contract {
+    /// Filepath to Sway contract ABI.
+    abi: Option<String>,
+
+    /// Set of contract IDs this indexer should subscribe to.
+    subsriptions: Option<Vec<String>>,
+}
+
+impl Contract {
+    /// Get the contract ABI.
+    pub fn abi(&self) -> Option<&str> {
+        self.abi.as_deref()
+    }
+
+    /// Get the contract subscriptions.
+    pub fn subscriptions(&self) -> Option<&[String]> {
+        self.subsriptions.as_deref()
+    }
+}
+
 /// Represents the indexer manifest file.
 ///
 /// This manifest file is a simple YAML file that is read and passed
@@ -69,8 +139,8 @@ pub struct Manifest {
     /// Identifier of indexer.
     identifier: String,
 
-    /// Filepath to Sway contract ABI.
-    abi: Option<String>,
+    /// Contract configuration.
+    contract: Option<Contract>,
 
     /// URL to Fuel client.
     ///
@@ -78,20 +148,10 @@ pub struct Manifest {
     fuel_client: Option<String>,
 
     /// Filepath to this indexer's GraphQL schema.
-    graphql_schema: String,
+    schema: String,
 
     /// Executor module.
     module: Module,
-
-    /// Whether or not to record metrics for this indexer.
-    metrics: Option<bool>,
-
-    /// Set of contract IDs this indexer should subscribe to.
-    #[serde(
-        serialize_with = "ContractIds::serialize",
-        deserialize_with = "ContractIds::deserialize"
-    )]
-    contract_id: ContractIds,
 
     /// Block at which indexer should start.
     start_block: Option<u32>,
@@ -100,8 +160,10 @@ pub struct Manifest {
     end_block: Option<u32>,
 
     /// When set to true, the indexer will resume from the block height at which it last stopped.
-    #[serde(default)]
     resumable: Option<bool>,
+
+    /// Set of predicates used by this indexer.
+    predicates: Option<Predicates>,
 }
 
 impl Manifest {
@@ -118,12 +180,12 @@ impl Manifest {
     }
 
     /// Return the raw GraphQL schema string for an indexer manifest.
-    pub fn graphql_schema_content(&self) -> ManifestResult<GraphQLSchema> {
-        let mut file = File::open(&self.graphql_schema)
-            .map_err(|err| ManifestError::FileError(self.graphql_schema.clone(), err))?;
+    pub fn schema_content(&self) -> ManifestResult<GraphQLSchema> {
+        let mut file = File::open(&self.schema)
+            .map_err(|err| ManifestError::FileError(self.schema.clone(), err))?;
         let mut schema = String::new();
         file.read_to_string(&mut schema)
-            .map_err(|err| ManifestError::FileError(self.graphql_schema.clone(), err))?;
+            .map_err(|err| ManifestError::FileError(self.schema.clone(), err))?;
         Ok(GraphQLSchema::new(schema))
     }
 
@@ -174,16 +236,7 @@ impl Manifest {
         self.end_block = Some(block);
     }
 
-    /// Set the GraphQL schema for this indexer.
-    pub fn set_graphql_schema(&mut self, schema: String) {
-        self.graphql_schema = schema;
-    }
-
-    /// Set the contract ABI for this indexer.
-    pub fn set_abi(&mut self, abi: String) {
-        self.abi = Some(abi);
-    }
-
+    /// Get the indexer namespace.
     pub fn namespace(&self) -> &str {
         &self.namespace
     }
@@ -200,34 +253,47 @@ impl Manifest {
         &self.identifier
     }
 
-    pub fn graphql_schema(&self) -> &str {
-        &self.graphql_schema
+    /// Get the indexer GraphQL schema.
+    pub fn schema(&self) -> &str {
+        &self.schema
     }
 
+    /// Get the indexer start block.
     pub fn start_block(&self) -> Option<u32> {
         self.start_block
     }
 
-    pub fn contract_id(&self) -> &ContractIds {
-        &self.contract_id
+    /// Get the indexer contract configuration.
+    pub fn contract_abi(&self) -> Option<&str> {
+        self.contract.as_ref().and_then(|c| c.abi())
     }
 
-    pub fn abi(&self) -> Option<&str> {
-        self.abi.as_deref()
+    /// Get the indexer contract subscriptions.
+    pub fn contract_subscriptions(&self) -> Option<&[String]> {
+        self.contract.as_ref().and_then(|c| c.subscriptions())
     }
 
+    /// Get the indexer predicates.
+    pub fn predicates(&self) -> Option<&Predicates> {
+        self.predicates.as_ref()
+    }
+
+    /// Get the indexer Fuel client.
     pub fn fuel_client(&self) -> Option<&str> {
         self.fuel_client.as_deref()
     }
 
+    /// Get the indexer module.
     pub fn module(&self) -> &Module {
         &self.module
     }
 
+    /// Get the indexer end block.
     pub fn end_block(&self) -> Option<u32> {
         self.end_block
     }
 
+    /// Get the indexer's resumability.
     pub fn resumable(&self) -> Option<bool> {
         self.resumable
     }
@@ -254,70 +320,5 @@ impl TryFrom<&Vec<u8>> for Manifest {
     fn try_from(val: &Vec<u8>) -> ManifestResult<Self> {
         let manifest: Manifest = serde_yaml::from_slice(val)?;
         Ok(manifest)
-    }
-}
-
-/// Represents contract IDs in a `Manifest` struct.
-#[derive(Debug, Deserialize, Serialize, Clone)]
-#[serde(untagged)]
-pub enum ContractIds {
-    /// Single represents a single contract ID as an `Option<String>`.
-    #[serde(alias = "single")]
-    Single(Option<String>),
-
-    /// Multiple represents a vector of contracts IDs as a Vec<String>.
-    #[serde(alias = "multiple")]
-    Multiple(Vec<String>),
-}
-
-impl ContractIds {
-    fn serialize<S>(ids: &ContractIds, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        let s = match ids {
-            ContractIds::Single(Some(id)) => id.clone(),
-            ContractIds::Multiple(ids) => {
-                serde_json::to_string(ids).map_err(serde::ser::Error::custom)?
-            }
-            _ => return serializer.serialize_none(),
-        };
-        serializer.serialize_str(&s)
-    }
-
-    fn deserialize<'de, D>(deserializer: D) -> Result<ContractIds, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        let value = serde_yaml::Value::deserialize(deserializer)?;
-        match value {
-            serde_yaml::Value::String(s) => Ok(ContractIds::Single(Some(s))),
-            serde_yaml::Value::Sequence(seq) => {
-                let ids = seq
-                    .into_iter()
-                    .filter_map(|val| match val {
-                        serde_yaml::Value::String(s) => Some(s),
-                        _ => None,
-                    })
-                    .collect::<Vec<_>>();
-                Ok(ContractIds::Multiple(ids.into_iter().collect()))
-            }
-            serde_yaml::Value::Null => Ok(ContractIds::Single(None)),
-            _ => Err(serde::de::Error::custom("Invalid contract_id value")),
-        }
-    }
-}
-
-impl FromStr for ContractIds {
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if s.starts_with('[') {
-            serde_json::from_str::<Vec<String>>(s)
-                .map(ContractIds::Multiple)
-                .map_err(|err| err.to_string())
-        } else {
-            Ok(ContractIds::Single(Some(s.to_string())))
-        }
     }
 }

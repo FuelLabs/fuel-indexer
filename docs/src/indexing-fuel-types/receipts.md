@@ -34,6 +34,9 @@ pub struct Burn {
 ```
 
 ```rust, ignore
+extern crate alloc;
+use fuel_indexer_utils::prelude::*;
+
 mod indexer_mod {
     fn handle_burn_receipt(block_data: BlockData) {
         let height = block_data.header.height;

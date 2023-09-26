@@ -1,0 +1,101 @@
+{
+  "types": [
+    {
+      "typeId": 0,
+      "type": "()",
+      "components": [],
+      "typeParameters": null
+    },
+    {
+      "typeId": 1,
+      "type": "bool",
+      "components": null,
+      "typeParameters": null
+    },
+    {
+      "typeId": 2,
+      "type": "enum PairAsset",
+      "components": [
+        {
+          "name": "BTC",
+          "type": 0,
+          "typeArguments": null
+        },
+        {
+          "name": "ETH",
+          "type": 0,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 3,
+      "type": "struct OrderPair",
+      "components": [
+        {
+          "name": "bid",
+          "type": 2,
+          "typeArguments": null
+        },
+        {
+          "name": "ask",
+          "type": 2,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 4,
+      "type": "u64",
+      "components": null,
+      "typeParameters": null
+    }
+  ],
+  "functions": [
+    {
+      "inputs": [
+        {
+          "name": "amount",
+          "type": 4,
+          "typeArguments": null
+        },
+        {
+          "name": "pair",
+          "type": 3,
+          "typeArguments": null
+        }
+      ],
+      "name": "main",
+      "output": {
+        "name": "",
+        "type": 1,
+        "typeArguments": null
+      },
+      "attributes": null
+    }
+  ],
+  "loggedTypes": [],
+  "messagesTypes": [],
+  "configurables": [
+    {
+      "name": "AMOUNT",
+      "configurableType": {
+        "name": "",
+        "type": 4,
+        "typeArguments": null
+      },
+      "offset": 284
+    },
+    {
+      "name": "PAIR",
+      "configurableType": {
+        "name": "",
+        "type": 3,
+        "typeArguments": []
+      },
+      "offset": 292
+    }
+  ]
+}

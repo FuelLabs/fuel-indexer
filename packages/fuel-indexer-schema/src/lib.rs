@@ -166,7 +166,7 @@ impl FtColumn {
             },
             FtColumn::Json(value) => match value {
                 Some(val) => {
-                    let x = &val.0;
+                    let x: &str = val.as_ref();
                     format!("'{x}'")
                 }
                 None => String::from(NULL_VALUE),
@@ -280,7 +280,7 @@ mod tests {
         let int4 = FtColumn::I32(Some(i32::from_le_bytes([0x78; 4])));
         let int64 = FtColumn::I64(Some(i64::from_le_bytes([0x78; 8])));
         let int8 = FtColumn::I64(Some(i64::from_le_bytes([0x78; 8])));
-        let json = FtColumn::Json(Some(Json(r#"{"hello":"world"}"#.to_string())));
+        let json = FtColumn::Json(Some(Json::new(r#"{"hello":"world"}"#.to_string())));
         let r#bool = FtColumn::Boolean(Some(true));
         let r#enum = FtColumn::Enum(Some(String::from("hello")));
         let uint1 = FtColumn::U8(Some(u8::from_le_bytes([0x78; 1])));

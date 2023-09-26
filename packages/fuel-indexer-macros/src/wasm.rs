@@ -1,9 +1,9 @@
+use fuel_indexer_lib::manifest::Manifest;
+use proc_macro2::TokenStream;
 use quote::quote;
 
-/// Generate the handler block for the wasm execution environment.
-pub fn handler_block_wasm(
-    handler_block: proc_macro2::TokenStream,
-) -> proc_macro2::TokenStream {
+/// Generate the `handle_events` WASM entrypoint handler block.
+pub fn handler_block(block: TokenStream, handler_fns: TokenStream) -> TokenStream {
     let wasm_prelude = wasm_prelude();
 
     let panic_hook = panic_hook();
@@ -40,10 +40,12 @@ pub fn handler_block_wasm(
             };
             core::mem::forget(bytes);
 
-            #handler_block
+            #block
 
             Ok(())
         }
+
+        #handler_fns
     }
 }
 
@@ -52,7 +54,7 @@ pub fn handler_block_wasm(
 /// When a panic occurs, the message is stored in a `static mut` `String` and a
 /// `WasmIndexerError::Panic` error code is returned. The message is then
 /// retrieved by the indexer service and logged.
-fn panic_hook() -> proc_macro2::TokenStream {
+fn panic_hook() -> TokenStream {
     quote! {
         static mut ERROR_MESSAGE: String = String::new();
 
@@ -89,7 +91,7 @@ fn panic_hook() -> proc_macro2::TokenStream {
 /// These imports are placed below the top-level lib imports, so any
 /// dependencies imported here will only be within the scope of the
 /// indexer module, not within the scope of the entire lib module.
-fn wasm_prelude() -> proc_macro2::TokenStream {
+fn wasm_prelude() -> TokenStream {
     quote! {
         use fuel_indexer_utils::plugin::anyhow::{self, Context};
         use alloc::{format, vec, vec::Vec};
@@ -100,8 +102,27 @@ fn wasm_prelude() -> proc_macro2::TokenStream {
         use fuel_indexer_utils::plugin::{serde_json, serialize, deserialize, bincode};
         use fuel_indexer_utils::plugin::serde::{Deserialize, Serialize};
         use fuels::{
+            accounts::predicate::{Predicate as SDKPredicate},
             core::{codec::{ABIDecoder}, Configurables, traits::{Parameterize, Tokenizable}},
             types::{param_types::ParamType},
+            prelude::abigen,
         };
     }
+}
+
+/// Generate the predicate-specific handler block.
+pub fn predicate_handler_block(manifest: &Manifest, block: TokenStream) -> TokenStream {
+    let mut output = quote! {};
+    let should_run = manifest
+        .predicates()
+        .map(|p| !p.is_empty())
+        .unwrap_or(false);
+
+    if should_run {
+        output = quote! {
+            #block
+        }
+    }
+
+    output
 }

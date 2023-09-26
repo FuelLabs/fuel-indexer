@@ -37,11 +37,14 @@ fn manifest_with_contract_abi(contract_name: &str) -> String {
         r#"
 namespace: test_namespace
 identifier: simple_wasm_executor
-abi: {abi_root_str}/{contract_name}
-graphql_schema: {tests_root_str}/indexers/simple-wasm/schema/simple_wasm.graphql
-contract_id: ~
+contract: 
+  abi: {abi_root_str}/{contract_name}
+  subscriptions: ~
+schema: {tests_root_str}/indexers/simple-wasm/schema/simple_wasm.graphql
 module:
-    wasm: {project_root_str}/target/wasm32-unknown-unknown/release/simple_wasm.wasm"#
+  wasm: {project_root_str}/target/wasm32-unknown-unknown/release/simple_wasm.wasm
+predicates:
+  templates: ~"#
     )
 }
 
@@ -53,11 +56,14 @@ fn test_success_and_failure_macros() {
         r#"
 namespace: test_namespace
 identifier: simple_wasm_executor
-abi: {tests_root_str}/contracts/simple-wasm/out/debug/contracts-abi.json
-graphql_schema: {tests_root_str}/indexers/simple-wasm/schema/simple_wasm.graphql
-contract_id: ~
+contract: 
+  abi: {tests_root_str}/sway/simple-wasm/out/debug/contracts-abi.json
+  subscriptions: ~
+schema: {tests_root_str}/indexers/simple-wasm/schema/simple_wasm.graphql
 module:
   wasm: {project_root_str}/target/wasm32-unknown-unknown/release/simple_wasm.wasm
+predicates:
+ templates: ~
 "#
     );
 
@@ -73,14 +79,17 @@ module:
             TestKind::Fail,
             format!(
                 r#"
-        namespace: test_namespace
-        identifier: simple_wasm_executor
-        abi: {tests_root_str}/contracts/simple-wasm/out/debug/contracts-abi.json
-        # This schema file doesn't actually exist
-        graphql_schema: schema.graphql
-        contract_id: ~
-        module:
-            wasm: {project_root_str}/target/wasm32-unknown-unknown/release/simple_wasm.wasm"#
+namespace: test_namespace
+identifier: simple_wasm_executor
+contract: 
+  abi: {tests_root_str}/sway/simple-wasm/out/debug/contracts-abi.json
+  subscriptions: ~
+# This schema file doesn't actually exist
+schema: schema.graphql
+module:
+  wasm: {project_root_str}/target/wasm32-unknown-unknown/release/simple_wasm.wasm
+predicates:
+  templates: ~"#
             ),
         ),
         (

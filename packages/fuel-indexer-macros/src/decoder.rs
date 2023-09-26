@@ -49,28 +49,6 @@ pub struct ImplementationDecoder {
     parsed: ParsedGraphQLSchema,
 }
 
-impl Default for ImplementationDecoder {
-    fn default() -> Self {
-        Self {
-            parameters: quote! {},
-            hasher: quote! {},
-            struct_fields: quote! {},
-            field_selectors: vec![],
-            typdef: TypeDefinition {
-                description: None,
-                extend: false,
-                name: Positioned::new(Name::new(String::new()), Pos::default()),
-                kind: TypeKind::Object(ObjectType {
-                    implements: vec![],
-                    fields: vec![],
-                }),
-                directives: vec![],
-            },
-            parsed: ParsedGraphQLSchema::default(),
-        }
-    }
-}
-
 impl Decoder for ImplementationDecoder {
     /// Create a decoder from a GraphQL `TypeDefinition`.
     fn from_typedef(typ: &TypeDefinition, parsed: &ParsedGraphQLSchema) -> Self {
@@ -517,20 +495,6 @@ pub struct ObjectDecoder {
     type_id: i64,
 }
 
-impl Default for ObjectDecoder {
-    fn default() -> Self {
-        Self {
-            ident: format_ident!("unnamed"),
-            struct_fields: quote! {},
-            field_extractors: quote! {},
-            from_row: quote! {},
-            to_row: quote! {},
-            impl_decoder: ImplementationDecoder::default(),
-            type_id: std::i64::MAX,
-        }
-    }
-}
-
 impl Decoder for ObjectDecoder {
     /// Create a decoder from a GraphQL `TypeDefinition`.
     fn from_typedef(typ: &TypeDefinition, parsed: &ParsedGraphQLSchema) -> Self {
@@ -776,13 +740,13 @@ impl From<ObjectDecoder> for TokenStream {
             impl From<#ident> for Json {
                 fn from(value: #ident) -> Self {
                     let s = serde_json::to_string(&value).expect("Failed to serialize Entity.");
-                    Self(s)
+                    Self::new(s)
                 }
             }
 
             impl From<Json> for #ident {
                 fn from(value: Json) -> Self {
-                    let s: #ident = serde_json::from_str(&value.0).expect("Failed to deserialize Entity.");
+                    let s: #ident = serde_json::from_str(&value.into_inner()).expect("Failed to deserialize Entity.");
                     s
                 }
             }

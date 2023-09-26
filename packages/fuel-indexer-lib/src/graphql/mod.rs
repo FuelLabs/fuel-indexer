@@ -14,7 +14,9 @@ use async_graphql_parser::{
     },
     Pos, Positioned,
 };
-use fuel_indexer_types::graphql::IndexMetadata;
+use fuel_indexer_types::indexer::{
+    GraphQLEntity, IndexMetadata, IndexerPredicate, PredicateCoinOutput,
+};
 use sha2::{Digest, Sha256};
 use std::collections::{HashMap, HashSet};
 use types::IdCol;
@@ -32,11 +34,23 @@ pub fn schema_version(schema: &str) -> String {
 
 /// Inject native entities into the GraphQL schema.
 fn inject_native_entities_into_schema(schema: &str) -> String {
+    // NOTE: This is fine for now as long as the number of native entities is relatively small
+    // But should we continue to inject entities like this we'll need to make this a bit more
+    // idiomatic.
+    let mut schema = schema.to_string();
     if !schema.contains("type IndexMetadataEntity") {
-        format!("{}{}", schema, IndexMetadata::schema_fragment())
-    } else {
-        schema.to_string()
+        schema = format!("{}{}", schema, IndexMetadata::schema_fragment())
     }
+
+    if !schema.contains("type PredicateCoinOutputEntity") {
+        schema = format!("{}{}", schema, PredicateCoinOutput::schema_fragment())
+    }
+
+    if !schema.contains("type IndexerPredicateEntity") {
+        schema = format!("{}{}", schema, IndexerPredicate::schema_fragment())
+    }
+
+    schema
 }
 
 /// Inject internal types into the schema. In order to support popular

@@ -71,14 +71,14 @@ impl From<CommonMetadata> for Json {
     fn from(metadata: CommonMetadata) -> Self {
         let s = serde_json::to_string(&metadata)
             .expect("Failed to serialize CommonMetadata.");
-        Self(s)
+        Self::new(s)
     }
 }
 
 impl From<Json> for CommonMetadata {
     fn from(json: Json) -> Self {
-        let metadata: CommonMetadata =
-            serde_json::from_str(&json.0).expect("Failed to deserialize CommonMetadata.");
+        let metadata: CommonMetadata = serde_json::from_str(&json.into_inner())
+            .expect("Failed to deserialize CommonMetadata.");
         metadata
     }
 }
@@ -107,14 +107,14 @@ impl From<ScriptMetadata> for Json {
     fn from(metadata: ScriptMetadata) -> Self {
         let s = serde_json::to_string(&metadata)
             .expect("Failed to deserialize MintMetadata.");
-        Self(s)
+        Self::new(s)
     }
 }
 
 impl From<Json> for ScriptMetadata {
     fn from(json: Json) -> Self {
-        let metadata: ScriptMetadata =
-            serde_json::from_str(&json.0).expect("Failed to deserialize ScriptMetadata.");
+        let metadata: ScriptMetadata = serde_json::from_str(&json.into_inner())
+            .expect("Failed to deserialize ScriptMetadata.");
         metadata
     }
 }
@@ -137,14 +137,14 @@ impl From<MintMetadata> for Json {
     fn from(metadata: MintMetadata) -> Self {
         let s =
             serde_json::to_string(&metadata).expect("Failed to serialize MintMetadata.");
-        Self(s)
+        Self::new(s)
     }
 }
 
 impl From<Json> for MintMetadata {
     fn from(json: Json) -> Self {
-        let metadata: MintMetadata =
-            serde_json::from_str(&json.0).expect("Failed to deserialize MintMetadata.");
+        let metadata: MintMetadata = serde_json::from_str(&json.into_inner())
+            .expect("Failed to deserialize MintMetadata.");
         metadata
     }
 }
@@ -215,8 +215,8 @@ impl From<ClientInput> for Input {
                     nonce: message_signed.nonce,
                     witness_index: message_signed.witness_index,
                     data: message_signed.data,
-                    predicate: "".into(),
-                    predicate_data: "".into(),
+                    predicate: Bytes::new(),
+                    predicate_data: Bytes::new(),
                 })
             }
             ClientInput::MessageDataPredicate(message_predicate) => {
@@ -241,8 +241,8 @@ impl From<ClientInput> for Input {
                 tx_pointer: coin_signed.tx_pointer.into(),
                 witness_index: coin_signed.witness_index,
                 maturity: coin_signed.maturity,
-                predicate: "".into(),
-                predicate_data: "".into(),
+                predicate: Bytes::new(),
+                predicate_data: Bytes::new(),
             }),
             ClientInput::CoinPredicate(coin_predicate) => Input::Coin(InputCoin {
                 utxo_id: coin_predicate.utxo_id,
@@ -269,9 +269,9 @@ impl From<ClientInput> for Input {
                     amount: message_coin.amount,
                     nonce: message_coin.nonce,
                     witness_index: message_coin.witness_index,
-                    data: "".into(),
-                    predicate: "".into(),
-                    predicate_data: "".into(),
+                    data: Bytes::new(),
+                    predicate: Bytes::new(),
+                    predicate_data: Bytes::new(),
                 })
             }
             ClientInput::MessageCoinPredicate(message_coin) => {
@@ -281,7 +281,7 @@ impl From<ClientInput> for Input {
                     amount: message_coin.amount,
                     nonce: message_coin.nonce,
                     witness_index: 0,
-                    data: "".into(),
+                    data: Bytes::new(),
                     predicate: message_coin.predicate,
                     predicate_data: message_coin.predicate_data,
                 })
@@ -530,14 +530,14 @@ pub struct ProgramState {
 impl From<ProgramState> for Json {
     fn from(state: ProgramState) -> Self {
         let s = serde_json::to_string(&state).expect("Failed to serialize ProgramState.");
-        Self(s)
+        Self::new(s)
     }
 }
 
 impl From<Json> for ProgramState {
     fn from(json: Json) -> Self {
-        let state: ProgramState =
-            serde_json::from_str(&json.0).expect("Failed to deserialize ProgramState.");
+        let state: ProgramState = serde_json::from_str(&json.into_inner())
+            .expect("Failed to deserialize ProgramState.");
         state
     }
 }

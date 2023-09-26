@@ -111,7 +111,7 @@ impl IndexerService {
         )
         .await?;
 
-        let schema = manifest.graphql_schema_content()?;
+        let schema = manifest.schema_content()?;
         let schema_version = schema.version().to_string();
         let schema_bytes = Vec::<u8>::from(&schema);
 

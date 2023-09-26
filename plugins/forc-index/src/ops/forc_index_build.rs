@@ -59,7 +59,7 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
     let manifest_schema_file = {
         let workspace_root: std::path::PathBuf =
             crate::utils::cargo_workspace_root_dir(path.as_path()).unwrap();
-        Path::new(&workspace_root).join(manifest.graphql_schema())
+        Path::new(&workspace_root).join(manifest.schema())
     };
 
     // Rebuild the WASM module even if only the schema has changed.

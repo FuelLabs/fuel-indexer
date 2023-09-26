@@ -5,17 +5,20 @@ use fuel_indexer_lib::{config::IndexerConfig, manifest::Manifest};
 fn setup_fuel_explorer_manifest() -> Manifest {
     let manifest_str = r#"
 namespace: indexer_benchmarks 
-abi: ~
+contract:
+  - abi: ~
+  - subscriptions: ~
 identifier: fuel_explorer
 fuel_client: ~
-graphql_schema: ../../examples/fuel-explorer/fuel-explorer/schema/fuel_explorer.schema.graphql
+schema: ../../examples/fuel-explorer/fuel-explorer/schema/fuel_explorer.schema.graphql
 module:
   wasm: ../../target/wasm32-unknown-unknown/release/fuel_explorer.wasm
 metrics: ~
-contract_id: ~
 start_block: ~
 end_block: ~
 resumable: ~
+predicates:
+  templates: ~
     "#;
 
     Manifest::try_from(manifest_str).unwrap()

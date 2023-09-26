@@ -58,12 +58,17 @@ pub fn default_indexer_manifest(
 # as an organization identifier
 namespace: {namespace}
 
-# The identifier field is used to identify the given index.
+# Unique identifier for this indexer.
 identifier: {indexer_name}
 
-# The abi option is used to provide a link to the Sway JSON ABI that is generated when you
-# build your project.
-abi: ~
+# Indexer contract configuration.
+contract: ~
+
+  # File paths to the contract JSON ABIs that are generated when you build your Sway contracts.
+  abis: ~
+  
+  # Specifies which particular contracts you would like your indexer to subscribe to.
+  subscriptions: ~
 
 # The particular start block after which you'd like your indexer to start indexing events.
 start_block: ~
@@ -77,12 +82,8 @@ end_block: ~
 # with the `--indexer_net_config` option.
 fuel_client: ~
 
-# The contract_id specifies which particular contract you would like your index to subscribe to.
-contract_id: ~
-
-# The graphql_schema field contains the file path that points to the GraphQL schema for the
-# given index.
-graphql_schema: {schema_path}
+# A file path that points to the GraphQL schema for the given indexer.
+schema: {schema_path}
 
 # The module field contains a file path that points to code that will be run as an executor inside
 # of the indexer.
@@ -92,6 +93,12 @@ module:
 # The resumable field contains a boolean that specifies whether or not the indexer should, synchronise
 # with the latest block if it has fallen out of sync.
 resumable: true
+
+# Indexer predicate configuration.
+predicates:
+
+    # Template commitments (hashes) of the bytecode of predicates used by this indexer.
+    templates: ~
 "#
     )
 }

@@ -1,10 +1,10 @@
 #[cfg(not(feature = "trybuild"))]
 pub mod fixtures;
 
-pub const WORKSPACE_ROOT: &str = env!("CARGO_MANIFEST_DIR");
-
 use fuel_indexer_lib::config::IndexerConfigError;
 use thiserror::Error;
+
+pub const WORKSPACE_ROOT: &str = env!("CARGO_MANIFEST_DIR");
 
 #[derive(Error, Debug)]
 pub enum TestError {
@@ -23,6 +23,9 @@ pub enum TestError {
 }
 
 pub mod assets {
+    use duct::cmd;
+    use fuel_indexer_lib::manifest::Manifest;
+
     pub const FUEL_INDEXER_TEST_MANIFEST: &str =
         include_str!("./../indexers/fuel-indexer-test/fuel_indexer_test.yaml");
 
@@ -34,6 +37,53 @@ pub mod assets {
 
     pub const SIMPLE_WASM_WASM: &[u8] =
         include_bytes!("../../../target/wasm32-unknown-unknown/release/simple_wasm.wasm");
+
+    // NOTE: This is a hack to update the `manifest` with the proper absolute paths.
+    // This is already done in the #[indexer] attribute, but since these tests test
+    // modules that have already been compiled, we need to do this manually here.
+    //
+    // Doing this allows us to use the relative root of the the fuel-indexer/
+    // repo for all test asset paths (i.e., we can simply reference all asset paths in
+    // in manifest files relative from 'fuel-indexer')
+    pub fn test_indexer_updated_manifest() -> Manifest {
+        // TODO: Write a CI check for this
+        let workspace_root = cmd!("cargo", "metadata", "--format-version=1")
+            .pipe(cmd!("json_pp"))
+            .pipe(cmd!("jq", ".workspace_root"))
+            .read()
+            .unwrap();
+        let mut chars = workspace_root.chars();
+        chars.next();
+        chars.next_back();
+        let workspace_root = chars.as_str().to_string();
+        // Should mirror packages::fuel_indexer_tests::indexers::fuel_indexer_test::fuel_indexer_test.yaml
+        let content = format!(
+            r#"
+namespace: fuel_indexer_test
+fuel_client: ~
+schema: {workspace_root}/packages/fuel-indexer-tests/indexers/fuel-indexer-test/schema/fuel_indexer_test.graphql
+start_block: ~
+end_block: ~
+contract:
+  abi: {workspace_root}/packages/fuel-indexer-tests/sway/test-contract1/out/debug/test-contract1-abi.json
+  subscriptions:
+    - fuel1jjrj8zjyjc3s4qkw345mt57mwn56lnc9zwqnt5krrx9umwxacrvs2c3jyg
+identifier: index1
+module:
+  wasm: {workspace_root}/target/wasm32-unknown-unknown/release/fuel_indexer_test.wasm
+resumable: true
+predicates:
+  templates:
+    - name: TestPredicate1
+      abi: {workspace_root}/packages/fuel-indexer-tests/sway/test-predicate1/out/debug/test-predicate1-abi.json
+      id: 0xcfd60aa414972babde16215e0cb5a2739628831405a7ae81a9fc1d2ebce87145
+    - name: TestPredicate2
+      id: 0x1c83e1f094b47f14943066f6b6ca41ce5c3ae4e387c973e924564dac0227a896
+      abi: {workspace_root}/packages/fuel-indexer-tests/sway/test-predicate2/out/debug/test-predicate2-abi.json
+"#
+        );
+        Manifest::try_from(content.as_str()).unwrap()
+    }
 }
 
 pub mod defaults {
@@ -53,62 +103,4 @@ pub mod defaults {
     pub const COIN_AMOUNT: u64 = 11;
     pub const MAX_BODY_SIZE: usize = 5242880; // 5MB in bytes
     pub const POSTGRES_URL: &str = "postgres://postgres:my-secret@localhost:5432";
-}
-
-pub mod utils {
-
-    use super::WORKSPACE_ROOT;
-    use fuel_indexer_lib::manifest::{Manifest, Module};
-    use std::path::Path;
-
-    // NOTE: This is a hack to update the `manifest` with the proper absolute paths.
-    // This is already done in the #[indexer] attribute, but since these tests test
-    // modules that have already been compiled, we need to do this manually here.
-    //
-    // Doing this allows us to use the relative root of the the fuel-indexer/
-    // repo for all test asset paths (i.e., we can simply reference all asset paths in
-    // in manifest files relative from 'fuel-indexer')
-    pub fn update_test_manifest_asset_paths(manifest: &mut Manifest) {
-        let manifest_dir = Path::new(WORKSPACE_ROOT);
-        let graphql_schema = manifest_dir
-            .parent()
-            .unwrap()
-            .parent()
-            .unwrap()
-            .join(manifest.graphql_schema())
-            .into_os_string()
-            .to_str()
-            .unwrap()
-            .to_string();
-
-        manifest.set_graphql_schema(graphql_schema);
-
-        let abi = manifest_dir
-            .parent()
-            .unwrap()
-            .parent()
-            .unwrap()
-            .join(manifest.abi().unwrap())
-            .into_os_string()
-            .to_str()
-            .unwrap()
-            .to_string();
-
-        manifest.set_abi(abi);
-
-        let module = Module::Wasm(
-            manifest_dir
-                .parent()
-                .unwrap()
-                .parent()
-                .unwrap()
-                .join(manifest.module().to_string())
-                .into_os_string()
-                .to_str()
-                .unwrap()
-                .to_string(),
-        );
-
-        manifest.set_module(module);
-    }
 }

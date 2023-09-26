@@ -25,6 +25,8 @@
   - [Blocks](./indexing-fuel-types/blocks.md)
   - [Transactions](./indexing-fuel-types/transactions.md)
   - [Receipts](./indexing-fuel-types/receipts.md)
+  - [Predicates](./indexing-fuel-types/predicates.md)
+  - [Predicate Witness Data](./indexing-fuel-types/predicate-witness-data.md)
 - [Indexing Custom Types](./indexing-custom-types/index.md)
 - [Storing Records](./storing-records/index.md)
 - [Querying](./querying/index.md)

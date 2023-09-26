@@ -492,7 +492,7 @@ pub(crate) async fn verify_signature(
             }
             _ => {
                 error!("Unsupported authentication strategy.");
-                unimplemented!();
+                unimplemented!("Unsupported authentication strategy.");
             }
         }
     }

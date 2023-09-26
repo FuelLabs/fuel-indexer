@@ -130,7 +130,7 @@ impl PostgresVersion {
             "v11" => Self::V11,
             "v10" => Self::V10,
             "v9" => Self::V9,
-            _ => unimplemented!(),
+            _ => unimplemented!("Postgres version unimplemented."),
         }
     }
 }

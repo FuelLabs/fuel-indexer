@@ -1,4 +1,4 @@
-error: Could not open schema file "$DIR/schema.graphql" Os { code: 2, kind: NotFound, message: "No such file or directory" }
+error: Could not open schema file "$WORKSPACE/schema.graphql" Os { code: 2, kind: NotFound, message: "No such file or directory" }
  --> trybuild/fail_if_attribute_manifest_schema_arg_is_invalid.rs
   |
   | #[indexer(manifest = "packages/fuel-indexer-tests/trybuild/invalid_schema_simple_wasm.yaml")]

@@ -44,11 +44,7 @@ async fn test_wasm_executor_can_meter_execution() {
                 ..Default::default()
             };
 
-            let schema_version = manifest
-                .graphql_schema_content()
-                .unwrap()
-                .version()
-                .to_string();
+            let schema_version = manifest.schema_content().unwrap().version().to_string();
 
             let mut executor = WasmIndexExecutor::new(
                 &config,
@@ -118,11 +114,7 @@ async fn test_wasm_executor_error_codes() {
             );
             let config = IndexerConfig::default();
 
-            let schema_version = manifest
-                .graphql_schema_content()
-                .unwrap()
-                .version()
-                .to_string();
+            let schema_version = manifest.schema_content().unwrap().version().to_string();
 
             let mut executor = WasmIndexExecutor::new(
                 &config,

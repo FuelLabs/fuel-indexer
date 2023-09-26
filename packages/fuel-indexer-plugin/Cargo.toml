@@ -20,6 +20,8 @@ fuel-indexer-schema = { workspace = true, default-features = false }
 fuel-indexer-types = { workspace = true }
 getrandom = { version = "0.2", features = ["js"] }
 hex = "0.4"
+proc-macro2 = "1.0"
+quote = "1.0"
 serde = { workspace = true }
 serde_json = { workspace = true }
 sha2 = { version = "0.10" }

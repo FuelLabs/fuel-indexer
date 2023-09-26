@@ -17,9 +17,9 @@ bincode = { workspace = true }
 clap = { features = ["cargo", "derive", "env"], workspace = true }
 fuel-indexer-types = { workspace = true }
 http = { version = "0.2", default-features = false }
+inflections = { version = "1", default-features = false }
 lazy_static = { version = "1.4" }
 serde = { workspace = true }
-serde_json = { workspace = true }
 serde_yaml = "0.8"
 sha2 = "0.9"
 strum = { version = "0.24", default-features = false, features = ["derive"] }

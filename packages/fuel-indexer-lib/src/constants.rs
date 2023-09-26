@@ -6,6 +6,8 @@ lazy_static! {
     /// Set of internal indexer entities.
     pub static ref INTERNAL_INDEXER_ENTITIES: HashSet<&'static str> = HashSet::from([
         "IndexMetadataEntity",
+        "IndexerPredicateEntity",
+        "PredicateCoinOutputEntity",
     ]);
 
     /// Set of types that implement `AsRef<[u8]>`.
@@ -84,28 +86,30 @@ lazy_static! {
         "Option<ID>",
         "Option<Identity>",
         "Option<Json>",
-        "Option<UID>",
         "Option<String>",
+        "Option<UID>",
+        "String",
         "UID",
         "Vec<FtColumn>",
-        "String",
     ]);
 
     /// Fuel-specific receipt-related type names.
     pub static ref FUEL_PRIMITIVES: HashSet<&'static str> = HashSet::from([
         "BlockData",
+        "Burn",
         "Call",
         "Log",
         "LogData",
         "MessageOut",
+        "Mint",
         "Panic",
+        "Predicate",
+        "Predicates",
         "Return",
         "Revert",
         "ScriptResult",
         "Transfer",
         "TransferOut",
-        "Mint",
-        "Burn",
     ]);
 
     /// Type names that are not allowed in GraphQL schema.
@@ -156,6 +160,8 @@ lazy_static! {
         "Mint",
         "Outputs",
         "Panic",
+        "Predicate",
+        "Predicates",
         "ReceiptsRoot",
         "Return",
         "Revert",
@@ -175,23 +181,23 @@ lazy_static! {
         "Witnesses",
     ]);
 
-
     /// ABI types not allowed in the contract ABI.
     pub static ref UNSUPPORTED_ABI_JSON_TYPES: HashSet<&'static str> = HashSet::from(["Vec"]);
 
     /// Generic Sway ABI types.
     pub static ref IGNORED_GENERIC_METADATA: HashSet<&'static str> = HashSet::from([
-        "generic T",
+        "enum Result",
+        "generic D",
         "generic E",
+        "generic T",
         "raw untyped ptr",
-        "struct RawVec",
-        "struct RawBytes",
         "struct Bytes",
-        "enum Result"
+        "struct RawBytes",
+        "struct RawVec",
     ]);
 
     pub static ref GENERIC_STRUCTS: HashSet<&'static str> = HashSet::from([
+        "Option",
         "Vec",
-        "Option"
     ]);
 }

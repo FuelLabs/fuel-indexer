@@ -10,6 +10,8 @@ rust-version = { workspace = true }
 description = "Fuel Indexer Types"
 
 [dependencies]
+async-trait = { version = "0.1" }
+bincode = { workspace = true }
 bytes = { version = "1.4", features = ["serde"] }
 fuel-tx = { workspace = true, features = ["serde"] }
 fuel-types = { workspace = true }

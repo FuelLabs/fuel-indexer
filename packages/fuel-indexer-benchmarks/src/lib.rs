@@ -41,11 +41,7 @@ async fn setup_wasm_executor(
     pool: IndexerConnectionPool,
 ) -> Result<WasmIndexExecutor, ()> {
     config.database = DatabaseConfig::from_str(&db_url).unwrap();
-    let schema_version = manifest
-        .graphql_schema_content()
-        .unwrap()
-        .version()
-        .to_string();
+    let schema_version = manifest.schema_content().unwrap().version().to_string();
     let executor = WasmIndexExecutor::new(
         &config,
         &manifest,

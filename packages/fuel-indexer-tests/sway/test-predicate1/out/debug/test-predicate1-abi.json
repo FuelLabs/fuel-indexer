@@ -1,0 +1,117 @@
+{
+  "types": [
+    {
+      "typeId": 0,
+      "type": "()",
+      "components": [],
+      "typeParameters": null
+    },
+    {
+      "typeId": 1,
+      "type": "bool",
+      "components": null,
+      "typeParameters": null
+    },
+    {
+      "typeId": 2,
+      "type": "enum Predicate1SimpleEnum",
+      "components": [
+        {
+          "name": "VariantOne",
+          "type": 0,
+          "typeArguments": null
+        },
+        {
+          "name": "VariantTwo",
+          "type": 0,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 3,
+      "type": "struct Predicate1SimpleStruct",
+      "components": [
+        {
+          "name": "field_1",
+          "type": 5,
+          "typeArguments": null
+        },
+        {
+          "name": "field_2",
+          "type": 4,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 4,
+      "type": "u64",
+      "components": null,
+      "typeParameters": null
+    },
+    {
+      "typeId": 5,
+      "type": "u8",
+      "components": null,
+      "typeParameters": null
+    }
+  ],
+  "functions": [
+    {
+      "inputs": [
+        {
+          "name": "u_8",
+          "type": 5,
+          "typeArguments": null
+        },
+        {
+          "name": "switch",
+          "type": 1,
+          "typeArguments": null
+        },
+        {
+          "name": "some_struct",
+          "type": 3,
+          "typeArguments": null
+        },
+        {
+          "name": "some_enum",
+          "type": 2,
+          "typeArguments": null
+        }
+      ],
+      "name": "main",
+      "output": {
+        "name": "",
+        "type": 1,
+        "typeArguments": null
+      },
+      "attributes": null
+    }
+  ],
+  "loggedTypes": [],
+  "messagesTypes": [],
+  "configurables": [
+    {
+      "name": "U8",
+      "configurableType": {
+        "name": "",
+        "type": 5,
+        "typeArguments": null
+      },
+      "offset": 124
+    },
+    {
+      "name": "BOOL",
+      "configurableType": {
+        "name": "",
+        "type": 1,
+        "typeArguments": null
+      },
+      "offset": 132
+    }
+  ]
+}

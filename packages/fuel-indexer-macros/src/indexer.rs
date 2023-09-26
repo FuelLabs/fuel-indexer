@@ -1,33 +1,27 @@
 use crate::{
-    helpers::*, parse::IndexerConfig, schema::process_graphql_schema,
-    wasm::handler_block_wasm,
+    helpers::*,
+    parse::IndexerConfig,
+    schema::process_graphql_schema,
+    tokens::*,
+    wasm::{handler_block, predicate_handler_block},
 };
 use fuel_abi_types::abi::program::TypeDeclaration;
 use fuel_indexer_lib::{
-    constants::*, manifest::ContractIds, manifest::Manifest,
-    utils::workspace_manifest_prefix,
+    constants::*, manifest::Manifest, utils::workspace_manifest_prefix,
 };
-use fuel_indexer_types::{type_id, FUEL_TYPES_NAMESPACE};
+use fuel_indexer_types::{indexer::Predicates, type_id, TypeId, FUEL_TYPES_NAMESPACE};
 use fuels::{core::codec::resolve_fn_selector, types::param_types::ParamType};
 use fuels_code_gen::{Abigen, AbigenTarget, ProgramType};
 use proc_macro::TokenStream;
-use quote::quote;
+use quote::{format_ident, quote};
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use syn::{parse_macro_input, FnArg, Item, ItemMod, PatType, Type};
 
-fn additional_declarations() -> proc_macro2::TokenStream {
-    quote! {
-        // Miscellaneous types that can be included in ABI JSON
-        type b256 = [u8; 32];
-        type Bytes = Vec<u8>;
-        type B512 = [u8; 64];
-    }
-}
-
+/// Derive a resultant handler block and a set of handler functions from an indexer manifest and
+/// a `TokenStream` of indexer handler functions passed by the user.
 fn process_fn_items(
     manifest: &Manifest,
-    abi_path: Option<String>,
     indexer_module: ItemMod,
 ) -> (proc_macro2::TokenStream, proc_macro2::TokenStream) {
     if indexer_module.content.is_none()
@@ -43,22 +37,48 @@ fn process_fn_items(
         )
     }
 
-    let abi = get_json_abi(abi_path).unwrap_or_default();
+    let (contract_abi_path, _schema_path) =
+        prefix_abi_and_schema_paths(manifest.contract_abi(), Some(manifest.schema()));
+
+    let contract_abi = get_json_abi(contract_abi_path.as_deref()).unwrap_or_default();
 
     let mut decoded_type_snippets = HashSet::new();
     let mut decoded_log_match_arms = HashSet::new();
     let mut decoded_type_fields = HashSet::new();
     let mut abi_dispatchers = Vec::new();
 
-    let funcs = abi.clone().functions;
-    let abi_types: Vec<TypeDeclaration> = abi
+    let funcs = contract_abi.clone().functions;
+    let contract_abi_types = contract_abi
         .clone()
         .types
         .iter()
         .map(|t| strip_callpath_from_type_field(t.clone()))
-        .collect();
-    let abi_log_types = abi.clone().logged_types.unwrap_or_default();
-    let abi_msg_types = abi.clone().messages_types.unwrap_or_default();
+        .collect::<Vec<TypeDeclaration>>();
+
+    let predicate_abi_types = manifest
+        .predicates()
+        .map(|p| {
+            p.templates()
+                .map(|t| {
+                    t.iter()
+                        .map(|t| {
+                            let ty_id = type_id(FUEL_TYPES_NAMESPACE, &t.name()) as usize;
+                            let name = predicate_inputs_name(&t.name());
+                            TypeDeclaration {
+                                type_id: ty_id,
+                                type_field: name,
+                                components: Some(Vec::default()),
+                                type_parameters: None,
+                            }
+                        })
+                        .collect::<Vec<_>>()
+                })
+                .unwrap_or_default()
+        })
+        .unwrap_or_default();
+
+    let contract_abi_log_types = contract_abi.clone().logged_types.unwrap_or_default();
+    let contract_abi_msg_types = contract_abi.clone().messages_types.unwrap_or_default();
     let fuel_types = FUEL_PRIMITIVES
         .iter()
         .map(|x| {
@@ -73,7 +93,7 @@ fn process_fn_items(
         })
         .collect::<HashMap<usize, TypeDeclaration>>();
 
-    let _tuple_types_tyid = abi_types
+    let _tuple_types_tyid = contract_abi_types
         .iter()
         .filter_map(|typ| {
             if is_tuple_type(typ) {
@@ -85,17 +105,38 @@ fn process_fn_items(
         .collect::<HashMap<usize, TypeDeclaration>>();
 
     // Used to do a reverse lookup of typed path names to ABI type IDs.
-    let mut type_ids = RESERVED_TYPEDEF_NAMES
+    let mut contract_abi_type_ids = RESERVED_TYPEDEF_NAMES
         .iter()
         .map(|x| (x.to_string(), type_id(FUEL_TYPES_NAMESPACE, x) as usize))
         .collect::<HashMap<String, usize>>();
 
-    let mut abi_types_tyid = abi_types
+    let predicate_abi_type_ids = predicate_abi_types
+        .iter()
+        .map(|typ| {
+            let name = typ.type_field.clone();
+            (name, typ.type_id)
+        })
+        .collect::<HashMap<String, usize>>();
+
+    let mut contract_abi_types_tyid = contract_abi_types
         .iter()
         .map(|typ| (typ.type_id, typ.clone()))
         .collect::<HashMap<usize, TypeDeclaration>>();
 
-    let message_types_decoders = abi_msg_types
+    let predicate_abi_types_tyid = predicate_abi_type_ids
+        .iter()
+        .map(|(name, ty_id)| {
+            let typ = TypeDeclaration {
+                type_id: *ty_id,
+                type_field: name.to_string(),
+                components: None,
+                type_parameters: None,
+            };
+            (typ.type_id, typ)
+        })
+        .collect::<HashMap<usize, TypeDeclaration>>();
+
+    let message_types_decoders = contract_abi_msg_types
         .iter()
         .map(|typ| {
             let message_type_id = typ.message_id;
@@ -114,9 +155,9 @@ fn process_fn_items(
         }])
         .collect::<Vec<proc_macro2::TokenStream>>();
 
-    // Take a second pass over `abi_types` in order to update an `TypeDeclarations` that need to
+    // Take a second pass over `contract_abi_types` in order to update an `TypeDeclarations` that need to
     // be updated with more information for the codegen process.
-    let abi_types = abi_types
+    let contract_abi_types = contract_abi_types
         .iter()
         .map(|typ| {
             // If this is an array type we have to manually update it's type field to include its inner
@@ -139,7 +180,7 @@ fn process_fn_items(
                     .trim_end_matches(']')
                     .parse::<usize>()
                     .expect("Array type size could not be determined.");
-                let inner = abi_types_tyid
+                let inner = contract_abi_types_tyid
                     .get(&inner)
                     .expect("Array type inner not found in ABI types.");
                 let name = format!("[{}; {}]", inner.name(), size);
@@ -148,7 +189,7 @@ fn process_fn_items(
                     ..typ.clone()
                 };
 
-                abi_types_tyid.insert(typ.type_id, typ.clone());
+                contract_abi_types_tyid.insert(typ.type_id, typ.clone());
                 typ
             } else {
                 typ.to_owned()
@@ -156,7 +197,7 @@ fn process_fn_items(
         })
         .collect::<Vec<TypeDeclaration>>();
 
-    let abi_type_decoders = abi_types
+    let contract_abi_decoders = contract_abi_types
         .iter()
         .filter_map(|typ| {
             if is_non_decodable_type(typ) {
@@ -174,11 +215,11 @@ fn process_fn_items(
                 let gt = GenericType::from(typ);
                 match gt {
                     GenericType::Vec | GenericType::Option => {
-                        let ab_types = abi_types_tyid.clone();
+                        let ab_types = contract_abi_types_tyid.clone();
                         let inner_typs = derive_generic_inner_typedefs(
                             typ,
                             &funcs,
-                            &abi_log_types,
+                            &contract_abi_log_types,
                             &ab_types,
                         );
 
@@ -189,7 +230,7 @@ fn process_fn_items(
                                     let (typ_name, type_tokens) = typed_path_components(
                                         typ,
                                         inner_typ,
-                                        &abi_types_tyid,
+                                        &contract_abi_types_tyid,
                                     );
                                     let ty_id =
                                         type_id(FUEL_TYPES_NAMESPACE, &typ_name) as usize;
@@ -204,8 +245,8 @@ fn process_fn_items(
                                         return None;
                                     }
 
-                                    abi_types_tyid.insert(ty_id, typ.clone());
-                                    type_ids.insert(typ_name.clone(), ty_id);
+                                    contract_abi_types_tyid.insert(ty_id, typ.clone());
+                                    contract_abi_type_ids.insert(typ_name.clone(), ty_id);
 
                                     decoded_type_snippets.insert(ty_id);
 
@@ -217,8 +258,12 @@ fn process_fn_items(
                     _ => unimplemented!("Unsupported decoder generic type: {:?}", gt),
                 }
             } else {
+                if decoded_type_fields.contains(&typ.type_id) {
+                    return None;
+                }
+
                 let type_tokens = typ.rust_tokens();
-                type_ids.insert(type_tokens.to_string(), typ.type_id);
+                contract_abi_type_ids.insert(type_tokens.to_string(), typ.type_id);
                 decoded_type_snippets.insert(typ.type_id);
                 Some(vec![decode_snippet(&type_tokens, typ)])
             }
@@ -228,19 +273,23 @@ fn process_fn_items(
 
     let fuel_type_decoders = fuel_types
         .values()
-        .map(|typ| {
+        .filter_map(|typ| {
+            if decoded_type_fields.contains(&typ.type_id) {
+                return None;
+            }
+
             let type_tokens = typ.rust_tokens();
 
-            type_ids.insert(type_tokens.to_string(), typ.type_id);
+            contract_abi_type_ids.insert(type_tokens.to_string(), typ.type_id);
             decoded_type_snippets.insert(typ.type_id);
 
-            decode_snippet(&type_tokens, typ)
+            Some(decode_snippet(&type_tokens, typ))
         })
         .collect::<Vec<proc_macro2::TokenStream>>();
 
-    let decoders = [fuel_type_decoders, abi_type_decoders].concat();
+    let decoders = [fuel_type_decoders, contract_abi_decoders].concat();
 
-    let abi_struct_fields = abi_types
+    let contract_struct_fields = contract_abi_types
         .iter()
         .filter_map(|typ| {
             if is_non_decodable_type(typ) {
@@ -258,16 +307,19 @@ fn process_fn_items(
                 let inner_typs = derive_generic_inner_typedefs(
                     typ,
                     &funcs,
-                    &abi_log_types,
-                    &abi_types_tyid,
+                    &contract_abi_log_types,
+                    &contract_abi_types_tyid,
                 );
 
                 return Some(
                     inner_typs
                         .iter()
                         .filter_map(|inner_typ| {
-                            let (typ_name, type_tokens) =
-                                typed_path_components(typ, inner_typ, &abi_types_tyid);
+                            let (typ_name, type_tokens) = typed_path_components(
+                                typ,
+                                inner_typ,
+                                &contract_abi_types_tyid,
+                            );
                             let ty_id = type_id(FUEL_TYPES_NAMESPACE, &typ_name) as usize;
 
                             if decoded_type_fields.contains(&ty_id) {
@@ -282,7 +334,7 @@ fn process_fn_items(
 
                             let ident = typ.decoder_field_ident();
 
-                            type_ids.insert(typ_name.clone(), ty_id);
+                            contract_abi_type_ids.insert(typ_name.clone(), ty_id);
                             decoded_type_fields.insert(ty_id);
 
                             Some(quote! {
@@ -292,9 +344,13 @@ fn process_fn_items(
                         .collect::<Vec<proc_macro2::TokenStream>>(),
                 );
             } else {
+                if decoded_type_fields.contains(&typ.type_id) {
+                    return None;
+                }
+
                 let ident = typ.decoder_field_ident();
                 let type_tokens = typ.rust_tokens();
-                type_ids.insert(typ.rust_tokens().to_string(), typ.type_id);
+                contract_abi_type_ids.insert(typ.rust_tokens().to_string(), typ.type_id);
                 decoded_type_fields.insert(typ.type_id);
 
                 Some(vec![quote! {
@@ -312,32 +368,66 @@ fn process_fn_items(
                 return None;
             }
 
-            let name = typ.decoder_field_ident();
-            let ty = typ.rust_tokens();
-
-            type_ids.insert(ty.to_string(), typ.type_id);
-            decoded_type_snippets.insert(typ.type_id);
-
             if decoded_type_fields.contains(&typ.type_id) {
                 return None;
             }
 
-            Some(quote! {
-                #name: Vec<#ty>
-            })
+            let name = typ.decoder_field_ident();
+            let ty = typ.rust_tokens();
+
+            contract_abi_type_ids.insert(ty.to_string(), typ.type_id);
+            decoded_type_snippets.insert(typ.type_id);
+
+            if typ.type_id == Predicates::type_id() {
+                Some(quote! {
+                    #name: Predicates
+                })
+            } else {
+                Some(quote! {
+                    #name: Vec<#ty>
+                })
+            }
         })
         .collect::<Vec<proc_macro2::TokenStream>>();
 
-    let decoder_struct_fields = [abi_struct_fields, fuel_struct_fields].concat();
+    let predicate_inputs_fields = manifest
+        .predicates()
+        .map(|p| {
+            p.templates()
+                .map(|t| {
+                    t.iter()
+                        .map(|t| {
+                            let name = predicate_inputs_name(&t.name());
+                            let ident =
+                                format_ident! { "{}_decoded", name.to_lowercase() };
+                            let ty = format_ident! { "{}", name };
+                            let ty = quote! { #ty };
+
+                            quote! {
+                                #ident: Vec<#ty>
+                            }
+                        })
+                        .collect::<Vec<proc_macro2::TokenStream>>()
+                })
+                .unwrap_or_default()
+        })
+        .unwrap_or_default();
+
+    let decoder_fields = [
+        contract_struct_fields,
+        fuel_struct_fields,
+        predicate_inputs_fields,
+    ]
+    .concat();
 
     // Since log type decoders use `TypeDeclaration`s that were manually created specifically
     // for generics, we parsed log types after other ABI types.
-    let log_type_decoders = abi_log_types
+    let contract_log_type_decoders = contract_abi_log_types
         .iter()
         .filter_map(|log| {
             let ty_id = log.application.type_id;
             let log_id = log.log_id as usize;
-            let typ = abi_types_tyid
+            let typ = contract_abi_types_tyid
                 .get(&log.application.type_id)
                 .expect("Could not get log type reference from ABI types.");
 
@@ -349,14 +439,20 @@ fn process_fn_items(
                 let gt = GenericType::from(typ);
                 match gt {
                     GenericType::Vec | GenericType::Option => {
-                        let inner_typ =
-                            derive_log_generic_inner_typedefs(log, &abi, &abi_types_tyid);
+                        let inner_typ = derive_log_generic_inner_typedefs(
+                            log,
+                            &contract_abi_log_types,
+                            &contract_abi_types_tyid,
+                        );
 
-                        let (typ_name, _) =
-                            typed_path_components(typ, inner_typ, &abi_types_tyid);
+                        let (typ_name, _) = typed_path_components(
+                            typ,
+                            inner_typ,
+                            &contract_abi_types_tyid,
+                        );
 
                         let ty_id = type_id(FUEL_TYPES_NAMESPACE, &typ_name) as usize;
-                        let _typ = abi_types_tyid.get(&ty_id).expect(
+                        let _typ = contract_abi_types_tyid.get(&ty_id).expect(
                             "Could not get generic log type reference from ABI types.",
                         );
 
@@ -382,20 +478,20 @@ fn process_fn_items(
         })
         .collect::<Vec<proc_macro2::TokenStream>>();
 
-    let abi_selectors = funcs
+    let contract_abi_selectors = funcs
         .iter()
         .map(|function| {
             let params: Vec<ParamType> = function
                 .inputs
                 .iter()
                 .map(|x| {
-                    ParamType::try_from_type_application(x, &abi_types_tyid)
+                    ParamType::try_from_type_application(x, &contract_abi_types_tyid)
                         .expect("Could not derive TypeApplication param types.")
                 })
                 .collect();
             let sig = resolve_fn_selector(&function.name, &params[..]);
             let selector = u64::from_be_bytes(sig);
-            let ty_id = function_output_type_id(function, &abi_types_tyid);
+            let ty_id = function_output_type_id(function, &contract_abi_types_tyid);
 
             quote! {
                 #selector => #ty_id,
@@ -403,14 +499,14 @@ fn process_fn_items(
         })
         .collect::<Vec<proc_macro2::TokenStream>>();
 
-    let abi_selectors_to_fn_names = funcs
+    let contract_abi_selectors_to_fn_names = funcs
         .iter()
         .map(|function| {
             let params: Vec<ParamType> = function
                 .inputs
                 .iter()
                 .map(|x| {
-                    ParamType::try_from_type_application(x, &abi_types_tyid)
+                    ParamType::try_from_type_application(x, &contract_abi_types_tyid)
                         .expect("Could not derive TypeApplication param types.")
                 })
                 .collect();
@@ -442,46 +538,23 @@ fn process_fn_items(
         None => quote! {},
     };
 
-    let subscribed_contract_ids = match &manifest.contract_id() {
-        ContractIds::Single(_) => quote! {},
-        ContractIds::Multiple(contract_ids) => {
-            let contract_ids = contract_ids
-                .iter()
-                .map(|id| {
-                    quote! {
-                        Bech32ContractId::from_str(#id).unwrap_or_else(|_| {
-                        let contract_id = ContractId::from_str(&#id).expect("Failed to parse manifest 'contract_id'");
-                        Bech32ContractId::from(contract_id)
-                        })
-                    }
-                })
-                .collect::<Vec<proc_macro2::TokenStream>>();
+    let subscribed_contract_ids = match &manifest.contract_subscriptions() {
+        Some(ids) => {
+            let contract_ids = ids.iter().map(|id| {
+                quote! {
+                    Bech32ContractId::from_str(#id).expect("Failed to parse contract ID from manifest.")
+                }
+            }).collect::<Vec<proc_macro2::TokenStream>>();
 
             quote! {
                 let contract_ids = HashSet::from([#(#contract_ids),*]);
             }
         }
+        None => quote! {},
     };
 
-    let check_if_subscribed_to_contract = match &manifest.contract_id() {
-        ContractIds::Single(contract_id) => match contract_id {
-            Some(contract_id) => {
-                quote! {
-                    let id_bytes = <[u8; 32]>::try_from(id).expect("Could not convert contract ID into bytes");
-                    let bech32_id = Bech32ContractId::new("fuel", id_bytes);
-                    let manifest_contract_id = Bech32ContractId::from_str(#contract_id).unwrap_or_else(|_| {
-                        let contract_id = ContractId::from_str(&#contract_id).expect("Failed to parse manifest 'contract_id'");
-                        Bech32ContractId::from(contract_id)
-                    });
-                    if bech32_id != manifest_contract_id {
-                        debug!("Not subscribed to this contract. Will skip this receipt event. <('-'<)");
-                        continue;
-                    }
-                }
-            }
-            None => quote! {},
-        },
-        ContractIds::Multiple(_) => {
+    let check_if_subscribed_to_contract = match &manifest.contract_subscriptions() {
+        Some(_) => {
             quote! {
                 let id_bytes = <[u8; 32]>::try_from(id).expect("Could not convert contract ID into bytes");
                 let bech32_id = Bech32ContractId::new("fuel", id_bytes);
@@ -492,6 +565,7 @@ fn process_fn_items(
                 }
             }
         }
+        None => quote! {},
     };
 
     for item in contents {
@@ -524,19 +598,37 @@ fn process_fn_items(
                                     )
                                 }
 
-                                if !type_ids.contains_key(&path_type_name) {
+                                if !contract_abi_type_ids.contains_key(&path_type_name)
+                                    && !predicate_abi_type_ids
+                                        .contains_key(&path_type_name)
+                                {
                                     proc_macro_error::abort_call_site!(
                                         "Type with ident '{:?}' not defined in the ABI.",
                                         path_seg.ident
                                     );
                                 };
 
-                                let ty_id = type_ids
-                                    .get(&path_type_name)
-                                    .expect("Path type name not found in type IDs.");
-                                let typ = match abi_types_tyid.get(ty_id) {
+                                let ty_id =
+                                    match contract_abi_type_ids.get(&path_type_name) {
+                                        Some(ty_id) => ty_id,
+                                        None => predicate_abi_type_ids
+                                            .get(&path_type_name)
+                                            .expect("Type not found in Fuel types."),
+                                    };
+
+                                let typ = match contract_abi_types_tyid.get(ty_id) {
                                     Some(typ) => typ,
-                                    None => fuel_types.get(ty_id).unwrap(),
+                                    None => match fuel_types.get(ty_id) {
+                                        Some(typ) => typ,
+                                        None => {
+                                            match predicate_abi_types_tyid.get(ty_id) {
+                                                Some(typ) => typ,
+                                                None => {
+                                                    panic!("Type not found in ABI types.")
+                                                }
+                                            }
+                                        }
+                                    },
                                 };
 
                                 let dispatcher_name = typ.decoder_field_ident();
@@ -544,8 +636,7 @@ fn process_fn_items(
                                 input_checks
                                     .push(quote! { self.#dispatcher_name.len() > 0 });
 
-                                arg_list
-                                    .push(quote! { self.#dispatcher_name[0].clone() });
+                                arg_list.push(dispatcher_tokens(&dispatcher_name));
                             } else {
                                 proc_macro_error::abort_call_site!(
                                     "Arguments must be types defined in the ABI."
@@ -601,308 +692,29 @@ fn process_fn_items(
         }
     }
 
-    let decoder_struct = quote! {
-        #[derive(Default)]
-        struct Decoders {
-            #(#decoder_struct_fields),*
-        }
+    let predicate_tokens = transaction_predicate_tokens(manifest);
+    let predicate_block = predicate_handler_block(manifest, predicate_tokens);
+    let predicate_decoder_fns = predicate_decoder_fn_tokens(manifest);
 
-        impl Decoders {
-            fn selector_to_type_id(&self, sel: u64) -> usize {
-                match sel {
-                    #(#abi_selectors)*
-                    _ => {
-                        debug!("Unknown selector; check ABI to make sure function outputs match to types");
-                        usize::MAX
-                    }
-                }
-            }
+    let decoder_struct = decoder_struct_tokens(
+        decoder_fields,
+        contract_abi_selectors,
+        contract_abi_selectors_to_fn_names,
+        decoders,
+        contract_log_type_decoders,
+        message_types_decoders,
+        abi_dispatchers,
+        predicate_decoder_fns,
+    );
 
-            pub fn selector_to_fn_name(&self, sel: u64) -> String {
-                match sel {
-                    #(#abi_selectors_to_fn_names)*
-                    _ => {
-                        debug!("Unknown selector; check ABI to make sure function outputs match to types");
-                        "".to_string()
-                    }
-                }
-            }
+    let process_transaction =
+        process_transaction_tokens(check_if_subscribed_to_contract, predicate_block);
 
-            fn compute_message_id(&self, sender: &Address, recipient: &Address, nonce: Nonce, amount: Word, data: Option<Vec<u8>>) -> MessageId {
-
-                let mut raw_message_id = Sha256::new()
-                    .chain_update(sender)
-                    .chain_update(recipient)
-                    .chain_update(nonce)
-                    .chain_update(amount.to_be_bytes());
-
-                let raw_message_id = if let Some(buffer) = data {
-                    raw_message_id
-                        .chain_update(&buffer[..])
-                        .finalize()
-                } else {
-                    raw_message_id.finalize()
-                };
-
-                let message_id = <[u8; 32]>::try_from(&raw_message_id[..]).expect("Could not calculate message ID from receipt fields");
-
-                message_id.into()
-            }
-
-            fn decode_type(&mut self, ty_id: usize, data: Vec<u8>) -> anyhow::Result<()> {
-                let decoder = ABIDecoder::default();
-                match ty_id {
-                    #(#decoders),*
-                    _ => {
-                        debug!("Unknown type ID; check ABI to make sure types are correct.");
-                    },
-                }
-                Ok(())
-            }
-
-            pub fn decode_block(&mut self, data: BlockData) {
-                self.blockdata_decoded.push(data);
-            }
-
-            pub fn decode_return_type(&mut self, sel: u64, data: Vec<u8>) -> anyhow::Result<()> {
-                let ty_id = self.selector_to_type_id(sel);
-                self.decode_type(ty_id, data)?;
-                Ok(())
-            }
-
-            pub fn decode_logdata(&mut self, rb: usize, data: Vec<u8>) -> anyhow::Result<()> {
-                match rb {
-                    #(#log_type_decoders),*
-                    _ => debug!("Unknown logged type ID; check ABI to make sure that logged types are correct.")
-                }
-                Ok(())
-            }
-
-            pub fn decode_messagedata(&mut self, type_id: u64, data: Vec<u8>) -> anyhow::Result<()> {
-                match type_id {
-                    #(#message_types_decoders),*
-                    _ => debug!("Unknown message type ID; check ABI to make sure that message types are correct.")
-                }
-                Ok(())
-            }
-
-            pub fn dispatch(&self) -> anyhow::Result<()> {
-                #(#abi_dispatchers)*
-
-                unsafe {
-                    if !ERROR_MESSAGE.is_empty() {
-                        anyhow::bail!(ERROR_MESSAGE.clone());
-                    } else {
-                        Ok(())
-                    }
-                }
-            }
-        }
-    };
     (
         quote! {
             #subscribed_contract_ids
 
-            use anyhow::Context;
-            use fuel::TransactionData;
-
-            let mut process_transaction = |decoder: &mut Decoders, tx: TransactionData| -> anyhow::Result<()> {
-                let mut return_types = Vec::new();
-                let mut callees = HashSet::new();
-
-                for receipt in tx.receipts {
-                    match receipt {
-                        fuel::Receipt::Call { id: contract_id, amount, asset_id, gas, param1, to: id, .. } => {
-                            #check_if_subscribed_to_contract
-
-                            let fn_name = decoder.selector_to_fn_name(param1);
-                            return_types.push(param1);
-                            callees.insert(id);
-
-                            let data = serialize(
-                                &Call {
-                                    contract_id: ContractId::from(<[u8; 32]>::from(contract_id)),
-                                    to: ContractId::from(<[u8; 32]>::from(id)),
-                                    amount,
-                                    asset_id: AssetId::from(<[u8; 32]>::from(asset_id)),
-                                    gas,
-                                    fn_name
-                                }
-                            );
-                            let ty_id = Call::type_id();
-                            decoder.decode_type(ty_id, data)?;
-                        }
-                        fuel::Receipt::Log { id, ra, rb, .. } => {
-                            #check_if_subscribed_to_contract
-                            let ty_id = Log::type_id();
-                            let data = serialize(
-                                &Log {
-                                    contract_id: ContractId::from(<[u8; 32]>::from(id)),
-                                    ra,
-                                    rb
-                                }
-                            );
-                            decoder.decode_type(ty_id, data)?;
-                        }
-                        fuel::Receipt::LogData { rb, data, ptr, len, id, .. } => {
-                            #check_if_subscribed_to_contract
-                            decoder.decode_logdata(rb as usize, data.unwrap_or(Vec::<u8>::new()))?;
-                        }
-                        fuel::Receipt::Return { id, val, pc, is } => {
-                            #check_if_subscribed_to_contract
-                            if callees.contains(&id) {
-                                let ty_id = Return::type_id();
-                                let data = serialize(
-                                    &Return {
-                                        contract_id: ContractId::from(<[u8; 32]>::from(id)),
-                                        val,
-                                        pc,
-                                        is
-                                    }
-                                );
-                                decoder.decode_type(ty_id, data)?;
-                            }
-                        }
-                        fuel::Receipt::ReturnData { data, id, .. } => {
-                            #check_if_subscribed_to_contract
-                            if callees.contains(&id) {
-                                let selector = return_types.pop().expect("No return type available. <('-'<)");
-                                decoder.decode_return_type(selector, data.unwrap_or(Vec::<u8>::new()))?;
-                            }
-                        }
-                        fuel::Receipt::MessageOut { sender, recipient, amount, nonce, len, digest, data, .. } => {
-                            let sender = Address::from(<[u8; 32]>::from(sender));
-                            let recipient = Address::from(<[u8; 32]>::from(recipient));
-                            let message_id = decoder.compute_message_id(&sender, &recipient, nonce, amount, data.clone());
-
-                            // It's possible that the data field was generated from an empty Sway `Bytes` array
-                            // in the send_message() instruction in which case the data field in the receipt will
-                            // have no type information or data to decode. Thus, we check for a None value or
-                            // an empty byte vector; if either condition is present, then we decode to a unit struct instead.
-                            let (type_id, data) = data
-                                .map_or((u64::MAX, Vec::<u8>::new()), |buffer| {
-                                    if buffer.is_empty() {
-                                        (u64::MAX, Vec::<u8>::new())
-                                    } else {
-                                        let (type_id_bytes, data_bytes) = buffer.split_at(8);
-                                        let type_id = u64::from_be_bytes(
-                                            <[u8; 8]>::try_from(type_id_bytes)
-                                            .expect("Could not get type ID for data in MessageOut receipt")
-                                        );
-                                        let data = data_bytes.to_vec();
-                                        (type_id, data)
-                                    }
-                                });
-
-
-                            decoder.decode_messagedata(type_id, data.clone())?;
-
-                            let ty_id = MessageOut::type_id();
-                            let data = serialize(
-                                &MessageOut {
-                                    message_id,
-                                    sender,
-                                    recipient,
-                                    amount,
-                                    nonce,
-                                    len,
-                                    digest,
-                                    data
-                                }
-                            );
-                            decoder.decode_type(ty_id, data)?;
-                        }
-                        fuel::Receipt::ScriptResult { result, gas_used } => {
-                            let ty_id = ScriptResult::type_id();
-                            let data = serialize(&ScriptResult{ result: u64::from(result), gas_used });
-                            decoder.decode_type(ty_id, data)?;
-                        }
-                        fuel::Receipt::Transfer { id, to, asset_id, amount, pc, is, .. } => {
-                            #check_if_subscribed_to_contract
-                            let ty_id = Transfer::type_id();
-                            let data = serialize(
-                                &Transfer {
-                                    contract_id: ContractId::from(<[u8; 32]>::from(id)),
-                                    to: ContractId::from(<[u8; 32]>::from(to)),
-                                    asset_id: AssetId::from(<[u8; 32]>::from(asset_id)),
-                                    amount,
-                                    pc,
-                                    is
-                                }
-                            );
-                            decoder.decode_type(ty_id, data)?;
-                        }
-                        fuel::Receipt::TransferOut { id, to, asset_id, amount, pc, is, .. } => {
-                            #check_if_subscribed_to_contract
-                            let ty_id = TransferOut::type_id();
-                            let data = serialize(
-                                &TransferOut {
-                                    contract_id: ContractId::from(<[u8; 32]>::from(id)),
-                                    to: Address::from(<[u8; 32]>::from(to)),
-                                    asset_id: AssetId::from(<[u8; 32]>::from(asset_id)),
-                                    amount,
-                                    pc,
-                                    is
-                                }
-                            );
-                            decoder.decode_type(ty_id, data)?;
-                        }
-                        fuel::Receipt::Panic { id, reason, .. } => {
-                            #check_if_subscribed_to_contract
-                            let ty_id = Panic::type_id();
-                            let data = serialize(
-                                &Panic {
-                                    contract_id: ContractId::from(<[u8; 32]>::from(id)),
-                                    reason: *reason.reason() as u32
-                                }
-                            );
-                            decoder.decode_type(ty_id, data)?;
-                        }
-                        fuel::Receipt::Revert { id, ra, .. } => {
-                            #check_if_subscribed_to_contract
-                            let ty_id = Revert::type_id();
-                            let data = serialize(
-                                &Revert {
-                                    contract_id: ContractId::from(<[u8; 32]>::from(id)),
-                                    error_val: u64::from(ra & 0xF)
-                                }
-                            );
-                            decoder.decode_type(ty_id, data)?;
-                        }
-                        fuel::Receipt::Mint { sub_id, contract_id, val, pc, is } => {
-                            let ty_id = Mint::type_id();
-                            let data = serialize(
-                                &Mint {
-                                    sub_id: AssetId::from(<[u8; 32]>::from(sub_id)),
-                                    contract_id: ContractId::from(<[u8; 32]>::from(contract_id)),
-                                    val,
-                                    pc,
-                                    is
-                                }
-                            );
-                            decoder.decode_type(ty_id, data)?;
-                        }
-                        fuel::Receipt::Burn { sub_id, contract_id, val, pc, is } => {
-                            let ty_id = Burn::type_id();
-                            let data = serialize(
-                                &Burn {
-                                    sub_id: AssetId::from(<[u8; 32]>::from(sub_id)),
-                                    contract_id: ContractId::from(<[u8; 32]>::from(contract_id)),
-                                    val,
-                                    pc,
-                                    is
-                                }
-                            );
-                            decoder.decode_type(ty_id, data)?;
-                        }
-                        _ => {
-                            info!("This type is not handled yet. (>'.')>");
-                        }
-                    }
-                }
-
-                Ok(())
-            };
+            #process_transaction
 
             let mut process_block = |block: BlockData| -> anyhow::Result<()> {
                 #start_block
@@ -931,61 +743,12 @@ fn process_fn_items(
             }
         },
         quote! {
+
             #decoder_struct
 
             #(#handler_fns)*
         },
     )
-}
-
-pub fn prefix_abi_and_schema_paths(
-    abi: Option<&str>,
-    schema: &str,
-) -> (Option<String>, String) {
-    if let Some(abi) = abi {
-        match std::env::var("COMPILE_TEST_PREFIX") {
-            Ok(prefix) => {
-                let prefixed = std::path::Path::new(&prefix).join(abi);
-                let abi_string = prefixed
-                    .into_os_string()
-                    .to_str()
-                    .expect("Could not parse prefixed ABI path.")
-                    .to_string();
-                let prefixed = std::path::Path::new(&prefix).join(schema);
-                let schema = prefixed
-                    .into_os_string()
-                    .to_str()
-                    .expect("Could not parse prefixed GraphQL schema path.")
-                    .to_string();
-
-                return (Some(abi_string), schema);
-            }
-            Err(_) => {
-                return (Some(abi.into()), schema.to_string());
-            }
-        };
-    }
-
-    (None, schema.to_string())
-}
-
-pub fn get_abi_tokens(namespace: &str, abi: &str) -> proc_macro2::TokenStream {
-    match Abigen::generate(
-        vec![AbigenTarget {
-            name: namespace.to_string(),
-            abi: abi.to_owned(),
-            program_type: ProgramType::Contract,
-        }],
-        true,
-    ) {
-        Ok(tokens) => tokens,
-        Err(e) => {
-            proc_macro_error::abort_call_site!(
-                "Could not generate tokens for abi: {:?}.",
-                e
-            )
-        }
-    }
 }
 
 pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStream {
@@ -1001,36 +764,84 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
 
     let indexer_module = parse_macro_input!(item as ItemMod);
 
-    let (abi, schema_string) =
-        prefix_abi_and_schema_paths(manifest.abi(), manifest.graphql_schema());
+    let predicate_abi_info = manifest
+        .predicates()
+        .map(|p| {
+            p.templates()
+                .map(|t| {
+                    t.iter()
+                        .filter_map(|t| {
+                            let (predicate_abi, _) = prefix_abi_and_schema_paths(
+                                Some(t.abi()),
+                                Some(manifest.schema()),
+                            );
 
-    let abi_tokens = match abi {
-        Some(ref abi_path) => get_abi_tokens(manifest.namespace(), abi_path),
-        None => proc_macro2::TokenStream::new(),
+                            if let Some(predicate_abi) = predicate_abi {
+                                return Some((predicate_abi, t.name()));
+                            }
+                            None
+                        })
+                        .collect::<Vec<(String, String)>>()
+                })
+                .unwrap_or_default()
+        })
+        .unwrap_or_default();
+
+    let mut targets = Vec::new();
+
+    if let Some(ref abi) = manifest.contract_abi() {
+        targets.push(AbigenTarget {
+            // FIXME: We should be using the name of the contract here
+            name: manifest.namespace().to_string(),
+            abi: abi.to_string(),
+            program_type: ProgramType::Contract,
+        });
+    }
+
+    predicate_abi_info
+        .iter()
+        .for_each(|(abi_path, template_name)| {
+            targets.push(AbigenTarget {
+                name: template_name.to_string(),
+                abi: abi_path.to_string(),
+                program_type: ProgramType::Predicate,
+            });
+        });
+
+    let abi_tokens = match Abigen::generate(targets, true) {
+        Ok(tokens) => tokens,
+        Err(e) => {
+            proc_macro_error::abort_call_site!(
+                "Could not generate tokens for ABI: {:?}.",
+                e
+            )
+        }
     };
 
     // NOTE: https://nickb.dev/blog/cargo-workspace-and-the-feature-unification-pitfall/
     let graphql_tokens = process_graphql_schema(
         manifest.namespace(),
         manifest.identifier(),
-        &schema_string,
+        manifest.schema(),
     );
 
-    let decl_tokens = additional_declarations();
+    let predicate_impl_tokens = predicate_entity_impl_tokens();
 
-    let (handler_block, fn_items) = process_fn_items(&manifest, abi, indexer_module);
-    let handler_block = handler_block_wasm(handler_block);
+    let (block, fn_items) = process_fn_items(&manifest, indexer_module);
+    let block = handler_block(block, fn_items);
+    let predicate_inputs = predicate_inputs_tokens(&manifest);
+
     let output = quote! {
 
-        #decl_tokens
+        #predicate_inputs
 
         #abi_tokens
 
         #graphql_tokens
 
-        #handler_block
+        #predicate_impl_tokens
 
-        #fn_items
+        #block
     };
 
     proc_macro::TokenStream::from(output)

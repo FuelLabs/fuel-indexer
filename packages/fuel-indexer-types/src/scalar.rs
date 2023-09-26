@@ -52,7 +52,23 @@ pub type Bytes = Vec<u8>;
 
 /// JSON type used to store arbitrary object payloads.
 #[derive(Deserialize, Serialize, Clone, Eq, PartialEq, Debug, Hash)]
-pub struct Json(pub String);
+pub struct Json(String);
+
+impl Json {
+    pub fn into_inner(self) -> String {
+        self.0
+    }
+
+    pub fn new(s: String) -> Self {
+        Json(s)
+    }
+}
+
+impl AsRef<str> for Json {
+    fn as_ref(&self) -> &str {
+        self.0.as_ref()
+    }
+}
 
 impl Default for Json {
     fn default() -> Self {

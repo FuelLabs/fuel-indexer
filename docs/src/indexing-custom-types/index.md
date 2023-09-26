@@ -171,19 +171,25 @@ Next, we'll cover how to write the manifest file for your indexer.
 
 Before writing any of the handler code for your indexer, we need to make sure that our indexer manifest contains the necessary information to allow for the compiler to parse our contract types.
 
-Specifically, we should ensure that the `contract_abi` and `graphql_schema` fields point to the correct locations, respectively.
+Specifically, we should ensure that the `contract_abi` and `schema` fields point to the correct locations, respectively.
 
 ```yaml
 # A namespace is a logical grouping of declared names. Think of the namespace
 # as an organization identifier
 namespace: fuellabs
 
-# The identifier field is used to identify the given index.
+# Unique identifier for this indexer.
 identifier: custom_types_example
 
-# The abi option is used to provide a link to the Sway JSON ABI that is generated when you
-# build your project.
-abi: path/to/custom/type/example/contract-abi.json
+# Indexer contract configuration.
+contract: ~
+
+  # File paths to the contract JSON ABIs that are generated when you build your Sway contracts.
+  abis: ~
+
+  # Specifies which particular contracts you would like your indexer to subscribe to.
+  subscriptions: ~
+
 
 # The particular start block after which you'd like your indexer to start indexing events.
 start_block: ~
@@ -197,12 +203,11 @@ end_block: ~
 # with the `--indexer_net_config` option.
 fuel_client: ~
 
-# The contract_id specifies which particular contract you would like your index to subscribe to.
+# Specifies which particular contract(s) you would like your indexer to subscribe to.
 contract_id: ~
 
-# The graphql_schema field contains the file path that points to the GraphQL schema for the
-# given index.
-graphql_schema: path/to/custom/type/example/indexer.schema.graphql
+# A file path that points to the GraphQL schema for the given indexer.
+schema: path/to/custom/type/example/indexer.schema.graphql
 
 # The module field contains a file path that points to code that will be run as an executor inside
 # of the indexer.
@@ -213,6 +218,12 @@ module:
 # The resumable field contains a boolean that specifies whether or not the indexer should, synchronise
 # with the latest block if it has fallen out of sync.
 resumable: true
+
+# Indexer predicate configuration.
+predicates:
+
+  # Template commitments (hashes) of the bytecode of predicates used by this indexer.
+  templates: ~
 ```
 
 ## 4. Handler Logic
