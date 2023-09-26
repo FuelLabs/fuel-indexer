@@ -1,3 +1,4 @@
+extern crate alloc;
 use fuel_indexer_utils::prelude::*;
 
 // TODO: We use a lot of manual type conversion below due to https://github.com/FuelLabs/fuel-indexer/issues/286

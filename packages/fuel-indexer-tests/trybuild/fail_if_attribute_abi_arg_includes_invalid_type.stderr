@@ -1,4 +1,4 @@
-error: Type with ident 'Ident { ident: "BadType", span: #0 bytes(205..212) }' not defined in the ABI.
+error: Type with ident 'Ident { ident: "BadType", span: #0 bytes(225..232) }' not defined in the ABI.
  --> trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
   |
   | #[indexer(manifest = "packages/fuel-indexer-tests/trybuild/simple_wasm.yaml")]
@@ -26,13 +26,13 @@ error[E0412]: cannot find type `BlockData` in this scope
   |
 help: consider importing one of these items
   |
-1  + use fuel_indexer::prelude::fuel::BlockData;
+2  + use fuel_indexer::prelude::fuel::BlockData;
    |
-1  + use fuel_indexer_plugin::prelude::BlockData;
+2  + use fuel_indexer_plugin::prelude::BlockData;
    |
-1  + use fuel_indexer_types::fuel::BlockData;
+2  + use fuel_indexer_types::fuel::BlockData;
    |
-1  + use fuel_indexer_utils::plugin::prelude::BlockData;
+2  + use fuel_indexer_utils::plugin::prelude::BlockData;
    |
 
 error[E0422]: cannot find struct, variant or union type `BlockData` in this scope
@@ -43,13 +43,13 @@ error[E0422]: cannot find struct, variant or union type `BlockData` in this scop
   |
 help: consider importing one of these items
   |
-1  + use fuel_indexer::prelude::fuel::BlockData;
+2  + use fuel_indexer::prelude::fuel::BlockData;
    |
-1  + use fuel_indexer_plugin::prelude::BlockData;
+2  + use fuel_indexer_plugin::prelude::BlockData;
    |
-1  + use fuel_indexer_types::fuel::BlockData;
+2  + use fuel_indexer_types::fuel::BlockData;
    |
-1  + use fuel_indexer_utils::plugin::prelude::BlockData;
+2  + use fuel_indexer_utils::plugin::prelude::BlockData;
    |
 
 error[E0433]: failed to resolve: use of undeclared crate or module `fuel`
@@ -60,17 +60,17 @@ error[E0433]: failed to resolve: use of undeclared crate or module `fuel`
    |
 help: there is a crate or module with a similar name
    |
-32 |         header: fuels::Header {
+33 |         header: fuels::Header {
    |                 ~~~~~
 help: consider importing one of these items
    |
-1  + use fuel_indexer::prelude::fuel;
+2  + use fuel_indexer::prelude::fuel;
    |
-1  + use fuel_indexer_plugin::prelude::fuel;
+2  + use fuel_indexer_plugin::prelude::fuel;
    |
-1  + use fuel_indexer_types::fuel;
+2  + use fuel_indexer_types::fuel;
    |
-1  + use fuel_indexer_utils::plugin::prelude::fuel;
+2  + use fuel_indexer_utils::plugin::prelude::fuel;
    |
 
 error[E0433]: failed to resolve: use of undeclared crate or module `fuel`
@@ -81,17 +81,17 @@ error[E0433]: failed to resolve: use of undeclared crate or module `fuel`
    |
 help: there is a crate or module with a similar name
    |
-44 |         transactions: vec![fuels::TransactionData {
+45 |         transactions: vec![fuels::TransactionData {
    |                            ~~~~~
 help: consider importing one of these items
    |
-1  + use fuel_indexer::prelude::fuel;
+2  + use fuel_indexer::prelude::fuel;
    |
-1  + use fuel_indexer_plugin::prelude::fuel;
+2  + use fuel_indexer_plugin::prelude::fuel;
    |
-1  + use fuel_indexer_types::fuel;
+2  + use fuel_indexer_types::fuel;
    |
-1  + use fuel_indexer_utils::plugin::prelude::fuel;
+2  + use fuel_indexer_utils::plugin::prelude::fuel;
    |
 
 error[E0433]: failed to resolve: use of undeclared crate or module `fuel`
@@ -102,23 +102,23 @@ error[E0433]: failed to resolve: use of undeclared crate or module `fuel`
    |
 help: there is a crate or module with a similar name
    |
-45 |             status: fuels::TransactionStatus::default(),
+46 |             status: fuels::TransactionStatus::default(),
    |                     ~~~~~
 help: consider importing one of these items
    |
-1  + use fuel_indexer::prelude::fuel::TransactionStatus;
+2  + use fuel_indexer::prelude::fuel::TransactionStatus;
    |
-1  + use fuel_indexer_plugin::prelude::fuel::TransactionStatus;
+2  + use fuel_indexer_plugin::prelude::fuel::TransactionStatus;
    |
-1  + use fuel_indexer_types::fuel::TransactionStatus;
+2  + use fuel_indexer_types::fuel::TransactionStatus;
    |
-1  + use fuel_indexer_utils::plugin::prelude::fuel::TransactionStatus;
+2  + use fuel_indexer_utils::plugin::prelude::fuel::TransactionStatus;
    |
      and 1 other candidate
 help: if you import `TransactionStatus`, refer to it directly
    |
-45 -             status: fuel::TransactionStatus::default(),
-45 +             status: TransactionStatus::default(),
+46 -             status: fuel::TransactionStatus::default(),
+46 +             status: TransactionStatus::default(),
    |
 
 error[E0433]: failed to resolve: use of undeclared crate or module `fuel`
@@ -129,23 +129,23 @@ error[E0433]: failed to resolve: use of undeclared crate or module `fuel`
    |
 help: there is a crate or module with a similar name
    |
-48 |                 fuels::Receipt::Call {
+49 |                 fuels::Receipt::Call {
    |                 ~~~~~
 help: consider importing one of these items
    |
-1  + use fuel_indexer::prelude::fuel::Receipt;
+2  + use fuel_indexer::prelude::fuel::Receipt;
    |
-1  + use fuel_indexer_plugin::prelude::fuel::Receipt;
+2  + use fuel_indexer_plugin::prelude::fuel::Receipt;
    |
-1  + use fuel_indexer_types::fuel::Receipt;
+2  + use fuel_indexer_types::fuel::Receipt;
    |
-1  + use fuel_indexer_utils::plugin::prelude::fuel::Receipt;
+2  + use fuel_indexer_utils::plugin::prelude::fuel::Receipt;
    |
      and 2 other candidates
 help: if you import `Receipt`, refer to it directly
    |
-48 -                 fuel::Receipt::Call {
-48 +                 Receipt::Call {
+49 -                 fuel::Receipt::Call {
+49 +                 Receipt::Call {
    |
 
 error[E0433]: failed to resolve: use of undeclared crate or module `fuel`
@@ -156,23 +156,23 @@ error[E0433]: failed to resolve: use of undeclared crate or module `fuel`
    |
 help: there is a crate or module with a similar name
    |
-59 |                 fuels::Receipt::ReturnData {
+60 |                 fuels::Receipt::ReturnData {
    |                 ~~~~~
 help: consider importing one of these items
    |
-1  + use fuel_indexer::prelude::fuel::Receipt;
+2  + use fuel_indexer::prelude::fuel::Receipt;
    |
-1  + use fuel_indexer_plugin::prelude::fuel::Receipt;
+2  + use fuel_indexer_plugin::prelude::fuel::Receipt;
    |
-1  + use fuel_indexer_types::fuel::Receipt;
+2  + use fuel_indexer_types::fuel::Receipt;
    |
-1  + use fuel_indexer_utils::plugin::prelude::fuel::Receipt;
+2  + use fuel_indexer_utils::plugin::prelude::fuel::Receipt;
    |
      and 2 other candidates
 help: if you import `Receipt`, refer to it directly
    |
-59 -                 fuel::Receipt::ReturnData {
-59 +                 Receipt::ReturnData {
+60 -                 fuel::Receipt::ReturnData {
+60 +                 Receipt::ReturnData {
    |
 
 error[E0433]: failed to resolve: use of undeclared type `Transaction`
@@ -183,13 +183,13 @@ error[E0433]: failed to resolve: use of undeclared type `Transaction`
   |
 help: consider importing one of these items
   |
-1  + use fuel_indexer::prelude::fuel::Transaction;
+2  + use fuel_indexer::prelude::fuel::Transaction;
    |
-1  + use fuel_indexer_plugin::prelude::fuel::Transaction;
+2  + use fuel_indexer_plugin::prelude::fuel::Transaction;
    |
-1  + use fuel_indexer_types::fuel::Transaction;
+2  + use fuel_indexer_types::fuel::Transaction;
    |
-1  + use fuel_indexer_utils::plugin::prelude::fuel::Transaction;
+2  + use fuel_indexer_utils::plugin::prelude::fuel::Transaction;
    |
      and 3 other candidates
 
@@ -201,13 +201,13 @@ error[E0425]: cannot find function `serialize` in this scope
   |
 help: consider importing one of these items
   |
-1  + use chrono::naive::serde::ts_microseconds::serialize;
+2  + use chrono::naive::serde::ts_microseconds::serialize;
    |
-1  + use chrono::naive::serde::ts_microseconds_option::serialize;
+2  + use chrono::naive::serde::ts_microseconds_option::serialize;
    |
-1  + use chrono::naive::serde::ts_milliseconds::serialize;
+2  + use chrono::naive::serde::ts_milliseconds::serialize;
    |
-1  + use chrono::naive::serde::ts_milliseconds_option::serialize;
+2  + use chrono::naive::serde::ts_milliseconds_option::serialize;
    |
      and 16 other candidates
 
