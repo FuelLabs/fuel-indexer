@@ -109,6 +109,7 @@ impl Default for IndexerArgs {
             block_page_size: defaults::NODE_BLOCK_PAGE_SIZE,
             enable_block_store: defaults::ENABLE_BLOCK_STORE,
             remove_stored_blocks: defaults::REMOVE_STORED_BLOCKS,
+            allow_non_sequential_blocks: defaults::ALLOW_NON_SEQUENTIAL_BLOCKS,
         }
     }
 }
@@ -140,6 +141,7 @@ pub struct IndexerConfig {
     pub block_page_size: usize,
     pub enable_block_store: bool,
     pub remove_stored_blocks: bool,
+    pub allow_non_sequential_blocks: bool,
 }
 
 impl Default for IndexerConfig {
@@ -163,6 +165,7 @@ impl Default for IndexerConfig {
             block_page_size: defaults::NODE_BLOCK_PAGE_SIZE,
             enable_block_store: defaults::ENABLE_BLOCK_STORE,
             remove_stored_blocks: defaults::REMOVE_STORED_BLOCKS,
+            allow_non_sequential_blocks: defaults::ALLOW_NON_SEQUENTIAL_BLOCKS,
         }
     }
 }
@@ -246,6 +249,7 @@ impl From<IndexerArgs> for IndexerConfig {
             block_page_size: args.block_page_size,
             enable_block_store: args.enable_block_store,
             remove_stored_blocks: args.remove_stored_blocks,
+            allow_non_sequential_blocks: args.allow_non_sequential_blocks,
         };
 
         config
@@ -335,6 +339,7 @@ impl From<ApiServerArgs> for IndexerConfig {
             block_page_size: defaults::NODE_BLOCK_PAGE_SIZE,
             enable_block_store: defaults::ENABLE_BLOCK_STORE,
             remove_stored_blocks: defaults::REMOVE_STORED_BLOCKS,
+            allow_non_sequential_blocks: defaults::ALLOW_NON_SEQUENTIAL_BLOCKS,
         };
 
         config

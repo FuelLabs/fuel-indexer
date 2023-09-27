@@ -123,10 +123,6 @@ graphql_schema: {schema_path}
 # Important: At this time, wasm is the preferred method of execution.
 module: {module}
 
-# The report_metrics field contains boolean whether or not to report Prometheus  metrics to the
-# Fuel backend
-report_metrics: true
-
 # The resumable field contains a boolean that specifies whether or not the indexer should, synchronise
 # with the latest block if it has fallen out of sync.
 resumable: true
@@ -148,7 +144,8 @@ pub fn default_indexer_lib(
     let manifest_path = manifest_path.display();
 
     format!(
-        r#"use fuel_indexer_utils::prelude::*;
+        r#"extern crate alloc;
+use fuel_indexer_utils::prelude::*;
 
 #[indexer(manifest = "{manifest_path}")]
 pub mod {indexer_name}_index_mod {{
@@ -185,7 +182,8 @@ pub fn default_indexer_binary(
     let manifest_path = manifest_path.display();
 
     format!(
-        r#"use fuel_indexer_utils::prelude::*;
+        r#"extern crate alloc;
+use fuel_indexer_utils::prelude::*;
 
 #[indexer(manifest = "{manifest_path}")]
 pub mod {indexer_name}_index_mod {{

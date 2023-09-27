@@ -469,3 +469,18 @@ pub async fn create_ensure_block_height_consecutive_trigger(
         }
     }
 }
+
+pub async fn remove_ensure_block_height_consecutive_trigger(
+    conn: &mut IndexerConnection,
+    namespace: &str,
+    identifier: &str,
+) -> sqlx::Result<()> {
+    match conn {
+        IndexerConnection::Postgres(ref mut c) => {
+            postgres::remove_ensure_block_height_consecutive_trigger(
+                c, namespace, identifier,
+            )
+            .await
+        }
+    }
+}

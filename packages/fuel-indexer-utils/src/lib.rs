@@ -8,9 +8,6 @@
 //! # #[allow(unused)]
 //! use fuel_indexer_utils::prelude::*;
 //! ```
-//!
-//! Examples on how you can use the prelude can be found in
-//! the Hello World indexer example(https://fuellabs.github.io/fuel-indexer/master/examples/hello-world.html).
 
 /// Utility functions for Fuel indexers.
 mod utilities;

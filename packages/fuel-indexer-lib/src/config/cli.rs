@@ -205,6 +205,13 @@ pub struct IndexerArgs {
         help = "Remove all stored blocks. Use this flag together with --enable-block-store to redownload block data afresh."
     )]
     pub remove_stored_blocks: bool,
+
+    /// Allow missing blocks or non-sequential block processing.
+    #[clap(
+        long,
+        help = "Allow missing blocks or non-sequential block processing."
+    )]
+    pub allow_non_sequential_blocks: bool,
 }
 
 #[derive(Debug, Parser, Clone)]

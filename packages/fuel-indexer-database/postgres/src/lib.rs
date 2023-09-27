@@ -1005,10 +1005,35 @@ pub async fn create_ensure_block_height_consecutive_trigger(
     execute_query(conn, trigger_function).await.unwrap();
 
     let trigger = format!(
-        "CREATE TRIGGER trigger_ensure_block_height_consecutive
-        BEFORE INSERT OR UPDATE ON {namespace}_{identifier}.indexmetadataentity
-        FOR EACH ROW
-        EXECUTE FUNCTION ensure_block_height_consecutive();"
+        "DO
+        $$
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1
+                FROM pg_trigger
+                WHERE tgname = 'trigger_ensure_block_height_consecutive'
+            ) THEN
+                CREATE TRIGGER trigger_ensure_block_height_consecutive
+                BEFORE INSERT OR UPDATE ON {namespace}_{identifier}.indexmetadataentity
+                FOR EACH ROW
+                EXECUTE FUNCTION ensure_block_height_consecutive();
+            END IF;
+        END;
+        $$;"
+    );
+
+    execute_query(conn, trigger).await?;
+
+    Ok(())
+}
+
+pub async fn remove_ensure_block_height_consecutive_trigger(
+    conn: &mut PoolConnection<Postgres>,
+    namespace: &str,
+    identifier: &str,
+) -> sqlx::Result<()> {
+    let trigger = format!(
+        "DROP TRIGGER IF EXISTS trigger_ensure_block_height_consecutive ON {namespace}_{identifier}.indexmetadataentity;"
     );
 
     execute_query(conn, trigger).await?;

@@ -8,8 +8,8 @@ fn print_welcome_message() {
     let read_the_docs = format!(
         "Read the Docs:\n- {}\n- {}\n- {}\n- {}\n",
         "Fuel Indexer: https://github.com/FuelLabs/fuel-indexer",
-        "Fuel Indexer Book: https://fuellabs.github.io/fuel-indexer/latest",
-        "Sway Book: https://fuellabs.github.io/sway/latest",
+        "Fuel Indexer Book: https://docs.fuel.network/docs/indexer/",
+        "Sway Book: https://docs.fuel.network/docs/sway/",
         "Rust SDK Book: https://rust.fuel.network",
     );
 

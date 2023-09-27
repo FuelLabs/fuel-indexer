@@ -1,4 +1,4 @@
-error: Type with ident 'Ident { ident: "ThisIsNotDefinedInTheABI", span: #0 bytes(157..181) }' not defined in the ABI.
+error: Type with ident 'Ident { ident: "ThisIsNotDefinedInTheABI", span: #0 bytes(177..201) }' not defined in the ABI.
  --> trybuild/fail_if_ident_not_defined_in_abi.rs
   |
   | #[indexer(manifest = "packages/fuel-indexer-tests/trybuild/simple_wasm.yaml")]

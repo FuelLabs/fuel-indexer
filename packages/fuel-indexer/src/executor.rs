@@ -11,7 +11,7 @@ use fuel_core_client::client::{
     types::TransactionStatus as ClientTransactionStatus,
     FuelClient,
 };
-use fuel_indexer_database::IndexerConnectionPool;
+use fuel_indexer_database::{queries, IndexerConnectionPool};
 use fuel_indexer_lib::{
     defaults::*, manifest::Manifest, utils::serialize, WasmIndexerError,
 };
@@ -105,11 +105,30 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
     }
 
     let enable_block_store = config.enable_block_store;
+    let allow_non_sequential_blocks = config.allow_non_sequential_blocks;
 
     async move {
         let mut conn = pool.acquire().await.unwrap_or_else(|_| {
             panic!("Indexer({indexer_uid}) was unable to acquire a database connection.")
         });
+
+        if allow_non_sequential_blocks {
+            queries::remove_ensure_block_height_consecutive_trigger(
+                &mut conn,
+                executor.manifest().namespace(),
+                executor.manifest().identifier(),
+            )
+            .await
+            .unwrap_or_else(|_| panic!("Unable to remove the sequential blocks trigger for Indexer({indexer_uid})"));
+        } else {
+            queries::create_ensure_block_height_consecutive_trigger(
+                &mut conn,
+                executor.manifest().namespace(),
+                executor.manifest().identifier(),
+            )
+            .await
+            .unwrap_or_else(|_| panic!("Unable to create the sequential blocks trigger for Indexer({indexer_uid})"));
+        }
 
         // If we reach an issue that continues to fail, we'll retry a few times before giving up, as
         // we don't want to quit on the first error. But also don't want to waste CPU.
