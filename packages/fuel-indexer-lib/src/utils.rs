@@ -257,3 +257,28 @@ pub async fn init_logging(config: &IndexerConfig) -> anyhow::Result<()> {
 pub fn format_sql_query(s: String) -> String {
     s.replace('\n', " ")
 }
+
+#[derive(Deserialize)]
+pub struct Package {
+    pub name: String,
+    pub version: String,
+    pub edition: String,
+    pub publish: bool,
+    #[serde(alias = "rust-version")]
+    pub rust_version: String,
+}
+
+#[derive(Deserialize)]
+#[allow(unused)]
+pub struct Lib {
+    #[serde(alias = "crate-type")]
+    pub crate_type: Option<Vec<String>>,
+}
+
+/// General representation of a rust cargo manifest.
+#[derive(Deserialize)]
+#[allow(unused)]
+pub struct Config {
+    pub package: Package,
+    pub lib: Option<Lib>,
+}
