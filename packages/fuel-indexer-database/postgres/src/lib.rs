@@ -1032,6 +1032,7 @@ pub async fn create_ensure_block_height_consecutive_trigger(
                 SELECT 1
                 FROM pg_trigger
                 WHERE tgname = 'trigger_ensure_block_height_consecutive'
+                AND tgrelid = '{namespace}_{identifier}.indexmetadataentity'::regclass
             ) THEN
                 CREATE TRIGGER trigger_ensure_block_height_consecutive
                 BEFORE INSERT OR UPDATE ON {namespace}_{identifier}.indexmetadataentity
