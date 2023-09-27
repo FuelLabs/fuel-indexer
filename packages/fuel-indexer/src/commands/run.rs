@@ -107,15 +107,8 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
         info!("Removing stored blocks.");
         let mut conn = pool.acquire().await?;
         let count = queries::remove_block_data(&mut conn).await?;
-        info!("Succesfully removed {count} blocks.");
+        info!("Successfully removed {count} blocks.");
     }
-
-    if config.enable_block_store {
-        subsystems.spawn(crate::service::create_block_sync_task(
-            config.clone(),
-            pool.clone(),
-        ));
-    };
 
     #[allow(unused)]
     let (tx, rx) = channel::<ServiceRequest>(defaults::SERVICE_REQUEST_CHANNEL_SIZE);
@@ -124,6 +117,15 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
         let mut c = pool.acquire().await?;
         queries::run_migration(&mut c).await?;
     }
+
+    // Block Sync must be started after migrations to ensure that the database
+    // table has been created.
+    if config.enable_block_store {
+        subsystems.spawn(crate::service::create_block_sync_task(
+            config.clone(),
+            pool.clone(),
+        ));
+    };
 
     let mut service = IndexerService::new(config.clone(), pool.clone(), rx).await?;
 

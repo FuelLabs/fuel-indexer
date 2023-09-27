@@ -498,6 +498,7 @@ pub async fn register_indexer(
     })
 }
 
+/// Save `BlockData` to the database.
 pub async fn save_block_data(
     conn: &mut PoolConnection<Postgres>,
     blockdata: &[BlockData],
@@ -520,12 +521,30 @@ pub async fn save_block_data(
     Ok(())
 }
 
+/// Load `BlockData` from the database.
 pub async fn load_block_data(
     conn: &mut PoolConnection<Postgres>,
     start_block: u32,
     end_block: Option<u32>,
     limit: usize,
 ) -> sqlx::Result<Vec<BlockData>> {
+    let raw = load_raw_block_data(conn, start_block, end_block, limit).await?;
+
+    let mut blocks = Vec::new();
+    for bytes in raw {
+        let blockdata: BlockData = fuel_indexer_lib::utils::deserialize(&bytes).unwrap();
+        blocks.push(blockdata);
+    }
+    Ok(blocks)
+}
+
+/// Load raw `BlockData` bytes from the database.
+pub async fn load_raw_block_data(
+    conn: &mut PoolConnection<Postgres>,
+    start_block: u32,
+    end_block: Option<u32>,
+    limit: usize,
+) -> sqlx::Result<Vec<Vec<u8>>> {
     let end_condition = end_block
         .map(|x| format!("AND block_height <= {x}"))
         .unwrap_or("".to_string());
@@ -536,8 +555,7 @@ pub async fn load_block_data(
     let mut blocks = Vec::new();
     for row in rows {
         let bytes = row.get::<Vec<u8>, usize>(0);
-        let blockdata: BlockData = fuel_indexer_lib::utils::deserialize(&bytes).unwrap();
-        blocks.push(blockdata);
+        blocks.push(bytes);
     }
     Ok(blocks)
 }
@@ -982,6 +1000,8 @@ pub async fn put_many_to_many_record(
     Ok(())
 }
 
+/// Create a database trigger on indexmetadataentity table in the indexers
+/// schema which ensures that indexed blocks must be consecutive.
 pub async fn create_ensure_block_height_consecutive_trigger(
     conn: &mut PoolConnection<Postgres>,
     namespace: &str,
@@ -1027,6 +1047,8 @@ pub async fn create_ensure_block_height_consecutive_trigger(
     Ok(())
 }
 
+/// Remove the database trogger which ensures that the indexed blocks must be
+/// consecutive.
 pub async fn remove_ensure_block_height_consecutive_trigger(
     conn: &mut PoolConnection<Postgres>,
     namespace: &str,

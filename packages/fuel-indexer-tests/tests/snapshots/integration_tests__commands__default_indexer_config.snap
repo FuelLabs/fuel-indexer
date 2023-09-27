@@ -42,3 +42,4 @@ block_page_size: 20
 enable_block_store: false
 remove_stored_blocks: false
 allow_non_sequential_blocks: false
+

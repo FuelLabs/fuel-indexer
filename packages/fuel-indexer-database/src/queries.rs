@@ -246,6 +246,20 @@ pub async fn load_block_data(
     }
 }
 
+/// Load raw `BlockData` bytes from the database.
+pub async fn load_raw_block_data(
+    conn: &mut IndexerConnection,
+    start_block: u32,
+    end_block: Option<u32>,
+    limit: usize,
+) -> sqlx::Result<Vec<Vec<u8>>> {
+    match conn {
+        IndexerConnection::Postgres(ref mut c) => {
+            postgres::load_raw_block_data(c, start_block, end_block, limit).await
+        }
+    }
+}
+
 /// Remove all stored `BlockData` from the database.
 pub async fn remove_block_data(conn: &mut IndexerConnection) -> sqlx::Result<usize> {
     match conn {

@@ -4,6 +4,7 @@ use crate::{
 };
 use async_std::sync::{Arc, Mutex};
 use async_std::{fs::File, io::ReadExt};
+use fuel_core_client::client::FuelClient;
 use fuel_indexer_database::{
     queries, types::IndexerAssetType, IndexerConnection, IndexerConnectionPool,
 };
@@ -410,6 +411,14 @@ pub(crate) async fn create_block_sync_task(
 
     let mut conn = pool.acquire().await.unwrap();
 
+    let client =
+        fuel_core_client::client::FuelClient::new(config.fuel_node.uri().to_string())
+            .unwrap_or_else(|e| panic!("Client node connection failed: {e}."));
+
+    check_stored_block_data(pool.clone(), task_id, &config, &client)
+        .await
+        .unwrap_or_else(|_| panic!("{task_id} stored blocks verification failed."));
+
     let last_height = queries::last_block_height_for_stored_blocks(&mut conn)
         .await
         .unwrap_or_else(|_| panic!("{task_id} was unable to determine the last block height for stored blocks."));
@@ -417,10 +426,6 @@ pub(crate) async fn create_block_sync_task(
     let mut cursor = Some(last_height.to_string());
 
     info!("{task_id}: starting from Block#{}", last_height + 1);
-
-    let client =
-        fuel_core_client::client::FuelClient::new(config.fuel_node.uri().to_string())
-            .unwrap_or_else(|e| panic!("Client node connection failed: {e}."));
 
     loop {
         // Get the next page of blocks, and the starting cursor for the subsequent page
@@ -438,7 +443,7 @@ pub(crate) async fn create_block_sync_task(
                     if !block_info.is_empty() {
                         let first = block_info[0].height;
                         let last = block_info.last().unwrap().height;
-                        info!("{task_id}: retrieved blocks: {}-{}.", first, last);
+                        info!("{task_id}: retrieved blocks {}-{}.", first, last);
                     }
                     (block_info, next_cursor, _has_next_page)
                 }
@@ -469,4 +474,52 @@ pub(crate) async fn create_block_sync_task(
             cursor = next_cursor;
         }
     }
+}
+
+// We store serialized `BlockData` in the database. Since it is not versioned,
+// we need a mechanism to detect whether the format of `BlockData` has changed.
+// This function fetches some blocks from the client, serializes them, and then
+// compares to those stored in the database. If they are not the same, the
+// blocks in the database are purged.
+async fn check_stored_block_data(
+    pool: IndexerConnectionPool,
+    task_id: &str,
+    config: &IndexerConfig,
+    client: &FuelClient,
+) -> IndexerResult<()> {
+    let (block_data_client, _, _) = crate::executor::retrieve_blocks_from_node(
+        client,
+        config.block_page_size,
+        &Some("0".to_string()),
+        None,
+        task_id,
+    )
+    .await?;
+
+    let block_data_client: Vec<Vec<u8>> = block_data_client
+        .iter()
+        .map(fuel_indexer_lib::utils::serialize)
+        .collect();
+
+    let mut conn = pool.acquire().await?;
+
+    let block_data_database = queries::load_raw_block_data(
+        &mut conn,
+        1,
+        Some(config.block_page_size as u32),
+        config.block_page_size,
+    )
+    .await?;
+
+    if block_data_database.is_empty() {
+        return Ok(());
+    }
+
+    if block_data_client != block_data_database {
+        warn!("{task_id} detected serialization format change. Removing stored blocks. {task_id} will re-sync blocks from the client.");
+        let count = queries::remove_block_data(&mut conn).await?;
+        warn!("{task_id} successfully removed {count} blocks.");
+    }
+
+    Ok(())
 }
