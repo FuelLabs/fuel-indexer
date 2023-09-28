@@ -1,6 +1,6 @@
 ---
 source: packages/fuel-indexer-schema/src/lib.rs
-expression: bytes4.query_fragment()
+expression: bytes.query_fragment()
 ---
-"'f0f0f0f0'"
+"'000102030405'"
 

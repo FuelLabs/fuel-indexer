@@ -1,6 +1,6 @@
 ---
 source: packages/fuel-indexer-schema/src/lib.rs
-expression: uint1.query_fragment()
+expression: uid.query_fragment()
 ---
-"120"
+"'0000000000000000000000000000000000000000000000000000000000000000'"
 
