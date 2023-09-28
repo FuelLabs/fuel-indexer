@@ -401,9 +401,9 @@ impl ParsedGraphQLSchema {
 
                 return ref_coltype;
             } else if self.is_virtual_typedef(&typ_name) {
-                return "Virtual".to_string();
+                return "Json".to_string();
             } else if self.is_enum_typedef(&typ_name) {
-                return "Charfield".to_string();
+                return "XString".to_string();
             } else {
                 return typ_name;
             }
@@ -416,11 +416,11 @@ impl ParsedGraphQLSchema {
         }
 
         if self.is_virtual_typedef(&typ_name) {
-            return "Virtual".to_string();
+            return "Json".to_string();
         }
 
         if self.is_enum_typedef(&typ_name) {
-            return "Charfield".to_string();
+            return "XString".to_string();
         }
 
         typ_name
@@ -967,17 +967,17 @@ type Account @entity {
 type User @entity {
     id: ID!
     account: Account!
-    username: Charfield!
+    username: XString!
 }
 
 type Loser @entity {
     id: ID!
     account: Account!
-    age: UInt8!
+    age: U64!
 }
 
 type Metadata @entity(virtual: true) {
-    count: UInt8!
+    count: U64!
 }
 
 union Person = User | Loser
@@ -995,7 +995,7 @@ type Safe @entity {
 
 type Vault @entity {
     id: ID!
-    label: Charfield!
+    label: XString!
     user: [User!]!
 }
 
@@ -1079,16 +1079,16 @@ type TransactionData @entity {
         let schema = r#"
 type Foo @entity {
     id: ID!
-    name: Charfield!
+    name: XString!
 }
 
 type Bar @entity {
     id: ID!
-    age: UInt8!
+    age: U64!
 }
 
 type Zoo @entity(virtual: true) {
-    height: UInt8!
+    height: U64!
 }
 
 union Baz = Foo | Bar | Zoo
@@ -1111,17 +1111,17 @@ union Baz = Foo | Bar | Zoo
         let schema = r#"
 type Foo @entity {
     id: ID!
-    name: Charfield!
+    name: XString!
 }
 
 type Bar @entity {
     id: ID!
-    age: UInt8!
+    age: U64!
 }
 
 type Zoo @entity {
     id: ID!
-    name: UInt8!
+    name: U64!
 }
 
 union Baz = Foo | Bar | Zoo
@@ -1144,7 +1144,7 @@ union Baz = Foo | Bar | Zoo
         let schema = r#"
 type Foo @entity {
     id: ID!
-    name: Charfield!
+    name: XString!
 }
 
 type Zoo @entity {
@@ -1164,13 +1164,13 @@ type Zoo @entity {
 
     #[test]
     #[should_panic(
-        expected = "FieldDefinition(id) on TypeDefinition(Foo) must be of type `ID!`. Found type `Charfield!`."
+        expected = "FieldDefinition(id) on TypeDefinition(Foo) must be of type `ID!`. Found type `XString!`."
     )]
     fn test_schema_validator_id_field_is_type_id() {
         let schema = r#"
 type Foo @entity {
-    id: Charfield!
-    name: Charfield!
+    id: XString!
+    name: XString!
 }"#;
 
         let _ = ParsedGraphQLSchema::new(
@@ -1190,7 +1190,7 @@ type Foo @entity {
         let schema = r#"
 type Foo @entity(virtual: true) {
     id: ID!
-    name: Charfield!
+    name: XString!
 }"#;
 
         let _ = ParsedGraphQLSchema::new(
@@ -1210,7 +1210,7 @@ type Foo @entity(virtual: true) {
         let schema = r#"
 type Foo @entity {
     id: ID!
-    name: Charfield!
+    name: XString!
 }
 
 type Bar @entity {
@@ -1236,57 +1236,57 @@ type Bar @entity {
         let schema = r#"
 type Type1 @entity {
     id: ID!
-    name: Charfield!
+    name: XString!
 }
 
 type Type2 @entity {
     id: ID!
-    name: Charfield!
+    name: XString!
 }
 
 type Type3 @entity {
     id: ID!
-    name: Charfield!
+    name: XString!
 }
 
 type Type4 @entity {
     id: ID!
-    name: Charfield!
+    name: XString!
 }
 
 type Type5 @entity {
     id: ID!
-    name: Charfield!
+    name: XString!
 }
 
 type Type6 @entity {
     id: ID!
-    name: Charfield!
+    name: XString!
 }
 
 type Type7 @entity {
     id: ID!
-    name: Charfield!
+    name: XString!
 }
 
 type Type8 @entity {
     id: ID!
-    name: Charfield!
+    name: XString!
 }
 
 type Type9 @entity {
     id: ID!
-    name: Charfield!
+    name: XString!
 }
 
 type Type10 @entity {
     id: ID!
-    name: Charfield!
+    name: XString!
 }
 
 type Type11 @entity {
     id: ID!
-    name: Charfield!
+    name: XString!
 }
 
 type Bar @entity {
@@ -1316,13 +1316,13 @@ type Bar @entity {
 
     #[test]
     #[should_panic(
-        expected = "FieldDefinition(foo) on TypeDefinition(Bar) is a many-to-many relationship where the inner scalar is of type `name: Charfield!`. However, only inner scalars of type `id: ID!` are allowed."
+        expected = "FieldDefinition(foo) on TypeDefinition(Bar) is a many-to-many relationship where the inner scalar is of type `name: XString!`. However, only inner scalars of type `id: ID!` are allowed."
     )]
     fn test_schema_validator_m2m_fk_field_ref_col_is_id() {
         let schema = r#"
 type Foo @entity {
     id: ID!
-    name: Charfield!
+    name: XString!
 }
 
 type Bar @entity {

@@ -756,13 +756,13 @@ mod tests {
         let schema = r#"
 type Block @entity {
     id: ID!
-    height: UInt8!
-    timestamp: Int8!
+    height: U64!
+    timestamp: I64!
 }
 
 type Tx @entity {
     id: ID!
-    timestamp: Int8!
+    timestamp: I64!
     block: Block
     input_data: Json!
 }

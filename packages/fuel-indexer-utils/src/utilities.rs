@@ -17,3 +17,11 @@ pub fn bytes32(data: impl AsRef<[u8]>) -> Bytes32 {
     result.copy_from_slice(&digest.as_bytes()[0..32]);
     Bytes32::from(result)
 }
+
+pub fn to_bytes32(data: impl AsRef<[u8]>) -> Bytes32 {
+    let mut result = [0u8; 32];
+    let data = data.as_ref();
+    let len = data.len().min(32); // take the minimum of the data length and 32
+    result[..len].copy_from_slice(&data[..len]); // copy only up to len bytes
+    Bytes32::from(result)
+}

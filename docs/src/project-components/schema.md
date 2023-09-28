@@ -6,20 +6,20 @@ Below is a sample GraphQL schema for a Fuel indexer.
 
 ```graphql
 type Metadata @entity(virtual: true) {
-    imageUrl: Charfield!
-    data: Blob
+    imageUrl: XString!
+    data: Bytes
 }
 
 type Account @entity {
     id: ID!
     address: Address!
-    index: UInt8!
+    index: U64!
     metadata: Metadata
 }
 
 type Wallet @entity {
     id: ID!
-    name: Charfield!
+    name: XString!
     accounts: [Account!]!
 }
 ```

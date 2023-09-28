@@ -1,14 +1,14 @@
 # Calling this `Greeter` so as to not clash with `Person` in the contract
 type Greeter @entity {
   id: ID!
-  name: Charfield!
-  last_seen: UInt4!
+  name: XString!
+  last_seen: U32!
 }
 
 # Calling this `Salutation` so as to not clash with `Greeting` in the contract
 type Salutation @entity {
   id: ID!
-  message: Charfield!
+  message: XString!
   greeter: Greeter!
-  last_seen: UInt4!
+  last_seen: U32!
 }

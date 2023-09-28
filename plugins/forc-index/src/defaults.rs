@@ -211,7 +211,7 @@ pub mod {indexer_name}_index_mod {{
 pub fn default_indexer_schema() -> String {
     r#"type Block @entity {
     id: ID!
-    height: UInt8!
+    height: U64!
     hash: Bytes32! @unique
 }
 
