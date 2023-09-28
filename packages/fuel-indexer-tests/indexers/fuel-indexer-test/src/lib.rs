@@ -121,11 +121,11 @@ mod fuel_indexer_test {
         } = messageout;
 
         MessageOutEntity::new(
-            to_bytes32(message_id),
+            bytes32(message_id),
             sender,
             recipient,
             amount,
-            to_bytes32(nonce),
+            bytes32(nonce),
             len,
             digest,
         )

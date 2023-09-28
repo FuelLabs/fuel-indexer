@@ -23,26 +23,25 @@ lazy_static! {
     static ref SCALAR_TYPES: HashSet<&'static str> = HashSet::from([
         "Address",
         "AssetId",
-        "Bytes",
         "Boolean",
+        "Bytes",
         "Bytes32",
         "Bytes4",
         "Bytes64",
         "Bytes8",
-        "String",
         "ContractId",
-        "ID",
-        "Identity",
-        "I8",
         "I128",
         "I32",
         "I64",
+        "I8",
+        "ID",
+        "Identity",
         "Json",
-        "UID",
-        "U8",
         "U128",
         "U32",
         "U64",
+        "U8",
+        "UID",
     ]);
 
     /// Scalar types that are represented by a numeric type. This ensures that the
@@ -67,7 +66,6 @@ lazy_static! {
         "Bytes64",
         "Bytes64",
         "Bytes8",
-        "String",
         "ContractId",
         "ID",
         "Identity",
@@ -89,7 +87,6 @@ lazy_static! {
         "U32",
         "U64",
         "UID",
-        "String",
     ]);
 
     /// Entity types that should be ignored when building the dynamic schema,

@@ -834,7 +834,7 @@ impl From<fuel::TransactionData> for Transaction {
                     Some(inputs),
                     Some(outputs),
                     Some(witnesses),
-                    to_bytes32(salt),
+                    bytes32(salt),
                     metadata.to_owned().map(|m| m.into()),
                     true,
                     Some(receipts),
