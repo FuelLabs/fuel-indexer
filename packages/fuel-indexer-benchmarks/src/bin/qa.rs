@@ -490,7 +490,7 @@ async fn main() {
 
     let mani_path = explorer_root.join("fuel_explorer.manifest.yaml");
 
-    let _proc = Command::new("./target/release/forc-index")
+    let _proc = Command::new("forc-index")
         .arg("start")
         .arg("--run-migrations")
         .arg("--fuel-node-host")

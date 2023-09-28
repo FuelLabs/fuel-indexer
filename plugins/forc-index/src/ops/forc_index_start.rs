@@ -42,7 +42,7 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
         allow_non_sequential_blocks,
     } = command;
 
-    let mut cmd = Command::new("./target/release/fuel-indexer");
+    let mut cmd = Command::new("fuel-indexer");
     cmd.arg("run");
 
     if let Some(m) = &manifest {
