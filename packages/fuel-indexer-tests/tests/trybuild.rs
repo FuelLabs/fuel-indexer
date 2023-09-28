@@ -8,7 +8,7 @@ enum TestKind {
     Fail,
 }
 
-fn test_dirs() -> (String, String, String) {
+fn test_dirs() -> (String, String, String, String) {
     let t = trybuild::TestCases::new();
     let manifest_dir = env!("CARGO_MANIFEST_DIR");
     std::env::set_var("COMPILE_TEST_PREFIX", manifest_dir);
@@ -27,11 +27,12 @@ fn test_dirs() -> (String, String, String) {
         abi_root_str.to_string(),
         tests_root_str.to_string(),
         project_root_str.to_string(),
+        trybuild_root.to_string_lossy().to_string(),
     )
 }
 
 fn manifest_with_contract_abi(contract_name: &str) -> String {
-    let (abi_root_str, tests_root_str, project_root_str) = test_dirs();
+    let (abi_root_str, tests_root_str, project_root_str, _) = test_dirs();
     format!(
         r#"
 namespace: test_namespace
@@ -46,7 +47,8 @@ module:
 
 #[test]
 fn test_success_and_failure_macros() {
-    let (abi_root_str, tests_root_str, project_root_str) = test_dirs();
+    let t = trybuild::TestCases::new();
+    let (abi_root_str, tests_root_str, project_root_str, trybuild_root) = test_dirs();
     let manifest_content = format!(
         r#"
 namespace: test_namespace
@@ -223,16 +225,17 @@ module:
     ];
 
     for (name, manifest_name, kind, manifest_content) in tests {
-        let manifest_path = trybuild_root.join(manifest_name);
+        let trybuild = Path::new(&trybuild_root);
+        let manifest_path = trybuild.join(manifest_name);
         let mut f = std::fs::File::create(&manifest_path).unwrap();
         f.write_all(manifest_content.as_bytes()).unwrap();
 
         match kind {
             TestKind::Pass => {
-                t.pass(trybuild_root.join(&name));
+                t.pass(trybuild.join(&name));
             }
             TestKind::Fail => {
-                t.compile_fail(trybuild_root.join(&name));
+                t.compile_fail(trybuild.join(&name));
             }
         }
     }
