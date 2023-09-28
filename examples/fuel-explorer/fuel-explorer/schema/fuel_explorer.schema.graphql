@@ -519,7 +519,7 @@ type SubmittedStatus @entity {
 
 type SqueezedOutStatus @entity {
   id: ID!
-  reason: XString!
+  reason: String!
   label: TransactionStatusLabel!
   is_squeezed_out: Boolean!
 }
@@ -528,7 +528,7 @@ type FailureStatus @entity {
   id: ID!
   block: BlockIdFragment!
   time: U64!
-  reason: XString!
+  reason: String!
   program_state: ProgramState
   label: TransactionStatusLabel!
   is_failure: Boolean!
@@ -585,7 +585,7 @@ type NodeInfo @entity {
   min_gas_price: U64!
   max_tx: U64!
   max_depth: U64!
-  node_version: XString!
+  node_version: String!
 }
 
 type ConsensusParameters @entity {
@@ -608,7 +608,7 @@ type ConsensusParameters @entity {
 type ChainInfo @entity {
   id: ID!
   base_chain_height: U32!
-  name: XString!
+  name: String!
   peer_count: I32!
   latest_block: Block!
   consensus_parameters: ConsensusParameters!

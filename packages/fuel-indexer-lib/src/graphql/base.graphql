@@ -20,7 +20,7 @@ scalar U32
 scalar U64
 scalar U8
 scalar UID
-scalar XString
+scalar String
 
 enum IndexType {
     BTree,

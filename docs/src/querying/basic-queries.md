@@ -90,24 +90,24 @@ We'll start with the following example schema:
 ```graphql
 type City @entity {
     id: ID!
-    name: XString!
+    name: String!
 }
 
 type Library @entity {
     id: ID!
-    name: XString!
+    name: String!
     city: City!
 }
 
 type Book @entity {
     id: ID!
-    title: XString!
+    title: String!
     library: Library!
 }
 
 type Character @entity {
     id: ID!
-    name: XString!
+    name: String!
     book: Book!
 }
 ```

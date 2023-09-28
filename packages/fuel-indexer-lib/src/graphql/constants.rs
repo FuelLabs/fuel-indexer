@@ -19,7 +19,7 @@ lazy_static! {
         "Bytes4",
         "Bytes64",
         "Bytes8",
-        "XString",
+        "String",
         "ContractId",
         "Json",
         "Option<Address>",
@@ -32,7 +32,7 @@ lazy_static! {
         "Option<Bytes64>",
         "Option<Bytes8>",
         "Option<Bytes>",
-        "Option<XString>",
+        "Option<String>",
         "Option<ContractId>",
         "Option<Json>",
     ]);
@@ -53,11 +53,11 @@ lazy_static! {
     /// Set of types that should be copied instead of referenced.
     pub static ref COPY_TYPES: HashSet<&'static str> = HashSet::from([
         "Bytes",
-        "XString",
+        "String",
         "Identity",
         "Json",
         "Option<Bytes>",
-        "Option<XString>",
+        "Option<String>",
         "Option<Identity>",
         "Option<Json>",
     ]);

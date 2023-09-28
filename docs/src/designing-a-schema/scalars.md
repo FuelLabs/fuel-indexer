@@ -25,4 +25,4 @@ The Fuel indexer has a collection of GraphQL scalars that cover virtually any va
 | U64 | `u64` |
 | U8 | `u8` |
 | UID | `SizedAsciiString<64>` | 32-byte unique ID |
-| XString | `String` | String of arbitrary size |
+| String | `String` | String of arbitrary size |

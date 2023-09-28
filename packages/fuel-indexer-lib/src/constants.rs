@@ -19,7 +19,7 @@ lazy_static! {
         "Bytes4",
         "Bytes64",
         "Bytes8",
-        "XString",
+        "String",
         "ContractId",
         "Json",
         "Option<Address>",
@@ -31,7 +31,7 @@ lazy_static! {
         "Option<Bytes4>",
         "Option<Bytes64>",
         "Option<Bytes8>",
-        "Option<XString>",
+        "Option<String>",
         "Option<ContractId>",
         "Option<Json>",
         "Option<Salt>",
@@ -85,10 +85,10 @@ lazy_static! {
         "Option<Identity>",
         "Option<Json>",
         "Option<UID>",
-        "Option<XString>",
+        "Option<String>",
         "UID",
         "Vec<FtColumn>",
-        "XString",
+        "String",
     ]);
 
     /// Fuel-specific receipt-related type names.
@@ -133,7 +133,7 @@ lazy_static! {
         "U64",
         "U8",
         "UID",
-        "XString",
+        "String",
 
         // Imports for transaction fields.
         // https://github.com/FuelLabs/fuel-indexer/issues/286

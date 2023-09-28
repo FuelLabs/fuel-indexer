@@ -30,8 +30,8 @@ pub type U64 = u64;
 /// Scalar for 16-byte unsigned integers.
 pub type U128 = u128;
 
-/// Scalar for arbitrarily sized `String` aliased as `XString`.
-pub type XString = String;
+/// Scalar for arbitrarily sized `String` aliased as `String`.
+// pub type String = String;
 
 /// Scalar for boolean.
 pub type Boolean = bool;

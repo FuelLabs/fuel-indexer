@@ -1,7 +1,7 @@
 type PingEntity @entity {
   id: ID!
   value: U64!
-  message: XString!
+  message: String!
 }
 
 type PungEntity @entity {
@@ -86,14 +86,14 @@ type OptionEntity @entity {
 
 type TupleEntity @entity {
   id: ID!
-  complex_a: XString!
+  complex_a: String!
   complex_b: U64!
-  simple_a: XString!
+  simple_a: String!
 }
 
 type MessageEntity @entity {
   id: ID!
-  message: XString!
+  message: String!
 }
 
 type CallEntity @entity {
@@ -102,7 +102,7 @@ type CallEntity @entity {
   callee: ContractId!
   asset_id: AssetId!
   gas: U64!
-  fn_name: XString!
+  fn_name: String!
   amount: U64!
 }
 
@@ -134,58 +134,58 @@ type BurnEntity @entity {
 
 type Genre @entity {
   id: ID!
-  name: XString!
+  name: String!
 }
 
 type Person @entity {
   id: ID!
-  name: XString!
+  name: String!
 }
 
 type Planet @entity {
   id: ID!
-  name: XString!
+  name: String!
 }
 
 type Continent @entity {
   id: ID!
-  name: XString!
+  name: String!
   planet: Planet!
 }
 
 type Country @entity {
   id: ID!
-  name: XString!
+  name: String!
   continent: Continent!
 }
 
 type Region @entity {
   id: ID!
-  name: XString!
+  name: String!
   country: Country!
 }
 
 type City @entity {
   id: ID!
-  name: XString!
+  name: String!
   region: Region!
 }
 
 type Author @entity {
   id: ID!
-  name: XString!
+  name: String!
   genre: Genre!
 }
 
 type Library @entity {
   id: ID!
-  name: XString!
+  name: String!
   city: City!
 }
 
 type Book @entity {
   id: ID!
-  name: XString!
+  name: String!
   author: Author! @indexed
   library: Library!
   genre: Genre!
@@ -193,7 +193,7 @@ type Book @entity {
 
 type Sponsor @entity {
   id: ID!
-  name: XString! @unique
+  name: String! @unique
   amount: U64!
   representative: Person!
 }
@@ -208,25 +208,25 @@ type BookClub @entity {
 
 type Municipality @entity {
   id: ID!
-  name: XString! @unique
+  name: String! @unique
 }
 
 type SportsTeam @entity {
   id: ID!
-  name: XString!
+  name: String!
   municipality: Municipality! @join(on: name)
 }
 
 type InnerFilterEntity @entity {
   id: ID!
-  inner_foo: XString!
+  inner_foo: String!
   inner_bar: U64!
   inner_baz: U64!
 }
 
 type FilterEntity @entity {
   id: ID!
-  foola: XString!
+  foola: String!
   maybe_null_bar: U64
   bazoo: U64!
   inner_entity: InnerFilterEntity!
@@ -259,13 +259,13 @@ type ComplexEnumEntity @entity {
 }
 
 type VirtualEntity @entity(virtual: true) {
-  name: XString
+  name: String
   size: U8!
 }
 
 type UsesVirtualEntity @entity {
   id: ID!
-  name: XString!
+  name: String!
   no_table: VirtualEntity!
 }
 
@@ -325,9 +325,9 @@ type ListFKType @entity {
 
 type ListTypeEntity @entity {
   id: ID!
-  foo_field: XString!
+  foo_field: String!
   required_all: [ListFKType!]!
-  optional_inner: [XString]!
+  optional_inner: [String]!
   optional_outer: [U64!]
   optional_all: [U64]
   virtual_optional_inner: [VirtualEntity]!

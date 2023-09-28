@@ -19,7 +19,7 @@ Let's learn how to use each foreign key type by looking at some GraphQL schema e
 ```graphql
 type Library @entity {
     id: ID!
-    name: XString!
+    name: String!
 }
 
 type Book @entity {
@@ -35,7 +35,7 @@ Given the above schema, two entities will be created: a `Book` entity, and a `Li
 ```graphql
 type Library @entity {
     id: ID!
-    name: XString! @unique
+    name: String! @unique
 }
 
 type Book @entity {

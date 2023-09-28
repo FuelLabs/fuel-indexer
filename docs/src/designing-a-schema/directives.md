@@ -55,7 +55,7 @@ The `@join` directive is used to relate a field in one type to others by referen
 ```graphql
 type Book @entity {
     id: ID!
-    name: XString! @unique
+    name: String! @unique
 }
 
 type Library @entity {

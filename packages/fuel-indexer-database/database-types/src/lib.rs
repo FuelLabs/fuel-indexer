@@ -62,7 +62,7 @@ pub enum ColumnType {
     Bytes = 13,
     ForeignKey = 14,
     Json = 15,
-    XString = 17,
+    String = 17,
     Identity = 18,
     Boolean = 19,
     Object = 20,
@@ -96,7 +96,7 @@ impl From<ColumnType> for i32 {
             ColumnType::Bytes => 13,
             ColumnType::ForeignKey => 14,
             ColumnType::Json => 15,
-            ColumnType::XString => 17,
+            ColumnType::String => 17,
             ColumnType::Identity => 18,
             ColumnType::Boolean => 19,
             ColumnType::Object => 20,
@@ -142,7 +142,7 @@ impl From<i32> for ColumnType {
             13 => ColumnType::Bytes,
             14 => ColumnType::ForeignKey,
             15 => ColumnType::Json,
-            17 => ColumnType::XString,
+            17 => ColumnType::String,
             18 => ColumnType::Identity,
             19 => ColumnType::Boolean,
             20 => ColumnType::Object,
@@ -176,7 +176,7 @@ impl From<&str> for ColumnType {
             "Bytes" => ColumnType::Bytes,
             "ForeignKey" => ColumnType::ForeignKey,
             "Json" => ColumnType::Json,
-            "XString" => ColumnType::XString,
+            "String" => ColumnType::String,
             "Identity" => ColumnType::Identity,
             "Boolean" => ColumnType::Boolean,
             "Object" => ColumnType::Object,
@@ -342,7 +342,7 @@ impl Column {
             ColumnType::Bytes4 => "varchar(8)".to_string(),
             ColumnType::Bytes64 => "varchar(128)".to_string(),
             ColumnType::Bytes8 => "varchar(16)".to_string(),
-            ColumnType::XString => "varchar(255)".to_string(),
+            ColumnType::String => "varchar(255)".to_string(),
             ColumnType::ContractId => "varchar(64)".to_string(),
             ColumnType::Enum => "varchar(255)".to_string(),
             ColumnType::ForeignKey => "numeric(20, 0)".to_string(),
@@ -376,7 +376,7 @@ impl Column {
                     | ColumnType::Bytes32
                     | ColumnType::AssetId
                     | ColumnType::ContractId
-                    | ColumnType::XString
+                    | ColumnType::String
                     | ColumnType::Identity
                     | ColumnType::Bytes64
                     | ColumnType::ID
@@ -1212,7 +1212,7 @@ mod tests {
         let schema = r#"
 type Person @entity {
     id: ID!
-    name: XString! @unique
+    name: String! @unique
     age: U8!
 }"#;
 
@@ -1220,7 +1220,7 @@ type Person @entity {
             ("id", "ID", None),
             (
                 "name",
-                "XString",
+                "String",
                 Some(vec![Positioned {
                     pos: Pos::default(),
                     node: ConstDirective {
@@ -1290,7 +1290,7 @@ type Person @entity {
         let schema = r#"
 type Person @entity {
     id: ID!
-    name: XString! @unique
+    name: String! @unique
     age: U8!
 }"#;
 
@@ -1312,7 +1312,7 @@ type Person @entity {
             ty: Positioned {
                 pos: Pos::default(),
                 node: Type {
-                    base: BaseType::Named(Name::new("XString")),
+                    base: BaseType::Named(Name::new("String")),
                     nullable: false,
                 },
             },
@@ -1331,8 +1331,8 @@ type Person @entity {
         let type_id = type_id(&schema.fully_qualified_namespace(), "Person");
         let column =
             Column::from_field_def(&field_def, &schema, type_id, 0, Persistence::Scalar);
-        assert_eq!(column.graphql_type, "XString".to_string());
-        assert_eq!(column.coltype, ColumnType::XString);
+        assert_eq!(column.graphql_type, "String".to_string());
+        assert_eq!(column.coltype, ColumnType::String);
         assert!(column.unique);
         assert!(!column.nullable);
     }

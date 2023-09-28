@@ -30,7 +30,7 @@ Below is a mapping of GraphQL schema types to their Sway and database equivalent
 | U64 | `u64` | numeric(20, 0) |
 | U8 | `u8` | integer |
 | UID | | varchar(64) |
-| XString | `str[]` | varchar(255) |
+| String | `str[]` | varchar(255) |
 
 ## Example
 
