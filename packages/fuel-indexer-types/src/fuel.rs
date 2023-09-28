@@ -503,7 +503,7 @@ pub struct Genesis {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PoA {
-    pub signature: Signature,
+    pub signature: Bytes64,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]

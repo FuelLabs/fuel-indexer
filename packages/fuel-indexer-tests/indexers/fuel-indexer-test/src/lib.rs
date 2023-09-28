@@ -435,7 +435,7 @@ mod fuel_indexer_test {
             // TOOD: Finish
             time: None,
             hex: Some(Bytes::from("hello world!")),
-            sig: Signature::default(),
+            sig: Bytes64::default(),
             bytes: Bytes64::default(),
         };
 

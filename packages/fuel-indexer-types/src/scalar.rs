@@ -1,4 +1,4 @@
-use bytes::Bytes as ExternalBytes;
+use bytes::Bytes as _Bytes;
 pub use fuel_types::{
     Address, AssetId, BlockHeight, Bytes32, Bytes4, Bytes64, Bytes8, ContractId,
     MessageId, Nonce, Salt, Word,
@@ -30,14 +30,8 @@ pub type U64 = u64;
 /// Scalar for 16-byte unsigned integers.
 pub type U128 = u128;
 
-/// Scalar for arbitrarily sized `String` aliased as `String`.
-// pub type String = String;
-
 /// Scalar for boolean.
 pub type Boolean = bool;
-
-/// Scalar for 64-byte signature payloads aliased as `Signature`.
-pub type Signature = Bytes64;
 
 /// Scalar for 1-byte signed integers.
 pub type I8 = i8;
@@ -46,11 +40,7 @@ pub type I8 = i8;
 pub type U8 = u8;
 
 /// Scalar for arbitrarily-sized byte payloads.
-pub type Bytes = ExternalBytes;
-
-/// JSON type used to store types tagged with a `@virtual` directive in
-/// GraphQL schema. Aliased as `Virtual`.
-// pub type Virtual = Json;
+pub type Bytes = _Bytes;
 
 /// JSON type used to store arbitrary object payloads.
 #[derive(Deserialize, Serialize, Clone, Eq, PartialEq, Debug, Hash)]
