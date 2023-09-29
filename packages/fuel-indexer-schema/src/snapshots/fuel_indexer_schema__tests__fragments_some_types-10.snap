@@ -1,6 +1,6 @@
 ---
 source: packages/fuel-indexer-schema/src/lib.rs
-expression: hex.query_fragment()
+expression: identity.query_fragment()
 ---
-"'74686973206973206120686578737472696e67'"
+"'1212121212121212121212121212121212121212121212121212121212121212'"
 

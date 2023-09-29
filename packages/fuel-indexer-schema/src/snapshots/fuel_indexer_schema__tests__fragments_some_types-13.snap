@@ -1,6 +1,6 @@
 ---
 source: packages/fuel-indexer-schema/src/lib.rs
-expression: salt.query_fragment()
+expression: int64.query_fragment()
 ---
-"'3131313131313131313131313131313131313131313131313131313131313131'"
+"8680820740569200760"
 

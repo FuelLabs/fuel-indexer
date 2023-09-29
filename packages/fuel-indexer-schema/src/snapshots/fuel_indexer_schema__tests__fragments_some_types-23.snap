@@ -1,6 +1,6 @@
 ---
 source: packages/fuel-indexer-schema/src/lib.rs
-expression: timestamp.query_fragment()
+expression: xstring.query_fragment()
 ---
-"8680820740569200760"
+"'hello world'"
 

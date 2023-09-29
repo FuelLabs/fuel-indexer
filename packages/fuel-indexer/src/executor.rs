@@ -17,7 +17,7 @@ use fuel_indexer_lib::{
 };
 use fuel_indexer_types::{
     fuel::{field::*, *},
-    scalar::{Bytes32, HexString},
+    scalar::{Bytes, Bytes32},
 };
 use fuel_tx::UniqueIdentifier;
 use fuel_vm::prelude::Deserializable;
@@ -368,15 +368,15 @@ pub async fn retrieve_blocks_from_node(
                     let program_state = program_state.map(|p| match p {
                         ClientProgramState::Return(w) => ProgramState {
                             return_type: ReturnType::Return,
-                            data: HexString::from(w.to_le_bytes().to_vec()),
+                            data: Bytes::from(w.to_le_bytes().to_vec()),
                         },
                         ClientProgramState::ReturnData(d) => ProgramState {
                             return_type: ReturnType::ReturnData,
-                            data: HexString::from(d.to_vec()),
+                            data: Bytes::from(d.to_vec()),
                         },
                         ClientProgramState::Revert(w) => ProgramState {
                             return_type: ReturnType::Revert,
-                            data: HexString::from(w.to_le_bytes().to_vec()),
+                            data: Bytes::from(w.to_le_bytes().to_vec()),
                         },
                         // Either `cargo watch` complains that this is unreachable, or `clippy` complains
                         // that all patterns are not matched. These other program states are only used in
@@ -399,15 +399,15 @@ pub async fn retrieve_blocks_from_node(
                     let program_state = program_state.map(|p| match p {
                         ClientProgramState::Return(w) => ProgramState {
                             return_type: ReturnType::Return,
-                            data: HexString::from(w.to_le_bytes().to_vec()),
+                            data: Bytes::from(w.to_le_bytes().to_vec()),
                         },
                         ClientProgramState::ReturnData(d) => ProgramState {
                             return_type: ReturnType::ReturnData,
-                            data: HexString::from(d.to_vec()),
+                            data: Bytes::from(d.to_vec()),
                         },
                         ClientProgramState::Revert(w) => ProgramState {
                             return_type: ReturnType::Revert,
-                            data: HexString::from(w.to_le_bytes().to_vec()),
+                            data: Bytes::from(w.to_le_bytes().to_vec()),
                         },
                         // Either `cargo watch` complains that this is unreachable, or `clippy` complains
                         // that all patterns are not matched. These other program states are only used in

@@ -3520,7 +3520,6 @@ dependencies = [
 name = "fuel-indexer-types"
 version = "0.20.11"
 dependencies = [
- "bincode",
  "bytes",
  "fuel-tx 0.35.3",
  "fuel-types 0.35.3",
@@ -3528,7 +3527,6 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2 0.9.9",
- "tai64",
 ]
 
 [[package]]

@@ -432,7 +432,7 @@ async fn test_index_types_for_block_explorer() {
     let hexstring = row.get::<&str, usize>(3);
     let hexstring = hex::decode(hexstring).unwrap();
 
-    assert_eq!(hexstring, HexString::from("hello world!"));
+    assert_eq!(hexstring, Bytes::from("hello world!"));
 
     // Non-indexable types
     let row =

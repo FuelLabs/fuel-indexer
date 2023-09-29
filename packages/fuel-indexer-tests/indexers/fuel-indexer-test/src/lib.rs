@@ -120,8 +120,16 @@ mod fuel_indexer_test {
             ..
         } = messageout;
 
-        MessageOutEntity::new(message_id, sender, recipient, amount, nonce, len, digest)
-            .get_or_create();
+        MessageOutEntity::new(
+            bytes32(message_id),
+            sender,
+            recipient,
+            amount,
+            bytes32(nonce),
+            len,
+            digest,
+        )
+        .get_or_create();
     }
 
     fn fuel_indexer_test_callreturn(pungentity: Pung) {
@@ -423,11 +431,11 @@ mod fuel_indexer_test {
         info!("fuel_indexer_block_explorer_types handling explorer_types event.");
         let e = ExplorerEntity {
             id: uid(8675309_u32.to_le_bytes()),
-            nonce: Nonce::default(),
+            nonce: Bytes32::default(),
             // TOOD: Finish
             time: None,
-            hex: Some(HexString::from("hello world!")),
-            sig: Signature::default(),
+            hex: Some(Bytes::from("hello world!")),
+            sig: Bytes64::default(),
             bytes: Bytes64::default(),
         };
 

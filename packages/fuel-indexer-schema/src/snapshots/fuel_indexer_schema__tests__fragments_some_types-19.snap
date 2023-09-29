@@ -1,6 +1,6 @@
 ---
 source: packages/fuel-indexer-schema/src/lib.rs
-expression: uint8.query_fragment()
+expression: uint1.query_fragment()
 ---
-"8680820740569200760"
+"120"
 
