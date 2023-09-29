@@ -182,7 +182,6 @@ start_block: 1564
 end_block: 310000
 module:
   wasm: path/to/my/wasm_module.wasm
-report_metrics: true
 </code></pre>
 <h2 id="namespace"><a class="header" href="#namespace"><code>namespace</code></a></h2>
 <p><em>Required.</em></p>
@@ -224,9 +223,6 @@ Note: This parameter supports both Bech32 contract IDs and non-Bech32 contract I
 <blockquote>
 <p>Important: At this time, <code>wasm</code> is the preferred method of execution.</p>
 </blockquote>
-<h2 id="report_metrics"><a class="header" href="#report_metrics"><code>report_metrics</code></a></h2>
-<p><em>Optional.</em></p>
-<p>The <code>report_metrics</code> field indicates whether to report Prometheus metrics to the Fuel backend.</p>
 <h2 id="resumable"><a class="header" href="#resumable"><code>resumable</code></a></h2>
 <p><em>Optional.</em></p>
 <p>The <code>resumable</code> field contains a boolean value and specifies whether the indexer should synchronise with the latest block if it has fallen out of sync.</p>

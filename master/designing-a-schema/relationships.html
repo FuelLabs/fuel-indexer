@@ -182,7 +182,7 @@
 <h3 id="implicit-foreign-keys"><a class="header" href="#implicit-foreign-keys">Implicit foreign keys</a></h3>
 <pre><code class="language-graphql">type Library @entity {
     id: ID!
-    name: Charfield!
+    name: String!
 }
 
 type Book @entity {
@@ -194,7 +194,7 @@ type Book @entity {
 <h3 id="explicit-foreign-keys"><a class="header" href="#explicit-foreign-keys">Explicit foreign keys</a></h3>
 <pre><code class="language-graphql">type Library @entity {
     id: ID!
-    name: Charfield! @unique
+    name: String! @unique
 }
 
 type Book @entity {

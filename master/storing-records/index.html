@@ -179,34 +179,25 @@
 <div class="table-wrapper"><table><thead><tr><th>GraphQL Scalar</th><th>Sway Type</th><th>Postgres Type</th></tr></thead><tbody>
 <tr><td>Address</td><td><code>b256</code></td><td>varchar(64)</td></tr>
 <tr><td>AssetId</td><td><code>u8[32]</code></td><td>varchar(64)</td></tr>
-<tr><td>Blob</td><td><code>str[]</code></td><td>varchar(10485760)</td></tr>
-<tr><td>BlockId</td><td></td><td>varchar(64)</td></tr>
 <tr><td>Boolean</td><td><code>bool</code></td><td>boolean</td></tr>
-<tr><td>Bytes4</td><td><code>str[4]</code></td><td>varchar(8)</td></tr>
-<tr><td>Bytes8</td><td><code>str[8]</code></td><td>varchar(16)</td></tr>
+<tr><td>Bytes</td><td><code>str[]</code></td><td>varchar(10485760)</td></tr>
 <tr><td>Bytes32</td><td><code>str[32]</code></td><td>varchar(64)</td></tr>
+<tr><td>Bytes4</td><td><code>str[4]</code></td><td>varchar(8)</td></tr>
 <tr><td>Bytes64</td><td><code>str[64]</code></td><td>varchar(128)</td></tr>
-<tr><td>Charfield</td><td><code>str[]</code></td><td>varchar(255)</td></tr>
+<tr><td>Bytes8</td><td><code>str[8]</code></td><td>varchar(16)</td></tr>
 <tr><td>ContractId</td><td><code>b256</code></td><td>varchar(64)</td></tr>
-<tr><td>HexString</td><td><code>str[]</code></td><td>varchar(10485760)</td></tr>
+<tr><td>I128</td><td></td><td>numeric(39,0)</td></tr>
+<tr><td>I32</td><td><code>u32</code></td><td>integer</td></tr>
+<tr><td>I64</td><td><code>u64</code></td><td>bigint</td></tr>
+<tr><td>I8</td><td><code>u8</code></td><td>integer</td></tr>
 <tr><td>ID</td><td></td><td>varchar(64) primary key</td></tr>
-<tr><td>Int1</td><td><code>u8</code></td><td>integer</td></tr>
-<tr><td>Int4</td><td><code>u32</code></td><td>integer</td></tr>
-<tr><td>Int8</td><td><code>u64</code></td><td>bigint</td></tr>
-<tr><td>Int16</td><td></td><td>numeric(39,0)</td></tr>
 <tr><td>Json</td><td><code>str[]</code></td><td>json</td></tr>
-<tr><td>MessageId</td><td><code>str[32]</code></td><td>varchar(64)</td></tr>
-<tr><td>Nonce</td><td><code>str[32]</code></td><td>varchar(64)</td></tr>
-<tr><td>Salt</td><td><code>str[32]</code></td><td>varchar(64)</td></tr>
-<tr><td>Signature</td><td><code>str[64]</code></td><td>varchar(128)</td></tr>
-<tr><td>Tai64Timestamp</td><td></td><td>varchar(128)</td></tr>
-<tr><td>Timestamp</td><td><code>u64</code></td><td>timestamp</td></tr>
+<tr><td>U128</td><td></td><td>numeric(39, 0)</td></tr>
+<tr><td>U32</td><td><code>u32</code></td><td>integer</td></tr>
+<tr><td>U64</td><td><code>u64</code></td><td>numeric(20, 0)</td></tr>
+<tr><td>U8</td><td><code>u8</code></td><td>integer</td></tr>
 <tr><td>UID</td><td></td><td>varchar(64)</td></tr>
-<tr><td>UInt1</td><td><code>u8</code></td><td>integer</td></tr>
-<tr><td>UInt4</td><td><code>u32</code></td><td>integer</td></tr>
-<tr><td>UInt8</td><td><code>u64</code></td><td>numeric(20, 0)</td></tr>
-<tr><td>UInt16</td><td></td><td>numeric(39, 0)</td></tr>
-<tr><td>Virtual</td><td></td><td>json</td></tr>
+<tr><td>String</td><td><code>str[]</code></td><td>varchar(255)</td></tr>
 </tbody></table>
 </div>
 <h2 id="example"><a class="header" href="#example">Example</a></h2>
@@ -221,7 +212,7 @@
 <pre><code class="language-graphql">type Event @entity {
     id: ID!
     account: Address!
-    block_height: UInt8!
+    block_height: U64!
 }
 </code></pre>
 <p>And finally, this GraphQL schema will generate the following Postgres schema:</p>

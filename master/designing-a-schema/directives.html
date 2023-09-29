@@ -215,7 +215,7 @@ type Library @entity {
 <p>The <code>@join</code> directive is used to relate a field in one type to others by referencing fields in another type. You can think of it as a link between two tables in your database. The field in the referenced type is called a <em>foreign key</em> and it is <strong>required</strong> to be unique.</p>
 <pre><code class="language-graphql">type Book @entity {
     id: ID!
-    name: Charfield! @unique
+    name: String! @unique
 }
 
 type Library @entity {

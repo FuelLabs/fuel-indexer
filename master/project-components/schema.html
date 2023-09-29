@@ -173,20 +173,20 @@
 <p>The GraphQL schema is a required component of the Fuel indexer. When data is indexed into the database, the actual values that are persisted to the database will be values created using the data structures defined in the GraphQL schema.</p>
 <p>Below is a sample GraphQL schema for a Fuel indexer.</p>
 <pre><code class="language-graphql">type Metadata @entity(virtual: true) {
-    imageUrl: Charfield!
-    data: Blob
+    imageUrl: String!
+    data: Bytes
 }
 
 type Account @entity {
     id: ID!
     address: Address!
-    index: UInt8!
+    index: U64!
     metadata: Metadata
 }
 
 type Wallet @entity {
     id: ID!
-    name: Charfield!
+    name: String!
     accounts: [Account!]!
 }
 </code></pre>

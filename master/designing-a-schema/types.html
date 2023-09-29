@@ -175,7 +175,7 @@
 <pre><code class="language-graphql">type Account @entity {
     id: ID!
     address: Address!
-    balance: UInt8!
+    balance: U64!
 }
 </code></pre>
 <p>This <code>Account</code> object type from the GraphQL schema, might be used in an indexer module like so:</p>
@@ -222,14 +222,14 @@ mod indexer_mod {
 
 type CreateTransaction @entity {
     id: ID!
-    bytecode_length: UInt8!
+    bytecode_length: U64!
     contract_id: ContractId!
     label: TransactionLabel!
 }
 
 type ScriptTransaction @entity {
     id: ID!
-    maturity: UInt8!
+    maturity: U64!
     label: TransactionLabel!
 }
 
@@ -244,10 +244,10 @@ union Transaction = CreateTransaction | ScriptTransaction | MintTransaction
 <p>The <code>Transaction</code> union type above, will internally produce the following object type:</p>
 <pre><code class="language-graphql">type Transaction @entity {
     id: ID!
-    bytecode_length: UInt8!
+    bytecode_length: U64!
     contract_id: ContractId!
     label: TransactionLabel!
-    maturity: UInt8!
+    maturity: U64!
     metadata: Json
 }
 </code></pre>
