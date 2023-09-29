@@ -1,0 +1,144 @@
+{
+  "types": [
+    {
+      "typeId": 0,
+      "type": "b256",
+      "components": null,
+      "typeParameters": null
+    },
+    {
+      "typeId": 1,
+      "type": "bool",
+      "components": null,
+      "typeParameters": null
+    },
+    {
+      "typeId": 2,
+      "type": "struct Address",
+      "components": [
+        {
+          "name": "value",
+          "type": 0,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 3,
+      "type": "struct ContractId",
+      "components": [
+        {
+          "name": "value",
+          "type": 0,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 4,
+      "type": "u64",
+      "components": null,
+      "typeParameters": null
+    }
+  ],
+  "functions": [
+    {
+      "inputs": [],
+      "name": "main",
+      "output": {
+        "name": "",
+        "type": 1,
+        "typeArguments": null
+      },
+      "attributes": [
+        {
+          "name": "doc-comment",
+          "arguments": [
+            " Validates conditions within the transaction to perform a swap"
+          ]
+        },
+        {
+          "name": "doc-comment",
+          "arguments": [
+            ""
+          ]
+        },
+        {
+          "name": "doc-comment",
+          "arguments": [
+            " # Additional Information"
+          ]
+        },
+        {
+          "name": "doc-comment",
+          "arguments": [
+            ""
+          ]
+        },
+        {
+          "name": "doc-comment",
+          "arguments": [
+            " The user can cancel their order by including an input coin from themselves."
+          ]
+        },
+        {
+          "name": "doc-comment",
+          "arguments": [
+            ""
+          ]
+        },
+        {
+          "name": "doc-comment",
+          "arguments": [
+            " # Returns"
+          ]
+        },
+        {
+          "name": "doc-comment",
+          "arguments": [
+            ""
+          ]
+        },
+        {
+          "name": "doc-comment",
+          "arguments": [
+            " * [bool] - `true` if the spender is the receiver or if the terms of the order are met, `false` otherwise."
+          ]
+        }
+      ]
+    }
+  ],
+  "loggedTypes": [],
+  "messagesTypes": [],
+  "configurables": [
+    {
+      "name": "ASK_AMOUNT",
+      "configurableType": {
+        "name": "",
+        "type": 4,
+        "typeArguments": null
+      },
+      "offset": 2292
+    },
+    {
+      "name": "ASK_TOKEN",
+      "configurableType": {
+        "name": "",
+        "type": 3,
+        "typeArguments": []
+      },
+      "offset": 2300
+    },
+    {
+      "name": "RECEIVER",
+      "configurableType": {
+        "name": "",
+        "type": 2,
+        "typeArguments": []
+      },
+      "offset": 2252
+    }
+  ]
+}

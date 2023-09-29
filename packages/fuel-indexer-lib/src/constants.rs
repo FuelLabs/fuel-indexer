@@ -182,8 +182,12 @@ lazy_static! {
     /// Generic Sway ABI types.
     pub static ref IGNORED_GENERIC_METADATA: HashSet<&'static str> = HashSet::from([
         "generic T",
+        "generic E",
         "raw untyped ptr",
         "struct RawVec",
+        "struct RawBytes",
+        "struct Bytes",
+        "enum Result"
     ]);
 
     pub static ref GENERIC_STRUCTS: HashSet<&'static str> = HashSet::from([
