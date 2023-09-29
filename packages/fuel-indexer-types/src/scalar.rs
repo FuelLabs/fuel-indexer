@@ -1,4 +1,3 @@
-use bytes::Bytes as _Bytes;
 pub use fuel_types::{
     Address, AssetId, BlockHeight, Bytes32, Bytes4, Bytes64, Bytes8, ContractId,
     MessageId, Nonce, Salt, Word,
@@ -43,7 +42,7 @@ pub type I8 = i8;
 pub type U8 = u8;
 
 /// Scalar for arbitrarily-sized byte payloads.
-pub type Bytes = _Bytes;
+pub type Bytes = Vec<u8>;
 
 /// JSON type used to store arbitrary object payloads.
 #[derive(Deserialize, Serialize, Clone, Eq, PartialEq, Debug, Hash)]

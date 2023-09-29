@@ -178,7 +178,7 @@ impl FtColumn {
             },
             FtColumn::Bytes(value) => match value {
                 Some(blob) => {
-                    let x = hex::encode(blob.as_ref());
+                    let x = hex::encode(blob);
                     format!("'{x}'")
                 }
                 None => String::from(NULL_VALUE),
