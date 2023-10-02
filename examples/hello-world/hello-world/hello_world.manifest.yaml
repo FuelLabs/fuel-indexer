@@ -1,0 +1,13 @@
+---
+namespace: fuellabs
+identifier: hello_world_2
+abi: ~
+fuel_client: ~
+graphql_schema: examples/hello-world/hello-world/schema/hello_world.schema.graphql
+module:
+  wasm: target/wasm32-unknown-unknown/release/hello_world.wasm
+metrics: ~
+contract_id: ~
+start_block: ~
+end_block: ~
+resumable: true

@@ -157,7 +157,13 @@ pub fn ensure_rebuild_if_schema_or_manifest_changed(
     exec_source: ExecutionSource,
 ) -> std::io::Result<()> {
     let schema_mtime = {
-        let metadata = std::fs::metadata(schema).unwrap();
+        let metadata = std::fs::metadata(schema).unwrap_or_else(|e| {
+            panic!(
+                "Failed to get metadata for schema file `{}`: {}",
+                schema.display(),
+                e
+            )
+        });
         filetime::FileTime::from_last_modification_time(&metadata)
     };
 

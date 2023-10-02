@@ -1,10 +1,10 @@
-# hello-world
+# greetings
 
 A simple program that demonstrates the full Fuel indexer experience.
 
 ## Usage
 
-> NOTE: Commands are run from `fuel-indexer/examples/hello-world`
+> NOTE: Commands are run from `fuel-indexer/examples/greetings`
 
 ### Spin up containers
 
@@ -25,23 +25,32 @@ docker compose up
 ### Deploy the indexer
 
 ```bash
-forc index deploy --path hello-world --url http://0.0.0.0:29987
+forc index deploy --path greetings --url http://0.0.0.0:29987
+```
+
+### Interact
+
+Trigger some test data by simulating a contract call.
+
+```bash
+cargo run -p greetings-data --bin greetings-data -- --host 0.0.0.0:4000
 ```
 
 ### Validate
 
 Ensure that test data was indexed via a GraphQL query:
-  1. Open this GraphQL playground link http://192.168.1.34:29987/api/playground/fuellabs/hello-world_indexer
+  1. Open this GraphQL playground link http://192.168.1.34:29987/api/playground/fuellabs/greetings_indexer
   2. Submit the following query
 
 ```graphql
 query {
-   transaction {
-      hash
-      block {
-        hash
-        height
-      }
+   salutation {
+      id
+      message_hash
+      message
+      greeter
+      first_seen
+      last_seen
    }
 }
 ```

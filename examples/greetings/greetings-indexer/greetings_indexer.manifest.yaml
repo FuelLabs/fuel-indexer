@@ -3,11 +3,11 @@
 namespace: fuellabs
 
 # The identifier field is used to identify the given index.
-identifier: hello_indexer
+identifier: greetings
 
 # The abi option is used to provide a link to the Sway JSON ABI that is generated when you
 # build your project.
-abi: examples/hello-world/contracts/greeting/out/debug/greeting-abi.json
+abi: examples/greetings/contracts/greeting/out/debug/greeting-abi.json
 
 # The particular start block after which you'd like your indexer to start indexing events.
 start_block: ~
@@ -22,17 +22,17 @@ end_block: ~
 fuel_client: ~
 
 # The contract_id specifies which particular contract you would like your index to subscribe to.
-contract_id: fuel18hchrf7f4hnpkl84sqf8k0sk8gcauzeemzwgweea8dgr7eachv4s86r9t9
+contract_id: fuel1q6sj2srt0u40jdqg2lvvnspyuhse9rs2s2fv9nmv0hqjcrdc7sqsfpwv9x
 
 # The graphql_schema field contains the file path that points to the GraphQL schema for the
 # given index.
-graphql_schema: examples/hello-world/hello-indexer/schema/hello_indexer.schema.graphql
+graphql_schema: examples/greetings/greetings-indexer/schema/greetings_indexer.schema.graphql
 
 # The module field contains a file path that points to code that will be run as an executor inside
 # of the indexer.
 # Important: At this time, wasm is the preferred method of execution.
 module:
-  wasm: target/wasm32-unknown-unknown/release/hello_indexer.wasm
+  wasm: target/wasm32-unknown-unknown/release/greetings_indexer.wasm
 
 # The resumable field contains a boolean that specifies whether or not the indexer should, synchronise
 # with the latest block if it has fallen out of sync.

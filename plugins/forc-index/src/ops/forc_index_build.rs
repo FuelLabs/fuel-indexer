@@ -28,10 +28,10 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
 
     let release = !debug;
 
-    let (root_dir, manifest, _index_name) =
+    let (root_dir, manifest, _indexer_name) =
         project_dir_info(path.as_ref(), manifest.as_ref())?;
 
-    // Must be in the directory of the index being built
+    // Must be in the directory of the indexer being built
     let cargo_manifest_path = root_dir.join(defaults::CARGO_MANIFEST_FILE_NAME);
     if !cargo_manifest_path.exists() {
         let cargo_manifest_dir = {

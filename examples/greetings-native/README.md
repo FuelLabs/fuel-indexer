@@ -1,17 +1,17 @@
-# hello-world
+# greetings-native
 
 A simple program that demonstrates the full Fuel indexer experience.
 
 ## Usage
 
-> NOTE: Commands are run from `fuel-indexer/examples/hello-world`
+> NOTE: Commands are run from `fuel-indexer/examples/greetings-native`
 
 ### Spin up containers
 
-Pull the latest image 
+Build image locally
 
 ```bash
-docker pull ghcr.io/fuellabs/fuel-indexer:latest
+docker compose up
 ```
 
 Spin up containers for the Postgres database server and the indexer service.
@@ -24,14 +24,21 @@ docker compose up
 
 ### Deploy the indexer
 
+> Note that since this example uses native execution (as opposed to WASM execution), there is no need to
+> "deploy" the indexer. You'll notice that your indexer is already running inside your Docker container.
+
+### Interact
+
+Trigger some test data by simulating a contract call.
+
 ```bash
-forc index deploy --path hello-world --url http://0.0.0.0:29987
+cargo run -p greetings-data --bin greetings-data -- --host 0.0.0.0:4000
 ```
 
 ### Validate
 
 Ensure that test data was indexed via a GraphQL query:
-  1. Open this GraphQL playground link http://192.168.1.34:29987/api/playground/fuellabs/hello-world_indexer
+  1. Open this GraphQL playground link http://192.168.1.34:29987/api/playground/fuellabs/greetings-native_indexer
   2. Submit the following query
 
 ```graphql
