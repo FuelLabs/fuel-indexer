@@ -39,8 +39,6 @@ fn wasm_prelude() -> proc_macro2::TokenStream {
         use alloc::{format, vec, vec::Vec};
         use std::str::FromStr;
 
-        type B256 = [u8; 32];
-
         use fuel_indexer_utils::plugin::types::*;
         use fuel_indexer_utils::plugin::wasm::*;
         use fuel_indexer_utils::plugin::{serde_json, serialize, deserialize, bincode};

@@ -150,14 +150,14 @@ To index the contracts and store information about our Sway types in the databas
 ```graphql
 type AddEntity @entity {
   id: ID!
-  value: UInt8!
-  updated_total: UInt8!
+  value: U64!
+  updated_total: U64!
 }
 
 type SubtractEntity @entity {
   id: ID!
-  value: UInt8!
-  updated_total: UInt8!
+  value: U64!
+  updated_total: U64!
 }
 ```
 

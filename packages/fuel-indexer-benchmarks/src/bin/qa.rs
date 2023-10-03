@@ -169,7 +169,19 @@ impl RunStat {
     }
 
     pub fn tick(&mut self) {
-        self.mem.push(record_mem_usage());
+        // `sort` will occassionally panic, so just use the last iteration's value
+        let bytes = 1500;
+        let mem = match record_mem_usage() {
+            Ok(v) => {
+                if v.is_empty() {
+                    self.mem.last().unwrap_or(&bytes).to_owned()
+                } else {
+                    v.parse::<u64>().unwrap_or(bytes)
+                }
+            }
+            Err(_) => self.mem.last().unwrap_or(&bytes).clone(),
+        };
+        self.mem.push(mem);
         self.cpu.push(record_cpu_usage());
     }
 
@@ -452,22 +464,19 @@ fn record_cpu_usage() -> f64 {
         .pipe(cmd!("awk", "{{print $4}}"))
         .stdout_capture()
         .read()
-        .unwrap();
+        .unwrap_or_default();
 
     output.trim().parse::<f64>().unwrap()
 }
 
-fn record_mem_usage() -> u64 {
-    let output = cmd!("ps", "x", "-o", "rss,vsz,command")
+fn record_mem_usage() -> Result<String, std::io::Error> {
+    cmd!("ps", "x", "-o", "rss,vsz,command")
         .pipe(cmd!("grep", "fuel-indexer"))
         .pipe(cmd!("sort", "-nr"))
         .pipe(cmd!("head", "-n", "1"))
         .pipe(cmd!("awk", "{print $1}"))
         .stdout_capture()
         .read()
-        .unwrap();
-
-    output.trim().parse::<u64>().unwrap()
 }
 
 #[tokio::main]

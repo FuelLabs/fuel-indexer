@@ -1,0 +1,701 @@
+{
+  "types": [
+    {
+      "typeId": 0,
+      "type": "()",
+      "components": [],
+      "typeParameters": null
+    },
+    {
+      "typeId": 1,
+      "type": "(_, _)",
+      "components": [
+        {
+          "name": "__tuple_element",
+          "type": 20,
+          "typeArguments": null
+        },
+        {
+          "name": "__tuple_element",
+          "type": 20,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 2,
+      "type": "(_, _, _)",
+      "components": [
+        {
+          "name": "__tuple_element",
+          "type": 20,
+          "typeArguments": null
+        },
+        {
+          "name": "__tuple_element",
+          "type": 20,
+          "typeArguments": null
+        },
+        {
+          "name": "__tuple_element",
+          "type": 20,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 3,
+      "type": "b256",
+      "components": null,
+      "typeParameters": null
+    },
+    {
+      "typeId": 4,
+      "type": "enum AccessControlError",
+      "components": [
+        {
+          "name": "AuthorizationError",
+          "type": 0,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 5,
+      "type": "enum FundingError",
+      "components": [
+        {
+          "name": "InsufficientContractBalance",
+          "type": 20,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 6,
+      "type": "enum Identity",
+      "components": [
+        {
+          "name": "Address",
+          "type": 11,
+          "typeArguments": null
+        },
+        {
+          "name": "ContractId",
+          "type": 15,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 7,
+      "type": "enum Option",
+      "components": [
+        {
+          "name": "None",
+          "type": 0,
+          "typeArguments": null
+        },
+        {
+          "name": "Some",
+          "type": 9,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": [
+        9
+      ]
+    },
+    {
+      "typeId": 8,
+      "type": "enum TransactionError",
+      "components": [
+        {
+          "name": "DuplicateTransaction",
+          "type": 3,
+          "typeArguments": null
+        },
+        {
+          "name": "InvalidTransaction",
+          "type": 3,
+          "typeArguments": null
+        },
+        {
+          "name": "TimestampNotInRange",
+          "type": 2,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 9,
+      "type": "generic T",
+      "components": null,
+      "typeParameters": null
+    },
+    {
+      "typeId": 10,
+      "type": "raw untyped ptr",
+      "components": null,
+      "typeParameters": null
+    },
+    {
+      "typeId": 11,
+      "type": "struct Address",
+      "components": [
+        {
+          "name": "value",
+          "type": 3,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 12,
+      "type": "struct Asset",
+      "components": [
+        {
+          "name": "amount",
+          "type": 20,
+          "typeArguments": null
+        },
+        {
+          "name": "id",
+          "type": 15,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 13,
+      "type": "struct Bytes",
+      "components": [
+        {
+          "name": "buf",
+          "type": 19,
+          "typeArguments": null
+        },
+        {
+          "name": "len",
+          "type": 20,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 14,
+      "type": "struct CancelEvent",
+      "components": [
+        {
+          "name": "id",
+          "type": 3,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 15,
+      "type": "struct ContractId",
+      "components": [
+        {
+          "name": "value",
+          "type": 3,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 16,
+      "type": "struct ExecuteEvent",
+      "components": [
+        {
+          "name": "asset",
+          "type": 7,
+          "typeArguments": [
+            {
+              "name": "",
+              "type": 12,
+              "typeArguments": null
+            }
+          ]
+        },
+        {
+          "name": "data",
+          "type": 7,
+          "typeArguments": [
+            {
+              "name": "",
+              "type": 13,
+              "typeArguments": null
+            }
+          ]
+        },
+        {
+          "name": "id",
+          "type": 3,
+          "typeArguments": null
+        },
+        {
+          "name": "recipient",
+          "type": 6,
+          "typeArguments": null
+        },
+        {
+          "name": "timestamp",
+          "type": 20,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 17,
+      "type": "struct ExecutionRange",
+      "components": [
+        {
+          "name": "start",
+          "type": 20,
+          "typeArguments": null
+        },
+        {
+          "name": "end",
+          "type": 20,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 18,
+      "type": "struct QueueEvent",
+      "components": [
+        {
+          "name": "asset",
+          "type": 7,
+          "typeArguments": [
+            {
+              "name": "",
+              "type": 12,
+              "typeArguments": null
+            }
+          ]
+        },
+        {
+          "name": "data",
+          "type": 7,
+          "typeArguments": [
+            {
+              "name": "",
+              "type": 13,
+              "typeArguments": null
+            }
+          ]
+        },
+        {
+          "name": "id",
+          "type": 3,
+          "typeArguments": null
+        },
+        {
+          "name": "recipient",
+          "type": 6,
+          "typeArguments": null
+        },
+        {
+          "name": "timestamp",
+          "type": 20,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 19,
+      "type": "struct RawBytes",
+      "components": [
+        {
+          "name": "ptr",
+          "type": 10,
+          "typeArguments": null
+        },
+        {
+          "name": "cap",
+          "type": 20,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 20,
+      "type": "u64",
+      "components": null,
+      "typeParameters": null
+    }
+  ],
+  "functions": [
+    {
+      "inputs": [
+        {
+          "name": "id",
+          "type": 3,
+          "typeArguments": null
+        }
+      ],
+      "name": "cancel",
+      "output": {
+        "name": "",
+        "type": 0,
+        "typeArguments": null
+      },
+      "attributes": [
+        {
+          "name": "storage",
+          "arguments": [
+            "read",
+            "write"
+          ]
+        }
+      ]
+    },
+    {
+      "inputs": [
+        {
+          "name": "recipient",
+          "type": 6,
+          "typeArguments": null
+        },
+        {
+          "name": "asset",
+          "type": 7,
+          "typeArguments": [
+            {
+              "name": "",
+              "type": 12,
+              "typeArguments": null
+            }
+          ]
+        },
+        {
+          "name": "data",
+          "type": 7,
+          "typeArguments": [
+            {
+              "name": "",
+              "type": 13,
+              "typeArguments": null
+            }
+          ]
+        },
+        {
+          "name": "timestamp",
+          "type": 20,
+          "typeArguments": null
+        }
+      ],
+      "name": "execute",
+      "output": {
+        "name": "",
+        "type": 0,
+        "typeArguments": null
+      },
+      "attributes": [
+        {
+          "name": "storage",
+          "arguments": [
+            "read",
+            "write"
+          ]
+        }
+      ]
+    },
+    {
+      "inputs": [
+        {
+          "name": "recipient",
+          "type": 6,
+          "typeArguments": null
+        },
+        {
+          "name": "asset",
+          "type": 7,
+          "typeArguments": [
+            {
+              "name": "",
+              "type": 12,
+              "typeArguments": null
+            }
+          ]
+        },
+        {
+          "name": "data",
+          "type": 7,
+          "typeArguments": [
+            {
+              "name": "",
+              "type": 13,
+              "typeArguments": null
+            }
+          ]
+        },
+        {
+          "name": "timestamp",
+          "type": 20,
+          "typeArguments": null
+        }
+      ],
+      "name": "queue",
+      "output": {
+        "name": "",
+        "type": 0,
+        "typeArguments": null
+      },
+      "attributes": [
+        {
+          "name": "storage",
+          "arguments": [
+            "read",
+            "write"
+          ]
+        }
+      ]
+    },
+    {
+      "inputs": [
+        {
+          "name": "asset_id",
+          "type": 15,
+          "typeArguments": null
+        }
+      ],
+      "name": "balance",
+      "output": {
+        "name": "",
+        "type": 20,
+        "typeArguments": null
+      },
+      "attributes": null
+    },
+    {
+      "inputs": [],
+      "name": "delays",
+      "output": {
+        "name": "",
+        "type": 1,
+        "typeArguments": null
+      },
+      "attributes": null
+    },
+    {
+      "inputs": [
+        {
+          "name": "id",
+          "type": 3,
+          "typeArguments": null
+        }
+      ],
+      "name": "queued",
+      "output": {
+        "name": "",
+        "type": 7,
+        "typeArguments": [
+          {
+            "name": "",
+            "type": 17,
+            "typeArguments": null
+          }
+        ]
+      },
+      "attributes": [
+        {
+          "name": "storage",
+          "arguments": [
+            "read"
+          ]
+        }
+      ]
+    },
+    {
+      "inputs": [
+        {
+          "name": "recipient",
+          "type": 6,
+          "typeArguments": null
+        },
+        {
+          "name": "asset",
+          "type": 7,
+          "typeArguments": [
+            {
+              "name": "",
+              "type": 12,
+              "typeArguments": null
+            }
+          ]
+        },
+        {
+          "name": "data",
+          "type": 7,
+          "typeArguments": [
+            {
+              "name": "",
+              "type": 13,
+              "typeArguments": null
+            }
+          ]
+        },
+        {
+          "name": "timestamp",
+          "type": 20,
+          "typeArguments": null
+        }
+      ],
+      "name": "transaction_hash",
+      "output": {
+        "name": "",
+        "type": 3,
+        "typeArguments": null
+      },
+      "attributes": null
+    }
+  ],
+  "loggedTypes": [
+    {
+      "logId": 0,
+      "loggedType": {
+        "name": "",
+        "type": 4,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 1,
+      "loggedType": {
+        "name": "",
+        "type": 8,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 2,
+      "loggedType": {
+        "name": "",
+        "type": 14,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 3,
+      "loggedType": {
+        "name": "",
+        "type": 4,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 4,
+      "loggedType": {
+        "name": "",
+        "type": 8,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 5,
+      "loggedType": {
+        "name": "",
+        "type": 8,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 6,
+      "loggedType": {
+        "name": "",
+        "type": 5,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 7,
+      "loggedType": {
+        "name": "",
+        "type": 16,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 8,
+      "loggedType": {
+        "name": "",
+        "type": 4,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 9,
+      "loggedType": {
+        "name": "",
+        "type": 8,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 10,
+      "loggedType": {
+        "name": "",
+        "type": 8,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 11,
+      "loggedType": {
+        "name": "",
+        "type": 18,
+        "typeArguments": []
+      }
+    }
+  ],
+  "messagesTypes": [],
+  "configurables": [
+    {
+      "name": "MAXIMUM_DELAY",
+      "configurableType": {
+        "name": "",
+        "type": 20,
+        "typeArguments": null
+      },
+      "offset": 9060
+    },
+    {
+      "name": "MINIMUM_DELAY",
+      "configurableType": {
+        "name": "",
+        "type": 20,
+        "typeArguments": null
+      },
+      "offset": 9052
+    },
+    {
+      "name": "ADMIN",
+      "configurableType": {
+        "name": "",
+        "type": 6,
+        "typeArguments": []
+      },
+      "offset": 8900
+    }
+  ]
+}

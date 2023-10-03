@@ -9,7 +9,7 @@ fn build_and_parse_query(c: &mut Criterion) {
         b.iter(|| {
             let schema_str = r#"type Block {
                 id: ID!
-                height: UInt8!
+                height: U64!
                 hash: Bytes32! @unique
             }
             
@@ -44,7 +44,7 @@ fn build_and_parse_query_with_args(c: &mut Criterion) {
         b.iter(|| {
             let schema_str = r#"type Block {
                 id: ID!
-                height: UInt8!
+                height: U64!
                 hash: Bytes32! @unique
             }
             

@@ -8,7 +8,7 @@ Object types are the most commonly used type in indexer GraphQL schema. Each obj
 type Account @entity {
     id: ID!
     address: Address!
-    balance: UInt8!
+    balance: U64!
 }
 ```
 
@@ -69,14 +69,14 @@ enum TransactionLabel {
 
 type CreateTransaction @entity {
     id: ID!
-    bytecode_length: UInt8!
+    bytecode_length: U64!
     contract_id: ContractId!
     label: TransactionLabel!
 }
 
 type ScriptTransaction @entity {
     id: ID!
-    maturity: UInt8!
+    maturity: U64!
     label: TransactionLabel!
 }
 
@@ -94,10 +94,10 @@ The `Transaction` union type above, will internally produce the following object
 ```graphql
 type Transaction @entity {
     id: ID!
-    bytecode_length: UInt8!
+    bytecode_length: U64!
     contract_id: ContractId!
     label: TransactionLabel!
-    maturity: UInt8!
+    maturity: U64!
     metadata: Json
 }
 ```

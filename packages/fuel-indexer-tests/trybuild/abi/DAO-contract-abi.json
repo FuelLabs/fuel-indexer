@@ -1,0 +1,945 @@
+{
+  "types": [
+    {
+      "typeId": 0,
+      "type": "()",
+      "components": [],
+      "typeParameters": null
+    },
+    {
+      "typeId": 1,
+      "type": "b256",
+      "components": null,
+      "typeParameters": null
+    },
+    {
+      "typeId": 2,
+      "type": "bool",
+      "components": null,
+      "typeParameters": null
+    },
+    {
+      "typeId": 3,
+      "type": "enum CreationError",
+      "components": [
+        {
+          "name": "DurationCannotBeZero",
+          "type": 0,
+          "typeArguments": null
+        },
+        {
+          "name": "InvalidAcceptancePercentage",
+          "type": 0,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 4,
+      "type": "enum Identity",
+      "components": [
+        {
+          "name": "Address",
+          "type": 8,
+          "typeArguments": null
+        },
+        {
+          "name": "ContractId",
+          "type": 10,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 5,
+      "type": "enum InitializationError",
+      "components": [
+        {
+          "name": "CannotReinitialize",
+          "type": 0,
+          "typeArguments": null
+        },
+        {
+          "name": "ContractNotInitialized",
+          "type": 0,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 6,
+      "type": "enum ProposalError",
+      "components": [
+        {
+          "name": "InsufficientApprovals",
+          "type": 0,
+          "typeArguments": null
+        },
+        {
+          "name": "ProposalExecuted",
+          "type": 0,
+          "typeArguments": null
+        },
+        {
+          "name": "ProposalExpired",
+          "type": 0,
+          "typeArguments": null
+        },
+        {
+          "name": "ProposalStillActive",
+          "type": 0,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 7,
+      "type": "enum UserError",
+      "components": [
+        {
+          "name": "AmountCannotBeZero",
+          "type": 0,
+          "typeArguments": null
+        },
+        {
+          "name": "IncorrectAssetSent",
+          "type": 0,
+          "typeArguments": null
+        },
+        {
+          "name": "InsufficientBalance",
+          "type": 0,
+          "typeArguments": null
+        },
+        {
+          "name": "InvalidId",
+          "type": 0,
+          "typeArguments": null
+        },
+        {
+          "name": "VoteAmountCannotBeZero",
+          "type": 0,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 8,
+      "type": "struct Address",
+      "components": [
+        {
+          "name": "value",
+          "type": 1,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 9,
+      "type": "struct CallData",
+      "components": [
+        {
+          "name": "arguments",
+          "type": 21,
+          "typeArguments": null
+        },
+        {
+          "name": "function_selector",
+          "type": 21,
+          "typeArguments": null
+        },
+        {
+          "name": "id",
+          "type": 10,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 10,
+      "type": "struct ContractId",
+      "components": [
+        {
+          "name": "value",
+          "type": 1,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 11,
+      "type": "struct CreateProposalEvent",
+      "components": [
+        {
+          "name": "id",
+          "type": 21,
+          "typeArguments": null
+        },
+        {
+          "name": "proposal_info",
+          "type": 16,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 12,
+      "type": "struct DepositEvent",
+      "components": [
+        {
+          "name": "amount",
+          "type": 21,
+          "typeArguments": null
+        },
+        {
+          "name": "user",
+          "type": 4,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 13,
+      "type": "struct ExecuteEvent",
+      "components": [
+        {
+          "name": "acceptance_percentage",
+          "type": 21,
+          "typeArguments": null
+        },
+        {
+          "name": "id",
+          "type": 21,
+          "typeArguments": null
+        },
+        {
+          "name": "user",
+          "type": 4,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 14,
+      "type": "struct InitializeEvent",
+      "components": [
+        {
+          "name": "author",
+          "type": 4,
+          "typeArguments": null
+        },
+        {
+          "name": "token",
+          "type": 10,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 15,
+      "type": "struct Proposal",
+      "components": [
+        {
+          "name": "amount",
+          "type": 21,
+          "typeArguments": null
+        },
+        {
+          "name": "asset",
+          "type": 10,
+          "typeArguments": null
+        },
+        {
+          "name": "call_data",
+          "type": 9,
+          "typeArguments": null
+        },
+        {
+          "name": "gas",
+          "type": 21,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 16,
+      "type": "struct ProposalInfo",
+      "components": [
+        {
+          "name": "acceptance_percentage",
+          "type": 21,
+          "typeArguments": null
+        },
+        {
+          "name": "author",
+          "type": 4,
+          "typeArguments": null
+        },
+        {
+          "name": "deadline",
+          "type": 21,
+          "typeArguments": null
+        },
+        {
+          "name": "executed",
+          "type": 2,
+          "typeArguments": null
+        },
+        {
+          "name": "no_votes",
+          "type": 21,
+          "typeArguments": null
+        },
+        {
+          "name": "proposal_transaction",
+          "type": 15,
+          "typeArguments": null
+        },
+        {
+          "name": "yes_votes",
+          "type": 21,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 17,
+      "type": "struct UnlockVotesEvent",
+      "components": [
+        {
+          "name": "id",
+          "type": 21,
+          "typeArguments": null
+        },
+        {
+          "name": "user",
+          "type": 4,
+          "typeArguments": null
+        },
+        {
+          "name": "vote_amount",
+          "type": 21,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 18,
+      "type": "struct VoteEvent",
+      "components": [
+        {
+          "name": "id",
+          "type": 21,
+          "typeArguments": null
+        },
+        {
+          "name": "user",
+          "type": 4,
+          "typeArguments": null
+        },
+        {
+          "name": "vote_amount",
+          "type": 21,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 19,
+      "type": "struct Votes",
+      "components": [
+        {
+          "name": "no_votes",
+          "type": 21,
+          "typeArguments": null
+        },
+        {
+          "name": "yes_votes",
+          "type": 21,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 20,
+      "type": "struct WithdrawEvent",
+      "components": [
+        {
+          "name": "amount",
+          "type": 21,
+          "typeArguments": null
+        },
+        {
+          "name": "user",
+          "type": 4,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 21,
+      "type": "u64",
+      "components": null,
+      "typeParameters": null
+    }
+  ],
+  "functions": [
+    {
+      "inputs": [
+        {
+          "name": "token",
+          "type": 10,
+          "typeArguments": null
+        }
+      ],
+      "name": "constructor",
+      "output": {
+        "name": "",
+        "type": 0,
+        "typeArguments": null
+      },
+      "attributes": [
+        {
+          "name": "storage",
+          "arguments": [
+            "read",
+            "write"
+          ]
+        }
+      ]
+    },
+    {
+      "inputs": [
+        {
+          "name": "acceptance_percentage",
+          "type": 21,
+          "typeArguments": null
+        },
+        {
+          "name": "duration",
+          "type": 21,
+          "typeArguments": null
+        },
+        {
+          "name": "proposal_transaction",
+          "type": 15,
+          "typeArguments": null
+        }
+      ],
+      "name": "create_proposal",
+      "output": {
+        "name": "",
+        "type": 0,
+        "typeArguments": null
+      },
+      "attributes": [
+        {
+          "name": "storage",
+          "arguments": [
+            "read",
+            "write"
+          ]
+        }
+      ]
+    },
+    {
+      "inputs": [],
+      "name": "deposit",
+      "output": {
+        "name": "",
+        "type": 0,
+        "typeArguments": null
+      },
+      "attributes": [
+        {
+          "name": "storage",
+          "arguments": [
+            "read",
+            "write"
+          ]
+        },
+        {
+          "name": "payable",
+          "arguments": []
+        }
+      ]
+    },
+    {
+      "inputs": [
+        {
+          "name": "proposal_id",
+          "type": 21,
+          "typeArguments": null
+        }
+      ],
+      "name": "execute",
+      "output": {
+        "name": "",
+        "type": 0,
+        "typeArguments": null
+      },
+      "attributes": [
+        {
+          "name": "storage",
+          "arguments": [
+            "read",
+            "write"
+          ]
+        }
+      ]
+    },
+    {
+      "inputs": [
+        {
+          "name": "proposal_id",
+          "type": 21,
+          "typeArguments": null
+        }
+      ],
+      "name": "unlock_votes",
+      "output": {
+        "name": "",
+        "type": 0,
+        "typeArguments": null
+      },
+      "attributes": [
+        {
+          "name": "storage",
+          "arguments": [
+            "read",
+            "write"
+          ]
+        }
+      ]
+    },
+    {
+      "inputs": [
+        {
+          "name": "approve",
+          "type": 2,
+          "typeArguments": null
+        },
+        {
+          "name": "proposal_id",
+          "type": 21,
+          "typeArguments": null
+        },
+        {
+          "name": "vote_amount",
+          "type": 21,
+          "typeArguments": null
+        }
+      ],
+      "name": "vote",
+      "output": {
+        "name": "",
+        "type": 0,
+        "typeArguments": null
+      },
+      "attributes": [
+        {
+          "name": "storage",
+          "arguments": [
+            "read",
+            "write"
+          ]
+        }
+      ]
+    },
+    {
+      "inputs": [
+        {
+          "name": "amount",
+          "type": 21,
+          "typeArguments": null
+        }
+      ],
+      "name": "withdraw",
+      "output": {
+        "name": "",
+        "type": 0,
+        "typeArguments": null
+      },
+      "attributes": [
+        {
+          "name": "storage",
+          "arguments": [
+            "read",
+            "write"
+          ]
+        }
+      ]
+    },
+    {
+      "inputs": [],
+      "name": "balance",
+      "output": {
+        "name": "",
+        "type": 21,
+        "typeArguments": null
+      },
+      "attributes": [
+        {
+          "name": "storage",
+          "arguments": [
+            "read"
+          ]
+        }
+      ]
+    },
+    {
+      "inputs": [],
+      "name": "governance_token_id",
+      "output": {
+        "name": "",
+        "type": 10,
+        "typeArguments": null
+      },
+      "attributes": [
+        {
+          "name": "storage",
+          "arguments": [
+            "read"
+          ]
+        }
+      ]
+    },
+    {
+      "inputs": [
+        {
+          "name": "proposal_id",
+          "type": 21,
+          "typeArguments": null
+        }
+      ],
+      "name": "proposal",
+      "output": {
+        "name": "",
+        "type": 16,
+        "typeArguments": null
+      },
+      "attributes": [
+        {
+          "name": "storage",
+          "arguments": [
+            "read"
+          ]
+        }
+      ]
+    },
+    {
+      "inputs": [],
+      "name": "proposal_count",
+      "output": {
+        "name": "",
+        "type": 21,
+        "typeArguments": null
+      },
+      "attributes": [
+        {
+          "name": "storage",
+          "arguments": [
+            "read"
+          ]
+        }
+      ]
+    },
+    {
+      "inputs": [
+        {
+          "name": "user",
+          "type": 4,
+          "typeArguments": null
+        }
+      ],
+      "name": "user_balance",
+      "output": {
+        "name": "",
+        "type": 21,
+        "typeArguments": null
+      },
+      "attributes": [
+        {
+          "name": "storage",
+          "arguments": [
+            "read"
+          ]
+        }
+      ]
+    },
+    {
+      "inputs": [
+        {
+          "name": "proposal_id",
+          "type": 21,
+          "typeArguments": null
+        },
+        {
+          "name": "user",
+          "type": 4,
+          "typeArguments": null
+        }
+      ],
+      "name": "user_votes",
+      "output": {
+        "name": "",
+        "type": 19,
+        "typeArguments": null
+      },
+      "attributes": [
+        {
+          "name": "storage",
+          "arguments": [
+            "read"
+          ]
+        }
+      ]
+    }
+  ],
+  "loggedTypes": [
+    {
+      "logId": 0,
+      "loggedType": {
+        "name": "",
+        "type": 5,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 1,
+      "loggedType": {
+        "name": "",
+        "type": 14,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 2,
+      "loggedType": {
+        "name": "",
+        "type": 3,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 3,
+      "loggedType": {
+        "name": "",
+        "type": 3,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 4,
+      "loggedType": {
+        "name": "",
+        "type": 11,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 5,
+      "loggedType": {
+        "name": "",
+        "type": 5,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 6,
+      "loggedType": {
+        "name": "",
+        "type": 7,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 7,
+      "loggedType": {
+        "name": "",
+        "type": 7,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 8,
+      "loggedType": {
+        "name": "",
+        "type": 12,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 9,
+      "loggedType": {
+        "name": "",
+        "type": 7,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 10,
+      "loggedType": {
+        "name": "",
+        "type": 6,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 11,
+      "loggedType": {
+        "name": "",
+        "type": 6,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 12,
+      "loggedType": {
+        "name": "",
+        "type": 6,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 13,
+      "loggedType": {
+        "name": "",
+        "type": 13,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 14,
+      "loggedType": {
+        "name": "",
+        "type": 7,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 15,
+      "loggedType": {
+        "name": "",
+        "type": 6,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 16,
+      "loggedType": {
+        "name": "",
+        "type": 17,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 17,
+      "loggedType": {
+        "name": "",
+        "type": 7,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 18,
+      "loggedType": {
+        "name": "",
+        "type": 7,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 19,
+      "loggedType": {
+        "name": "",
+        "type": 6,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 20,
+      "loggedType": {
+        "name": "",
+        "type": 7,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 21,
+      "loggedType": {
+        "name": "",
+        "type": 18,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 22,
+      "loggedType": {
+        "name": "",
+        "type": 7,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 23,
+      "loggedType": {
+        "name": "",
+        "type": 7,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 24,
+      "loggedType": {
+        "name": "",
+        "type": 20,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 25,
+      "loggedType": {
+        "name": "",
+        "type": 5,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 26,
+      "loggedType": {
+        "name": "",
+        "type": 7,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 27,
+      "loggedType": {
+        "name": "",
+        "type": 7,
+        "typeArguments": []
+      }
+    }
+  ],
+  "messagesTypes": [],
+  "configurables": []
+}

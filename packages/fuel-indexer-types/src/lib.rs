@@ -1,4 +1,3 @@
-#![deny(unused_crate_dependencies)]
 pub mod ffi;
 pub mod fuel;
 pub mod graphql;
@@ -11,7 +10,7 @@ pub use fuels::{
     core::codec::try_from_bytes,
     types::{
         bech32::{Bech32Address, Bech32ContractId},
-        Bits256, Identity, SizedAsciiString,
+        Bits256, EvmAddress, Identity, SizedAsciiString, B512,
     },
 };
 

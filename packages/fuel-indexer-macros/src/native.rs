@@ -33,8 +33,6 @@ pub fn handler_block_native(
 /// indexer module, not within the scope of the entire lib module.
 fn native_prelude() -> proc_macro2::TokenStream {
     quote! {
-        type B256 = [u8; 32];
-
         static mut db: Option<Arc<Mutex<Database>>> = None;
 
         use fuel_indexer_utils::plugin::types::*;
@@ -60,10 +58,10 @@ pub fn native_main() -> proc_macro2::TokenStream {
 
 
             let config = args
-            .config
-            .as_ref()
-            .map(IndexerConfig::from_file)
-            .unwrap_or(Ok(IndexerConfig::from(args)))?;
+                .config
+                .as_ref()
+                .map(IndexerConfig::from_file)
+                .unwrap_or(Ok(IndexerConfig::from(args)))?;
 
             init_logging(&config).await?;
 
