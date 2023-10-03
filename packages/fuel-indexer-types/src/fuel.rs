@@ -214,7 +214,7 @@ impl From<ClientInput> for Input {
                     amount: message_signed.amount,
                     nonce: message_signed.nonce,
                     witness_index: message_signed.witness_index,
-                    data: message_signed.data.into(),
+                    data: message_signed.data,
                     predicate: "".into(),
                     predicate_data: "".into(),
                 })
@@ -228,9 +228,9 @@ impl From<ClientInput> for Input {
                     amount: message_predicate.amount,
                     nonce: message_predicate.nonce,
                     witness_index: 0,
-                    data: message_predicate.data.into(),
-                    predicate: message_predicate.predicate.into(),
-                    predicate_data: message_predicate.predicate_data.into(),
+                    data: message_predicate.data,
+                    predicate: message_predicate.predicate,
+                    predicate_data: message_predicate.predicate_data,
                 })
             }
             ClientInput::CoinSigned(coin_signed) => Input::Coin(InputCoin {
@@ -252,8 +252,8 @@ impl From<ClientInput> for Input {
                 tx_pointer: coin_predicate.tx_pointer.into(),
                 witness_index: 0,
                 maturity: coin_predicate.maturity,
-                predicate: coin_predicate.predicate.into(),
-                predicate_data: coin_predicate.predicate_data.into(),
+                predicate: coin_predicate.predicate,
+                predicate_data: coin_predicate.predicate_data,
             }),
             ClientInput::Contract(contract) => Input::Contract(InputContract {
                 utxo_id: contract.utxo_id,
@@ -282,8 +282,8 @@ impl From<ClientInput> for Input {
                     nonce: message_coin.nonce,
                     witness_index: 0,
                     data: "".into(),
-                    predicate: message_coin.predicate.into(),
-                    predicate_data: message_coin.predicate_data.into(),
+                    predicate: message_coin.predicate,
+                    predicate_data: message_coin.predicate_data,
                 })
             }
         }
