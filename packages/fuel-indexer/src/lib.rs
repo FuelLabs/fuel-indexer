@@ -88,4 +88,8 @@ pub enum IndexerError {
     EndBlockMet,
     #[error("Invalid schema: {0:?}")]
     SchemaVersionMismatch(String),
+    #[error(transparent)]
+    Other(#[from] anyhow::Error),
+    #[error("Indexer({0}) kill switch flipped. <('.')>")]
+    KillSwitch(String),
 }

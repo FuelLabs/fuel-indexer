@@ -29,7 +29,7 @@ pub struct IndexerService {
     manager: SchemaManager,
 
     /// Tasks for the spawned indexers.
-    tasks: tokio::task::JoinSet<()>,
+    tasks: tokio::task::JoinSet<IndexerResult<()>>,
 
     /// Channel used to receive `ServiceRequest`s.
     rx: Receiver<ServiceRequest>,
@@ -177,7 +177,7 @@ impl IndexerService {
             manifest.identifier()
         );
 
-        self.start_executor(executor);
+        self.start_executor(executor)?;
 
         Ok(())
     }
@@ -204,7 +204,7 @@ impl IndexerService {
             {
                 info!("Registered Indexer({})", manifest.uid());
 
-                self.start_executor(executor);
+                self.start_executor(executor)?;
             } else {
                 error!(
                     "Failed to register Indexer({}) from registry.",
@@ -257,7 +257,7 @@ impl IndexerService {
 
         info!("Registered NativeIndex({})", uid);
 
-        self.start_executor(executor);
+        self.start_executor(executor)?;
 
         Ok(())
     }
@@ -267,8 +267,15 @@ impl IndexerService {
         loop {
             tokio::select! {
                 // Calling join_next will remove finished tasks from the set.
-                Some(Err(e)) = self.tasks.join_next() => {
-                    error!("Error retiring indexer task {e}");
+                Some(result) = self.tasks.join_next() => {
+                    match result {
+                        Ok(Ok(())) => (),
+                        Ok(Err(e)) => match e {
+                            IndexerError::KillSwitch(_) => info!{"{e}"},
+                            _ => error!("{e}"),
+                        }
+                        Err(e) => error!("Error retiring indexer task {e}"),
+                    }
                 }
                 Some(service_request) = self.rx.recv() => {
                     match service_request {
@@ -311,7 +318,7 @@ impl IndexerService {
                                     )
                                     .await
                                     {
-                                        Ok(executor) => self.start_executor(executor),
+                                        Ok(executor) => self.start_executor(executor)?,
                                         Err(e) => {
                                             error!(
                                                 "Failed to reload Indexer({}.{}): {e:?}",
@@ -350,7 +357,11 @@ impl IndexerService {
 
     // Spawn and register a tokio::task running the Executor loop, as well as
     // the kill switch and the abort handle.
-    fn start_executor<T: 'static + Executor + Send + Sync>(&mut self, executor: T) {
+    #[allow(clippy::result_large_err)]
+    fn start_executor<T: 'static + Executor + Send + Sync>(
+        &mut self,
+        executor: T,
+    ) -> IndexerResult<()> {
         let uid = executor.manifest().uid();
 
         self.killers
@@ -360,7 +371,9 @@ impl IndexerService {
             &self.config,
             self.pool.clone(),
             executor,
-        ));
+        )?);
+
+        Ok(())
     }
 }
 
