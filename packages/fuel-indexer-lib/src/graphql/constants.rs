@@ -1,5 +1,5 @@
 use lazy_static::lazy_static;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 lazy_static! {
 
@@ -60,5 +60,26 @@ lazy_static! {
         "Option<String>",
         "Option<Identity>",
         "Option<Json>",
+    ]);
+
+    pub static ref ABI_TYPE_MAP: HashMap<&'static str, &'static str> = HashMap::from_iter([
+        ("u128", "U128"),
+        ("u64", "U64"),
+        ("u32", "U32"),
+        ("u8", "U8"),
+        ("i128", "I128"),
+        ("i64", "I64"),
+        ("i32", "I32"),
+        ("i8", "I8"),
+        ("bool", "Boolean"),
+        ("u8[64]", "Bytes64"),
+        ("u8[32]", "Bytes32"),
+        ("u8[8]", "Bytes8"),
+        ("u8[4]", "Bytes4"),
+        ("Vec<u8>", "Bytes"),
+        ("SizedAsciiString<64>", "ID"),
+        ("String", "String"),
+        ("str[32]", "Bytes32"),
+        ("str[64]", "Bytes64"),
     ]);
 }

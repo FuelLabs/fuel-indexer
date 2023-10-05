@@ -25,6 +25,10 @@ pub struct Command {
     #[clap(long, help = "Resolve indexer asset filepaths using absolute paths.")]
     pub absolute_paths: bool,
 
+    /// Path to JSON ABI for automatic GraphQL schema generation.
+    #[clap(long, help = "Path to JSON ABI for automatic schema generation.")]
+    pub json_abi: Option<PathBuf>,
+
     /// Enable verbose output.
     #[clap(short, long, help = "Enable verbose output.")]
     pub verbose: bool,

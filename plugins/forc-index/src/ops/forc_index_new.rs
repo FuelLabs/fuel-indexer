@@ -71,6 +71,7 @@ pub fn create_indexer(command: NewCommand) -> anyhow::Result<()> {
         native,
         absolute_paths,
         verbose,
+        json_abi,
     } = command;
 
     std::fs::create_dir_all(&project_dir)?;
@@ -151,9 +152,20 @@ pub fn create_indexer(command: NewCommand) -> anyhow::Result<()> {
 
     // Write index schema
     fs::create_dir_all(Path::new(&project_dir).join("schema"))?;
+    let schema_contents = {
+        if let Some(json_abi) = json_abi {
+            if json_abi.is_file() {
+                fuel_indexer_lib::graphql::schema_gen::generate_schema(&json_abi).unwrap()
+            } else {
+                anyhow::bail!("❌ '{json_abi:?}' is not a file.");
+            }
+        } else {
+            defaults::default_indexer_schema()
+        }
+    };
     fs::write(
         Path::new(&project_dir).join("schema").join(schema_filename),
-        defaults::default_indexer_schema(),
+        schema_contents,
     )?;
 
     // What content are we writing?
