@@ -1,3 +1,4 @@
+extern crate alloc;
 use fuel_indexer_utils::prelude::*;
 
 // TODO: We use a lot of manual type conversion below due to https://github.com/FuelLabs/fuel-indexer/issues/286
@@ -143,35 +144,31 @@ impl From<fuel::UtxoId> for UtxoId {
 
 impl From<Bytes32> for ContractIdFragment {
     fn from(hash: Bytes32) -> Self {
-        let hash = Bytes32::from(<[u8; 32]>::from(hash));
         Self::new(hash).get_or_create()
     }
 }
 
 impl From<ContractId> for ContractIdFragment {
     fn from(hash: ContractId) -> Self {
-        let hash = Bytes32::from(<[u8; 32]>::from(hash));
-        Self::new(hash).get_or_create()
+        Self::new(bytes32(hash)).get_or_create()
     }
 }
 
 impl From<Bytes32> for BlockIdFragment {
     fn from(hash: Bytes32) -> Self {
-        let hash = Bytes32::from(<[u8; 32]>::from(hash));
         Self::new(hash).get_or_create()
     }
 }
 
 impl From<Bytes32> for TransactionIdFragment {
     fn from(hash: Bytes32) -> Self {
-        let hash = Bytes32::from(<[u8; 32]>::from(hash));
         Self::new(hash).get_or_create()
     }
 }
 
 impl From<fuel::TransactionData> for TransactionIdFragment {
     fn from(tx: fuel::TransactionData) -> Self {
-        Self::from(Bytes32::from(<[u8; 32]>::from(tx.id))).get_or_create()
+        Self::from(bytes32(tx.id)).get_or_create()
     }
 }
 
@@ -258,7 +255,7 @@ impl From<fuel::Input> for Input {
                     sender,
                     recipient,
                     amount,
-                    Nonce::from(<[u8; 32]>::from(nonce)),
+                    Bytes32::from(<[u8; 32]>::from(nonce)),
                     witness_index.into(),
                     data,
                     predicate,
@@ -833,7 +830,7 @@ impl From<fuel::TransactionData> for Transaction {
                     Some(inputs),
                     Some(outputs),
                     Some(witnesses),
-                    salt,
+                    bytes32(salt),
                     metadata.to_owned().map(|m| m.into()),
                     true,
                     Some(receipts),

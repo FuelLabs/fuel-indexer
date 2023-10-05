@@ -23,6 +23,7 @@ name = "{indexer_name}"
 version = "0.0.0"
 edition = "2021"
 publish = false
+rust-version = "1.72.1"
 
 [[bin]]
 name = "{indexer_name}"
@@ -30,8 +31,8 @@ path = "src/main.rs"
 
 [dependencies]
 async-trait = {{ version = "0.1" }}
-fuel-indexer = {{ version = "0.20", default-features = false }}
-fuel-indexer-utils = {{ version = "0.20", features = ["native-execution"] }}
+fuel-indexer = {{ version = "0.21", default-features = false }}
+fuel-indexer-utils = {{ version = "0.21", features = ["native-execution"] }}
 fuels = {{ version = "0.46", default-features = false, features = ["std"] }}
 getrandom = {{ version = "0.2", features = ["js"] }}
 serde = {{ version = "1.0", default-features = false, features = ["derive"] }}
@@ -47,13 +48,13 @@ name = "{indexer_name}"
 version = "0.0.0"
 edition = "2021"
 publish = false
-rust-version = "1.71.1"
+rust-version = "1.72.1"
 
 [lib]
 crate-type = ['cdylib']
 
 [dependencies]
-fuel-indexer-utils = {{ version = "0.20" }}
+fuel-indexer-utils = {{ version = "0.21" }}
 fuels = {{ version = "0.46", default-features = false }}
 getrandom = {{ version = "0.2", features = ["js"] }}
 serde = {{ version = "1.0", default-features = false, features = ["derive"] }}
@@ -123,10 +124,6 @@ graphql_schema: {schema_path}
 # Important: At this time, wasm is the preferred method of execution.
 module: {module}
 
-# The report_metrics field contains boolean whether or not to report Prometheus  metrics to the
-# Fuel backend
-report_metrics: true
-
 # The resumable field contains a boolean that specifies whether or not the indexer should, synchronise
 # with the latest block if it has fallen out of sync.
 resumable: true
@@ -148,7 +145,8 @@ pub fn default_indexer_lib(
     let manifest_path = manifest_path.display();
 
     format!(
-        r#"use fuel_indexer_utils::prelude::*;
+        r#"extern crate alloc;
+use fuel_indexer_utils::prelude::*;
 
 #[indexer(manifest = "{manifest_path}")]
 pub mod {indexer_name}_index_mod {{
@@ -185,7 +183,8 @@ pub fn default_indexer_binary(
     let manifest_path = manifest_path.display();
 
     format!(
-        r#"use fuel_indexer_utils::prelude::*;
+        r#"extern crate alloc;
+use fuel_indexer_utils::prelude::*;
 
 #[indexer(manifest = "{manifest_path}")]
 pub mod {indexer_name}_index_mod {{
@@ -212,7 +211,7 @@ pub mod {indexer_name}_index_mod {{
 pub fn default_indexer_schema() -> String {
     r#"type Block @entity {
     id: ID!
-    height: UInt8!
+    height: U64!
     hash: Bytes32! @unique
 }
 

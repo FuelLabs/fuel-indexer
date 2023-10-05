@@ -46,6 +46,11 @@ pub enum WasmIndexerError {
     KillSwitch,
     DatabaseError,
     MissingBlocksError,
+    InvalidLogLevel,
+    GetObjectIdFailed,
+    GetStringFailed,
+    AllocMissing,
+    AllocFailed,
     GeneralError,
 }
 
@@ -60,6 +65,11 @@ impl From<u32> for WasmIndexerError {
             5 => Self::KillSwitch,
             6 => Self::DatabaseError,
             7 => Self::MissingBlocksError,
+            8 => Self::InvalidLogLevel,
+            9 => Self::GetObjectIdFailed,
+            10 => Self::GetStringFailed,
+            11 => Self::AllocMissing,
+            12 => Self::AllocFailed,
             _ => Self::GeneralError,
         }
     }
@@ -94,6 +104,21 @@ impl std::fmt::Display for WasmIndexerError {
             }
             Self::MissingBlocksError => {
                 write!(f, "Some blocks are missing")
+            }
+            Self::InvalidLogLevel => {
+                write!(f, "Invalid log level.")
+            }
+            Self::GetObjectIdFailed => {
+                write!(f, "get_object_id failed.")
+            }
+            Self::GetStringFailed => {
+                write!(f, "get_string failed.")
+            }
+            Self::AllocMissing => {
+                write!(f, "alloc is missing.")
+            }
+            Self::AllocFailed => {
+                write!(f, "alloc failed.")
             }
             Self::GeneralError => write!(f, "Some unspecified WASM error occurred."),
         }

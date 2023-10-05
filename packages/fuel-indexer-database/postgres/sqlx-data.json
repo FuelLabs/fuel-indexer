@@ -6,12 +6,12 @@
         {
           "name": "id: i64",
           "ordinal": 0,
-          "type_info": "Int8"
+          "type_info": "I64"
         },
         {
           "name": "root_id: i64",
           "ordinal": 1,
-          "type_info": "Int8"
+          "type_info": "I64"
         },
         {
           "name": "column_name",
@@ -32,7 +32,7 @@
       ],
       "parameters": {
         "Left": [
-          "Int8"
+          "I64"
         ]
       }
     },
@@ -44,7 +44,7 @@
         {
           "name": "id",
           "ordinal": 0,
-          "type_info": "Int8"
+          "type_info": "I64"
         },
         {
           "name": "namespace",
@@ -77,7 +77,7 @@
         {
           "name": "id",
           "ordinal": 0,
-          "type_info": "Int8"
+          "type_info": "I64"
         },
         {
           "name": "namespace",
@@ -107,17 +107,17 @@
         {
           "name": "id: i64",
           "ordinal": 0,
-          "type_info": "Int8"
+          "type_info": "I64"
         },
         {
           "name": "type_id",
           "ordinal": 1,
-          "type_info": "Int8"
+          "type_info": "I64"
         },
         {
           "name": "column_position",
           "ordinal": 2,
-          "type_info": "Int4"
+          "type_info": "I32"
         },
         {
           "name": "column_name",
@@ -151,7 +151,7 @@
       ],
       "parameters": {
         "Left": [
-          "Int8"
+          "I64"
         ]
       }
     },
@@ -184,7 +184,7 @@
         {
           "name": "type_id",
           "ordinal": 0,
-          "type_info": "Int8"
+          "type_info": "I64"
         },
         {
           "name": "table_name",
@@ -194,7 +194,7 @@
         {
           "name": "column_position",
           "ordinal": 2,
-          "type_info": "Int4"
+          "type_info": "I32"
         },
         {
           "name": "column_name",

@@ -1,6 +1,6 @@
 ---
 source: packages/fuel-indexer-schema/src/lib.rs
-expression: addr.query_fragment()
+expression: array.query_fragment()
 ---
-"'1212121212121212121212121212121212121212121212121212121212121212'"
+"ARRAY [1]"
 

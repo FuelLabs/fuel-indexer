@@ -15,7 +15,6 @@ start_block: 1564
 end_block: 310000
 module:
   wasm: path/to/my/wasm_module.wasm
-report_metrics: true
 ```
 
 ## `namespace`
@@ -80,12 +79,6 @@ _Required._
 The `module` field contains a file path that points to code that will be run as an _executor_ inside of the indexer. There are two available options for modules/execution: `wasm` and `native`. Note that when specifying a `wasm` module, the provided path must lead to a compiled WASM binary.
 
 > Important: At this time, `wasm` is the preferred method of execution.
-
-## `report_metrics`
-
-_Optional._
-
-The `report_metrics` field indicates whether to report Prometheus metrics to the Fuel backend.
 
 ## `resumable`
 

@@ -36,12 +36,8 @@ pub fn handler_block_wasm(
 /// indexer module, not within the scope of the entire lib module.
 fn wasm_prelude() -> proc_macro2::TokenStream {
     quote! {
-        extern crate alloc;
-
         use alloc::{format, vec, vec::Vec};
         use std::str::FromStr;
-
-        type B256 = [u8; 32];
 
         use fuel_indexer_utils::plugin::types::*;
         use fuel_indexer_utils::plugin::wasm::*;

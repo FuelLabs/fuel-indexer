@@ -63,7 +63,7 @@ fn get_string(mem: &MemoryView, ptr: u32, len: u32) -> FFIResult<String> {
 
 /// Fetch the object ID at the given pointer from memory.
 fn get_object_id(mem: &MemoryView, ptr: u32, len: u32) -> FFIResult<String> {
-    let id = get_string(mem, ptr, len).unwrap();
+    let id = get_string(mem, ptr, len)?;
     // https://stackoverflow.com/a/1348551
     let id: String = id.chars().filter(|&c| c != '\0').collect();
     Ok(id)
@@ -90,7 +90,7 @@ fn log_data(
     let mem = idx_env
         .memory
         .as_mut()
-        .expect("Memory unitialized.")
+        .ok_or(WasmIndexerError::UninitializedMemory)?
         .view(&store);
 
     let log_string =
@@ -102,15 +102,16 @@ fn log_data(
         LOG_LEVEL_INFO => info!("{log_string}",),
         LOG_LEVEL_DEBUG => debug!("{log_string}",),
         LOG_LEVEL_TRACE => trace!("{log_string}",),
-        l => panic!("Invalid log level: {l}"),
+        l => {
+            error!("Invalid log level: {l}");
+            return Err(WasmIndexerError::InvalidLogLevel);
+        }
     }
 
     Ok(())
 }
 
 /// Fetch the given type at the given pointer from memory.
-///
-/// This function is fallible, and will panic if the type cannot be fetched.
 fn get_object(
     mut env: FunctionEnvMut<IndexEnv>,
     type_id: i64,
@@ -131,13 +132,14 @@ fn get_object(
     let mem = idx_env
         .memory
         .as_mut()
-        .expect("Memory unitialized.")
+        .ok_or(WasmIndexerError::UninitializedMemory)?
         .view(&store);
 
     let offset = 1;
     let len = 64;
     let padding = 6;
-    let id = get_object_id(&mem, ptr + offset, len + padding + offset).unwrap();
+    let id = get_object_id(&mem, ptr + offset, len + padding + offset)
+        .map_err(|_| WasmIndexerError::GetObjectIdFailed)?;
 
     let rt = tokio::runtime::Handle::current();
     let bytes = rt
@@ -148,10 +150,15 @@ fn get_object(
         })?;
 
     if let Some(bytes) = bytes {
-        let alloc_fn = idx_env.alloc.as_mut().expect("Alloc export is missing.");
+        let alloc_fn = idx_env
+            .alloc
+            .as_mut()
+            .ok_or(WasmIndexerError::AllocMissing)?;
 
         let size = bytes.len() as u32;
-        let result = alloc_fn.call(&mut store, size).expect("Alloc failed.");
+        let result = alloc_fn
+            .call(&mut store, size)
+            .map_err(|_| WasmIndexerError::AllocFailed)?;
         let range = result as usize..result as usize + size as usize;
 
         let mem = idx_env
@@ -175,8 +182,6 @@ fn get_object(
 }
 
 /// Put the given type at the given pointer into memory.
-///
-/// This function is fallible, and will panic if the type cannot be saved.
 fn put_object(
     mut env: FunctionEnvMut<IndexEnv>,
     type_id: i64,
@@ -194,11 +199,11 @@ fn put_object(
         return Err(WasmIndexerError::KillSwitch);
     }
 
-    let mem = if let Some(memory) = idx_env.memory.as_mut() {
-        memory.view(&store)
-    } else {
-        return Err(WasmIndexerError::UninitializedMemory);
-    };
+    let mem = idx_env
+        .memory
+        .as_mut()
+        .ok_or(WasmIndexerError::UninitializedMemory)?
+        .view(&store);
 
     let mut bytes = Vec::with_capacity(len as usize);
     let range = ptr as usize..ptr as usize + len as usize;
@@ -234,8 +239,6 @@ fn put_object(
 }
 
 /// Execute the arbitrary query at the given pointer.
-///
-/// This function is fallible, and will panic if the query cannot be executed.
 fn put_many_to_many_record(
     mut env: FunctionEnvMut<IndexEnv>,
     ptr: u32,

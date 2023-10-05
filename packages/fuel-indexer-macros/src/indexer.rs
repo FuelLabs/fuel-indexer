@@ -19,6 +19,15 @@ use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use syn::{parse_macro_input, FnArg, Item, ItemMod, PatType, Type};
 
+fn additional_declarations() -> proc_macro2::TokenStream {
+    quote! {
+        // Miscellaneous types that can be included in ABI JSON
+        type b256 = [u8; 32];
+        type Bytes = Vec<u8>;
+        type B512 = [u8; 64];
+    }
+}
+
 fn process_fn_items(
     manifest: &Manifest,
     abi_path: Option<String>,
@@ -930,6 +939,8 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
         manifest.execution_source(),
     );
 
+    let decl_tokens = additional_declarations();
+
     let output = match manifest.execution_source() {
         ExecutionSource::Native => {
             let (handler_block, fn_items) =
@@ -938,6 +949,8 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
             let naitve_main_tokens = native_main();
 
             quote! {
+
+                #decl_tokens
 
                 #abi_tokens
 
@@ -955,6 +968,8 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
                 process_fn_items(&manifest, abi, indexer_module);
             let handler_block = handler_block_wasm(handler_block);
             quote! {
+
+                #decl_tokens
 
                 #abi_tokens
 

@@ -1,38 +1,38 @@
 type PingEntity @entity {
   id: ID!
-  value: UInt8!
-  message: Charfield!
+  value: U64!
+  message: String!
 }
 
 type PungEntity @entity {
   id: ID!
-  value: UInt8!
+  value: U64!
   is_pung: Boolean!
   pung_from: Identity!
 }
 
 type U16Entity @entity {
   id: ID!
-  value1: UInt16!
-  value2: Int16!
+  value1: U128!
+  value2: I128!
 }
 
 type PongEntity @entity {
   id: ID!
-  value: UInt8!
+  value: U64!
 }
 
 type BlockEntity @entity {
   id: ID!
-  height: UInt4!
-  timestamp: Int8!
+  height: U32!
+  timestamp: I64!
 }
 
 type TxEntity @entity {
   id: ID!
   block: BlockEntity!
   input_data: Json!
-  timestamp: Int8!
+  timestamp: I64!
 }
 
 type TransferEntity @entity {
@@ -40,7 +40,7 @@ type TransferEntity @entity {
   contract_id: ContractId!
   # 'to' is a reserved SQL word, so using 'recipient'
   recipient: ContractId!
-  amount: UInt8!
+  amount: U64!
   asset_id: AssetId!
 }
 
@@ -48,52 +48,52 @@ type TransferOutEntity @entity {
   id: ID!
   contract_id: ContractId!
   recipient: Address!
-  amount: UInt8!
+  amount: U64!
   asset_id: AssetId!
 }
 
 type LogEntity @entity {
   id: ID!
   contract_id: ContractId!
-  ra: UInt8!
-  rb: UInt8!
+  ra: U64!
+  rb: U64!
 }
 
 type ScriptResultEntity @entity {
   id: ID!
-  result: UInt8!
-  gas_used: UInt8!
-  blob: Blob!
+  result: U64!
+  gas_used: U64!
+  blob: Bytes!
 }
 
 type MessageOutEntity @entity {
   id: ID!
-  message_id: MessageId!
+  message_id: Bytes32!
   sender: Address!
   recipient: Address!
-  amount: UInt8!
-  nonce: Nonce!
-  len: UInt8!
+  amount: U64!
+  nonce: Bytes32!
+  len: U64!
   digest: Bytes32!
 }
 
 type OptionEntity @entity {
   id: ID!
-  int_required: UInt8!
-  int_optional_some: UInt8
+  int_required: U64!
+  int_optional_some: U64
   addr_optional_none: Address
 }
 
 type TupleEntity @entity {
   id: ID!
-  complex_a: Charfield!
-  complex_b: UInt8!
-  simple_a: Charfield!
+  complex_a: String!
+  complex_b: U64!
+  simple_a: String!
 }
 
 type MessageEntity @entity {
   id: ID!
-  message: Charfield!
+  message: String!
 }
 
 type CallEntity @entity {
@@ -101,91 +101,91 @@ type CallEntity @entity {
   contract_id: ContractId!
   callee: ContractId!
   asset_id: AssetId!
-  gas: UInt8!
-  fn_name: Charfield!
-  amount: UInt8!
+  gas: U64!
+  fn_name: String!
+  amount: U64!
 }
 
 type PanicEntity @entity {
   id: ID!
   contract_id: ContractId!
-  reason: UInt4!
+  reason: U32!
 }
 
 type RevertEntity @entity {
   id: ID!
   contract_id: ContractId!
-  error_val: UInt8!
+  error_val: U64!
 }
 
 type MintEntity @entity {
   id: ID!
   sub_id: AssetId!
   contract_id: ContractId!
-  val: UInt8!
+  val: U64!
 }
 
 type BurnEntity @entity {
   id: ID!
   sub_id: AssetId!
   contract_id: ContractId!
-  val: UInt8!
+  val: U64!
 }
 
 type Genre @entity {
   id: ID!
-  name: Charfield!
+  name: String!
 }
 
 type Person @entity {
   id: ID!
-  name: Charfield!
+  name: String!
 }
 
 type Planet @entity {
   id: ID!
-  name: Charfield!
+  name: String!
 }
 
 type Continent @entity {
   id: ID!
-  name: Charfield!
+  name: String!
   planet: Planet!
 }
 
 type Country @entity {
   id: ID!
-  name: Charfield!
+  name: String!
   continent: Continent!
 }
 
 type Region @entity {
   id: ID!
-  name: Charfield!
+  name: String!
   country: Country!
 }
 
 type City @entity {
   id: ID!
-  name: Charfield!
+  name: String!
   region: Region!
 }
 
 type Author @entity {
   id: ID!
-  name: Charfield!
+  name: String!
   genre: Genre!
 }
 
 type Library @entity {
   id: ID!
-  name: Charfield!
+  name: String!
   city: City!
 }
 
 type Book @entity {
   id: ID!
-  name: Charfield!
+  name: String!
   author: Author! @indexed
   library: Library!
   genre: Genre!
@@ -193,8 +193,8 @@ type Book @entity {
 
 type Sponsor @entity {
   id: ID!
-  name: Charfield! @unique
-  amount: UInt8!
+  name: String! @unique
+  amount: U64!
   representative: Person!
 }
 
@@ -208,42 +208,42 @@ type BookClub @entity {
 
 type Municipality @entity {
   id: ID!
-  name: Charfield! @unique
+  name: String! @unique
 }
 
 type SportsTeam @entity {
   id: ID!
-  name: Charfield!
+  name: String!
   municipality: Municipality! @join(on: name)
 }
 
 type InnerFilterEntity @entity {
   id: ID!
-  inner_foo: Charfield!
-  inner_bar: UInt8!
-  inner_baz: UInt8!
+  inner_foo: String!
+  inner_bar: U64!
+  inner_baz: U64!
 }
 
 type FilterEntity @entity {
   id: ID!
-  foola: Charfield!
-  maybe_null_bar: UInt8
-  bazoo: UInt8!
+  foola: String!
+  maybe_null_bar: U64
+  bazoo: U64!
   inner_entity: InnerFilterEntity!
 }
 
 type EnumError @entity {
   id: ID!
   contract_id: ContractId!
-  error_val: UInt8!
+  error_val: U64!
 }
 
 type ExplorerEntity @entity {
   id: ID!
-  nonce: Nonce!
-  time: Tai64Timestamp
-  hex: HexString
-  sig: Signature!
+  nonce: Bytes32!
+  time: U64
+  hex: Bytes
+  sig: Bytes64!
   bytes: Bytes64!
 }
 
@@ -259,13 +259,13 @@ type ComplexEnumEntity @entity {
 }
 
 type VirtualEntity @entity(virtual: true) {
-  name: Charfield
-  size: UInt1!
+  name: String
+  size: U8!
 }
 
 type UsesVirtualEntity @entity {
   id: ID!
-  name: Charfield!
+  name: String!
   no_table: VirtualEntity!
 }
 
@@ -277,34 +277,34 @@ enum UnionType {
 
 type IndexableUnionA @entity {
   id: ID!
-  a: UInt8!
+  a: U64!
   union_type: UnionType!
 }
 
 type IndexableUnionB @entity {
   id: ID!
-  b: UInt8!
+  b: U64!
   union_type: UnionType!
 }
 
 type IndexableUnionC @entity {
   id: ID!
-  c: UInt8!
+  c: U64!
   union_type: UnionType!
 }
 
 type VirtualUnionA @entity(virtual: true) {
-  a: UInt8!
+  a: U64!
   union_type: UnionType!
 }
 
 type VirtualUnionB @entity(virtual: true) {
-  b: UInt8!
+  b: U64!
   union_type: UnionType!
 }
 
 type VirtualUnionC @entity(virtual: true) {
-  c: UInt8!
+  c: U64!
   union_type: UnionType!
 }
 
@@ -320,16 +320,16 @@ type VirtualUnionContainerEntity @entity {
 
 type ListFKType @entity {
   id: ID!
-  value: UInt8!
+  value: U64!
 }
 
 type ListTypeEntity @entity {
   id: ID!
-  foo_field: Charfield!
+  foo_field: String!
   required_all: [ListFKType!]!
-  optional_inner: [Charfield]!
-  optional_outer: [UInt8!]
-  optional_all: [UInt8]
+  optional_inner: [String]!
+  optional_outer: [U64!]
+  optional_all: [U64]
   virtual_optional_inner: [VirtualEntity]!
   enum_required_all: [EnumEntity!]!
 }

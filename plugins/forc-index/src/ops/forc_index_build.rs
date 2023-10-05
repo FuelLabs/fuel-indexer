@@ -1,7 +1,9 @@
 use crate::{cli::BuildCommand, defaults, utils::project_dir_info};
-use fuel_indexer_lib::manifest::{Manifest, Module};
+use fuel_indexer_lib::{
+    manifest::{Manifest, Module},
+    utils::Config,
+};
 use indicatif::{ProgressBar, ProgressStyle};
-use serde::Deserialize;
 use std::collections::HashSet;
 use std::{
     env,
@@ -12,29 +14,6 @@ use std::{
     time::Duration,
 };
 use tracing::info;
-
-#[derive(Deserialize)]
-#[allow(unused)]
-struct Package {
-    name: String,
-    version: String,
-    edition: String,
-    publish: bool,
-}
-
-#[derive(Deserialize)]
-#[allow(unused)]
-struct Lib {
-    #[serde(alias = "crate-type")]
-    crate_type: Option<Vec<String>>,
-}
-
-#[derive(Deserialize)]
-#[allow(unused)]
-struct Config {
-    package: Package,
-    lib: Option<Lib>,
-}
 
 pub fn init(command: BuildCommand) -> anyhow::Result<()> {
     let BuildCommand {

@@ -8,13 +8,14 @@ Object types are the most commonly used type in indexer GraphQL schema. Each obj
 type Account @entity {
     id: ID!
     address: Address!
-    balance: UInt8!
+    balance: U64!
 }
 ```
 
 This `Account` object type from the GraphQL schema, might be used in an indexer module like so:
 
 ```rust, ignore
+extern crate alloc;
 use fuel_indexer_utils::prelude::*;
 
 #[indexer(manifest = "indexer.manifest.yaml")]
@@ -43,6 +44,7 @@ enum SignatureLabel {
 This `SignatureLabel` object type from the GraphQL schema, might be used in an indexer module like so:
 
 ```rust, ignore
+extern crate alloc;
 use fuel_indexer_utils::prelude::*;
 
 #[indexer(manifest = "indexer.manifest.yaml")]
@@ -67,14 +69,14 @@ enum TransactionLabel {
 
 type CreateTransaction @entity {
     id: ID!
-    bytecode_length: UInt8!
+    bytecode_length: U64!
     contract_id: ContractId!
     label: TransactionLabel!
 }
 
 type ScriptTransaction @entity {
     id: ID!
-    maturity: UInt8!
+    maturity: U64!
     label: TransactionLabel!
 }
 
@@ -92,10 +94,10 @@ The `Transaction` union type above, will internally produce the following object
 ```graphql
 type Transaction @entity {
     id: ID!
-    bytecode_length: UInt8!
+    bytecode_length: U64!
     contract_id: ContractId!
     label: TransactionLabel!
-    maturity: UInt8!
+    maturity: U64!
     metadata: Json
 }
 ```
@@ -106,10 +108,10 @@ type Transaction @entity {
 This `Transaction` union type from the GraphQL schema, might be used in an indexer module like so:
 
 ```rust, ignore
+extern crate alloc;
 use fuel_indexer_utils::prelude::*;
 
 #[indexer(manifest = "indexer.manifest.yaml")]
-
 mod indexer_mod {
     fn handle_event(event: Event) {
         let bytecode_length = 1024;

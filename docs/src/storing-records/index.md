@@ -12,34 +12,25 @@ Below is a mapping of GraphQL schema types to their Sway and database equivalent
 --- | --- | ---
 | Address | `b256` | varchar(64) |
 | AssetId | `u8[32]` | varchar(64) |
-| Blob | `str[]` | varchar(10485760) |
-| BlockId | | varchar(64) |
 | Boolean | `bool` | boolean |
-| Bytes4 | `str[4]` | varchar(8) |
-| Bytes8 | `str[8]` | varchar(16) |
+| Bytes | `str[]` | varchar(10485760) |
 | Bytes32 | `str[32]` | varchar(64) |
+| Bytes4 | `str[4]` | varchar(8) |
 | Bytes64 | `str[64]` | varchar(128) |
-| Charfield | `str[]` | varchar(255) |
+| Bytes8 | `str[8]` | varchar(16) |
 | ContractId | `b256` | varchar(64) |
-| HexString | `str[]` | varchar(10485760) |
+| I128 | | numeric(39,0) |
+| I32 | `u32` | integer |
+| I64 | `u64` | bigint |
+| I8 | `u8` | integer |
 | ID | | varchar(64) primary key |
-| Int1 | `u8` | integer |
-| Int4 | `u32` | integer |
-| Int8 | `u64` | bigint |
-| Int16 | | numeric(39,0) |
 | Json | `str[]` | json |
-| MessageId | `str[32]` | varchar(64) |
-| Nonce | `str[32]` | varchar(64) |
-| Salt | `str[32]` | varchar(64) |
-| Signature | `str[64]` | varchar(128) |
-| Tai64Timestamp | | varchar(128) |
-| Timestamp | `u64` | timestamp |
+| U128 |  | numeric(39, 0) |
+| U32 | `u32` | integer |
+| U64 | `u64` | numeric(20, 0) |
+| U8 | `u8` | integer |
 | UID | | varchar(64) |
-| UInt1 | `u8` | integer |
-| UInt4 | `u32` | integer |
-| UInt8 | `u64` | numeric(20, 0) |
-| UInt16 |  | numeric(39, 0) |
-| Virtual | | json |
+| String | `str[]` | varchar(255) |
 
 ## Example
 
@@ -59,7 +50,7 @@ The corresponding GraphQL schema to mirror this `Event` struct would resemble:
 type Event @entity {
     id: ID!
     account: Address!
-    block_height: UInt8!
+    block_height: U64!
 }
 ```
 

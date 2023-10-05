@@ -7,7 +7,7 @@ The Fuel indexer project can currently be used in a number of different ways:
 
 - as tooling to interact with indexers
 - as a standalone service
-- as a part of a larger Fuel project, alongside other components of the Fuel ecosystem (e.g. [Sway smart contracts](https://fuellabs.github.io/sway))
+- as a part of a larger Fuel project, alongside other components of the Fuel ecosystem (e.g. [Sway smart contracts](https://docs.fuel.network/docs/sway/))
 
 We'll describe these three different use cases below.
 

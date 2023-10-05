@@ -191,6 +191,13 @@ pub struct IndexerArgs {
     /// Amount of blocks to return in a request to a Fuel node.
     #[clap(long, help = "Amount of blocks to return in a request to a Fuel node.", default_value_t = defaults::NODE_BLOCK_PAGE_SIZE)]
     pub block_page_size: usize,
+
+    /// Allow missing blocks or non-sequential block processing.
+    #[clap(
+        long,
+        help = "Allow missing blocks or non-sequential block processing."
+    )]
+    pub allow_non_sequential_blocks: bool,
 }
 
 #[derive(Debug, Parser, Clone)]

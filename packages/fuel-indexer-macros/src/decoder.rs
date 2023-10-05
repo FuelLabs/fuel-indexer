@@ -967,11 +967,11 @@ mod tests {
         let schema = r#"
 type Person @entity {
     id: ID!
-    name: Charfield!
-    age: UInt1!
+    name: String!
+    age: U8!
 }"#;
 
-        let fields = [("id", "ID"), ("name", "Charfield"), ("age", "UInt1")]
+        let fields = [("id", "ID"), ("name", "String"), ("age", "U8")]
             .iter()
             .map(|(name, typ)| Positioned {
                 pos: Pos::default(),
@@ -1032,9 +1032,7 @@ type Person @entity {
         assert!(tokenstream.contains("pub struct Person"));
         assert!(tokenstream.contains("impl < 'a > Entity < 'a > for Person"));
         assert!(tokenstream.contains("impl Person"));
-        assert!(
-            tokenstream.contains("pub fn new (name : Charfield , age : UInt1 ,) -> Self")
-        );
+        assert!(tokenstream.contains("pub fn new (name : String , age : U8 ,) -> Self"));
         assert!(tokenstream.contains("pub fn get_or_create (self) -> Self"));
         assert!(tokenstream.contains("fn from_row (mut vec : Vec < FtColumn >) -> Self"));
         assert!(tokenstream.contains("fn to_row (& self) -> Vec < FtColumn >"));
@@ -1046,7 +1044,7 @@ type Person @entity {
         let schema = r#"
 type Account @entity {
     id: ID!
-    index: UInt8!
+    index: U64!
 }
 
 type Wallet @entity {

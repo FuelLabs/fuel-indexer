@@ -2672,7 +2672,7 @@ checksum = "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1"
 
 [[package]]
 name = "forc-index"
-version = "0.20.10"
+version = "0.21.0"
 dependencies = [
  "actix-web",
  "anyhow",
@@ -2697,7 +2697,7 @@ dependencies = [
  "serde_yaml",
  "tempfile",
  "tokio",
- "toml",
+ "toml 0.5.11",
  "tracing",
  "walkdir",
  "whoami",
@@ -2705,7 +2705,7 @@ dependencies = [
 
 [[package]]
 name = "forc-postgres"
-version = "0.20.10"
+version = "0.21.0"
 dependencies = [
  "anyhow",
  "clap 3.2.25",
@@ -3198,12 +3198,12 @@ dependencies = [
  "quote",
  "serde",
  "snafu",
- "toml",
+ "toml 0.5.11",
 ]
 
 [[package]]
 name = "fuel-indexer"
-version = "0.20.10"
+version = "0.21.0"
 dependencies = [
  "anyhow",
  "async-std",
@@ -3235,7 +3235,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-api-server"
-version = "0.20.10"
+version = "0.21.0"
 dependencies = [
  "anyhow",
  "async-graphql 5.0.10",
@@ -3293,7 +3293,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-database"
-version = "0.20.10"
+version = "0.21.0"
 dependencies = [
  "fuel-indexer-database-types",
  "fuel-indexer-lib",
@@ -3305,7 +3305,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-database-types"
-version = "0.20.10"
+version = "0.21.0"
 dependencies = [
  "async-graphql-parser 5.0.10",
  "async-graphql-value 5.0.10",
@@ -3318,7 +3318,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-graphql"
-version = "0.20.10"
+version = "0.21.0"
 dependencies = [
  "async-graphql 5.0.10",
  "async-graphql-parser 5.0.10",
@@ -3336,7 +3336,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-lib"
-version = "0.20.10"
+version = "0.21.0"
 dependencies = [
  "anyhow",
  "async-graphql-parser 5.0.10",
@@ -3361,7 +3361,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-macro-utils"
-version = "0.20.10"
+version = "0.21.0"
 dependencies = [
  "proc-macro-error",
  "proc-macro2",
@@ -3371,7 +3371,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-macros"
-version = "0.20.10"
+version = "0.21.0"
 dependencies = [
  "async-graphql-parser 5.0.10",
  "async-graphql-value 5.0.10",
@@ -3393,7 +3393,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-metrics"
-version = "0.20.10"
+version = "0.21.0"
 dependencies = [
  "axum 0.6.20",
  "lazy_static",
@@ -3403,7 +3403,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-plugin"
-version = "0.20.10"
+version = "0.21.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -3426,7 +3426,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-postgres"
-version = "0.20.10"
+version = "0.21.0"
 dependencies = [
  "bigdecimal",
  "chrono",
@@ -3441,7 +3441,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-schema"
-version = "0.20.10"
+version = "0.21.0"
 dependencies = [
  "async-graphql-parser 5.0.10",
  "fuel-indexer-database",
@@ -3499,12 +3499,14 @@ dependencies = [
  "lazy_static",
  "rand",
  "reqwest",
+ "rustc_version",
  "serde",
  "serde_json",
  "serde_yaml",
  "sqlx",
  "thiserror",
  "tokio",
+ "toml 0.8.0",
  "tracing",
  "tracing-subscriber 0.2.25",
  "trybuild",
@@ -3516,9 +3518,8 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-types"
-version = "0.20.10"
+version = "0.21.0"
 dependencies = [
- "bincode",
  "bytes",
  "fuel-tx 0.35.3",
  "fuel-types 0.35.3",
@@ -3526,12 +3527,11 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2 0.9.9",
- "tai64",
 ]
 
 [[package]]
 name = "fuel-indexer-utils"
-version = "0.20.10"
+version = "0.21.0"
 dependencies = [
  "fuel-indexer-macros",
  "fuel-indexer-plugin",
@@ -5776,7 +5776,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f4c021e1093a56626774e81216a4ce732a735e5bad4868a03f3ed65ca0c3919"
 dependencies = [
  "once_cell",
- "toml_edit",
+ "toml_edit 0.19.14",
 ]
 
 [[package]]
@@ -6636,6 +6636,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4beec8bce849d58d06238cb50db2e1c417cfeafa4c63f692b15c82b7c80f8335"
 dependencies = [
  "itoa",
+ "serde",
+]
+
+[[package]]
+name = "serde_spanned"
+version = "0.6.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "96426c9936fd7a0124915f9185ea1d20aa9445cc9821142f0a73bc9207a2e186"
+dependencies = [
  "serde",
 ]
 
@@ -7626,10 +7635,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "toml"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c226a7bba6d859b63c92c4b4fe69c5b6b72d0cb897dbc8e6012298e6154cb56e"
+dependencies = [
+ "serde",
+ "serde_spanned",
+ "toml_datetime",
+ "toml_edit 0.20.0",
+]
+
+[[package]]
 name = "toml_datetime"
 version = "0.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7cda73e2f1397b1262d6dfdcef8aafae14d1de7748d66822d3bfeeb6d03e5e4b"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "toml_edit"
@@ -7638,6 +7662,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f8123f27e969974a3dfba720fdb560be359f57b44302d280ba72e76a74480e8a"
 dependencies = [
  "indexmap 2.0.0",
+ "toml_datetime",
+ "winnow",
+]
+
+[[package]]
+name = "toml_edit"
+version = "0.20.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8ff63e60a958cefbb518ae1fd6566af80d9d4be430a33f3723dfc47d1d411d95"
+dependencies = [
+ "indexmap 2.0.0",
+ "serde",
+ "serde_spanned",
  "toml_datetime",
  "winnow",
 ]

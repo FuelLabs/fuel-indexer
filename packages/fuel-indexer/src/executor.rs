@@ -3,6 +3,7 @@ use crate::{
     database::Database, ffi, queries::ClientExt, IndexerConfig, IndexerError,
     IndexerResult,
 };
+use anyhow::Context;
 use async_std::sync::{Arc, Mutex};
 use async_trait::async_trait;
 use fuel_core_client::client::{
@@ -11,13 +12,13 @@ use fuel_core_client::client::{
     types::TransactionStatus as ClientTransactionStatus,
     FuelClient,
 };
-use fuel_indexer_database::IndexerConnectionPool;
+use fuel_indexer_database::{queries, IndexerConnectionPool};
 use fuel_indexer_lib::{
     defaults::*, manifest::Manifest, utils::serialize, WasmIndexerError,
 };
 use fuel_indexer_types::{
     fuel::{field::*, *},
-    scalar::{Bytes32, HexString},
+    scalar::{Bytes, Bytes32},
 };
 use fuel_tx::UniqueIdentifier;
 use fuel_vm::prelude::Deserializable;
@@ -76,8 +77,9 @@ impl From<ExecutorSource> for Vec<u8> {
 // types in `fuel_core_client` don't compile to WASM.
 pub fn run_executor<T: 'static + Executor + Send + Sync>(
     config: &IndexerConfig,
+    pool: IndexerConnectionPool,
     mut executor: T,
-) -> impl Future<Output = ()> {
+) -> anyhow::Result<impl Future<Output = IndexerResult<()>>> {
     // TODO: https://github.com/FuelLabs/fuel-indexer/issues/286
 
     let end_block = executor.manifest().end_block();
@@ -103,9 +105,9 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
 
     info!("Indexer({indexer_uid}) subscribing to Fuel node at {fuel_node_addr}");
 
-    let client = FuelClient::from_str(&fuel_node_addr).unwrap_or_else(|e| {
-        panic!("Indexer({indexer_uid}) client node connection failed: {e}.")
-    });
+    let client = FuelClient::from_str(&fuel_node_addr).with_context(|| {
+        format!("Indexer({indexer_uid}) client node connection failed.")
+    })?;
 
     if let Some(end_block) = end_block {
         info!("Indexer({indexer_uid}) will stop at block #{end_block}.");
@@ -113,7 +115,30 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
         warn!("No end_block specified in the manifest. Indexer({indexer_uid}) will run forever.");
     }
 
-    async move {
+    let allow_non_sequential_blocks = config.allow_non_sequential_blocks;
+
+    let task = async move {
+        let mut conn = pool.acquire().await.with_context(|| {
+            format!("Indexer({indexer_uid}) was unable to acquire a database connection.")
+        })?;
+
+        if allow_non_sequential_blocks {
+            queries::remove_ensure_block_height_consecutive_trigger(
+                &mut conn,
+                executor.manifest().namespace(),
+                executor.manifest().identifier(),
+            )
+            .await.with_context(|| format!("Unable to remove the sequential blocks trigger for Indexer({indexer_uid})"))?;
+        } else {
+            queries::create_ensure_block_height_consecutive_trigger(
+                &mut conn,
+                executor.manifest().namespace(),
+                executor.manifest().identifier(),
+            )
+            .await
+            .with_context(|| format!("Unable to create the sequential blocks trigger for Indexer({indexer_uid})"))?;
+        }
+
         // If we reach an issue that continues to fail, we'll retry a few times before giving up, as
         // we don't want to quit on the first error. But also don't want to waste CPU.
         //
@@ -138,8 +163,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
         loop {
             // If something else has signaled that this indexer should stop, then stop.
             if executor.kill_switch().load(Ordering::SeqCst) {
-                info!("Kill switch flipped, stopping Indexer({indexer_uid}). <('.')>");
-                break;
+                return Err(IndexerError::KillSwitch(indexer_uid));
             }
 
             // Fetch the next page of blocks, and the starting cursor for the subsequent page
@@ -180,8 +204,9 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                 );
 
                 if num_empty_block_reqs == max_empty_block_reqs {
-                    error!("No blocks being produced after {num_empty_block_reqs} empty responses. Indexer({indexer_uid}) giving up. <('.')>");
-                    break;
+                    return Err(anyhow::format_err!(
+                        "No blocks being produced after {num_empty_block_reqs} empty responses. Indexer({indexer_uid}) giving up. <('.')>"
+                    ).into());
                 }
 
                 // There is no work to do, so we sleep for a bit, then continue without updating our cursor.
@@ -194,8 +219,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
 
             // If the kill switch has been triggered, the executor exits early.
             if executor.kill_switch().load(Ordering::SeqCst) {
-                info!("Kill switch flipped, stopping Indexer({indexer_uid}). <('.')>");
-                break;
+                return Err(IndexerError::KillSwitch(indexer_uid));
             }
 
             if let Err(e) = result {
@@ -203,24 +227,24 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                     if let Some(&WasmIndexerError::MissingBlocksError) =
                         e.downcast_ref::<WasmIndexerError>()
                     {
-                        error!(
+                        return Err(anyhow::format_err!(
                             "Indexer({indexer_uid}) terminating due to missing blocks."
-                        );
-                        break;
+                        )
+                        .into());
                     }
                 }
                 // Run time metering is deterministic. There is no point in retrying.
                 if let IndexerError::RunTimeLimitExceededError = e {
-                    error!("Indexer({indexer_uid}) executor run time limit exceeded. Giving up. <('.')>. Consider increasing metering points");
-                    break;
+                    return Err(anyhow::format_err!(
+                        "Indexer({indexer_uid}) executor run time limit exceeded. Giving up. <('.')>. Consider increasing metering points"
+                    ).into());
                 }
 
                 // We don't want to retry forever as that eats resources.
                 if consecutive_retries >= INDEXER_FAILED_CALLS {
-                    error!(
+                    return Err(anyhow::format_err!(
                         "Indexer({indexer_uid}) failed after too many retries, giving up. <('.')>"
-                    );
-                    break;
+                    ).into());
                 }
 
                 if let IndexerError::SqlxError(sqlx::Error::Database(inner)) = e {
@@ -251,14 +275,15 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
 
             // Again, check if something else has signaled that this indexer should stop, then stop.
             if executor.kill_switch().load(Ordering::SeqCst) {
-                info!("Kill switch flipped, stopping Indexer({indexer_uid}). <('.')>");
-                break;
+                return Err(IndexerError::KillSwitch(indexer_uid));
             }
 
             // Since we had successful call, we reset the retry count.
             consecutive_retries = 0;
         }
-    }
+    };
+
+    Ok(task)
 }
 
 /// Retrieve blocks from a client node.
@@ -343,15 +368,15 @@ pub async fn retrieve_blocks_from_node(
                     let program_state = program_state.map(|p| match p {
                         ClientProgramState::Return(w) => ProgramState {
                             return_type: ReturnType::Return,
-                            data: HexString::from(w.to_le_bytes().to_vec()),
+                            data: Bytes::from(w.to_le_bytes().to_vec()),
                         },
                         ClientProgramState::ReturnData(d) => ProgramState {
                             return_type: ReturnType::ReturnData,
-                            data: HexString::from(d.to_vec()),
+                            data: Bytes::from(d.to_vec()),
                         },
                         ClientProgramState::Revert(w) => ProgramState {
                             return_type: ReturnType::Revert,
-                            data: HexString::from(w.to_le_bytes().to_vec()),
+                            data: Bytes::from(w.to_le_bytes().to_vec()),
                         },
                         // Either `cargo watch` complains that this is unreachable, or `clippy` complains
                         // that all patterns are not matched. These other program states are only used in
@@ -374,15 +399,15 @@ pub async fn retrieve_blocks_from_node(
                     let program_state = program_state.map(|p| match p {
                         ClientProgramState::Return(w) => ProgramState {
                             return_type: ReturnType::Return,
-                            data: HexString::from(w.to_le_bytes().to_vec()),
+                            data: Bytes::from(w.to_le_bytes().to_vec()),
                         },
                         ClientProgramState::ReturnData(d) => ProgramState {
                             return_type: ReturnType::ReturnData,
-                            data: HexString::from(d.to_vec()),
+                            data: Bytes::from(d.to_vec()),
                         },
                         ClientProgramState::Revert(w) => ProgramState {
                             return_type: ReturnType::Revert,
-                            data: HexString::from(w.to_le_bytes().to_vec()),
+                            data: Bytes::from(w.to_le_bytes().to_vec()),
                         },
                         // Either `cargo watch` complains that this is unreachable, or `clippy` complains
                         // that all patterns are not matched. These other program states are only used in

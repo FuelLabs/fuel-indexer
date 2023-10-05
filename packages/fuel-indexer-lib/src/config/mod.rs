@@ -107,6 +107,7 @@ impl Default for IndexerArgs {
             remove_data: defaults::REMOVE_DATA,
             accept_sql_queries: defaults::ACCEPT_SQL,
             block_page_size: defaults::NODE_BLOCK_PAGE_SIZE,
+            allow_non_sequential_blocks: defaults::ALLOW_NON_SEQUENTIAL_BLOCKS,
         }
     }
 }
@@ -136,6 +137,7 @@ pub struct IndexerConfig {
     pub replace_indexer: bool,
     pub accept_sql_queries: bool,
     pub block_page_size: usize,
+    pub allow_non_sequential_blocks: bool,
 }
 
 impl Default for IndexerConfig {
@@ -157,6 +159,7 @@ impl Default for IndexerConfig {
             replace_indexer: defaults::REPLACE_INDEXER,
             accept_sql_queries: defaults::ACCEPT_SQL,
             block_page_size: defaults::NODE_BLOCK_PAGE_SIZE,
+            allow_non_sequential_blocks: defaults::ALLOW_NON_SEQUENTIAL_BLOCKS,
         }
     }
 }
@@ -238,6 +241,7 @@ impl From<IndexerArgs> for IndexerConfig {
             replace_indexer: args.replace_indexer,
             accept_sql_queries: args.accept_sql_queries,
             block_page_size: args.block_page_size,
+            allow_non_sequential_blocks: args.allow_non_sequential_blocks,
         };
 
         config
@@ -325,6 +329,7 @@ impl From<ApiServerArgs> for IndexerConfig {
             replace_indexer: defaults::REPLACE_INDEXER,
             accept_sql_queries: args.accept_sql_queries,
             block_page_size: defaults::NODE_BLOCK_PAGE_SIZE,
+            allow_non_sequential_blocks: defaults::ALLOW_NON_SEQUENTIAL_BLOCKS,
         };
 
         config
