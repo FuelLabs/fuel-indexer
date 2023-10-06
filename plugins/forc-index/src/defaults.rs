@@ -23,7 +23,7 @@ name = "{indexer_name}"
 version = "0.0.0"
 edition = "2021"
 publish = false
-rust-version = "1.72.1"
+rust-version = "1.73.0"
 
 [[bin]]
 name = "{indexer_name}"
@@ -48,7 +48,7 @@ name = "{indexer_name}"
 version = "0.0.0"
 edition = "2021"
 publish = false
-rust-version = "1.72.1"
+rust-version = "1.73.0"
 
 [lib]
 crate-type = ['cdylib']
