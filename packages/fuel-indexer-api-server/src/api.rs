@@ -103,6 +103,11 @@ pub enum ApiError {
     SqlValidator(#[from] crate::sql::SqlValidatorError),
     #[error("ParseError: {0:?}")]
     ParseError(#[from] strum::ParseError),
+    #[error("The forc-index version {toolchain_version} does not match the fuel-indexer version {fuel_indexer_version}.")]
+    ToolchainVersionMismatch {
+        toolchain_version: String,
+        fuel_indexer_version: String,
+    },
     #[error("Other error: {0}")]
     OtherError(String),
 }
@@ -167,6 +172,9 @@ impl IntoResponse for ApiError {
                 error!("ParseError: {e:?}");
                 // This is currently the only type of ParseError on the web server
                 (StatusCode::BAD_REQUEST, format!("Invalid asset type: {e}"))
+            }
+            ApiError::ToolchainVersionMismatch{fuel_indexer_version, toolchain_version} => {
+                (StatusCode::METHOD_NOT_ALLOWED, format!("The toolchain version {toolchain_version} that the WASM module was compiled with does not match the fuel-indexer-versiion {fuel_indexer_version}"))
             }
             _ => (StatusCode::INTERNAL_SERVER_ERROR, generic_details),
         };

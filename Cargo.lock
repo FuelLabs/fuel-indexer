@@ -3265,6 +3265,7 @@ dependencies = [
  "tower",
  "tower-http",
  "tracing",
+ "wasmer",
 ]
 
 [[package]]

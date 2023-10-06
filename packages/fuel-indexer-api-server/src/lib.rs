@@ -3,6 +3,7 @@
 pub mod api;
 pub mod cli;
 pub(crate) mod commands;
+pub(crate) mod ffi;
 pub(crate) mod middleware;
 pub(crate) mod models;
 pub(crate) mod sql;
