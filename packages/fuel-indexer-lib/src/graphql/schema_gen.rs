@@ -23,7 +23,7 @@ use std::collections::HashMap;
 //     TWO
 //     THREE
 // }
-fn decode_enum(types: &Vec<TypeDeclaration>, ty: &TypeDeclaration) -> Option<String> {
+fn decode_enum(types: &[TypeDeclaration], ty: &TypeDeclaration) -> Option<String> {
     let name = ty.type_field.strip_prefix("enum ").unwrap();
 
     let mut fields: Vec<String> = vec![];
@@ -31,7 +31,7 @@ fn decode_enum(types: &Vec<TypeDeclaration>, ty: &TypeDeclaration) -> Option<Str
         for c in components {
             let ty = &types.get(c.type_id)?;
             if is_unit_type(ty) {
-                fields.push(format!("{}", c.name.to_uppercase()));
+                fields.push(c.name.to_uppercase().to_string());
             } else {
                 return None;
             }
@@ -52,7 +52,7 @@ fn decode_enum(types: &Vec<TypeDeclaration>, ty: &TypeDeclaration) -> Option<Str
 // Given a `TypeDeclaration` for an ABI struct, generate a corresponding GraphQL `type`.
 fn decode_struct(
     scalar_types: &HashMap<&str, &str>,
-    abi_types: &Vec<TypeDeclaration>,
+    abi_types: &[TypeDeclaration],
     ty: &TypeDeclaration,
 ) -> Option<String> {
     let name = ty.type_field.strip_prefix("struct ")?;
@@ -104,7 +104,7 @@ fn decode_struct(
 }
 
 // Generate a GraphQL schema from JSON ABI.
-pub fn generate_schema(json_abi: &std::path::PathBuf) -> Option<String> {
+pub fn generate_schema(json_abi: &std::path::Path) -> Option<String> {
     let source = fuels_code_gen::utils::Source::parse(json_abi.to_str()?).unwrap();
     let source = source.get().unwrap();
     let abi: ProgramABI = serde_json::from_str(&source).unwrap();
