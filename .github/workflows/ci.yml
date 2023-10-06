@@ -75,7 +75,9 @@ jobs:
     runs-on: buildjet-4vcpu-ubuntu-2204
     steps:
       - name: Install toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ env.RUSTC_VERSION }}
       - uses: buildjet/cache@v3
         with:
           path: |
@@ -97,8 +99,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Install toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@master
         with:
+          toolchain: ${{ env.RUSTC_VERSION }}
           components: rustfmt
       - name: cargo fmt --all --verbose -- --check
         run: cargo fmt --all --verbose -- --check
@@ -113,8 +116,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Install toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@master
         with:
+          toolchain: ${{ env.RUSTC_VERSION }}
           components: clippy, rustfmt
       - name: cargo clippy --locked --no-default-features
         run: cargo clippy --locked --no-default-features
@@ -129,8 +133,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Install toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@master
         with:
+          toolchain: ${{ env.RUSTC_VERSION }}
           components: clippy, rustfmt
       - name: cargo clippy --locked --all-targets --all-features
         run: cargo clippy --locked --all-targets --all-features
@@ -159,7 +164,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Install toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ env.RUSTC_VERSION }}
       - name: cargo test --locked --all-targets --workspace --exclude fuel-indexer-tests
           --exclude plugin-tests --exclude fuel-indexer-benchmarks
         run: cargo test --locked --all-targets --workspace --exclude fuel-indexer-tests
@@ -188,8 +195,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Install toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@master
         with:
+          toolchain: ${{ env.RUSTC_VERSION }}
           targets: wasm32-unknown-unknown
       - uses: buildjet/cache@v3
         with:
@@ -335,8 +343,9 @@ jobs:
           ci/macos-install-packages.sh
       - uses: actions/checkout@v3
       - name: Install toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@master
         with:
+          toolchain: ${{ env.RUSTC_VERSION }}
           targets: ${{ matrix.job.target }}
       - name: Install cross
         uses: baptiste0928/cargo-install@v1
@@ -521,8 +530,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
       - name: Install toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@master
         with:
+          toolchain: ${{ env.RUSTC_VERSION }}
           targets: wasm32-unknown-unknown
       - name: Verify tag version
         run: >
