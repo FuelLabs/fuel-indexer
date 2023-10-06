@@ -13,6 +13,7 @@ ARGS:
 OPTIONS:
         --absolute-paths           Resolve indexer asset filepaths using absolute paths.
     -h, --help                     Print help information
+        --json-abi <JSON_ABI>      Path to JSON ABI for automatic schema generation.
         --name <NAME>              Name of indexer.
         --namespace <NAMESPACE>    Namespace to which indexer belongs.
         --native                   Initialize an indexer with native execution enabled.
