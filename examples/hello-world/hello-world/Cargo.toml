@@ -1,5 +1,5 @@
 [package]
-name = "hello_indexer"
+name = "hello_world"
 version = "0.0.0"
 edition = "2021"
 publish = false

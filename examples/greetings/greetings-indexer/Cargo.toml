@@ -1,0 +1,14 @@
+[package]
+name = "greetings_indexer"
+version = "0.0.0"
+edition = "2021"
+publish = false
+rust-version = "1.72.1"
+
+[lib]
+crate-type = ['cdylib']
+
+[dependencies]
+fuel-indexer-utils = { workspace = true }
+fuels = { workspace = true }
+serde = { workspace = true }

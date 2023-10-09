@@ -3,10 +3,11 @@
 resolver = "2"
 members = [
    "examples/fuel-explorer/fuel-explorer",
-   "examples/hello-world-native/hello-indexer-native",
-   "examples/hello-world/hello-indexer",
-   "examples/hello-world/hello-world-data",
-   "examples/hello-world/hello-world-node",
+   "examples/greetings-native/greetings-native-indexer",
+   "examples/greetings/greetings-data",
+   "examples/greetings/greetings-fuel-client",
+   "examples/greetings/greetings-indexer",
+   "examples/hello-world/hello-world",
    "packages/fuel-indexer-api-server",
    "packages/fuel-indexer-benchmarks",
    "packages/fuel-indexer-database",

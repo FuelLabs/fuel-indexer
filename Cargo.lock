@@ -3414,6 +3414,7 @@ dependencies = [
  "fuel-indexer-lib",
  "fuel-indexer-schema",
  "fuel-indexer-types",
+ "futures",
  "getrandom",
  "hex",
  "serde",
@@ -4082,6 +4083,50 @@ dependencies = [
 ]
 
 [[package]]
+name = "greetings-data"
+version = "0.0.0"
+dependencies = [
+ "clap 3.2.25",
+ "fuel-indexer-lib",
+ "fuel-indexer-tests",
+ "fuel-tx 0.35.3",
+ "fuel-types 0.35.3",
+ "fuels",
+ "rand",
+ "thiserror",
+ "tokio",
+]
+
+[[package]]
+name = "greetings-fuel-client"
+version = "0.0.0"
+dependencies = [
+ "clap 3.2.25",
+ "fuel-indexer-tests",
+ "tokio",
+]
+
+[[package]]
+name = "greetings_indexer"
+version = "0.0.0"
+dependencies = [
+ "fuel-indexer-utils",
+ "fuels",
+ "serde",
+]
+
+[[package]]
+name = "greetings_native_indexer"
+version = "0.0.0"
+dependencies = [
+ "async-trait",
+ "fuel-indexer",
+ "fuel-indexer-utils",
+ "fuels",
+ "serde",
+]
+
+[[package]]
 name = "group"
 version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4245,44 +4290,9 @@ dependencies = [
 ]
 
 [[package]]
-name = "hello-world-data"
+name = "hello_world"
 version = "0.0.0"
 dependencies = [
- "clap 3.2.25",
- "fuel-indexer-lib",
- "fuel-indexer-tests",
- "fuel-tx 0.35.3",
- "fuel-types 0.35.3",
- "fuels",
- "rand",
- "thiserror",
- "tokio",
-]
-
-[[package]]
-name = "hello-world-node"
-version = "0.0.0"
-dependencies = [
- "clap 3.2.25",
- "fuel-indexer-tests",
- "tokio",
-]
-
-[[package]]
-name = "hello_indexer"
-version = "0.0.0"
-dependencies = [
- "fuel-indexer-utils",
- "fuels",
- "serde",
-]
-
-[[package]]
-name = "hello_indexer_native"
-version = "0.0.0"
-dependencies = [
- "async-trait",
- "fuel-indexer",
  "fuel-indexer-utils",
  "fuels",
  "serde",

@@ -23,11 +23,19 @@ bash scripts/stripper.bash fuel_explorer.wasm
 cp fuel_explorer.wasm target/wasm32-unknown-unknown/release/
 rm -fv fuel_explorer.wasm
 
-cargo build -p hello_indexer --release --target wasm32-unknown-unknown
-bash scripts/stripper.bash hello_indexer.wasm
-cp hello_indexer.wasm target/wasm32-unknown-unknown/release/
-rm -fv hello_indexer.wasm
+cargo build -p hello_world --release --target wasm32-unknown-unknown
+bash scripts/stripper.bash hello_world.wasm
+cp hello_world.wasm target/wasm32-unknown-unknown/release/
+rm -fv hello_world.wasm
 
-cargo build -p hello_indexer_native --locked --release
+cargo build -p greetings_indexer --release --target wasm32-unknown-unknown
+bash scripts/stripper.bash greetings_indexer.wasm
+cp greetings_indexer.wasm target/wasm32-unknown-unknown/release/
+rm -fv greetings_indexer.wasm
+
+
+cargo build -p greetings_native_indexer --locked --release
+
+
 
 set +ex

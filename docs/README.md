@@ -68,19 +68,20 @@ OPTIONS:
     -V, --version    Print version information
 
 SUBCOMMANDS:
-    auth        Authenticate against an indexer service
-    build       Build an indexer
-    check       Check for Fuel indexer components
-    deploy      Deploy an indexer to an indexer service
-    help        Print this message or the help of the given subcommand(s)
-    kill        Kill the indexer process. Note that this command will kill any process listening
-                    on the default indexer port or the port specified by the `--port` flag
-    new         Create a new indexer project in a new directory
-    postgres    Fuel Postgres Orchestrator
-    remove      Stop and remove a running indexer
-    start       Standalone binary for the Fuel indexer service
-    status      Check the status of a registered indexer
-
+    auth          Authenticate against an indexer service
+    build         Build an indexer
+    check         Check for Fuel indexer components
+    deploy        Deploy an indexer to an indexer service
+    help          Print this message or the help of the given subcommand(s)
+    kill          Kill the indexer process. Note that this command will kill any process
+                      listening on the default indexer port or the port specified by the `--port`
+                      flag
+    new           Create a new indexer project in a new directory
+    postgres      Fuel Postgres Orchestrator
+    remove        Stop and remove a running indexer
+    run-native    Run a native indexer
+    start         Standalone binary for the Fuel indexer service
+    status        Check the status of a registered indexer
 ```
 
 #### [➡️ For more details on how to build Fuel indexers, read the docs! ➡️](https://docs.fuel.network/docs/indexer/)
