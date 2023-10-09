@@ -17,7 +17,7 @@ To run the Fuel indexer, you'll need to install a few dependencies on your syste
 
 ## The `Fuel` toolchain
 
-Please visit the Fuel's [installation guide](https://docs.fuel.network/guides/installation) to install The Fuel toolchain binaries and pre requisites.
+Please visit the Fuel [installation guide](https://docs.fuel.network/guides/installation) to install the Fuel toolchain,  which includes binaries for the Fuel indexer.
 
 ## PostgreSQL
 
