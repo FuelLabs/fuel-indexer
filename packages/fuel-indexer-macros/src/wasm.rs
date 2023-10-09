@@ -6,12 +6,17 @@ pub fn handler_block_wasm(
 ) -> proc_macro2::TokenStream {
     let wasm_prelude = wasm_prelude();
 
+    let panic_hook = panic_hook();
+
     quote! {
 
         #wasm_prelude
 
+        #panic_hook
+
         #[no_mangle]
         fn handle_events(blob: *mut u8, len: usize) {
+            register_panic_hook();
             use fuel_indexer_utils::plugin::deserialize;
             let bytes = unsafe { Vec::from_raw_parts(blob, len, len) };
             let blocks: Vec<BlockData> = match deserialize(&bytes) {
@@ -25,6 +30,43 @@ pub fn handler_block_wasm(
             core::mem::forget(bytes);
 
             #handler_block
+        }
+    }
+}
+
+/// Panic hook for the indexer.
+///
+/// When a panic occurs, the message is stored in a `static mut` `String` and a
+/// `WasmIndexerError::Panic` error code is returned. The message is then
+/// retrieved by the indexer service and logged.
+fn panic_hook() -> proc_macro2::TokenStream {
+    quote! {
+        static mut PANIC_MESSAGE: String = String::new();
+
+        #[no_mangle]
+        fn get_panic_message_ptr() -> *const u8 {
+            unsafe { PANIC_MESSAGE.as_ptr() }
+        }
+
+        #[no_mangle]
+        fn get_panic_message_len() -> u32 {
+            unsafe { PANIC_MESSAGE.len() as u32 }
+        }
+
+        #[no_mangle]
+        fn register_panic_hook() {
+            use std::panic;
+            use std::sync::Once;
+            static SET_HOOK: Once = Once::new();
+
+            SET_HOOK.call_once(|| {
+                panic::set_hook(Box::new(|info| {
+                    unsafe {
+                        PANIC_MESSAGE = info.to_string();
+                    }
+                    early_exit(WasmIndexerError::Panic);
+                }));
+            });
         }
     }
 }
