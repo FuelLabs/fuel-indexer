@@ -3,10 +3,17 @@ pub mod parser;
 pub mod types;
 pub mod validator;
 
+use async_graphql_value::Name;
 pub use parser::{JoinTableMeta, ParsedError, ParsedGraphQLSchema};
 pub use validator::GraphQLSchemaValidator;
 
-use async_graphql_parser::types::FieldDefinition;
+use async_graphql_parser::{
+    types::{
+        BaseType, ConstDirective, FieldDefinition, ObjectType, ServiceDocument, Type,
+        TypeDefinition, TypeKind, TypeSystemDefinition,
+    },
+    Pos, Positioned,
+};
 use fuel_indexer_types::graphql::IndexMetadata;
 use sha2::{Digest, Sha256};
 use std::collections::HashMap;
@@ -32,6 +39,358 @@ fn inject_native_entities_into_schema(schema: &str) -> String {
     }
 }
 
+pub(crate) fn inject_pagination_types_into_document(
+    mut ast: ServiceDocument,
+) -> ServiceDocument {
+    let mut pagination_types: Vec<TypeSystemDefinition> = Vec::new();
+    let mut connection_fields: Vec<Positioned<FieldDefinition>> = Vec::new();
+    pagination_types.push(create_page_info_type_def());
+
+    // Iterate through all objects in document and create special
+    // pagination types for each object with a list field.
+    for ty in &ast.definitions {
+        if let TypeSystemDefinition::Type(t) = ty {
+            if let TypeKind::Object(obj) = &t.node.kind {
+                for f in &obj.fields {
+                    if let BaseType::List(inner_type) = &f.node.ty.node.base {
+                        if let BaseType::Named(name) = &inner_type.base {
+                            let edge_type = create_edge_type_for_list_field(f);
+                            pagination_types.push(edge_type);
+
+                            let connection_type =
+                                create_connection_type_def_for_list_entity(name);
+                            pagination_types.push(connection_type);
+
+                            let connection_field = Positioned::position_node(
+                                f,
+                                FieldDefinition {
+                                    description: None,
+                                    name: Positioned::position_node(
+                                        f,
+                                        Name::new(format!(
+                                            "{}Connection",
+                                            f.node.name.node
+                                        )),
+                                    ),
+                                    arguments: vec![],
+                                    ty: Positioned::position_node(
+                                        f,
+                                        Type {
+                                            base: BaseType::Named(Name::new(format!(
+                                                "{name}Connection"
+                                            ))),
+                                            nullable: false,
+                                        },
+                                    ),
+                                    directives: vec![],
+                                },
+                            );
+                            connection_fields.push(connection_field);
+                        }
+                    }
+                }
+
+                let mut adjusted_obj = obj.clone();
+                adjusted_obj.fields.append(&mut connection_fields);
+                let _obj = &adjusted_obj;
+            }
+        }
+    }
+
+    ast.definitions.append(&mut pagination_types);
+
+    ast
+}
+
+fn create_edge_type_for_list_field(
+    list_field: &Positioned<FieldDefinition>,
+) -> TypeSystemDefinition {
+    let (base_type, name) = if let BaseType::List(t) = &list_field.node.ty.node.base {
+        if let BaseType::Named(n) = &t.base {
+            (t, n)
+        } else {
+            unreachable!("Edge type creation should not occur for non-list fields")
+        }
+    } else {
+        unreachable!("Edge type creation should not occur for non-list fields")
+    };
+
+    let edge_obj_type = ObjectType {
+        implements: vec![],
+        fields: vec![
+            Positioned::position_node(
+                list_field,
+                FieldDefinition {
+                    description: None,
+                    name: Positioned::position_node(list_field, Name::new("node")),
+                    arguments: vec![],
+                    ty: Positioned::position_node(
+                        list_field,
+                        Type {
+                            base: base_type.base.clone(),
+                            nullable: false,
+                        },
+                    ),
+                    directives: vec![],
+                },
+            ),
+            Positioned::position_node(
+                list_field,
+                FieldDefinition {
+                    description: None,
+                    name: Positioned::position_node(list_field, Name::new("cursor")),
+                    arguments: vec![],
+                    ty: Positioned::position_node(
+                        list_field,
+                        Type {
+                            base: BaseType::Named(Name::new("String")),
+                            nullable: false,
+                        },
+                    ),
+                    directives: vec![],
+                },
+            ),
+        ],
+    };
+
+    TypeSystemDefinition::Type(Positioned::position_node(
+        list_field,
+        TypeDefinition {
+            extend: false,
+            description: None,
+            name: Positioned::position_node(
+                list_field,
+                Name::new(format!("{}Edge", name)),
+            ),
+            directives: vec![Positioned::position_node(
+                list_field,
+                ConstDirective {
+                    name: Positioned::position_node(list_field, Name::new("entity")),
+                    arguments: vec![(
+                        Positioned::position_node(list_field, Name::new("virtual")),
+                        Positioned::position_node(
+                            list_field,
+                            async_graphql_value::ConstValue::Boolean(true),
+                        ),
+                    )],
+                },
+            )],
+            kind: TypeKind::Object(edge_obj_type),
+        },
+    ))
+}
+
+fn create_connection_type_def_for_list_entity(name: &Name) -> TypeSystemDefinition {
+    let dummy_position = Pos {
+        line: 999,
+        column: 99,
+    };
+
+    let obj_type = ObjectType {
+        implements: vec![],
+        fields: vec![
+            Positioned::new(
+                FieldDefinition {
+                    description: None,
+                    name: Positioned::new(Name::new("nodes"), dummy_position),
+                    arguments: vec![],
+                    ty: Positioned::new(
+                        Type {
+                            base: BaseType::List(Box::new(Type {
+                                base: BaseType::Named(name.clone()),
+                                nullable: false,
+                            })),
+                            nullable: false,
+                        },
+                        dummy_position,
+                    ),
+                    directives: vec![],
+                },
+                dummy_position,
+            ),
+            Positioned::new(
+                FieldDefinition {
+                    description: None,
+                    name: Positioned::new(Name::new("edges"), dummy_position),
+                    arguments: vec![],
+                    ty: Positioned::new(
+                        Type {
+                            base: BaseType::List(Box::new(Type {
+                                base: BaseType::Named(Name::new(format!(
+                                    "{}Edge",
+                                    name.clone()
+                                ))),
+                                nullable: false,
+                            })),
+                            nullable: false,
+                        },
+                        dummy_position,
+                    ),
+                    directives: vec![],
+                },
+                dummy_position,
+            ),
+            Positioned::new(
+                FieldDefinition {
+                    description: None,
+                    name: Positioned::new(Name::new("pageInfo"), dummy_position),
+                    arguments: vec![],
+                    ty: Positioned::new(
+                        Type {
+                            base: BaseType::Named(Name::new("PageInfo")),
+                            nullable: false,
+                        },
+                        dummy_position,
+                    ),
+                    directives: vec![],
+                },
+                dummy_position,
+            ),
+        ],
+    };
+
+    TypeSystemDefinition::Type(Positioned::new(
+        TypeDefinition {
+            extend: false,
+            description: None,
+            name: Positioned::new(
+                Name::new(format!("{}Connection", name.clone())),
+                dummy_position,
+            ),
+            directives: vec![Positioned::new(
+                ConstDirective {
+                    name: Positioned::new(Name::new("entity"), dummy_position),
+                    arguments: vec![(
+                        Positioned::new(Name::new("virtual"), dummy_position),
+                        Positioned::new(
+                            async_graphql_value::ConstValue::Boolean(true),
+                            dummy_position,
+                        ),
+                    )],
+                },
+                dummy_position,
+            )],
+            kind: TypeKind::Object(obj_type),
+        },
+        dummy_position,
+    ))
+}
+
+fn create_page_info_type_def() -> TypeSystemDefinition {
+    let dummy_position = Pos {
+        line: 999,
+        column: 99,
+    };
+
+    let obj_type = ObjectType {
+        implements: vec![],
+        fields: vec![
+            Positioned::new(
+                FieldDefinition {
+                    description: None,
+                    name: Positioned::new(Name::new("hasPreviousPage"), dummy_position),
+                    arguments: vec![],
+                    ty: Positioned::new(
+                        Type {
+                            base: BaseType::Named(Name::new("Boolean")),
+                            nullable: false,
+                        },
+                        dummy_position,
+                    ),
+                    directives: vec![],
+                },
+                dummy_position,
+            ),
+            Positioned::new(
+                FieldDefinition {
+                    description: None,
+                    name: Positioned::new(Name::new("hasNextPage"), dummy_position),
+                    arguments: vec![],
+                    ty: Positioned::new(
+                        Type {
+                            base: BaseType::Named(Name::new("Boolean")),
+                            nullable: false,
+                        },
+                        dummy_position,
+                    ),
+                    directives: vec![],
+                },
+                dummy_position,
+            ),
+            Positioned::new(
+                FieldDefinition {
+                    description: None,
+                    name: Positioned::new(Name::new("startCursor"), dummy_position),
+                    arguments: vec![],
+                    ty: Positioned::new(
+                        Type {
+                            base: BaseType::Named(Name::new("String")),
+                            nullable: true,
+                        },
+                        dummy_position,
+                    ),
+                    directives: vec![],
+                },
+                dummy_position,
+            ),
+            Positioned::new(
+                FieldDefinition {
+                    description: None,
+                    name: Positioned::new(Name::new("endCursor"), dummy_position),
+                    arguments: vec![],
+                    ty: Positioned::new(
+                        Type {
+                            base: BaseType::Named(Name::new("String")),
+                            nullable: true,
+                        },
+                        dummy_position,
+                    ),
+                    directives: vec![],
+                },
+                dummy_position,
+            ),
+            Positioned::new(
+                FieldDefinition {
+                    description: None,
+                    name: Positioned::new(Name::new("totalCount"), dummy_position),
+                    arguments: vec![],
+                    ty: Positioned::new(
+                        Type {
+                            base: BaseType::Named(Name::new("U64")),
+                            nullable: false,
+                        },
+                        dummy_position,
+                    ),
+                    directives: vec![],
+                },
+                dummy_position,
+            ),
+        ],
+    };
+
+    TypeSystemDefinition::Type(Positioned::new(
+        TypeDefinition {
+            extend: false,
+            description: None,
+            name: Positioned::new(Name::new("PageInfo"), dummy_position),
+            directives: vec![Positioned::new(
+                ConstDirective {
+                    name: Positioned::new(Name::new("entity"), dummy_position),
+                    arguments: vec![(
+                        Positioned::new(Name::new("virtual"), dummy_position),
+                        Positioned::new(
+                            async_graphql_value::ConstValue::Boolean(true),
+                            dummy_position,
+                        ),
+                    )],
+                },
+                dummy_position,
+            )],
+            kind: TypeKind::Object(obj_type),
+        },
+        dummy_position,
+    ))
+}
 /// Wrapper for GraphQL schema content.
 #[derive(Default, Debug, Clone)]
 pub struct GraphQLSchema {

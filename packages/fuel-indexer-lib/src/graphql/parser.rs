@@ -6,8 +6,9 @@
 use crate::{
     fully_qualified_namespace,
     graphql::{
-        extract_foreign_key_info, field_id, field_type_name, is_list_type,
-        list_field_type_name, GraphQLSchema, GraphQLSchemaValidator, IdCol, BASE_SCHEMA,
+        extract_foreign_key_info, field_id, field_type_name,
+        inject_pagination_types_into_document, is_list_type, list_field_type_name,
+        GraphQLSchema, GraphQLSchemaValidator, IdCol, BASE_SCHEMA,
     },
     join_table_name, ExecutionSource,
 };
@@ -305,7 +306,10 @@ impl ParsedGraphQLSchema {
 
         if let Some(schema) = schema {
             // Parse _everything_ in the GraphQL schema
-            let ast = parse_schema(schema.schema())?;
+            let mut ast = parse_schema(schema.schema())?;
+
+            ast = inject_pagination_types_into_document(ast);
+
             decoder.decode_service_document(ast)?;
 
             decoder.parsed_graphql_schema.namespace = namespace.to_string();
