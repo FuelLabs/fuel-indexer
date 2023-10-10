@@ -226,7 +226,9 @@ pub(crate) async fn register_indexer_assets(
 
     let fuel_indexer_version = env!("CARGO_PKG_VERSION").to_string();
 
-    if toolchain_version != fuel_indexer_version {
+    if !config.disable_toolchain_version_check
+        && toolchain_version != fuel_indexer_version
+    {
         return Err(ApiError::ToolchainVersionMismatch {
             toolchain_version,
             fuel_indexer_version,

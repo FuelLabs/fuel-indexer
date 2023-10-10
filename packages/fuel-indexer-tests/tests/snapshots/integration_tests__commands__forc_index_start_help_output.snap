@@ -29,6 +29,10 @@ OPTIONS:
         --database <DATABASE>
             Database type. [default: postgres] [possible values: postgres]
 
+        --disable-toolchain-version-check
+            By default, Fuel Indexer will only accept WASM indexer modules compiled with the same
+            toolchain version as the version of Fuel Indexer.
+
         --embedded-database
             Automatically create and start database using provided options or defaults.
 
