@@ -1,11 +1,36 @@
-use wasmer::{AsStoreMut, Instance, MemoryView, StoreMut, WasmPtr};
+use wasmer::{
+    imports, AsStoreMut, Exports, Function, Instance, MemoryView, StoreMut, WasmPtr,
+};
 
 pub(crate) fn check_wasm_toolchain_version(data: Vec<u8>) -> anyhow::Result<String> {
     let mut store = wasmer::Store::default();
 
     let module = wasmer::Module::new(&store, data.clone())?;
 
-    let imports = wasmer::imports! {};
+    let mut exports = Exports::new();
+    exports.insert(
+        "ff_put_object".to_string(),
+        Function::new_typed(&mut store, |_: i64, _: i32, _: i32| {}),
+    );
+    exports.insert(
+        "ff_get_object".to_string(),
+        Function::new_typed(&mut store, |_: i64, _: i32, _: i32| 0i32),
+    );
+    exports.insert(
+        "ff_early_exit".to_string(),
+        Function::new_typed(&mut store, |_: i32| {}),
+    );
+    exports.insert(
+        "ff_put_many_to_many_record".to_string(),
+        Function::new_typed(&mut store, |_: i32, _: i32| {}),
+    );
+    exports.insert(
+        "ff_log_data".to_string(),
+        Function::new_typed(&mut store, |_: i32, _: i32, _: i32| {}),
+    );
+
+    let mut imports = imports! {};
+    wasmer::Imports::register_namespace(&mut imports, "env", exports);
 
     let instance = wasmer::Instance::new(&mut store, &module, &imports)?;
 

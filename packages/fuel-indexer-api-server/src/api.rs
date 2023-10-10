@@ -174,7 +174,7 @@ impl IntoResponse for ApiError {
                 (StatusCode::BAD_REQUEST, format!("Invalid asset type: {e}"))
             }
             ApiError::ToolchainVersionMismatch{fuel_indexer_version, toolchain_version} => {
-                (StatusCode::METHOD_NOT_ALLOWED, format!("The toolchain version {toolchain_version} that the WASM module was compiled with does not match the fuel-indexer-versiion {fuel_indexer_version}"))
+                (StatusCode::METHOD_NOT_ALLOWED, format!("WASM module toolchain version `{toolchain_version}` does not match fuel-indexer version `{fuel_indexer_version}`"))
             }
             _ => (StatusCode::INTERNAL_SERVER_ERROR, generic_details),
         };

@@ -403,7 +403,13 @@ async fn parse_register_indexer_multipart(
                 if asset_type == IndexerAssetType::Wasm {
                     toolchain_version =
                         crate::ffi::check_wasm_toolchain_version(data.clone().into())
-                            .unwrap_or("none".to_string());
+                            .map_err(|e| {
+                                tracing::warn!(
+                                    "Failed to get WASM module toolchain version: {e}"
+                                );
+                                e
+                            })
+                            .unwrap_or("unknown".to_string());
                 };
                 assets.push((asset_type, data.to_vec()));
             }
