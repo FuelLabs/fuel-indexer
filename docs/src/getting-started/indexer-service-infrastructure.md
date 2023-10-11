@@ -50,6 +50,9 @@ OPTIONS:
         --accept-sql-queries
             Allow the web server to accept raw SQL queries.
 
+        --allow-non-sequential-blocks
+            Allow missing blocks or non-sequential block processing.
+
         --auth-enabled
             Require users to authenticate for some operations.
 
@@ -57,7 +60,7 @@ OPTIONS:
             Authentication scheme used.
 
         --block-page-size <BLOCK_PAGE_SIZE>
-            Amount of blocks to return in a request to a Fuel node. [default: 10]
+            Amount of blocks to return in a request to a Fuel node. [default: 20]
 
     -c, --config <FILE>
             Indexer service config file.
@@ -67,6 +70,10 @@ OPTIONS:
 
         --embedded-database
             Automatically create and start database using provided options or defaults.
+
+        --enable-block-store
+            Store blocks in the database and use these stored blocks to fast-forward an indexer
+            starting up.
 
         --fuel-node-host <FUEL_NODE_HOST>
             Host of the running Fuel node. [default: localhost]
@@ -133,6 +140,13 @@ OPTIONS:
         --rate-limit-window-size <RATE_LIMIT_WINDOW_SIZE>
             Number of seconds over which to allow --rate-limit-rps.
 
+        --remove-data
+            When replacing an indexer, also remove the indexed data.
+
+        --remove-stored-blocks
+            Remove all stored blocks. Use this flag together with --enable-block-store to redownload
+            block data afresh.
+
         --replace-indexer
             Whether to allow replacing an existing indexer. If not specified, an attempt to deploy
             over an existing indexer results in an error.
@@ -162,6 +176,25 @@ OPTIONS:
 ```yaml
 {{#include ../../../config.yaml}}
 ```
+
+### Local Block Store
+
+Since version `TODO`, the Fuel indexer service includes the `--enable-block-store` flag, which changes how the service fetches, persists, and processes blocks.
+
+The default behavior is that each indexer fetches its blocks directly from the Fuel node by making repeated HTTP calls. These blocks are not persisted. When a new indexer is deployed (or an indexer is redeployed and its data is removed via `--remove-data` flag), the new indexer starts from scratch.
+
+Setting `--enable-block-store` changes this behavior in a twofold manner:
+
+1. The blocks are fetched by a single process and stored in the database in the `index_block_data` table.
+2. The indexers no longer make HTTP calls—they fetch blocks from the database instead.
+
+This means that when a new indexer is deployed, it can be fast-forwarded by using stored blocks. The benchmarks show that using stored blocks is 4-5x faster than fetching blocks from the Fuel node.
+
+The benchmarks also show that 4M blocks from `beta-4.fuel.network` take around `3GB` of space in the database.
+
+This feature is handy for local testing of an indexer. An in-development indexer can be redeployed, and hundreds of thousands of blocks can be processed very quickly.
+
+If, for whatever reason, removing stored blocks is desirable, it can be done with the `--remove-stored-blocks` flag. If enabled, the Fuel indexer service will, when starting up, remove all entries from the `index_block_data` table.
 
 ---
 
