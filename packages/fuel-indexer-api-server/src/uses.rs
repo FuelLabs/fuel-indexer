@@ -411,7 +411,7 @@ async fn parse_register_indexer_multipart(
                                 );
                                 e
                             })
-                            .unwrap_or("unknown".to_string());
+                            .unwrap_or(toolchain_version);
                 };
                 assets.push((asset_type, data.to_vec()));
             }
