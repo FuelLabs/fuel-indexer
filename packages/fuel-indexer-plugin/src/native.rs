@@ -13,19 +13,22 @@ pub use fuel_indexer_api_server::api::WebApi;
 pub use fuel_indexer_database::{queries, IndexerConnectionPool};
 pub use fuel_indexer_lib::{
     config::{cli::Parser, IndexerArgs, IndexerConfig},
-    defaults::SERVICE_REQUEST_CHANNEL_SIZE,
+    defaults,
     graphql::MAX_FOREIGN_KEY_LIST_FIELDS,
     manifest::Manifest,
     utils::{init_logging, ServiceRequest},
 };
 use fuel_indexer_types::scalar::UID;
+pub use futures;
 pub use sha2::{Digest, Sha256};
 pub use std::{
     collections::{HashMap, HashSet},
     str::FromStr,
 };
 pub use tokio;
+pub use tokio::signal::unix::{signal, Signal, SignalKind};
 pub use tokio::sync::mpsc::channel;
+pub use tracing;
 pub use tracing_subscriber;
 pub use tracing_subscriber::filter::EnvFilter;
 

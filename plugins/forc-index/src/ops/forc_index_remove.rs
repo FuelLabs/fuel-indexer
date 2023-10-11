@@ -17,7 +17,7 @@ pub async fn init(command: RemoveCommand) -> anyhow::Result<()> {
         ..
     } = command;
 
-    let (_root_dir, manifest_path, _index_name) =
+    let (_root_dir, manifest_path, _indexer_name) =
         project_dir_info(path.as_ref(), manifest.as_ref())?;
 
     let manifest: Manifest = Manifest::from_file(manifest_path.as_path())?;

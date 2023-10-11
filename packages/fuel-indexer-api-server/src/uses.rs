@@ -221,8 +221,19 @@ pub(crate) async fn register_indexer_assets(
 
     let multipart = multipart.ok_or_else(ApiError::default)?;
 
-    let (replace_indexer, asset_bytes) =
+    let (toolchain_version, replace_indexer, asset_bytes) =
         parse_register_indexer_multipart(multipart).await?;
+
+    let fuel_indexer_version = env!("CARGO_PKG_VERSION").to_string();
+
+    if !config.disable_toolchain_version_check
+        && toolchain_version != fuel_indexer_version
+    {
+        return Err(ApiError::ToolchainVersionMismatch {
+            toolchain_version,
+            fuel_indexer_version,
+        });
+    }
 
     queries::start_transaction(&mut conn).await?;
 
@@ -374,7 +385,8 @@ async fn register_indexer_assets_transaction(
 // schema, and the WASM module.
 async fn parse_register_indexer_multipart(
     mut multipart: Multipart,
-) -> ApiResult<(bool, Vec<(IndexerAssetType, Vec<u8>)>)> {
+) -> ApiResult<(String, bool, Vec<(IndexerAssetType, Vec<u8>)>)> {
+    let mut toolchain_version: String = "unknown".to_string();
     let mut replace_indexer: bool = false;
     let mut assets: Vec<(IndexerAssetType, Vec<u8>)> = vec![];
 
@@ -390,12 +402,23 @@ async fn parse_register_indexer_multipart(
             }
             name => {
                 let asset_type = IndexerAssetType::from_str(name)?;
+                if asset_type == IndexerAssetType::Wasm {
+                    toolchain_version =
+                        crate::ffi::check_wasm_toolchain_version(data.clone().into())
+                            .map_err(|e| {
+                                tracing::warn!(
+                                    "Failed to get WASM module toolchain version: {e}"
+                                );
+                                e
+                            })
+                            .unwrap_or(toolchain_version);
+                };
                 assets.push((asset_type, data.to_vec()));
             }
         };
     }
 
-    Ok((replace_indexer, assets))
+    Ok((toolchain_version, replace_indexer, assets))
 }
 
 /// Return a `Nonce` to be used for authentication.

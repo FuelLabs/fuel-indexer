@@ -7,8 +7,8 @@ const NODE_TTL_SECS: u64 = 60 * 30;
 
 #[derive(Debug, Parser, Clone)]
 #[clap(
-    name = "hello-world-node",
-    about = "Test program used to start up a test Fuel node for the hello-world example."
+    name = "greetings-fuel-client",
+    about = "Test program used to start up a test Fuel node for the greetings example."
 )]
 pub struct Args {
     #[clap(long, help = "Test wallet filepath")]

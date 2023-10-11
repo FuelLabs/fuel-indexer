@@ -224,13 +224,21 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
 
             if let Err(e) = result {
                 if let IndexerError::RuntimeError(ref e) = e {
-                    if let Some(&WasmIndexerError::MissingBlocksError) =
-                        e.downcast_ref::<WasmIndexerError>()
-                    {
-                        return Err(anyhow::format_err!(
-                            "Indexer({indexer_uid}) terminating due to missing blocks."
-                        )
-                        .into());
+                    match e.downcast_ref::<WasmIndexerError>() {
+                        Some(&WasmIndexerError::MissingBlocksError) => {
+                            return Err(anyhow::format_err!(
+                                "Indexer({indexer_uid}) terminating due to missing blocks."
+                            )
+                            .into());
+                        }
+                        Some(&WasmIndexerError::Panic) => {
+                            let message = executor
+                                .get_panic_message()
+                                .await
+                                .unwrap_or("unknown".to_string());
+                            return Err(anyhow::anyhow!("Indexer({indexer_uid}) terminating due to a panic:\n{message}").into());
+                        }
+                        _ => (),
                     }
                 }
                 // Run time metering is deterministic. There is no point in retrying.
@@ -556,6 +564,8 @@ where
     fn manifest(&self) -> &Manifest;
 
     fn kill_switch(&self) -> &Arc<AtomicBool>;
+
+    async fn get_panic_message(&self) -> IndexerResult<String>;
 }
 
 /// WASM indexer runtime environment responsible for fetching/saving data to and from the database.
@@ -689,6 +699,13 @@ where
     fn manifest(&self) -> &Manifest {
         &self.manifest
     }
+
+    async fn get_panic_message(&self) -> IndexerResult<String> {
+        return Err(anyhow::anyhow!(
+            "get_panic_message() not supported in native exetutor."
+        )
+        .into());
+    }
 }
 
 /// WASM executors are the primary means of execution.
@@ -769,10 +786,11 @@ impl WasmIndexExecutor {
         // FunctionEnvMut and StoreMut must be scoped because they can't
         // be used across await
         {
-            let mut env_mut = env.clone().into_mut(&mut store);
-            let (data_mut, mut store_mut) = env_mut.data_and_store_mut();
+            let schema_version_from_wasm = ffi::get_version(&mut store, &instance)?;
 
-            let schema_version_from_wasm = ffi::get_version(&mut store_mut, &instance)?;
+            let mut env_mut = env.clone().into_mut(&mut store);
+
+            let (data_mut, store_mut) = env_mut.data_and_store_mut();
 
             if schema_version_from_wasm != schema_version {
                 return Err(IndexerError::SchemaVersionMismatch(format!(
@@ -972,5 +990,11 @@ impl Executor for WasmIndexExecutor {
 
     fn manifest(&self) -> &Manifest {
         &self.manifest
+    }
+
+    async fn get_panic_message(&self) -> IndexerResult<String> {
+        let mut store = self.store.lock().await;
+        let result = ffi::get_panic_message(&mut store, &self.instance)?;
+        Ok(result)
     }
 }

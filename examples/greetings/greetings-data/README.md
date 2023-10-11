@@ -1,19 +1,19 @@
-# hello-world-data
+# greetings-data
 
-This program is used to generate test data for the `hello-world` example.
+This program is used to generate test data for the `greetings` example.
 
 ## Usage
 
 ```bash
-cargo run --bin hello-world-data -- --help
+cargo run --bin greetings-data -- --help
 ```
 
 ```text
-Test program used to generate data for the hello-world example.
-hello-world-data
+Test program used to generate data for the greetings example.
+greetings-data
 
 USAGE:
-    hello-world-data [OPTIONS]
+    greetings-data [OPTIONS]
 
 OPTIONS:
         --chain-config <CHAIN_CONFIG>    Test wallet filepath
@@ -25,5 +25,5 @@ OPTIONS:
 Generate a test data point.
 
 ```bash
-cargo run --bin hello-world-data
+cargo run --bin greetings-data
 ```

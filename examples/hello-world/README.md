@@ -1,12 +1,18 @@
-# hello world
+# hello-world
 
-A "Hello World" type of program for the Fuel Indexer service.
+A simple program that demonstrates the full Fuel indexer experience.
 
 ## Usage
 
 > NOTE: Commands are run from `fuel-indexer/examples/hello-world`
 
 ### Spin up containers
+
+Pull the latest image 
+
+```bash
+docker pull ghcr.io/fuellabs/fuel-indexer:latest
+```
 
 Spin up containers for the Postgres database server and the indexer service.
 
@@ -19,32 +25,23 @@ docker compose up
 ### Deploy the indexer
 
 ```bash
-forc index deploy --path hello-indexer --url http://0.0.0.0:29987
-```
-
-### Interact
-
-Trigger some test data by simulating a contract call.
-
-```bash
-cargo run -p hello-world-data --bin hello-world-data -- --host 0.0.0.0:4000
+forc index deploy --path hello-world --url http://0.0.0.0:29987
 ```
 
 ### Validate
 
 Ensure that test data was indexed via a GraphQL query:
-  1. Open this GraphQL playground link http://192.168.1.34:29987/api/playground/fuellabs/hello_indexer
+  1. Open this GraphQL playground link http://192.168.1.34:29987/api/playground/fuellabs/hello-world_indexer
   2. Submit the following query
 
 ```graphql
 query {
-   salutation {
-      id
-      message_hash
-      message
-      greeter
-      first_seen
-      last_seen
+   transaction {
+      hash
+      block {
+        hash
+        height
+      }
    }
 }
 ```

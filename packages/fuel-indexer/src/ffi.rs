@@ -7,8 +7,8 @@ use fuel_indexer_types::ffi::{
 use thiserror::Error;
 use tracing::{debug, error, info, trace, warn};
 use wasmer::{
-    ExportError, Exports, Function, FunctionEnvMut, Instance, MemoryView, RuntimeError,
-    Store, StoreMut, WasmPtr,
+    AsStoreMut, ExportError, Exports, Function, FunctionEnvMut, Instance, MemoryView,
+    RuntimeError, Store, WasmPtr,
 };
 use wasmer_middlewares::metering::{
     get_remaining_points, set_remaining_points, MeteringPoints,
@@ -35,22 +35,47 @@ pub enum FFIError {
     None(String),
 }
 
-/// Get the version of the indexer schema stored in the WASM instance.
-pub fn get_version(store: &mut StoreMut, instance: &Instance) -> FFIResult<String> {
+/// Get a string stored in the WASM module.
+fn get_string_from_instance(
+    store: &mut Store,
+    instance: &Instance,
+    ptr_fn_name: &str,
+    len_fn_name: &str,
+) -> FFIResult<String> {
     let exports = &instance.exports;
 
-    let ptr = exports.get_function("get_version_ptr")?.call(store, &[])?[0]
+    let ptr = exports
+        .get_function(ptr_fn_name)?
+        .call(&mut store.as_store_mut(), &[])?[0]
         .i32()
-        .ok_or_else(|| FFIError::None("get_version".to_string()))? as u32;
+        .ok_or_else(|| FFIError::None(ptr_fn_name.to_string()))? as u32;
 
-    let len = exports.get_function("get_version_len")?.call(store, &[])?[0]
+    let len = exports
+        .get_function(len_fn_name)?
+        .call(&mut store.as_store_mut(), &[])?[0]
         .i32()
-        .ok_or_else(|| FFIError::None("get_version".to_string()))? as u32;
+        .ok_or_else(|| FFIError::None(len_fn_name.to_string()))? as u32;
 
     let memory = exports.get_memory("memory")?.view(store);
-    let version = get_string(&memory, ptr, len)?;
 
-    Ok(version)
+    let result = get_string(&memory, ptr, len)?;
+
+    Ok(result)
+}
+
+/// Get the version of the indexer schema stored in the WASM instance.
+pub fn get_panic_message(store: &mut Store, instance: &Instance) -> FFIResult<String> {
+    get_string_from_instance(
+        store,
+        instance,
+        "get_panic_message_ptr",
+        "get_panic_message_len",
+    )
+}
+
+/// Get the version of the indexer schema stored in the WASM instance.
+pub fn get_version(store: &mut Store, instance: &Instance) -> FFIResult<String> {
+    get_string_from_instance(store, instance, "get_version_ptr", "get_version_len")
 }
 
 /// Fetch the string at the given pointer from memory.

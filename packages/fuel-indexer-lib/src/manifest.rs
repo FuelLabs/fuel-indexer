@@ -211,6 +211,14 @@ impl Manifest {
         &self.namespace
     }
 
+    pub fn set_namespace(&mut self, namespace: String) {
+        self.namespace = namespace;
+    }
+
+    pub fn set_identifier(&mut self, identifier: String) {
+        self.identifier = identifier;
+    }
+
     pub fn identifier(&self) -> &str {
         &self.identifier
     }
