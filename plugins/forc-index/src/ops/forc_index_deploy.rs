@@ -136,13 +136,10 @@ pub async fn init(command: DeployCommand) -> anyhow::Result<()> {
         });
 
     let status = res.status();
-    let res_json = res
-        .json::<Map<String, Value>>()
-        .await
-        .unwrap_or_else(|e| {
-            error!("❌ Failed to read indexer's response as JSON: {e:?}");
-            std::process::exit(1);
-        })
+    let res_json = res.json::<Map<String, Value>>().await.unwrap_or_else(|e| {
+        error!("❌ Failed to read indexer's response as JSON: {e:?}");
+        std::process::exit(1);
+    });
 
     if status != StatusCode::OK {
         if verbose {
