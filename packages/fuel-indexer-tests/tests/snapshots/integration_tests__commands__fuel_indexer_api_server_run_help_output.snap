@@ -23,6 +23,10 @@ OPTIONS:
         --database <DATABASE>
             Database type. [default: postgres] [possible values: postgres]
 
+        --disable-toolchain-version-check
+            By default, Fuel Indexer will only accept WASM indexer modules compiled with the same
+            toolchain version as the version of Fuel Indexer.
+
         --fuel-node-host <FUEL_NODE_HOST>
             Host of the running Fuel node. [default: localhost]
 

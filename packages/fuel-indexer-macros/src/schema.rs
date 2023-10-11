@@ -59,10 +59,14 @@ pub(crate) fn process_graphql_schema(
 
     let version_tokens = const_item("VERSION", schema.version());
 
+    let toolchain_version_tokens =
+        const_item("TOOLCHAIN_VERSION", env!("CARGO_PKG_VERSION"));
+
     let mut output = quote! {
         #namespace_tokens
         #identifer_tokens
         #version_tokens
+        #toolchain_version_tokens
     };
 
     let schema =

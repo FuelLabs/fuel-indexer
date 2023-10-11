@@ -108,6 +108,7 @@ impl Default for IndexerArgs {
             accept_sql_queries: defaults::ACCEPT_SQL,
             block_page_size: defaults::NODE_BLOCK_PAGE_SIZE,
             allow_non_sequential_blocks: defaults::ALLOW_NON_SEQUENTIAL_BLOCKS,
+            disable_toolchain_version_check: defaults::DISABLE_TOOLCHAIN_VERSION_CHECK,
         }
     }
 }
@@ -138,6 +139,7 @@ pub struct IndexerConfig {
     pub accept_sql_queries: bool,
     pub block_page_size: usize,
     pub allow_non_sequential_blocks: bool,
+    pub disable_toolchain_version_check: bool,
 }
 
 impl Default for IndexerConfig {
@@ -160,6 +162,7 @@ impl Default for IndexerConfig {
             accept_sql_queries: defaults::ACCEPT_SQL,
             block_page_size: defaults::NODE_BLOCK_PAGE_SIZE,
             allow_non_sequential_blocks: defaults::ALLOW_NON_SEQUENTIAL_BLOCKS,
+            disable_toolchain_version_check: defaults::DISABLE_TOOLCHAIN_VERSION_CHECK,
         }
     }
 }
@@ -242,6 +245,7 @@ impl From<IndexerArgs> for IndexerConfig {
             accept_sql_queries: args.accept_sql_queries,
             block_page_size: args.block_page_size,
             allow_non_sequential_blocks: args.allow_non_sequential_blocks,
+            disable_toolchain_version_check: args.disable_toolchain_version_check,
         };
 
         config
@@ -330,6 +334,7 @@ impl From<ApiServerArgs> for IndexerConfig {
             accept_sql_queries: args.accept_sql_queries,
             block_page_size: defaults::NODE_BLOCK_PAGE_SIZE,
             allow_non_sequential_blocks: defaults::ALLOW_NON_SEQUENTIAL_BLOCKS,
+            disable_toolchain_version_check: args.disable_toolchain_version_check,
         };
 
         config
