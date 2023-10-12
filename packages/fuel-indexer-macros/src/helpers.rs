@@ -95,7 +95,6 @@ pub fn is_non_decodable_type(typ: &TypeDeclaration) -> bool {
     is_tuple_type(typ)
         || is_unit_type(typ)
         || IGNORED_GENERIC_METADATA.contains(typ.type_field.as_str())
-        || is_array_type(typ)
 }
 
 /// Derive Ident for decoded type
@@ -105,7 +104,13 @@ fn decoded_ident(typ: &TypeDeclaration) -> Ident {
     let name = {
         let name = derive_type_name(typ);
         if typ.components.is_some() {
-            name
+            if is_array_type(typ) {
+                let name = name.replace(['[', ']', ' '], "");
+                let name = name.replace(';', "_");
+                format!("array_{}", name)
+            } else {
+                name
+            }
         } else if name.starts_with("Option") {
             typ.type_field.replace(['<', '>'], "_")
         } else {
@@ -138,11 +143,15 @@ fn decoded_ident(typ: &TypeDeclaration) -> Ident {
 ///
 /// `Vec<T>` returns `Vec`, `Option<T>` returns `Option`, `u8` returns `u8`, etc.
 pub fn derive_type_name(typ: &TypeDeclaration) -> String {
-    typ.type_field
-        .split(' ')
-        .last()
-        .expect("Type field name expected")
-        .to_string()
+    if is_array_type(typ) {
+        typ.type_field.clone()
+    } else {
+        typ.type_field
+            .split(' ')
+            .last()
+            .expect("Type field name expected")
+            .to_string()
+    }
 }
 
 /// Whether or not the given token is a Fuel primitive
@@ -156,9 +165,16 @@ pub fn is_fuel_primitive(typ: &TypeDeclaration) -> bool {
 }
 
 /// Whether or not the given token is a Rust primitive
-pub fn is_rust_primitive(ty: &proc_macro2::TokenStream) -> bool {
+fn is_rust_primitive(ty: &proc_macro2::TokenStream) -> bool {
     let ident_str = ty.to_string();
-    RUST_PRIMITIVES.contains(ident_str.as_str())
+    match ident_str.as_str() {
+        "u8" | "u16" | "u32" | "u64" | "bool" | "String" => true,
+        _ => {
+            ident_str.starts_with('[')
+                && ident_str.ends_with(']')
+                && ident_str.contains(';')
+        }
+    }
 }
 
 /// Whether or not the given tokens are a generic type
@@ -245,7 +261,18 @@ impl Codegen for TypeDeclaration {
     }
 
     fn rust_tokens(&self) -> proc_macro2::TokenStream {
-        if self.components.is_some() {
+        // Array works a bit differently where it's not a complex type (it's a rust primitive),
+        // but we still have to format each part of the array (type and size) separately.
+        if is_array_type(self) {
+            let name = derive_type_name(self).replace(['[', ']', ';'], "");
+            let mut iter = name.split(' ');
+            let ty = iter.next().unwrap();
+            let size = iter.next().unwrap().parse::<usize>().unwrap();
+
+            let ty = format_ident! { "{}", ty };
+
+            quote! { [#ty; #size] }
+        } else if self.components.is_some() {
             let name = derive_type_name(self);
             let ident = format_ident! { "{}", name };
             quote! { #ident }
@@ -1117,7 +1144,7 @@ pub fn typed_path_components(
     (name, tokens)
 }
 
-fn is_array_type(typ: &TypeDeclaration) -> bool {
+pub fn is_array_type(typ: &TypeDeclaration) -> bool {
     typ.type_field.starts_with('[')
         && typ.type_field.ends_with(']')
         && typ.type_field.contains(';')

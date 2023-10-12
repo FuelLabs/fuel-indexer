@@ -194,9 +194,4 @@ lazy_static! {
         "Vec",
         "Option"
     ]);
-
-    /// Set of Rust primitive types.
-    pub static ref RUST_PRIMITIVES: HashSet<&'static str> =
-        HashSet::from(["u8", "u16", "u32", "u64", "bool", "String"]);
-
 }
