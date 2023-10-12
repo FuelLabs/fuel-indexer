@@ -10,7 +10,7 @@ use std::{collections::HashSet, str::FromStr};
 
 const REVERT_VM_CODE: u64 = 0x0004;
 const EXPECTED_CONTRACT_ID: &str =
-    "b97c8abbce1b99e3f5b43038684738fc5e682f8040a0eaf181ed91e212e769f5";
+    "9487238a4496230a82ce8d69b5d3db74e9afcf05138135d2c3198bcdb8ddc0d9";
 const TRANSFER_BASE_ASSET_ID: &str =
     "0000000000000000000000000000000000000000000000000000000000000000";
 
@@ -218,7 +218,7 @@ async fn test_index_receipt_types() {
 
     assert_eq!(
         row.get::<&str, usize>(2),
-        "eb2b3758087983c0d36217befc8f3abf3c140e8090986c8b46382d1b79fa9b3b"
+        "532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96"
     );
     assert_eq!(row.get::<BigDecimal, usize>(3).to_u64().unwrap(), 1);
     assert_eq!(row.get::<&str, usize>(4), TRANSFER_BASE_ASSET_ID);
