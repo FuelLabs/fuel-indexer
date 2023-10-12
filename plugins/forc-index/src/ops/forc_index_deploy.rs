@@ -131,13 +131,13 @@ pub async fn init(command: DeployCommand) -> anyhow::Result<()> {
         .send()
         .await
         .unwrap_or_else(|e| {
-            error!("❌ Failed to deploy indexer: {e:?}");
+            error!("❌ Failed to deploy indexer: {e}");
             std::process::exit(1);
         });
 
     let status = res.status();
     let res_json = res.json::<Map<String, Value>>().await.unwrap_or_else(|e| {
-        error!("❌ Failed to read indexer's response as JSON: {e:?}");
+        error!("❌ Failed to read indexer's response as JSON: {e}");
         std::process::exit(1);
     });
 
