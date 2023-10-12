@@ -21,6 +21,7 @@
   - [Scalars](./designing-a-schema/scalars.md)
   - [Directives](./designing-a-schema/directives.md)
   - [Relationships](./designing-a-schema/relationships.md)
+- [Generating a Schema](./generating-a-schema/index.md)
 - [Indexing Fuel Types](./indexing-fuel-types/index.md)
   - [Blocks](./indexing-fuel-types/blocks.md)
   - [Transactions](./indexing-fuel-types/transactions.md)
