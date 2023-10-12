@@ -11,19 +11,21 @@ use std::path::{Path, PathBuf};
 
 abigen!(Contract(
     name = "Greet",
-    abi = "examples/hello-world/contracts/greeting/out/debug/greeting-abi.json"
+    abi = "examples/greetings/contracts/greeting/out/debug/greeting-abi.json"
 ));
 
 #[derive(Debug, Parser, Clone)]
 #[clap(
-    name = "hello-world-data",
-    about = "Test program used to generate data for the hello-world example."
+    name = "greetings-data",
+    about = "Test program used to generate data for the greetings example."
 )]
 pub struct Args {
     #[clap(long, help = "Test wallet filepath")]
     pub chain_config: Option<PathBuf>,
+
     #[clap(long, help = "Contract bin filepath")]
     pub contract_bin: Option<PathBuf>,
+
     #[clap(long, help = "Host at which to bind.")]
     pub host: Option<String>,
 }
@@ -74,14 +76,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let host = opts
         .host
         .unwrap_or_else(|| defaults::FUEL_NODE_ADDR.to_string());
-    println!("Using Fuel node at {host}",);
+
+    println!("Using Fuel node at {host}");
 
     let wallet_path_str = chain_config.as_os_str().to_str().unwrap();
     let mut wallet =
         WalletUnlocked::load_keystore(wallet_path_str, defaults::WALLET_PASSWORD, None)
             .unwrap();
 
-    let provider = Provider::connect(defaults::FUEL_NODE_ADDR).await.unwrap();
+    let provider = Provider::connect(host).await.unwrap();
 
     wallet.set_provider(provider.clone());
 
@@ -93,6 +96,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let id = loaded_contract.contract_id();
 
     let contract_id = Bech32ContractId::from(id);
+    println!("Using contract id: {}", contract_id.to_string());
 
     let contract = Greet::new(contract_id, wallet.clone());
 

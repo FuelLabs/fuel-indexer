@@ -40,4 +40,5 @@ replace_indexer: false
 accept_sql_queries: false
 block_page_size: 20
 allow_non_sequential_blocks: false
+disable_toolchain_version_check: false
 

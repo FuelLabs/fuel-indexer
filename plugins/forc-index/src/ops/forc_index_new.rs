@@ -44,7 +44,9 @@ fn print_welcome_message() {
 `forc index start`
     Start a local indexer service.
 `forc index status`
-    Check the status of an indexer."#;
+    Check the status of an indexer.
+`forc index run-native`
+    Run a native indexer."#;
 
     let ascii_tag = r#"
 ███████ ██    ██ ███████ ██          ██ ███    ██ ██████  ███████ ██   ██ ███████ ██████ 

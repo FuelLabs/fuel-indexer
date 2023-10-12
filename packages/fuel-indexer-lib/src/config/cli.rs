@@ -198,6 +198,13 @@ pub struct IndexerArgs {
         help = "Allow missing blocks or non-sequential block processing."
     )]
     pub allow_non_sequential_blocks: bool,
+
+    /// By default, Fuel Indexer will only accept WASM indexer modules compiled with the same toolchain version as the version of Fuel Indexer.
+    #[clap(
+        long,
+        help = "By default, Fuel Indexer will only accept WASM indexer modules compiled with the same toolchain version as the version of Fuel Indexer."
+    )]
+    pub disable_toolchain_version_check: bool,
 }
 
 #[derive(Debug, Parser, Clone)]
@@ -323,4 +330,10 @@ pub struct ApiServerArgs {
     /// Allow the web server to accept raw SQL queries.
     #[clap(long, help = "Allow the web server to accept raw SQL queries.")]
     pub accept_sql_queries: bool,
+    /// By default, Fuel Indexer will only accept WASM indexer modules compiled with the same toolchain version as the version of Fuel Indexer.
+    #[clap(
+        long,
+        help = "By default, Fuel Indexer will only accept WASM indexer modules compiled with the same toolchain version as the version of Fuel Indexer."
+    )]
+    pub disable_toolchain_version_check: bool,
 }

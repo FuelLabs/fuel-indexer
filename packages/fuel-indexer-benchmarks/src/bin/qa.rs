@@ -1,7 +1,9 @@
 use chrono::Utc;
 use clap::Parser;
 use duct::cmd;
-use fuel_indexer_lib::{config::IndexerConfig, manifest::Manifest, utils::init_logging};
+use fuel_indexer_lib::{
+    config::IndexerConfig, defaults, manifest::Manifest, utils::init_logging,
+};
 use reqwest::{
     header::{HeaderMap, CONTENT_TYPE},
     Client,
@@ -29,8 +31,30 @@ struct Args {
         help = "Number of blocks to index during run."
     )]
     pub blocks: String,
+
     #[clap(short, long, help = "Network at which to connect.")]
     pub network: String,
+
+    #[clap(long, help = "Database type.", default_value = defaults::DATABASE, value_parser(["postgres"]))]
+    pub database: String,
+
+    #[clap(long, help = "Postgres username.")]
+    pub postgres_user: Option<String>,
+
+    #[clap(long, help = "Postgres database.")]
+    pub postgres_database: Option<String>,
+
+    #[clap(long, help = "Postgres password.")]
+    pub postgres_password: Option<String>,
+
+    #[clap(long, help = "Postgres host.")]
+    pub postgres_host: Option<String>,
+
+    #[clap(long, help = "Postgres port.")]
+    pub postgres_port: Option<String>,
+
+    #[clap(long, help = "Number of additional indexers to run.")]
+    pub num_additional_indexers: Option<usize>,
 }
 
 #[derive(Debug)]
@@ -60,7 +84,8 @@ impl StatManager {
         self.runs.push(run);
     }
 
-    pub fn report(self) {
+    pub fn report(self, num_additional_indexers: Option<usize>) {
+        let additional_indexers = num_additional_indexers.unwrap_or(0);
         let Self { runs, system } = self;
 
         let reports = runs
@@ -118,6 +143,7 @@ system: {system}
 date: {date}
 host: {host}
 branch: {branch}
+additional indexers: {additional_indexers}
 runtime: {runtime:.1} minutes
 missing blocks: {missing_blocks}
 avg memory: {avg_memory:.1}kB
@@ -486,16 +512,25 @@ async fn main() {
 
     let num_runs = opts.runs.parse::<u32>().unwrap();
     let blocks_per_run = opts.blocks.parse::<u32>().unwrap();
+    let postgres_host = opts
+        .postgres_host
+        .unwrap_or(defaults::POSTGRES_HOST.to_string());
+    let postgres_port = opts
+        .postgres_port
+        .unwrap_or(defaults::POSTGRES_PORT.to_string());
+    let postgres_user = opts
+        .postgres_user
+        .unwrap_or(defaults::POSTGRES_USER.to_string());
+    let postgres_db = opts
+        .postgres_database
+        .unwrap_or(defaults::POSTGRES_DATABASE.to_string());
 
     init_logging(&config).await.unwrap();
 
     let root = std::env::current_dir().unwrap();
-    let explorer_root = canonicalize(
-        root.join("examples")
-            .join("fuel-explorer")
-            .join("fuel-explorer"),
-    )
-    .unwrap();
+    let examples_root = root.join("examples");
+    let explorer_root =
+        canonicalize(examples_root.join("fuel-explorer").join("fuel-explorer")).unwrap();
 
     let mani_path = explorer_root.join("fuel_explorer.manifest.yaml");
 
@@ -508,6 +543,14 @@ async fn main() {
         .arg("80")
         .arg("--replace-indexer")
         .arg("--allow-non-sequential-blocks")
+        .arg("--postgres-host")
+        .arg(&postgres_host)
+        .arg("--postgres-port")
+        .arg(&postgres_port)
+        .arg("--postgres-user")
+        .arg(&postgres_user)
+        .arg("--postgres-database")
+        .arg(&postgres_db)
         .spawn()
         .unwrap();
 
@@ -519,6 +562,37 @@ async fn main() {
     tracing::info!("Start blocks: {start_blocks:?}");
     let manifest = Manifest::from_file(&mani_path).unwrap();
     let mut stats = StatManager::new();
+
+    // Deploy some number of additional hello-world indexers.
+    //
+    // Since the Fuel indexer is intended to support multiple indexers, we need to analyze
+    // performance when multiple indexers are running at the same time - if the user so specifies.
+    if let Some(num_additional_indexers) = opts.num_additional_indexers {
+        let hello_world_root = examples_root.join("hello-world").join("hello-world");
+        let mani_path = hello_world_root.join("hello_world.manifest.yaml");
+        let mut manifest = Manifest::from_file(&mani_path).unwrap();
+
+        for i in 0..num_additional_indexers {
+            tracing::info!("Deploying additional indexer #{}", i + 1);
+            manifest.set_identifier(format!("hello_world_{}", i));
+            let _ = manifest.write(&mani_path).unwrap();
+
+            sleep(Duration::from_secs(1)).await;
+
+            let mut proc = Command::new("forc-index")
+                .arg("deploy")
+                .arg("--path")
+                .arg(&hello_world_root.to_str().unwrap())
+                .spawn()
+                .unwrap();
+
+            let _ = proc.wait().unwrap();
+
+            sleep(Duration::from_secs(1)).await;
+        }
+
+        tracing::info!("✅ All additional indexers deployed.");
+    }
 
     for (i, start_block) in start_blocks.iter().enumerate() {
         let start = SystemTime::now()
@@ -576,7 +650,7 @@ async fn main() {
         stats.add_run(run_stats);
     }
 
-    stats.report();
+    stats.report(opts.num_additional_indexers);
 
     let _ = Command::new("forc-index").arg("kill").spawn().unwrap();
 }

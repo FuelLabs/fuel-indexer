@@ -47,6 +47,12 @@ pub enum WasmIndexerError {
     KillSwitch,
     DatabaseError,
     MissingBlocksError,
+    InvalidLogLevel,
+    GetObjectIdFailed,
+    GetStringFailed,
+    AllocMissing,
+    AllocFailed,
+    Panic,
     GeneralError,
 }
 
@@ -61,6 +67,12 @@ impl From<u32> for WasmIndexerError {
             5 => Self::KillSwitch,
             6 => Self::DatabaseError,
             7 => Self::MissingBlocksError,
+            8 => Self::InvalidLogLevel,
+            9 => Self::GetObjectIdFailed,
+            10 => Self::GetStringFailed,
+            11 => Self::AllocMissing,
+            12 => Self::AllocFailed,
+            13 => Self::Panic,
             _ => Self::GeneralError,
         }
     }
@@ -70,10 +82,10 @@ impl std::fmt::Display for WasmIndexerError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::SerializationError => {
-                write!(f, "Failed to serialize object.")
+                write!(f, "Failed to serialize object")
             }
             Self::DeserializationError => {
-                write!(f, "Failed to deserialize object.")
+                write!(f, "Failed to deserialize object")
             }
             Self::UnableToSaveListType => {
                 write!(f, "Failed to save list")
@@ -87,7 +99,7 @@ impl std::fmt::Display for WasmIndexerError {
             Self::KillSwitch => {
                 write!(
                     f,
-                    "Indexer kill switch has been triggered. Indexer will halt."
+                    "Indexer kill switch has been triggered. Indexer will halt"
                 )
             }
             Self::DatabaseError => {
@@ -96,7 +108,25 @@ impl std::fmt::Display for WasmIndexerError {
             Self::MissingBlocksError => {
                 write!(f, "Some blocks are missing")
             }
-            Self::GeneralError => write!(f, "Some unspecified WASM error occurred."),
+            Self::InvalidLogLevel => {
+                write!(f, "Invalid log level")
+            }
+            Self::GetObjectIdFailed => {
+                write!(f, "get_object_id failed")
+            }
+            Self::GetStringFailed => {
+                write!(f, "get_string failed")
+            }
+            Self::AllocMissing => {
+                write!(f, "alloc is missing")
+            }
+            Self::AllocFailed => {
+                write!(f, "alloc failed")
+            }
+            Self::Panic => {
+                write!(f, "Panic")
+            }
+            Self::GeneralError => write!(f, "Some unspecified WASM error occurred"),
         }
     }
 }

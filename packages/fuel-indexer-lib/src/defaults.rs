@@ -137,3 +137,6 @@ pub const ACCEPT_SQL: bool = false;
 
 /// Allow missing blocks or non-sequential block processing.
 pub const ALLOW_NON_SEQUENTIAL_BLOCKS: bool = false;
+
+/// By default, Fuel Indexer will only accept WASM indexer modules compiled with the same toolchain version as the version of Fuel Indexer.
+pub const DISABLE_TOOLCHAIN_VERSION_CHECK: bool = false;
