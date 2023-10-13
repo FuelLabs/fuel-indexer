@@ -459,6 +459,7 @@ impl ParsedGraphQLSchema {
             && !self.scalar_names.contains(name)
             && !self.is_enum_typedef(name)
             && !self.is_virtual_typedef(name)
+            && !self.is_internal_typedef(name)
     }
 
     /// Whether the given field type name is a type from which tables are not created.
@@ -711,6 +712,7 @@ impl SchemaDecoder {
                         .parsed_graphql_schema
                         .virtual_type_names
                         .contains(&ftype)
+                    && !self.parsed_graphql_schema.internal_types.contains(&ftype)
                 {
                     let (_ref_coltype, ref_colname, ref_tablename) =
                         extract_foreign_key_info(
@@ -870,7 +872,7 @@ impl SchemaDecoder {
                     .virtual_type_names
                     .contains(&ftype)
                 && !self.parsed_graphql_schema.internal_types.contains(&ftype)
-                && !is_virtual
+                && !is_internal
             {
                 GraphQLSchemaValidator::foreign_key_field_contains_no_unique_directive(
                     &field.node,

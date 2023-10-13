@@ -885,15 +885,23 @@ impl Table {
                     .fields
                     .iter()
                     .enumerate()
-                    .map(|(i, f)| {
-                        Column::from_field_def(
-                            &f.node,
-                            parsed,
-                            ty_id,
-                            i as i32,
-                            persistence,
-                        )
-                    })
+                    .filter_map(|(i, f)|
+                        if f
+                            .node
+                            .directives
+                            .iter()
+                            .any(|d| d.node.name.node == "internal") { 
+                                return None;
+                            } else {
+                                Some(Column::from_field_def(
+                                    &f.node,
+                                    parsed,
+                                    ty_id,
+                                    i as i32,
+                                    persistence,
+                                ))
+                            }
+                    )
                     .collect::<Vec<Column>>();
 
                 let mut constraints = Vec::new();
