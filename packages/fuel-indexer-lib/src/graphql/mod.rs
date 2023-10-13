@@ -16,7 +16,7 @@ use async_graphql_parser::{
 };
 use fuel_indexer_types::graphql::IndexMetadata;
 use sha2::{Digest, Sha256};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use types::IdCol;
 
 /// Maximum amount of foreign key list fields that can exist on a `TypeDefinition`
@@ -39,21 +39,27 @@ fn inject_native_entities_into_schema(schema: &str) -> String {
     }
 }
 
-pub(crate) fn inject_pagination_types_into_document(
+pub(crate) fn inject_internal_types_into_document(
     mut ast: ServiceDocument,
+    base_type_names: &HashSet<String>,
 ) -> ServiceDocument {
     let mut pagination_types: Vec<TypeSystemDefinition> = Vec::new();
-    let mut connection_fields: Vec<Positioned<FieldDefinition>> = Vec::new();
+    // let mut connection_fields: Vec<Positioned<FieldDefinition>> = Vec::new();
     pagination_types.push(create_page_info_type_def());
 
     // Iterate through all objects in document and create special
     // pagination types for each object with a list field.
-    for ty in &ast.definitions {
+    for ty in ast.definitions.iter_mut() {
         if let TypeSystemDefinition::Type(t) = ty {
-            if let TypeKind::Object(obj) = &t.node.kind {
+            if let TypeKind::Object(obj) = &mut t.node.kind {
+                let mut internal_fields: Vec<Positioned<FieldDefinition>> = Vec::new();
+
                 for f in &obj.fields {
                     if let BaseType::List(inner_type) = &f.node.ty.node.base {
                         if let BaseType::Named(name) = &inner_type.base {
+                            if base_type_names.contains(&name.to_string()) {
+                                continue;
+                            }
                             let edge_type = create_edge_type_for_list_field(f);
                             pagination_types.push(edge_type);
 
@@ -82,17 +88,24 @@ pub(crate) fn inject_pagination_types_into_document(
                                             nullable: false,
                                         },
                                     ),
-                                    directives: vec![],
+                                    directives: vec![Positioned::position_node(
+                                        f,
+                                        ConstDirective {
+                                            name: Positioned::position_node(
+                                                f,
+                                                Name::new("internal"),
+                                            ),
+                                            arguments: vec![],
+                                        },
+                                    )],
                                 },
                             );
-                            connection_fields.push(connection_field);
+                            internal_fields.push(connection_field);
                         }
                     }
                 }
 
-                let mut adjusted_obj = obj.clone();
-                adjusted_obj.fields.append(&mut connection_fields);
-                let _obj = &adjusted_obj;
+                obj.fields.append(&mut internal_fields);
             }
         }
     }
@@ -165,14 +178,8 @@ fn create_edge_type_for_list_field(
             directives: vec![Positioned::position_node(
                 list_field,
                 ConstDirective {
-                    name: Positioned::position_node(list_field, Name::new("entity")),
-                    arguments: vec![(
-                        Positioned::position_node(list_field, Name::new("virtual")),
-                        Positioned::position_node(
-                            list_field,
-                            async_graphql_value::ConstValue::Boolean(true),
-                        ),
-                    )],
+                    name: Positioned::position_node(list_field, Name::new("internal")),
+                    arguments: vec![],
                 },
             )],
             kind: TypeKind::Object(edge_obj_type),
@@ -259,14 +266,8 @@ fn create_connection_type_def_for_list_entity(name: &Name) -> TypeSystemDefiniti
             ),
             directives: vec![Positioned::new(
                 ConstDirective {
-                    name: Positioned::new(Name::new("entity"), dummy_position),
-                    arguments: vec![(
-                        Positioned::new(Name::new("virtual"), dummy_position),
-                        Positioned::new(
-                            async_graphql_value::ConstValue::Boolean(true),
-                            dummy_position,
-                        ),
-                    )],
+                    name: Positioned::new(Name::new("internal"), dummy_position),
+                    arguments: vec![],
                 },
                 dummy_position,
             )],
@@ -375,14 +376,8 @@ fn create_page_info_type_def() -> TypeSystemDefinition {
             name: Positioned::new(Name::new("PageInfo"), dummy_position),
             directives: vec![Positioned::new(
                 ConstDirective {
-                    name: Positioned::new(Name::new("entity"), dummy_position),
-                    arguments: vec![(
-                        Positioned::new(Name::new("virtual"), dummy_position),
-                        Positioned::new(
-                            async_graphql_value::ConstValue::Boolean(true),
-                            dummy_position,
-                        ),
-                    )],
+                    name: Positioned::new(Name::new("internal"), dummy_position),
+                    arguments: vec![],
                 },
                 dummy_position,
             )],

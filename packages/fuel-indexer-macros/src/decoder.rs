@@ -74,6 +74,7 @@ impl Decoder for ImplementationDecoder {
     fn from_typedef(typ: &TypeDefinition, parsed: &ParsedGraphQLSchema) -> Self {
         match &typ.kind {
             TypeKind::Object(o) => {
+                // Remove any fields that use an internal type
                 let obj_name = typ.name.to_string();
 
                 let mut struct_fields = quote! {};
@@ -89,6 +90,15 @@ impl Decoder for ImplementationDecoder {
                     .collect::<HashSet<String>>();
 
                 for field in &o.fields {
+                    if field
+                        .node
+                        .directives
+                        .iter()
+                        .any(|d| d.node.name.node == "internal")
+                    {
+                        continue;
+                    }
+
                     let ProcessedTypedefField {
                         field_name_ident,
                         processed_type_result,
@@ -176,7 +186,18 @@ impl Decoder for ImplementationDecoder {
 
                         fields
                             .iter()
-                            .map(|f| f.0.name.to_string())
+                            // Remove any fields that are marked for internal use
+                            .filter_map(|f| {
+                                if f.0
+                                    .directives
+                                    .iter()
+                                    .any(|d| d.node.name.node == "internal")
+                                {
+                                    return None;
+                                }
+
+                                Some(f.0.name.to_string())
+                            })
                             .collect::<Vec<String>>()
                     })
                     .filter_map(|field_name| {
@@ -348,7 +369,18 @@ impl From<ImplementationDecoder> for TokenStream {
 
                         fields
                             .iter()
-                            .map(|f| f.0.name.to_string())
+                            // Remove any fields marked for internal use
+                            .filter_map(|f| {
+                                if f.0
+                                    .directives
+                                    .iter()
+                                    .any(|d| d.node.name.node == "internal")
+                                {
+                                    return None;
+                                }
+
+                                Some(f.0.name.to_string())
+                            })
                             .collect::<Vec<String>>()
                     })
                     .filter_map(|field_name| {
@@ -519,6 +551,15 @@ impl Decoder for ObjectDecoder {
                 let mut fields_map = BTreeMap::new();
 
                 for field in o.fields.iter() {
+                    if field
+                        .node
+                        .directives
+                        .iter()
+                        .any(|d| d.node.name.node == "internal")
+                    {
+                        continue;
+                    }
+
                     let ProcessedTypedefField {
                         field_name_ident,
                         extractor,
