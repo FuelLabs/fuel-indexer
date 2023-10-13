@@ -813,7 +813,7 @@ impl SchemaDecoder {
             .directives
             .iter()
             .flat_map(|d| d.node.arguments.clone())
-            .any(|t| t.0.node == "virtual");
+            .any(|t| t.0.node == "virtual" && t.1.node == ConstValue::Boolean(true));
 
         if is_virtual {
             self.parsed_graphql_schema
