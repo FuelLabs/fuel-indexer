@@ -2,6 +2,7 @@ use crate::{
     executor::{NativeIndexExecutor, WasmIndexExecutor},
     Database, Executor, IndexerConfig, IndexerError, IndexerResult, Manifest,
 };
+use anyhow::Context;
 use async_std::sync::{Arc, Mutex};
 use async_std::{fs::File, io::ReadExt};
 use fuel_indexer_database::{
@@ -29,7 +30,7 @@ pub struct IndexerService {
     manager: SchemaManager,
 
     /// Tasks for the spawned indexers.
-    tasks: tokio::task::JoinSet<IndexerResult<()>>,
+    tasks: tokio::task::JoinSet<anyhow::Result<()>>,
 
     /// Channel used to receive `ServiceRequest`s.
     rx: Receiver<ServiceRequest>,
@@ -78,11 +79,12 @@ impl IndexerService {
             .is_ok();
         if indexer_exists {
             if !self.config.replace_indexer {
-                return Err(IndexerError::Unknown(format!(
+                return Err(anyhow::anyhow!(
                     "Indexer({}.{}) already exists.",
                     manifest.namespace(),
                     manifest.identifier()
-                )));
+                )
+                .into());
             } else if let Err(e) = queries::remove_indexer(
                 &mut conn,
                 manifest.namespace(),
@@ -177,7 +179,7 @@ impl IndexerService {
             manifest.identifier()
         );
 
-        self.start_executor(executor)?;
+        self.start_executor(executor).await?;
 
         Ok(())
     }
@@ -204,7 +206,7 @@ impl IndexerService {
             {
                 info!("Registered Indexer({})", manifest.uid());
 
-                self.start_executor(executor)?;
+                self.start_executor(executor).await?;
             } else {
                 error!(
                     "Failed to register Indexer({}) from registry.",
@@ -257,7 +259,7 @@ impl IndexerService {
 
         info!("Registered NativeIndex({})", uid);
 
-        self.start_executor(executor)?;
+        self.start_executor(executor).await?;
 
         Ok(())
     }
@@ -269,12 +271,8 @@ impl IndexerService {
                 // Calling join_next will remove finished tasks from the set.
                 Some(result) = self.tasks.join_next() => {
                     match result {
-                        Ok(Ok(())) => (),
-                        Ok(Err(e)) => match e {
-                            IndexerError::KillSwitch(_) => info!{"{e}"},
-                            _ => error!("{e}"),
-                        }
                         Err(e) => error!("Error retiring indexer task {e}"),
+                        _ => (),
                     }
                 }
                 Some(service_request) = self.rx.recv() => {
@@ -318,7 +316,7 @@ impl IndexerService {
                                     )
                                     .await
                                     {
-                                        Ok(executor) => self.start_executor(executor)?,
+                                        Ok(executor) => self.start_executor(executor).await?,
                                         Err(e) => {
                                             error!(
                                                 "Failed to reload Indexer({}.{}): {e:?}",
@@ -358,20 +356,74 @@ impl IndexerService {
     // Spawn and register a tokio::task running the Executor loop, as well as
     // the kill switch and the abort handle.
     #[allow(clippy::result_large_err)]
-    fn start_executor<T: 'static + Executor + Send + Sync>(
+    async fn start_executor<T: 'static + Executor + Send + Sync>(
         &mut self,
         executor: T,
     ) -> IndexerResult<()> {
         let uid = executor.manifest().uid();
+        let namespace = executor.manifest().namespace().to_string();
+        let identifier = executor.manifest().identifier().to_string();
+
+        let mut conn = self.pool.acquire().await?;
 
         self.killers
             .insert(uid.clone(), executor.kill_switch().clone());
 
-        self.tasks.spawn(crate::executor::run_executor(
-            &self.config,
-            self.pool.clone(),
-            executor,
-        )?);
+        self.tasks.spawn({
+            let task =
+                crate::executor::run_executor(&self.config, self.pool.clone(), executor)?;
+            async move {
+                queries::set_indexer_status(
+                    &mut conn,
+                    &namespace,
+                    &identifier,
+                    queries::IndexerStatus::Starting,
+                    "",
+                )
+                .await
+                .with_context(|| {
+                    format!("Failed to set Indexer({namespace}.{identifier}) status.")
+                })?;
+
+                let result = task.await;
+
+                let status: queries::IndexerStatus;
+                let status_message: String;
+
+                match result {
+                    Ok(()) => {
+                        info!("Indexer({namespace}.{identifier}) stopped.");
+                        status = queries::IndexerStatus::Stopped;
+                        status_message = "".to_string();
+                    }
+                    Err(ref e) => match e {
+                        IndexerError::KillSwitch | IndexerError::EndBlockMet => {
+                            info! {"{e}"};
+                            status = queries::IndexerStatus::Stopped;
+                            status_message = format!("{e}");
+                        }
+                        _ => {
+                            error!("{e}");
+                            status = queries::IndexerStatus::Error;
+                            status_message = format!("{e}");
+                        }
+                    },
+                }
+
+                queries::set_indexer_status(
+                    &mut conn,
+                    &namespace,
+                    &identifier,
+                    status,
+                    &status_message,
+                )
+                .await.with_context(|| {
+                    format!("Failed to set Indexer({namespace}.{identifier}) status.")
+                })?;
+
+                Ok(())
+            }
+        });
 
         Ok(())
     }

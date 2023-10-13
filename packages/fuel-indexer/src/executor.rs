@@ -163,7 +163,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
         loop {
             // If something else has signaled that this indexer should stop, then stop.
             if executor.kill_switch().load(Ordering::SeqCst) {
-                return Err(IndexerError::KillSwitch(indexer_uid));
+                return Err(IndexerError::KillSwitch);
             }
 
             // Fetch the next page of blocks, and the starting cursor for the subsequent page
@@ -219,7 +219,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
 
             // If the kill switch has been triggered, the executor exits early.
             if executor.kill_switch().load(Ordering::SeqCst) {
-                return Err(IndexerError::KillSwitch(indexer_uid));
+                return Err(IndexerError::KillSwitch);
             }
 
             if let Err(e) = result {
@@ -227,7 +227,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                     match e.downcast_ref::<WasmIndexerError>() {
                         Some(&WasmIndexerError::MissingBlocksError) => {
                             return Err(anyhow::format_err!(
-                                "Indexer({indexer_uid}) terminating due to missing blocks."
+                                "Indexer({indexer_uid}) terminated due to missing blocks."
                             )
                             .into());
                         }
@@ -236,7 +236,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                                 .get_panic_message()
                                 .await
                                 .unwrap_or("unknown".to_string());
-                            return Err(anyhow::anyhow!("Indexer({indexer_uid}) terminating due to a panic:\n{message}").into());
+                            return Err(anyhow::anyhow!("Indexer({indexer_uid}) terminated due to a panic:\n{message}").into());
                         }
                         _ => (),
                     }
@@ -281,9 +281,18 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
             // If we make it this far, we always go to the next page.
             cursor = next_cursor;
 
+            queries::set_indexer_status(
+                &mut conn,
+                executor.manifest().namespace(),
+                executor.manifest().identifier(),
+                queries::IndexerStatus::Running,
+                &cursor.clone().unwrap_or("0".to_string()),
+            )
+            .await?;
+
             // Again, check if something else has signaled that this indexer should stop, then stop.
             if executor.kill_switch().load(Ordering::SeqCst) {
-                return Err(IndexerError::KillSwitch(indexer_uid));
+                return Err(IndexerError::KillSwitch);
             }
 
             // Since we had successful call, we reset the retry count.
@@ -900,10 +909,11 @@ impl WasmIndexExecutor {
             );
             Ok(())
         } else {
-            Err(IndexerError::Unknown(
+            Err(anyhow::anyhow!(
                 "Attempting to set metering points when metering is not enables"
                     .to_string(),
-            ))
+            )
+            .into())
         }
     }
 }

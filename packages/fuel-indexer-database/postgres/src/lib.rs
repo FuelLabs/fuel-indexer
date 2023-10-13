@@ -972,3 +972,46 @@ pub async fn remove_ensure_block_height_consecutive_trigger(
 
     Ok(())
 }
+
+#[derive(Debug, Clone, Copy)]
+pub enum IndexerStatus {
+    Starting,
+    Running,
+    Stopped,
+    Error,
+}
+
+impl std::fmt::Display for IndexerStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            IndexerStatus::Starting => write!(f, "starting"),
+            IndexerStatus::Running => write!(f, "running"),
+            IndexerStatus::Stopped => write!(f, "stopped"),
+            IndexerStatus::Error => write!(f, "error"),
+        }
+    }
+}
+
+pub async fn set_indexer_status(
+    conn: &mut PoolConnection<Postgres>,
+    namespace: &str,
+    identifier: &str,
+    status: IndexerStatus,
+    status_message: &str,
+) -> sqlx::Result<()> {
+    sqlx::query(
+        "INSERT INTO indexer_status (namespace, identifier, status, status_message)
+        VALUES ($1, $2, $3, $4)
+        ON CONFLICT (namespace, identifier)
+        DO UPDATE
+        SET status = EXCLUDED.status, status_message = EXCLUDED.status_message;",
+    )
+    .bind(namespace)
+    .bind(identifier)
+    .bind(status.to_string())
+    .bind(status_message)
+    .execute(conn)
+    .await?;
+
+    Ok(())
+}

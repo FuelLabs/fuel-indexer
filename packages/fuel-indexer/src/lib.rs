@@ -70,8 +70,6 @@ pub enum IndexerError {
     InvalidPortNumber(#[from] core::num::ParseIntError),
     #[error("No open transaction for {0}. Was a transaction started?")]
     NoTransactionError(String),
-    #[error("{0}.")]
-    Unknown(String),
     #[error("Indexer schema error: {0:?}")]
     SchemaError(#[from] IndexerSchemaDbError),
     #[error("Manifest error: {0:?}")]
@@ -84,12 +82,13 @@ pub enum IndexerError {
     NativeExecutionRuntimeError,
     #[error("Tokio time error: {0:?}")]
     Elapsed(#[from] tokio::time::error::Elapsed),
-    #[error("Indexer end block has been stopping execution.")]
-    EndBlockMet,
     #[error("Invalid schema: {0:?}")]
     SchemaVersionMismatch(String),
     #[error(transparent)]
     Other(#[from] anyhow::Error),
-    #[error("Indexer({0}) kill switch flipped. <('.')>")]
-    KillSwitch(String),
+    // The following errors actually signify a successful completion.
+    #[error("Kill switch has been flipped. <('.')>")]
+    KillSwitch,
+    #[error("End block has been met.")]
+    EndBlockMet,
 }

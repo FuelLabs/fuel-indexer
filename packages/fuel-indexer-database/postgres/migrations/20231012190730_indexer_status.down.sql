@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS indexer_status CASCADE;
