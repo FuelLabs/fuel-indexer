@@ -1077,7 +1077,7 @@ union Storage = Safe | Vault
         );
         assert_eq!(
             parsed.join_table_meta().get("Storage").unwrap()[1],
-            JoinTableMeta::new("storage", "id", "user", "id", Some(3))
+            JoinTableMeta::new("storage", "id", "user", "id", Some(4))
         );
 
         // Internal types
