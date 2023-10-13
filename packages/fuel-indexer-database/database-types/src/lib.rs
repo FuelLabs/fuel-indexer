@@ -891,7 +891,7 @@ impl Table {
                             .directives
                             .iter()
                             .any(|d| d.node.name.node == "internal") { 
-                                return None;
+                                None
                             } else {
                                 Some(Column::from_field_def(
                                     &f.node,
