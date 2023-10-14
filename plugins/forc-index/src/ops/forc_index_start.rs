@@ -1,6 +1,9 @@
 use crate::cli::StartCommand;
 use fuel_indexer_lib::defaults;
-use std::{ffi::OsStr, process::Command};
+use std::{
+    ffi::OsStr,
+    process::{Command, Stdio},
+};
 use tracing::info;
 
 pub async fn init(command: StartCommand) -> anyhow::Result<()> {
@@ -125,7 +128,7 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
                     ("--postgres-user", postgres_user),
                     ("--postgres-password", postgres_password),
                     ("--postgres-host", postgres_host),
-                    ("--postgres-port", postgres_port),
+                    ("--postgres-port", postgres_port.clone()),
                     ("--postgres-database", postgres_database),
                 ];
 
@@ -149,6 +152,29 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
         Ok(child) => {
             let pid = child.id();
             info!("✅ Successfully started the indexer service at PID {pid}");
+
+            // Ensure that the DB actually was created if we passed --embedded-database
+            if embedded_database {
+                std::thread::sleep(std::time::Duration::from_secs(1));
+                let port = postgres_port.unwrap_or(defaults::POSTGRES_PORT.to_string());
+                let mut cmd = Command::new("lsof");
+                cmd.arg(&format!("-ti:{}", port))
+                    .stdout(Stdio::piped())
+                    .stderr(Stdio::piped());
+
+                if verbose {
+                    info!("{cmd:?}");
+                }
+
+                match cmd.spawn() {
+                    Ok(child) => {
+                        let output = child.wait_with_output().unwrap();
+                        let pid = String::from_utf8(output.stdout).unwrap();
+                        info!("✅ Successfully confirmed the embedded database process at PID(s) {pid}");
+                    }
+                    Err(e) => panic!("❌ Failed to confirm that --embedded-database was started: {e:?}."),
+                }
+            }
         }
         Err(e) => panic!("❌ Failed to spawn fuel-indexer child process: {e:?}."),
     }
