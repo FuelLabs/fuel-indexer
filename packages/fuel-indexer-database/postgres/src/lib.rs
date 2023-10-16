@@ -439,12 +439,18 @@ pub async fn get_indexer(
                 DateTime::<Utc>::from_naive_utc_and_offset(created_at, Utc)
             };
 
+            let status: IndexerStatus =
+                IndexerStatus::from_str(row.try_get(5).unwrap_or("unknown"))
+                    .unwrap_or(IndexerStatus::Unknown);
+
             Ok(Some(RegisteredIndexer {
                 id: row.get(0),
                 namespace: row.get(1),
                 identifier: row.get(2),
                 pubkey: row.get(3),
                 created_at,
+                status,
+                status_message: row.try_get(6).unwrap_or_default(),
             }))
         }
         None => Ok(None),
@@ -467,14 +473,16 @@ pub async fn register_indexer(
     }
 
     let row = sqlx::query(
-        "INSERT INTO index_registry (namespace, identifier, pubkey, created_at)
-         VALUES ($1, $2, $3, $4)
+        "INSERT INTO index_registry (namespace, identifier, pubkey, created_at, status, status_message)
+         VALUES ($1, $2, $3, $4, $5, $6)
          RETURNING *",
     )
     .bind(namespace)
     .bind(identifier)
     .bind(pubkey)
     .bind(created_at)
+    .bind("registered")
+    .bind("")
     .fetch_one(conn)
     .await?;
 
@@ -486,6 +494,10 @@ pub async fn register_indexer(
         let created_at: NaiveDateTime = row.get(4);
         DateTime::<Utc>::from_naive_utc_and_offset(created_at, Utc)
     };
+    let status: IndexerStatus =
+        IndexerStatus::from_str(row.try_get(5).unwrap_or("unknown"))
+            .unwrap_or(IndexerStatus::Unknown);
+    let status_message = row.try_get(6).unwrap_or_default();
 
     Ok(RegisteredIndexer {
         id,
@@ -493,6 +505,8 @@ pub async fn register_indexer(
         identifier,
         pubkey,
         created_at,
+        status,
+        status_message,
     })
 }
 
@@ -514,6 +528,10 @@ pub async fn all_registered_indexers(
                 let created_at: NaiveDateTime = row.get(4);
                 DateTime::<Utc>::from_naive_utc_and_offset(created_at, Utc)
             };
+            let status: IndexerStatus =
+                IndexerStatus::from_str(row.try_get(5).unwrap_or("unknown"))
+                    .unwrap_or(IndexerStatus::Unknown);
+            let status_message = row.try_get(6).unwrap_or_default();
 
             RegisteredIndexer {
                 id,
@@ -521,6 +539,8 @@ pub async fn all_registered_indexers(
                 identifier,
                 pubkey,
                 created_at,
+                status,
+                status_message,
             }
         })
         .collect::<Vec<RegisteredIndexer>>())
@@ -973,25 +993,6 @@ pub async fn remove_ensure_block_height_consecutive_trigger(
     Ok(())
 }
 
-#[derive(Debug, Clone, Copy)]
-pub enum IndexerStatus {
-    Starting,
-    Running,
-    Stopped,
-    Error,
-}
-
-impl std::fmt::Display for IndexerStatus {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            IndexerStatus::Starting => write!(f, "starting"),
-            IndexerStatus::Running => write!(f, "running"),
-            IndexerStatus::Stopped => write!(f, "stopped"),
-            IndexerStatus::Error => write!(f, "error"),
-        }
-    }
-}
-
 pub async fn set_indexer_status(
     conn: &mut PoolConnection<Postgres>,
     namespace: &str,
@@ -1000,16 +1001,14 @@ pub async fn set_indexer_status(
     status_message: &str,
 ) -> sqlx::Result<()> {
     sqlx::query(
-        "INSERT INTO indexer_status (namespace, identifier, status, status_message)
-        VALUES ($1, $2, $3, $4)
-        ON CONFLICT (namespace, identifier)
-        DO UPDATE
-        SET status = EXCLUDED.status, status_message = EXCLUDED.status_message;",
+        "UPDATE index_registry
+        SET status = $1, status_message = $2
+        WHERE namespace = $3 AND identifier = $4",
     )
-    .bind(namespace)
-    .bind(identifier)
     .bind(status.to_string())
     .bind(status_message)
+    .bind(namespace)
+    .bind(identifier)
     .execute(conn)
     .await?;
 

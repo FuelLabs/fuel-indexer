@@ -6,7 +6,9 @@ use anyhow::Context;
 use async_std::sync::{Arc, Mutex};
 use async_std::{fs::File, io::ReadExt};
 use fuel_indexer_database::{
-    queries, types::IndexerAssetType, IndexerConnection, IndexerConnectionPool,
+    queries,
+    types::{IndexerAssetType, IndexerStatus},
+    IndexerConnection, IndexerConnectionPool,
 };
 use fuel_indexer_lib::utils::ServiceRequest;
 use fuel_indexer_schema::db::manager::SchemaManager;
@@ -269,11 +271,8 @@ impl IndexerService {
         loop {
             tokio::select! {
                 // Calling join_next will remove finished tasks from the set.
-                Some(result) = self.tasks.join_next() => {
-                    match result {
-                        Err(e) => error!("Error retiring indexer task {e}"),
-                        _ => (),
-                    }
+                Some(Err(e)) = self.tasks.join_next() => {
+                    error!("Error retiring indexer task {e}");
                 }
                 Some(service_request) = self.rx.recv() => {
                     match service_request {
@@ -359,7 +358,7 @@ impl IndexerService {
     async fn start_executor<T: 'static + Executor + Send + Sync>(
         &mut self,
         executor: T,
-    ) -> IndexerResult<()> {
+    ) -> anyhow::Result<()> {
         let uid = executor.manifest().uid();
         let namespace = executor.manifest().namespace().to_string();
         let identifier = executor.manifest().identifier().to_string();
@@ -369,59 +368,76 @@ impl IndexerService {
         self.killers
             .insert(uid.clone(), executor.kill_switch().clone());
 
-        self.tasks.spawn({
-            let task =
-                crate::executor::run_executor(&self.config, self.pool.clone(), executor)?;
-            async move {
-                queries::set_indexer_status(
-                    &mut conn,
-                    &namespace,
-                    &identifier,
-                    queries::IndexerStatus::Starting,
-                    "",
-                )
-                .await
-                .with_context(|| {
-                    format!("Failed to set Indexer({namespace}.{identifier}) status.")
-                })?;
+        // self.tasks.spawn(crate::executor::run_executor(
+        //     &self.config,
+        //     self.pool.clone(),
+        //     executor,
+        // )?);
 
-                let result = task.await;
+        let task =
+            crate::executor::run_executor(&self.config, self.pool.clone(), executor)?;
+        self.tasks.spawn(async move {
+            queries::set_indexer_status(
+                &mut conn,
+                &namespace,
+                &identifier,
+                IndexerStatus::Starting,
+                "",
+            )
+            .await
+            .with_context(|| {
+                format!("Failed to set Indexer({namespace}.{identifier}) status.")
+            })?;
 
-                let status: queries::IndexerStatus;
-                let status_message: String;
+            let result = task.await;
 
-                match result {
-                    Ok(()) => {
-                        info!("Indexer({namespace}.{identifier}) stopped.");
-                        status = queries::IndexerStatus::Stopped;
-                        status_message = "".to_string();
-                    }
-                    Err(ref e) => match e {
+            let status: IndexerStatus;
+            let status_message: String;
+
+            match result {
+                Ok(()) => {
+                    info!("Indexer({namespace}.{identifier}) stopped.");
+                    queries::set_indexer_status(
+                        &mut conn,
+                        &namespace,
+                        &identifier,
+                        IndexerStatus::Stopped,
+                        "",
+                    )
+                    .await
+                    .with_context(|| {
+                        format!("Failed to set Indexer({namespace}.{identifier}) status.")
+                    })?;
+
+                    Ok(())
+                }
+                Err(e) => {
+                    match e {
                         IndexerError::KillSwitch | IndexerError::EndBlockMet => {
                             info! {"{e}"};
-                            status = queries::IndexerStatus::Stopped;
+                            status = IndexerStatus::Stopped;
                             status_message = format!("{e}");
                         }
                         _ => {
                             error!("{e}");
-                            status = queries::IndexerStatus::Error;
+                            status = IndexerStatus::Error;
                             status_message = format!("{e}");
                         }
-                    },
+                    };
+                    queries::set_indexer_status(
+                        &mut conn,
+                        &namespace,
+                        &identifier,
+                        status,
+                        &status_message,
+                    )
+                    .await
+                    .with_context(|| {
+                        format!("Failed to set Indexer({namespace}.{identifier}) status.")
+                    })?;
+
+                    Err(e.into())
                 }
-
-                queries::set_indexer_status(
-                    &mut conn,
-                    &namespace,
-                    &identifier,
-                    status,
-                    &status_message,
-                )
-                .await.with_context(|| {
-                    format!("Failed to set Indexer({namespace}.{identifier}) status.")
-                })?;
-
-                Ok(())
             }
         });
 

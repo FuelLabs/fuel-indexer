@@ -559,6 +559,12 @@ pub struct RegisteredIndexer {
     /// Time at which indexer was created.
     #[serde(with = "ts_microseconds")]
     pub created_at: DateTime<Utc>,
+
+    /// The current status of an indexer.
+    pub status: IndexerStatus,
+
+    /// Additional status message, if any.
+    pub status_message: String,
 }
 
 impl RegisteredIndexer {
@@ -566,6 +572,22 @@ impl RegisteredIndexer {
     pub fn uid(&self) -> String {
         format!("{}.{}", self.namespace, self.identifier)
     }
+}
+
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, EnumString, strum::Display,
+)]
+pub enum IndexerStatus {
+    #[strum(serialize = "starting")]
+    Starting,
+    #[strum(serialize = "running")]
+    Running,
+    #[strum(serialize = "stopped")]
+    Stopped,
+    #[strum(serialize = "error")]
+    Error,
+    #[strum(serialize = "unknown")]
+    Unknown,
 }
 
 /// SQL database types used by indexers.

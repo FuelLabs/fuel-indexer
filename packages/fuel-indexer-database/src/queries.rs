@@ -440,13 +440,11 @@ pub async fn remove_ensure_block_height_consecutive_trigger(
     }
 }
 
-pub use postgres::IndexerStatus;
-
 pub async fn set_indexer_status(
     conn: &mut IndexerConnection,
     namespace: &str,
     identifier: &str,
-    status: postgres::IndexerStatus,
+    status: IndexerStatus,
     status_message: &str,
 ) -> sqlx::Result<()> {
     println!("Indexer({namespace}.{identifier}) status: {status:?}");

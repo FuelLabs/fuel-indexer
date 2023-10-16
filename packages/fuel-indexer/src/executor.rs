@@ -12,7 +12,7 @@ use fuel_core_client::client::{
     types::TransactionStatus as ClientTransactionStatus,
     FuelClient,
 };
-use fuel_indexer_database::{queries, IndexerConnectionPool};
+use fuel_indexer_database::{queries, types::IndexerStatus, IndexerConnectionPool};
 use fuel_indexer_lib::{
     defaults::*, manifest::Manifest, utils::serialize, WasmIndexerError,
 };
@@ -285,8 +285,11 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                 &mut conn,
                 executor.manifest().namespace(),
                 executor.manifest().identifier(),
-                queries::IndexerStatus::Running,
-                &cursor.clone().unwrap_or("0".to_string()),
+                IndexerStatus::Running,
+                &format!(
+                    "Indexed {} blocks",
+                    cursor.clone().unwrap_or("0".to_string())
+                ),
             )
             .await?;
 
