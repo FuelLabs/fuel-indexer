@@ -881,19 +881,16 @@ impl Table {
                 let mut columns = o
                     .fields
                     .iter()
+                    .filter(|f| !check_for_directive(&f.node.directives, "internal"))
                     .enumerate()
-                    .filter_map(|(i, f)|
-                        if check_for_directive(&f.node.directives, "internal") { 
-                                None
-                            } else {
-                                Some(Column::from_field_def(
-                                    &f.node,
-                                    parsed,
-                                    ty_id,
-                                    i as i32,
-                                    persistence,
-                                ))
-                            }
+                    .map(|(i, f)|
+                        Column::from_field_def(
+                            &f.node,
+                            parsed,
+                            ty_id,
+                            i as i32,
+                            persistence,
+                        )
                     )
                     .collect::<Vec<Column>>();
 
