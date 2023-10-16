@@ -1,6 +1,6 @@
 use crate::{cli::BuildCommand, defaults, utils::project_dir_info};
 use fuel_indexer_lib::{
-    manifest::{Manifest, Module},
+    manifest::{Manifest, Module, RawManifest},
     utils::Config,
 };
 use indicatif::{ProgressBar, ProgressStyle};
@@ -55,7 +55,8 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
     let config: Config = toml::from_str(&content)?;
 
     let indexer_manifest_path = root_dir.join(manifest);
-    let mut manifest = Manifest::from_file(&indexer_manifest_path)?;
+    let mut raw_manifest = RawManifest::from_file(&indexer_manifest_path)?;
+    let mut manifest = Manifest::try_from(&raw_manifest)?;
 
     let manifest_schema_file = {
         let workspace_root: std::path::PathBuf =
@@ -203,8 +204,8 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
             anyhow::bail!("❌ Failed to execute wasm-snip: (Code: {code:?})",)
         }
 
-        // FIXME: This should include whatever comments were in the original doc
-        manifest.write(&indexer_manifest_path)?;
+        raw_manifest.update_yaml(&manifest)?;
+        raw_manifest.write(&indexer_manifest_path)?;
     }
 
     Ok(())

@@ -27,6 +27,7 @@ pub enum ManifestError {
 ///
 /// When using a `Wasm` module, the WASM binary at the given path
 /// is read and those bytes are registered into a `WasmIndexerExecutor`.
+///
 /// `Native` modules on the other hand do not require a path, because
 /// native indexers compile to binaries that can be executed without having
 /// to read the bytes of some compiled module.
@@ -63,12 +64,175 @@ impl AsRef<Path> for Module {
     }
 }
 
+/// Write some bytes content to a general path.
+fn write_content(path: &PathBuf, content: Vec<u8>) -> ManifestResult<()> {
+    let mut file = File::create(path).map_err(|err| {
+        ManifestError::FileError(path.to_str().unwrap_or_default().to_string(), err)
+    })?;
+    file.write_all(&content).map_err(|err| {
+        ManifestError::FileError(path.to_str().unwrap_or_default().to_string(), err)
+    })?;
+    Ok(())
+}
+
+/// Represents a line of raw manifest content.
+#[derive(Debug)]
+pub struct RawManifestLine(pub usize, pub String);
+
+/// Represents the raw manifest file.
+///
+/// This includes comments and other tokens that `serde_yaml` will not serialize/deserialize.
+///
+/// While the primary `Manifest` is used within the project for ease-of-use (due to the ability
+/// to `#[derive(Serialize, Deserialize)]` using `serde_yaml`), this `RawManifest` is used as a
+/// thin layer for caching comments on file read, and writing comments on file write.
+///
+/// This `RawManifest` serves no other purpose outside of `plugins::forc_index::ops::forc_index_build`.
+pub struct RawManifest {
+    /// Comments in the manifest file.
+    comments: Vec<RawManifestLine>,
+
+    /// YAML content of the manifest file (not including comments).
+    yaml: Vec<RawManifestLine>,
+}
+
+impl RawManifest {
+    /// Return the YAML content of this manifest.
+    pub fn yaml(&self) -> &Vec<RawManifestLine> {
+        &self.yaml
+    }
+
+    /// Derive an indexer manifest via the YAML file at the specified path.
+    pub fn from_file(path: impl AsRef<Path>) -> ManifestResult<Self> {
+        let mut file = File::open(&path).map_err(|e| {
+            ManifestError::FileError(path.as_ref().display().to_string(), e)
+        })?;
+        let mut content = String::new();
+        file.read_to_string(&mut content).map_err(|e| {
+            ManifestError::FileError(path.as_ref().display().to_string(), e)
+        })?;
+
+        let comments = content
+            .lines()
+            .enumerate()
+            .filter_map(|(i, line)| {
+                if line.starts_with('#') {
+                    Some(RawManifestLine(i, line.to_string()))
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<RawManifestLine>>();
+
+        let yaml = content
+            .lines()
+            .enumerate()
+            .filter_map(|(i, line)| {
+                if !line.starts_with('#') {
+                    Some(RawManifestLine(i, line.to_string()))
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<RawManifestLine>>();
+
+        Ok(Self { comments, yaml })
+    }
+
+    /// Update the YAML content of this manifest.
+    pub fn update_yaml(&mut self, manifest: &Manifest) -> ManifestResult<()> {
+        let serde_yaml_content = serde_yaml::to_string(&manifest)?
+            .lines()
+            .filter_map(|line| {
+                // NOTE: `serde_yaml` adds a new context when it serializes the manifest.
+                if line.is_empty() || line.starts_with("---") {
+                    None
+                } else {
+                    Some(line.to_string())
+                }
+            })
+            .collect::<Vec<_>>();
+
+        let raw_yaml_content = self
+            .yaml
+            .iter()
+            .filter(|line| !line.1.as_str().is_empty())
+            .collect::<Vec<_>>();
+
+        // `forc_index::ops::forc_index_build` will never add or remove any lines from the manifest, so
+        //  we can assume the amount of raw lines should always equal the amount of lines serialized by
+        // `serde_yaml`.
+        assert_eq!(raw_yaml_content.len(), serde_yaml_content.len());
+
+        let new_yaml = raw_yaml_content
+            .iter()
+            .map(|line| {
+                let updated_line = serde_yaml_content.iter().find(|value| {
+                    let value = value.as_str().split(':').next().unwrap().trim();
+                    let item = line.1.as_str().split(':').next().unwrap().trim();
+                    item == value
+                });
+
+                match updated_line {
+                    Some(updated_line) => {
+                        RawManifestLine(line.0, format!("{}\n", updated_line))
+                    }
+                    None => RawManifestLine(line.0, format!("{}\n", line.1)),
+                }
+            })
+            .collect::<Vec<_>>();
+
+        self.yaml = new_yaml;
+        Ok(())
+    }
+
+    /// Write this manifest to a given path.
+    pub fn write(&self, path: &PathBuf) -> ManifestResult<()> {
+        let mut content = self
+            .comments
+            .iter()
+            .chain(self.yaml.iter())
+            .collect::<Vec<_>>();
+        content.sort_by(|a, b| a.0.cmp(&b.0));
+
+        let content = content
+            .iter()
+            .map(|line| line.1.to_string())
+            .collect::<Vec<_>>()
+            .join("\n");
+        write_content(path, content.into())
+    }
+}
+
+impl TryFrom<&RawManifest> for Manifest {
+    type Error = ManifestError;
+    /// Derive a `Manifest` from a `RawManifest`.
+    fn try_from(raw: &RawManifest) -> ManifestResult<Self> {
+        let yaml = raw
+            .yaml()
+            .iter()
+            .filter_map(|line| {
+                let line = line.1.as_str();
+                if line.is_empty() {
+                    None
+                } else {
+                    Some(line)
+                }
+            })
+            .collect::<Vec<_>>()
+            .join("\n");
+        let manifest: Manifest = serde_yaml::from_str(&yaml)?;
+        Ok(manifest)
+    }
+}
+
 /// Represents the indexer manifest file.
 ///
 /// This manifest file is a simple YAML file that is read and passed
-/// to the excecutor to which the indexer is registered. This manifest
-/// specifies various properties of how the indexer should be run in
-/// the indexer executor (e.g., Where should the indexing start?).
+/// to the excecutor to which the indexer is registered.
+///
+/// The manifest also specifies various properties of how the indexer should be run in
+/// the indexer executor.
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Manifest {
     /// Namespace of indexer.
@@ -90,9 +254,6 @@ pub struct Manifest {
 
     /// Executor module.
     module: Module,
-
-    /// Whether or not to record metrics for this indexer.
-    metrics: Option<bool>,
 
     /// Set of contract IDs this indexer should subscribe to.
     #[serde(
@@ -172,14 +333,7 @@ impl Manifest {
 
     /// Write this manifest to a given path.
     pub fn write(&self, path: &PathBuf) -> ManifestResult<()> {
-        let mut file = File::create(path).map_err(|err| {
-            ManifestError::FileError(path.to_str().unwrap_or_default().to_string(), err)
-        })?;
-        let content: Vec<u8> = Self::into(self.clone());
-        file.write_all(&content).map_err(|err| {
-            ManifestError::FileError(path.to_str().unwrap_or_default().to_string(), err)
-        })?;
-        Ok(())
+        write_content(path, self.into())
     }
 
     /// Set the start block for this indexer.
@@ -207,50 +361,62 @@ impl Manifest {
         self.abi = Some(abi);
     }
 
+    /// Get the namespace for this manifest.
     pub fn namespace(&self) -> &str {
         &self.namespace
     }
 
+    /// Set the namespace for this manifest.
     pub fn set_namespace(&mut self, namespace: String) {
         self.namespace = namespace;
     }
 
+    /// Set the identifier for this manifest.
     pub fn set_identifier(&mut self, identifier: String) {
         self.identifier = identifier;
     }
 
+    /// Get the identifier for this manifest.
     pub fn identifier(&self) -> &str {
         &self.identifier
     }
 
+    /// Get the GraphQL schema for this manifest.
     pub fn graphql_schema(&self) -> &str {
         &self.graphql_schema
     }
 
+    /// Get the start block for this manifest.
     pub fn start_block(&self) -> Option<u32> {
         self.start_block
     }
 
+    /// Get the contract IDs this manifest subscribes to.
     pub fn contract_id(&self) -> &ContractIds {
         &self.contract_id
     }
 
+    /// Get the contract ABI for this manifest.
     pub fn abi(&self) -> Option<&str> {
         self.abi.as_deref()
     }
 
+    /// Get the fuel client for this manifest.
     pub fn fuel_client(&self) -> Option<&str> {
         self.fuel_client.as_deref()
     }
 
+    /// Get the module for this manifest.
     pub fn module(&self) -> &Module {
         &self.module
     }
 
+    /// Get the end block for this manifest.
     pub fn end_block(&self) -> Option<u32> {
         self.end_block
     }
 
+    /// Get the resumable flag for this manifest.
     pub fn resumable(&self) -> Option<bool> {
         self.resumable
     }
@@ -268,6 +434,12 @@ impl TryFrom<&str> for Manifest {
 impl From<Manifest> for Vec<u8> {
     fn from(manifest: Manifest) -> Self {
         serde_yaml::to_vec(&manifest).unwrap()
+    }
+}
+
+impl From<&Manifest> for Vec<u8> {
+    fn from(manifest: &Manifest) -> Self {
+        serde_yaml::to_vec(manifest).unwrap()
     }
 }
 
