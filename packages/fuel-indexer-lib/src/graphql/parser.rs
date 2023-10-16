@@ -24,6 +24,8 @@ use async_graphql_value::ConstValue;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use thiserror::Error;
 
+use super::check_for_directive;
+
 /// Result type returned by parsing GraphQL schema.
 pub type ParsedResult<T> = Result<T, ParsedError>;
 
@@ -784,15 +786,8 @@ impl SchemaDecoder {
     ) {
         GraphQLSchemaValidator::check_disallowed_graphql_typedef_name(&obj_name);
 
-        let is_internal = node
-            .directives
-            .iter()
-            .any(|d| d.node.name.node == "internal");
-
-        let is_entity = node
-            .directives
-            .iter()
-            .any(|d| d.node.name.to_string() == "entity");
+        let is_internal = check_for_directive(&node.directives, "internal");
+        let is_entity = check_for_directive(&node.directives, "entity");
 
         if is_internal {
             self.parsed_graphql_schema

@@ -44,7 +44,6 @@ pub(crate) fn inject_internal_types_into_document(
     base_type_names: &HashSet<String>,
 ) -> ServiceDocument {
     let mut pagination_types: Vec<TypeSystemDefinition> = Vec::new();
-    // let mut connection_fields: Vec<Positioned<FieldDefinition>> = Vec::new();
     pagination_types.push(create_page_info_type_def());
 
     // Iterate through all objects in document and create special
@@ -386,6 +385,16 @@ fn create_page_info_type_def() -> TypeSystemDefinition {
         dummy_position,
     ))
 }
+
+pub fn check_for_directive(
+    directives: &[Positioned<ConstDirective>],
+    directive_name: &str,
+) -> bool {
+    directives
+        .iter()
+        .any(|d| d.node.name.node == directive_name)
+}
+
 /// Wrapper for GraphQL schema content.
 #[derive(Default, Debug, Clone)]
 pub struct GraphQLSchema {

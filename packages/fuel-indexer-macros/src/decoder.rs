@@ -5,7 +5,10 @@ use async_graphql_parser::types::{
 use async_graphql_parser::{Pos, Positioned};
 use async_graphql_value::Name;
 use fuel_indexer_lib::{
-    graphql::{field_id, types::IdCol, ParsedGraphQLSchema, MAX_FOREIGN_KEY_LIST_FIELDS},
+    graphql::{
+        check_for_directive, field_id, types::IdCol, ParsedGraphQLSchema,
+        MAX_FOREIGN_KEY_LIST_FIELDS,
+    },
     ExecutionSource,
 };
 use fuel_indexer_types::type_id;
@@ -90,12 +93,7 @@ impl Decoder for ImplementationDecoder {
                     .collect::<HashSet<String>>();
 
                 for field in &o.fields {
-                    if field
-                        .node
-                        .directives
-                        .iter()
-                        .any(|d| d.node.name.node == "internal")
-                    {
+                    if check_for_directive(&field.node.directives, "internal") {
                         continue;
                     }
 
@@ -188,11 +186,7 @@ impl Decoder for ImplementationDecoder {
                             .iter()
                             // Remove any fields that are marked for internal use
                             .filter_map(|f| {
-                                if f.0
-                                    .directives
-                                    .iter()
-                                    .any(|d| d.node.name.node == "internal")
-                                {
+                                if check_for_directive(&f.0.directives, "internal") {
                                     return None;
                                 }
 
@@ -371,11 +365,7 @@ impl From<ImplementationDecoder> for TokenStream {
                             .iter()
                             // Remove any fields marked for internal use
                             .filter_map(|f| {
-                                if f.0
-                                    .directives
-                                    .iter()
-                                    .any(|d| d.node.name.node == "internal")
-                                {
+                                if check_for_directive(&f.0.directives, "internal") {
                                     return None;
                                 }
 
@@ -551,12 +541,7 @@ impl Decoder for ObjectDecoder {
                 let mut fields_map = BTreeMap::new();
 
                 for field in o.fields.iter() {
-                    if field
-                        .node
-                        .directives
-                        .iter()
-                        .any(|d| d.node.name.node == "internal")
-                    {
+                    if check_for_directive(&field.node.directives, "internal") {
                         continue;
                     }
 

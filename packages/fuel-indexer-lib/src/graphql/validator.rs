@@ -4,6 +4,8 @@ use async_graphql_parser::types::{
 };
 use std::collections::HashSet;
 
+use super::check_for_directive;
+
 /// General container used to store a set of GraphQL schema validation functions.
 pub struct GraphQLSchemaValidator;
 
@@ -108,10 +110,8 @@ impl GraphQLSchemaValidator {
         obj_name: &str,
     ) {
         let name = f.name.to_string();
-        let has_unique_directive = f
-            .directives
-            .iter()
-            .any(|d| d.node.name.to_string() == "unique");
+
+        let has_unique_directive = check_for_directive(&f.directives, "unique");
         if has_unique_directive {
             panic!("FieldDefinition({name}) on TypeDefinition({obj_name}) cannot contain a `@unique` directive.");
         }
