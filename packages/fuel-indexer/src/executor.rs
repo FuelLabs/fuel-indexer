@@ -285,11 +285,10 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                 &mut conn,
                 executor.manifest().namespace(),
                 executor.manifest().identifier(),
-                IndexerStatus::Running,
-                &format!(
+                IndexerStatus::running(format!(
                     "Indexed {} blocks",
                     cursor.clone().unwrap_or("0".to_string())
-                ),
+                )),
             )
             .await?;
 

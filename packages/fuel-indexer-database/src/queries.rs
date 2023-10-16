@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::{types::*, IndexerConnection};
 use fuel_indexer_postgres as postgres;
 use sqlx::types::{
@@ -445,13 +447,22 @@ pub async fn set_indexer_status(
     namespace: &str,
     identifier: &str,
     status: IndexerStatus,
-    status_message: &str,
 ) -> sqlx::Result<()> {
     println!("Indexer({namespace}.{identifier}) status: {status:?}");
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
-            postgres::set_indexer_status(c, namespace, identifier, status, status_message)
-                .await
+            postgres::set_indexer_status(c, namespace, identifier, status).await
+        }
+    }
+}
+
+/// Return the statuses of all indexers registered with the service.
+pub async fn all_registered_indexer_statuses(
+    conn: &mut IndexerConnection,
+) -> sqlx::Result<HashMap<(String, String), IndexerStatus>> {
+    match conn {
+        IndexerConnection::Postgres(ref mut c) => {
+            postgres::all_registered_indexer_statuses(c).await
         }
     }
 }

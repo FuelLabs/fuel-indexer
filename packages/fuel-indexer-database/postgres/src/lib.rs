@@ -4,6 +4,7 @@ use bigdecimal::ToPrimitive;
 use fuel_indexer_database_types::*;
 use fuel_indexer_lib::utils::sha256_digest;
 use sqlx::{pool::PoolConnection, postgres::PgRow, types::JsonValue, Postgres, Row};
+use std::collections::HashMap;
 use std::str::FromStr;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tracing::info;
@@ -439,18 +440,12 @@ pub async fn get_indexer(
                 DateTime::<Utc>::from_naive_utc_and_offset(created_at, Utc)
             };
 
-            let status: IndexerStatus =
-                IndexerStatus::from_str(row.try_get(5).unwrap_or("unknown"))
-                    .unwrap_or(IndexerStatus::Unknown);
-
             Ok(Some(RegisteredIndexer {
                 id: row.get(0),
                 namespace: row.get(1),
                 identifier: row.get(2),
                 pubkey: row.get(3),
                 created_at,
-                status,
-                status_message: row.try_get(6).unwrap_or_default(),
             }))
         }
         None => Ok(None),
@@ -473,8 +468,8 @@ pub async fn register_indexer(
     }
 
     let row = sqlx::query(
-        "INSERT INTO index_registry (namespace, identifier, pubkey, created_at, status, status_message)
-         VALUES ($1, $2, $3, $4, $5, $6)
+        "INSERT INTO index_registry (namespace, identifier, pubkey, created_at)
+         VALUES ($1, $2, $3, $4)
          RETURNING *",
     )
     .bind(namespace)
@@ -494,10 +489,6 @@ pub async fn register_indexer(
         let created_at: NaiveDateTime = row.get(4);
         DateTime::<Utc>::from_naive_utc_and_offset(created_at, Utc)
     };
-    let status: IndexerStatus =
-        IndexerStatus::from_str(row.try_get(5).unwrap_or("unknown"))
-            .unwrap_or(IndexerStatus::Unknown);
-    let status_message = row.try_get(6).unwrap_or_default();
 
     Ok(RegisteredIndexer {
         id,
@@ -505,8 +496,6 @@ pub async fn register_indexer(
         identifier,
         pubkey,
         created_at,
-        status,
-        status_message,
     })
 }
 
@@ -528,10 +517,6 @@ pub async fn all_registered_indexers(
                 let created_at: NaiveDateTime = row.get(4);
                 DateTime::<Utc>::from_naive_utc_and_offset(created_at, Utc)
             };
-            let status: IndexerStatus =
-                IndexerStatus::from_str(row.try_get(5).unwrap_or("unknown"))
-                    .unwrap_or(IndexerStatus::Unknown);
-            let status_message = row.try_get(6).unwrap_or_default();
 
             RegisteredIndexer {
                 id,
@@ -539,8 +524,6 @@ pub async fn all_registered_indexers(
                 identifier,
                 pubkey,
                 created_at,
-                status,
-                status_message,
             }
         })
         .collect::<Vec<RegisteredIndexer>>())
@@ -998,19 +981,49 @@ pub async fn set_indexer_status(
     namespace: &str,
     identifier: &str,
     status: IndexerStatus,
-    status_message: &str,
 ) -> sqlx::Result<()> {
     sqlx::query(
-        "UPDATE index_registry
-        SET status = $1, status_message = $2
-        WHERE namespace = $3 AND identifier = $4",
+        "INSERT INTO index_status (namespace, identifier, status, status_message)
+        VALUES ($1, $2, $3, $4)
+        ON CONFLICT (namespace, identifier)
+        DO UPDATE
+        SET status = EXCLUDED.status, status_message = EXCLUDED.status_message;",
     )
-    .bind(status.to_string())
-    .bind(status_message)
     .bind(namespace)
     .bind(identifier)
+    .bind(status.status_kind.to_string())
+    .bind(status.status_message)
     .execute(conn)
     .await?;
 
     Ok(())
+}
+
+pub async fn all_registered_indexer_statuses(
+    conn: &mut PoolConnection<Postgres>,
+) -> sqlx::Result<HashMap<(String, String), IndexerStatus>> {
+    let rows = sqlx::query(
+        "SELECT index_status.namespace, index_status.identifier, status, status_message
+        FROM index_status
+        INNER JOIN index_registry
+        ON index_status.namespace = index_registry.namespace AND index_status.identifier = index_registry.identifier;"
+    )
+    .fetch_all(conn)
+    .await?;
+
+    let mut result = HashMap::new();
+    for row in rows {
+        let namespace: String = row.get(0);
+        let identifier: String = row.get(1);
+        let status_kind =
+            IndexerStatusKind::from_str(row.get(2)).unwrap_or(IndexerStatusKind::Unknown);
+        let status_message: String = row.get(3);
+        let status = IndexerStatus {
+            status_kind,
+            status_message,
+        };
+        result.insert((namespace, identifier), status);
+    }
+
+    Ok(result)
 }

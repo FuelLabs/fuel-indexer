@@ -381,8 +381,7 @@ impl IndexerService {
                 &mut conn,
                 &namespace,
                 &identifier,
-                IndexerStatus::Starting,
-                "",
+                IndexerStatus::starting(),
             )
             .await
             .with_context(|| {
@@ -392,53 +391,30 @@ impl IndexerService {
             let result = task.await;
 
             let status: IndexerStatus;
-            let status_message: String;
 
-            match result {
-                Ok(()) => {
-                    info!("Indexer({namespace}.{identifier}) stopped.");
-                    queries::set_indexer_status(
-                        &mut conn,
-                        &namespace,
-                        &identifier,
-                        IndexerStatus::Stopped,
-                        "",
-                    )
-                    .await
-                    .with_context(|| {
-                        format!("Failed to set Indexer({namespace}.{identifier}) status.")
-                    })?;
-
-                    Ok(())
-                }
-                Err(e) => {
-                    match e {
-                        IndexerError::KillSwitch | IndexerError::EndBlockMet => {
-                            info! {"{e}"};
-                            status = IndexerStatus::Stopped;
-                            status_message = format!("{e}");
-                        }
-                        _ => {
-                            error!("{e}");
-                            status = IndexerStatus::Error;
-                            status_message = format!("{e}");
-                        }
-                    };
-                    queries::set_indexer_status(
-                        &mut conn,
-                        &namespace,
-                        &identifier,
-                        status,
-                        &status_message,
-                    )
-                    .await
-                    .with_context(|| {
-                        format!("Failed to set Indexer({namespace}.{identifier}) status.")
-                    })?;
-
-                    Err(e.into())
-                }
+            if let Err(ref e) = result {
+                match e {
+                    IndexerError::KillSwitch | IndexerError::EndBlockMet => {
+                        info! {"{e}"};
+                        status = IndexerStatus::stopped(format!("{e}"))
+                    }
+                    _ => {
+                        error!("{e}");
+                        status = IndexerStatus::error(format!("{e}"))
+                    }
+                };
+            } else {
+                info!("Indexer({namespace}.{identifier}) stopped.");
+                status = IndexerStatus::stopped("".to_string());
             }
+
+            queries::set_indexer_status(&mut conn, &namespace, &identifier, status)
+                .await
+                .with_context(|| {
+                    format!("Failed to set Indexer({namespace}.{identifier}) status.")
+                })?;
+
+            result.map_err(Into::into)
         });
 
         Ok(())

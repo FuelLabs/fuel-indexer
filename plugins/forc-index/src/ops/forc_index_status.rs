@@ -1,7 +1,7 @@
 use crate::cli::StatusCommand;
 use colorful::Color;
 use colorful::Colorful;
-use fuel_indexer_database_types::{IndexerStatus, RegisteredIndexer};
+use fuel_indexer_database_types::{IndexerStatus, IndexerStatusKind, RegisteredIndexer};
 use reqwest::header::{HeaderMap, AUTHORIZATION, CONNECTION};
 use serde_json::{to_string_pretty, value::Value, Map};
 use std::collections::BTreeMap;
@@ -96,10 +96,8 @@ pub async fn status(
                 return Ok(());
             }
 
-            let result = res
-                .json::<Vec<RegisteredIndexer>>()
-                .await
-                .expect("Failed to read JSON response.");
+            let result: Vec<(RegisteredIndexer, IndexerStatus)> =
+                res.json().await.expect("Failed to read JSON response.");
 
             println!("{}\n", "Indexers:".bold());
             print_indexers(result);
@@ -116,22 +114,25 @@ pub async fn status(
     Ok(())
 }
 
-fn print_indexers(indexers: Vec<RegisteredIndexer>) {
-    let mut groupped: Vec<Vec<RegisteredIndexer>> = {
-        let mut ixs: BTreeMap<String, Vec<RegisteredIndexer>> = BTreeMap::new();
-        for i in indexers.into_iter() {
-            ixs.entry(i.namespace.clone()).or_default().push(i);
+fn print_indexers(indexers: Vec<(RegisteredIndexer, IndexerStatus)>) {
+    let mut groupped: Vec<Vec<(RegisteredIndexer, IndexerStatus)>> = {
+        let mut ixs: BTreeMap<String, Vec<(RegisteredIndexer, IndexerStatus)>> =
+            BTreeMap::new();
+        for (i, status) in indexers.into_iter() {
+            ixs.entry(i.namespace.clone())
+                .or_default()
+                .push((i, status));
         }
         ixs.into_values().collect()
     };
     // Ensure consistent ordering, by the identifier within each namespace
     for group in groupped.iter_mut() {
-        group.sort_by(|x, y| x.identifier.partial_cmp(&y.identifier).unwrap());
+        group.sort_by(|x, y| x.0.identifier.partial_cmp(&y.0.identifier).unwrap());
     }
     // Ensure consistent ordering of namespaces
-    groupped.sort_by(|x, y| x[0].namespace.partial_cmp(&y[0].namespace).unwrap());
+    groupped.sort_by(|x, y| x[0].0.namespace.partial_cmp(&y[0].0.namespace).unwrap());
     for (namespace_i, group) in groupped.iter().enumerate() {
-        let namespace = group[0].namespace.clone();
+        let namespace = group[0].0.namespace.clone();
         let is_last_namespace = namespace_i == groupped.len() - 1;
         // namespace glyphs
         let (ng1, ng2) = if namespace_i == 0 {
@@ -158,25 +159,26 @@ fn print_indexers(indexers: Vec<RegisteredIndexer>) {
                 ("└─", " ")
             };
             let message = indexer
+                .1
                 .status_message
                 .lines()
                 .map(|x| format!("{ng2}  {ig2}      {x}"))
                 .collect::<Vec<String>>()
                 .join("\n");
-            let status = if indexer.status == IndexerStatus::Error {
-                indexer.status.to_string().color(Color::Red)
+            let status = if indexer.1.status_kind == IndexerStatusKind::Error {
+                indexer.1.status_kind.to_string().color(Color::Red)
             } else {
-                indexer.status.to_string().color(Color::Green)
+                indexer.1.status_kind.to_string().color(Color::Green)
             };
             println!(
                 "{}  {} {}",
                 ng2,
                 ig1,
-                indexer.identifier.clone().color(Color::Blue).bold()
+                indexer.0.identifier.clone().color(Color::Blue).bold()
             );
-            println!("{}  {}  • id: {}", ng2, ig2, indexer.id);
-            println!("{}  {}  • created at: {}", ng2, ig2, indexer.created_at);
-            println!("{}  {}  • pubkey: {:?}", ng2, ig2, indexer.pubkey);
+            println!("{}  {}  • id: {}", ng2, ig2, indexer.0.id);
+            println!("{}  {}  • created at: {}", ng2, ig2, indexer.0.created_at);
+            println!("{}  {}  • pubkey: {:?}", ng2, ig2, indexer.0.pubkey);
             println!("{}  {}  • status: {}", ng2, ig2, status);
             println!("{}  {}  • status message:", ng2, ig2);
             if !message.is_empty() {
