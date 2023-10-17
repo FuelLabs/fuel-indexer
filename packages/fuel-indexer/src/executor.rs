@@ -106,7 +106,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
     info!("Indexer({indexer_uid}) subscribing to Fuel node at {fuel_node_addr}");
 
     let client = FuelClient::from_str(&fuel_node_addr).with_context(|| {
-        format!("Indexer({indexer_uid}) client node connection failed.")
+        format!("Client node connection failed")
     })?;
 
     if let Some(end_block) = end_block {
@@ -119,7 +119,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
 
     let task = async move {
         let mut conn = pool.acquire().await.with_context(|| {
-            format!("Indexer({indexer_uid}) was unable to acquire a database connection.")
+            format!("Unable to acquire a database connection")
         })?;
 
         if allow_non_sequential_blocks {
@@ -128,7 +128,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                 executor.manifest().namespace(),
                 executor.manifest().identifier(),
             )
-            .await.with_context(|| format!("Unable to remove the sequential blocks trigger for Indexer({indexer_uid})"))?;
+            .await.with_context(|| format!("Unable to remove the sequential blocks trigger"))?;
         } else {
             queries::create_ensure_block_height_consecutive_trigger(
                 &mut conn,
@@ -136,7 +136,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                 executor.manifest().identifier(),
             )
             .await
-            .with_context(|| format!("Unable to create the sequential blocks trigger for Indexer({indexer_uid})"))?;
+            .with_context(|| format!("Unable to create the sequential blocks trigger"))?;
         }
 
         // If we reach an issue that continues to fail, we'll retry a few times before giving up, as
@@ -226,17 +226,14 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                 if let IndexerError::RuntimeError(ref e) = e {
                     match e.downcast_ref::<WasmIndexerError>() {
                         Some(&WasmIndexerError::MissingBlocksError) => {
-                            return Err(anyhow::format_err!(
-                                "Indexer({indexer_uid}) terminated due to missing blocks."
-                            )
-                            .into());
+                            return Err(anyhow::anyhow!("{e}").into());
                         }
                         Some(&WasmIndexerError::Panic) => {
                             let message = executor
                                 .get_panic_message()
                                 .await
                                 .unwrap_or("unknown".to_string());
-                            return Err(anyhow::anyhow!("Indexer({indexer_uid}) terminated due to a panic:\n{message}").into());
+                            return Err(anyhow::anyhow!("{message}").into());
                         }
                         _ => (),
                     }

@@ -368,12 +368,6 @@ impl IndexerService {
         self.killers
             .insert(uid.clone(), executor.kill_switch().clone());
 
-        // self.tasks.spawn(crate::executor::run_executor(
-        //     &self.config,
-        //     self.pool.clone(),
-        //     executor,
-        // )?);
-
         let task =
             crate::executor::run_executor(&self.config, self.pool.clone(), executor)?;
         self.tasks.spawn(async move {
@@ -395,12 +389,12 @@ impl IndexerService {
             if let Err(ref e) = result {
                 match e {
                     IndexerError::KillSwitch | IndexerError::EndBlockMet => {
-                        info! {"{e}"};
-                        status = IndexerStatus::stopped(format!("{e}"))
+                        info!("Indexer({namespace}.{identifier}) terminated: {e}");
+                        status = IndexerStatus::stopped(e.to_string())
                     }
                     _ => {
-                        error!("{e}");
-                        status = IndexerStatus::error(format!("{e}"))
+                        error!("Indexer({namespace}.{identifier}) terminated with an error: {e}");
+                        status = IndexerStatus::error(e.to_string())
                     }
                 };
             } else {
