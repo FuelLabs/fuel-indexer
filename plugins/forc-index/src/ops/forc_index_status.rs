@@ -151,36 +151,35 @@ fn print_indexers(indexers: Vec<(RegisteredIndexer, IndexerStatus)>) {
             ("└─", " ")
         };
         println!("{} {}", ng1, namespace.color(Color::Blue).bold());
-        for (i, indexer) in group.iter().enumerate() {
+        for (i, (indexer, status)) in group.iter().enumerate() {
             // indexer glyphs
             let (ig1, ig2) = if i != group.len() - 1 {
                 ("├─", "|")
             } else {
                 ("└─", " ")
             };
-            let message = indexer
-                .1
+            let message = status
                 .status_message
                 .lines()
                 .map(|x| format!("{ng2}  {ig2}      {x}"))
                 .collect::<Vec<String>>()
                 .join("\n");
-            let status = if indexer.1.status_kind == IndexerStatusKind::Error {
-                indexer.1.status_kind.to_string().color(Color::Red)
+            let status = if status.status_kind == IndexerStatusKind::Error {
+                status.status_kind.to_string().color(Color::Red)
             } else {
-                indexer.1.status_kind.to_string().color(Color::Green)
+                status.status_kind.to_string().color(Color::Green)
             };
             println!(
                 "{}  {} {}",
                 ng2,
                 ig1,
-                indexer.0.identifier.clone().color(Color::Blue).bold()
+                indexer.identifier.clone().color(Color::Blue).bold()
             );
-            println!("{}  {}  • id: {}", ng2, ig2, indexer.0.id);
+            println!("{}  {}  • id: {}", ng2, ig2, indexer.id);
             let created_ago = {
                 std::time::SystemTime::duration_since(
                     &std::time::SystemTime::now(),
-                    indexer.0.created_at.into(),
+                    indexer.created_at.into(),
                 )
                 .map(|d| d - std::time::Duration::from_nanos(d.subsec_nanos() as u64))
                 .map(|d| format!("({} ago)", humantime::format_duration(d)))
@@ -190,11 +189,11 @@ fn print_indexers(indexers: Vec<(RegisteredIndexer, IndexerStatus)>) {
                 "{}  {}  • created at: {} {}",
                 ng2,
                 ig2,
-                indexer.0.created_at,
+                indexer.created_at,
                 created_ago.color(Color::Yellow)
             );
-            if indexer.0.pubkey.clone().is_some_and(|k| !k.is_empty()) {
-                println!("{}  {}  • pubkey: {:?}", ng2, ig2, indexer.0.pubkey);
+            if indexer.pubkey.clone().is_some_and(|k| !k.is_empty()) {
+                println!("{}  {}  • pubkey: {:?}", ng2, ig2, indexer.pubkey);
             }
             println!("{}  {}  • status: {}", ng2, ig2, status);
             println!("{}  {}  • status message:", ng2, ig2);
