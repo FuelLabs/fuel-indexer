@@ -138,7 +138,7 @@ impl IndexerSchema {
 
         let mut tables = self
             .parsed
-            .non_enum_typdefs()
+            .storage_backed_typedefs()
             .iter()
             .map(|(_, t)| Table::from_typedef(t, &self.parsed))
             .collect::<Vec<Table>>();
@@ -217,7 +217,7 @@ impl IndexerSchema {
         )?;
 
         let tables = parsed
-            .non_enum_typdefs()
+            .storage_backed_typedefs()
             .iter()
             .map(|(_, t)| Table::from_typedef(t, &parsed))
             .collect::<Vec<Table>>();

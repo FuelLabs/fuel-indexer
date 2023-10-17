@@ -6,8 +6,9 @@
 use crate::{
     fully_qualified_namespace,
     graphql::{
-        extract_foreign_key_info, field_id, field_type_name, is_list_type,
-        list_field_type_name, GraphQLSchema, GraphQLSchemaValidator, IdCol, BASE_SCHEMA,
+        extract_foreign_key_info, field_id, field_type_name,
+        inject_internal_types_into_document, is_list_type, list_field_type_name,
+        GraphQLSchema, GraphQLSchemaValidator, IdCol, BASE_SCHEMA,
     },
     join_table_name, ExecutionSource,
 };
@@ -18,9 +19,12 @@ use async_graphql_parser::{
         TypeSystemDefinition, UnionType,
     },
 };
+use async_graphql_value::ConstValue;
 
 use std::collections::{BTreeMap, HashMap, HashSet};
 use thiserror::Error;
+
+use super::check_for_directive;
 
 /// Result type returned by parsing GraphQL schema.
 pub type ParsedResult<T> = Result<T, ParsedError>;
@@ -261,6 +265,10 @@ pub struct ParsedGraphQLSchema {
 
     /// The version of the schema.
     version: String,
+
+    /// Internal types. These types should not be added to a
+    /// database in any way; they are used to augment repsonses for introspection queries.
+    internal_types: HashSet<String>,
 }
 
 impl Default for ParsedGraphQLSchema {
@@ -289,6 +297,7 @@ impl Default for ParsedGraphQLSchema {
             join_table_meta: HashMap::new(),
             object_ordered_fields: HashMap::new(),
             version: String::default(),
+            internal_types: HashSet::new(),
         }
     }
 }
@@ -301,11 +310,21 @@ impl ParsedGraphQLSchema {
         exec_source: ExecutionSource,
         schema: Option<&GraphQLSchema>,
     ) -> ParsedResult<Self> {
+        let base_type_names = {
+            let base_ast = parse_schema(BASE_SCHEMA)?;
+            let mut base_decoder = SchemaDecoder::new();
+            base_decoder.decode_service_document(base_ast)?;
+            base_decoder.parsed_graphql_schema.type_names
+        };
+
         let mut decoder = SchemaDecoder::new();
 
         if let Some(schema) = schema {
             // Parse _everything_ in the GraphQL schema
-            let ast = parse_schema(schema.schema())?;
+            let mut ast = parse_schema(schema.schema())?;
+
+            ast = inject_internal_types_into_document(ast, &base_type_names);
+
             decoder.decode_service_document(ast)?;
 
             decoder.parsed_graphql_schema.namespace = namespace.to_string();
@@ -315,13 +334,6 @@ impl ParsedGraphQLSchema {
         };
 
         let mut result = decoder.get_parsed_schema();
-
-        let base_type_names = {
-            let base_ast = parse_schema(BASE_SCHEMA)?;
-            let mut base_decoder = SchemaDecoder::new();
-            base_decoder.decode_service_document(base_ast)?;
-            base_decoder.parsed_graphql_schema.type_names
-        };
 
         result.type_names.extend(base_type_names.clone());
         result.scalar_names.extend(base_type_names);
@@ -431,11 +443,15 @@ impl ParsedGraphQLSchema {
         self.unions.get(name)
     }
 
-    /// Return a list of all non-enum type definitions.
-    pub fn non_enum_typdefs(&self) -> Vec<(&String, &TypeDefinition)> {
+    /// Return a list of all type definitions that will have a record or table in
+    /// the database; functionally, this means any non-enum or internal type defintions.
+    pub fn storage_backed_typedefs(&self) -> Vec<(&String, &TypeDefinition)> {
         self.type_defs
             .iter()
-            .filter(|(_, t)| !matches!(&t.kind, TypeKind::Enum(_)))
+            .filter(|(_, t)| {
+                !matches!(&t.kind, TypeKind::Enum(_))
+                    && !self.is_internal_typedef(t.name.node.as_str())
+            })
             .collect()
     }
 
@@ -445,6 +461,7 @@ impl ParsedGraphQLSchema {
             && !self.scalar_names.contains(name)
             && !self.is_enum_typedef(name)
             && !self.is_virtual_typedef(name)
+            && !self.is_internal_typedef(name)
     }
 
     /// Whether the given field type name is a type from which tables are not created.
@@ -470,6 +487,10 @@ impl ParsedGraphQLSchema {
     /// Whether the given field type name is a union type.
     pub fn is_union_typedef(&self, name: &str) -> bool {
         self.union_names.contains(name)
+    }
+
+    pub fn is_internal_typedef(&self, name: &str) -> bool {
+        self.internal_types.contains(name)
     }
 
     /// Return the GraphQL type for a given `FieldDefinition` name.
@@ -693,6 +714,7 @@ impl SchemaDecoder {
                         .parsed_graphql_schema
                         .virtual_type_names
                         .contains(&ftype)
+                    && !self.parsed_graphql_schema.internal_types.contains(&ftype)
                 {
                     let (_ref_coltype, ref_colname, ref_tablename) =
                         extract_foreign_key_info(
@@ -764,13 +786,16 @@ impl SchemaDecoder {
     ) {
         GraphQLSchemaValidator::check_disallowed_graphql_typedef_name(&obj_name);
 
-        // Only parse `TypeDefinition`s with the `@entity` directive.
-        let is_entity = node
-            .directives
-            .iter()
-            .any(|d| d.node.name.to_string() == "entity");
+        let is_internal = check_for_directive(&node.directives, "internal");
+        let is_entity = check_for_directive(&node.directives, "entity");
 
-        if !is_entity {
+        if is_internal {
+            self.parsed_graphql_schema
+                .internal_types
+                .insert(obj_name.clone());
+        }
+
+        if !is_entity && !is_internal {
             println!("Skipping TypeDefinition '{obj_name}', which is not marked with an @entity directive.");
             return;
         }
@@ -785,7 +810,7 @@ impl SchemaDecoder {
             .directives
             .iter()
             .flat_map(|d| d.node.arguments.clone())
-            .any(|t| t.0.node == "virtual");
+            .any(|t| t.0.node == "virtual" && t.1.node == ConstValue::Boolean(true));
 
         if is_virtual {
             self.parsed_graphql_schema
@@ -841,6 +866,8 @@ impl SchemaDecoder {
                     .parsed_graphql_schema
                     .virtual_type_names
                     .contains(&ftype)
+                && !self.parsed_graphql_schema.internal_types.contains(&ftype)
+                && !is_internal
             {
                 GraphQLSchemaValidator::foreign_key_field_contains_no_unique_directive(
                     &field.node,
@@ -926,6 +953,7 @@ impl SchemaDecoder {
                 .field_defs
                 .insert(fid, (field.node.clone(), obj_name.clone()));
         }
+
         self.parsed_graphql_schema
             .object_field_mappings
             .insert(obj_name, field_mapping);
@@ -1044,7 +1072,44 @@ union Storage = Safe | Vault
         );
         assert_eq!(
             parsed.join_table_meta().get("Storage").unwrap()[1],
-            JoinTableMeta::new("storage", "id", "user", "id", Some(3))
+            JoinTableMeta::new("storage", "id", "user", "id", Some(4))
+        );
+
+        // Internal types
+        assert!(parsed.internal_types.contains("AccountConnection"));
+        assert!(parsed.internal_types.contains("AccountEdge"));
+        assert!(parsed.internal_types.contains("UserConnection"));
+        assert!(parsed.internal_types.contains("UserEdge"));
+    }
+
+    #[test]
+    fn test_internal_type_defs_in_object_field_mapping() {
+        let schema = r#"
+type Foo @entity {
+    id: ID!
+    name: String!
+}
+
+type Bar @entity {
+    id: ID!
+    foo: [Foo!]!
+}
+"#;
+
+        let parsed = ParsedGraphQLSchema::new(
+            "test",
+            "test",
+            ExecutionSource::Wasm,
+            Some(&GraphQLSchema::new(schema.to_string())),
+        );
+
+        assert!(parsed.is_ok());
+
+        let parsed = parsed.unwrap();
+        let bar_entity_fields = parsed.object_field_mappings.get("Bar").unwrap();
+        assert_eq!(
+            bar_entity_fields.get("fooConnection").unwrap(),
+            &"FooConnection"
         );
     }
 
