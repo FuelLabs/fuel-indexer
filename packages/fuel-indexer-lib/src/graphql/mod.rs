@@ -39,6 +39,11 @@ fn inject_native_entities_into_schema(schema: &str) -> String {
     }
 }
 
+/// Inject internal types into the schema. In order to support popular
+/// functionality (e.g. cursor-based pagination) and minimize the amount
+/// of types that a user needs to create, internal types are injected into
+/// the `ServiceDocument`. These types are not used to create database tables/columns
+/// or entity structs in handler functions.
 pub(crate) fn inject_internal_types_into_document(
     mut ast: ServiceDocument,
     base_type_names: &HashSet<String>,
@@ -186,10 +191,11 @@ fn create_edge_type_for_list_field(
     ))
 }
 
+/// Generate connection type defintion for a list field on an entity.
 fn create_connection_type_def_for_list_entity(name: &Name) -> TypeSystemDefinition {
     let dummy_position = Pos {
-        line: 999,
-        column: 99,
+        line: usize::MAX,
+        column: usize::MAX,
     };
 
     let obj_type = ObjectType {
@@ -276,10 +282,11 @@ fn create_connection_type_def_for_list_entity(name: &Name) -> TypeSystemDefiniti
     ))
 }
 
+/// Generate `PageInfo` type defintion for use in connection type defintions.
 fn create_page_info_type_def() -> TypeSystemDefinition {
     let dummy_position = Pos {
-        line: 999,
-        column: 99,
+        line: usize::MAX,
+        column: usize::MAX,
     };
 
     let obj_type = ObjectType {
