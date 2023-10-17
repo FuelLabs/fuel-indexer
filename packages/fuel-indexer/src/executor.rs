@@ -105,9 +105,8 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
 
     info!("Indexer({indexer_uid}) subscribing to Fuel node at {fuel_node_addr}");
 
-    let client = FuelClient::from_str(&fuel_node_addr).with_context(|| {
-        format!("Client node connection failed")
-    })?;
+    let client = FuelClient::from_str(&fuel_node_addr)
+        .with_context(|| format!("Client node connection failed"))?;
 
     if let Some(end_block) = end_block {
         info!("Indexer({indexer_uid}) will stop at block #{end_block}.");
@@ -118,9 +117,10 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
     let allow_non_sequential_blocks = config.allow_non_sequential_blocks;
 
     let task = async move {
-        let mut conn = pool.acquire().await.with_context(|| {
-            format!("Unable to acquire a database connection")
-        })?;
+        let mut conn = pool
+            .acquire()
+            .await
+            .with_context(|| format!("Unable to acquire a database connection"))?;
 
         if allow_non_sequential_blocks {
             queries::remove_ensure_block_height_consecutive_trigger(
@@ -128,7 +128,8 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                 executor.manifest().namespace(),
                 executor.manifest().identifier(),
             )
-            .await.with_context(|| format!("Unable to remove the sequential blocks trigger"))?;
+            .await
+            .with_context(|| format!("Unable to remove the sequential blocks trigger"))?;
         } else {
             queries::create_ensure_block_height_consecutive_trigger(
                 &mut conn,

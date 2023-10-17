@@ -177,8 +177,25 @@ fn print_indexers(indexers: Vec<(RegisteredIndexer, IndexerStatus)>) {
                 indexer.0.identifier.clone().color(Color::Blue).bold()
             );
             println!("{}  {}  • id: {}", ng2, ig2, indexer.0.id);
-            println!("{}  {}  • created at: {}", ng2, ig2, indexer.0.created_at);
-            println!("{}  {}  • pubkey: {:?}", ng2, ig2, indexer.0.pubkey);
+            let created_ago = {
+                std::time::SystemTime::duration_since(
+                    &std::time::SystemTime::now(),
+                    indexer.0.created_at.into(),
+                )
+                .map(|d| d - std::time::Duration::from_nanos(d.subsec_nanos() as u64))
+                .map(|d| format!("({} ago)", humantime::format_duration(d)))
+                .unwrap_or_default()
+            };
+            println!(
+                "{}  {}  • created at: {} {}",
+                ng2,
+                ig2,
+                indexer.0.created_at,
+                created_ago.color(Color::Yellow)
+            );
+            if indexer.0.pubkey.clone().is_some_and(|k| !k.is_empty()) {
+                println!("{}  {}  • pubkey: {:?}", ng2, ig2, indexer.0.pubkey);
+            }
             println!("{}  {}  • status: {}", ng2, ig2, status);
             println!("{}  {}  • status message:", ng2, ig2);
             if !message.is_empty() {
