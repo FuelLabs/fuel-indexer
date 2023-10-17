@@ -125,15 +125,23 @@ fn process_fn_items(
             // If this is an array type we have to manually update it's type field to include its inner
             // type so that the rest of the codegen will work with minimal changes.
             if is_array_type(typ) {
-                let inner = typ.components.as_ref().unwrap().first().unwrap().type_id;
+                let inner = typ
+                    .components
+                    .as_ref()
+                    .expect("Array type expects inner components")
+                    .first()
+                    .expect("Array type expects at least one inner component")
+                    .type_id;
                 let size = typ
                     .type_field
                     .split(' ')
                     .last()
-                    .unwrap()
+                    .expect(
+                        "Array type has unexpected type field format. Expected [u8; 32]",
+                    )
                     .trim_end_matches(']')
                     .parse::<usize>()
-                    .unwrap();
+                    .expect("Array type size could not be determined.");
                 let inner = abi_types_tyid
                     .get(&inner)
                     .expect("Array type inner not found in ABI types.");
@@ -332,7 +340,9 @@ fn process_fn_items(
         .filter_map(|log| {
             let ty_id = log.application.type_id;
             let log_id = log.log_id as usize;
-            let typ = abi_types_tyid.get(&log.application.type_id).unwrap();
+            let typ = abi_types_tyid
+                .get(&log.application.type_id)
+                .expect("Could not get log type reference from ABI types.");
 
             if is_non_decodable_type(typ) {
                 return None;
@@ -526,7 +536,9 @@ fn process_fn_items(
                                     );
                                 };
 
-                                let ty_id = type_ids.get(&path_type_name).unwrap();
+                                let ty_id = type_ids
+                                    .get(&path_type_name)
+                                    .expect("Path type name not found in type IDs.");
                                 let typ = match abi_types_tyid.get(ty_id) {
                                     Some(typ) => typ,
                                     None => fuel_types.get(ty_id).unwrap(),

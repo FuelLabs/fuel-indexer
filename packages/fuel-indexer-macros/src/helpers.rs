@@ -266,8 +266,12 @@ impl Codegen for TypeDeclaration {
         if is_array_type(self) {
             let name = derive_type_name(self).replace(['[', ']', ';'], "");
             let mut iter = name.split(' ');
-            let ty = iter.next().unwrap();
-            let size = iter.next().unwrap().parse::<usize>().unwrap();
+            let ty = iter.next().expect("Malformed derived array type name.");
+            let size = iter
+                .next()
+                .expect("Array type name malformed.")
+                .parse::<usize>()
+                .expect("Could not parse array size.");
 
             let ty = format_ident! { "{}", ty };
 
@@ -876,7 +880,11 @@ pub fn derive_log_generic_inner_typedefs<'a>(
             .flatten()
             .filter_map(|log| {
                 if log.log_id == typ.log_id && log.application.type_arguments.is_some() {
-                    let args = log.application.type_arguments.as_ref().unwrap();
+                    let args = log
+                        .application
+                        .type_arguments
+                        .as_ref()
+                        .expect("No type args found for log application.");
                     let inner = args.first().expect("No type args found.");
                     return Some(abi_types.get(&inner.type_id).unwrap_or_else(|| {
                         panic!("Inner type not in ABI: {:?}", inner)
@@ -902,7 +910,11 @@ pub fn derive_generic_inner_typedefs<'a>(
     log_types: &[LoggedType],
     abi_types: &'a HashMap<usize, TypeDeclaration>,
 ) -> Vec<&'a TypeDeclaration> {
-    let name = typ.type_field.split(' ').last().unwrap();
+    let name = typ
+        .type_field
+        .split(' ')
+        .last()
+        .expect("Type name derivation expects a space.");
     let t = GenericType::from(name);
 
     // Per Ahmed from fuels-rs:
@@ -920,7 +932,10 @@ pub fn derive_generic_inner_typedefs<'a>(
                         .iter()
                         .filter_map(|i| {
                             if i.type_id == typ.type_id && i.type_arguments.is_some() {
-                                let args = i.type_arguments.as_ref().unwrap();
+                                let args = i
+                                    .type_arguments
+                                    .as_ref()
+                                    .expect("No type args found for function input.");
                                 let inner = args.first().expect("No type args found.");
                                 return Some(
                                     abi_types.get(&inner.type_id).unwrap_or_else(|| {
@@ -940,7 +955,11 @@ pub fn derive_generic_inner_typedefs<'a>(
                     if func.output.type_id == typ.type_id
                         && func.output.type_arguments.is_some()
                     {
-                        let args = func.output.type_arguments.as_ref().unwrap();
+                        let args = func
+                            .output
+                            .type_arguments
+                            .as_ref()
+                            .expect("No type args found for function output.");
                         let inner = args.first().expect("No type args found.");
                         return Some(abi_types.get(&inner.type_id).unwrap_or_else(
                             || panic!("Inner type not in ABI: {:?}", inner),
@@ -959,7 +978,11 @@ pub fn derive_generic_inner_typedefs<'a>(
                     if log.application.type_id == typ.type_id
                         && log.application.type_arguments.is_some()
                     {
-                        let args = log.application.type_arguments.as_ref().unwrap();
+                        let args = log
+                            .application
+                            .type_arguments
+                            .as_ref()
+                            .expect("No type args found for log application.");
                         let inner = args.first().expect("No type args found.");
                         return Some(abi_types.get(&inner.type_id).unwrap_or_else(
                             || panic!("Inner type not in ABI: {:?}", inner),
@@ -1078,7 +1101,7 @@ pub fn function_output_type_id(
             .output
             .type_arguments
             .as_ref()
-            .unwrap()
+            .expect("Missing type arguments.")
             .first()
             .expect("Missing inner type.");
 
