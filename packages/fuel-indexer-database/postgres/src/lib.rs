@@ -476,8 +476,6 @@ pub async fn register_indexer(
     .bind(identifier)
     .bind(pubkey)
     .bind(created_at)
-    .bind("registered")
-    .bind("")
     .fetch_one(conn)
     .await?;
 
@@ -916,6 +914,8 @@ pub async fn put_many_to_many_record(
     Ok(())
 }
 
+/// Create a database trigger on the indexer's indexmetadataentity table that
+/// ensures no blocks can be missing.
 pub async fn create_ensure_block_height_consecutive_trigger(
     conn: &mut PoolConnection<Postgres>,
     namespace: &str,
@@ -962,6 +962,8 @@ pub async fn create_ensure_block_height_consecutive_trigger(
     Ok(())
 }
 
+/// When -allow-non-sequential-blocks is set, we need to remove the trigger from
+/// indexer's indexmetadataentity table.
 pub async fn remove_ensure_block_height_consecutive_trigger(
     conn: &mut PoolConnection<Postgres>,
     namespace: &str,
@@ -976,6 +978,7 @@ pub async fn remove_ensure_block_height_consecutive_trigger(
     Ok(())
 }
 
+/// Set the status of a registered indexers to be displayed by `forc index status`.
 pub async fn set_indexer_status(
     conn: &mut PoolConnection<Postgres>,
     namespace: &str,
@@ -999,6 +1002,7 @@ pub async fn set_indexer_status(
     Ok(())
 }
 
+/// Fetch the statuses of all registered indexers.
 pub async fn all_registered_indexer_statuses(
     conn: &mut PoolConnection<Postgres>,
 ) -> sqlx::Result<HashMap<(String, String), IndexerStatus>> {
