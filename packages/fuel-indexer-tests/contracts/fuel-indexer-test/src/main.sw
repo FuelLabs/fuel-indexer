@@ -36,7 +36,8 @@ pub struct Pung {
 }
 
 pub struct TupleStructItem {
-    id: u64
+    id: u64,
+    arr: [u8; 3],
 }
 
 pub struct ComplexTupleStruct {
@@ -201,7 +202,7 @@ impl FuelIndexer for Contract {
 
     fn trigger_tuple() -> ComplexTupleStruct {
         log(SimpleTupleStruct { data: (4u32, 5u64, "hello world!")});
-        ComplexTupleStruct{ data: (1u32, (5u64, true, ("abcde", TupleStructItem { id: 54321 })))}
+        ComplexTupleStruct{ data: (1u32, (5u64, true, ("abcde", TupleStructItem { id: 54321, arr: [1u8, 2, 3] })))}
     }
 
     fn trigger_explicit() -> ExplicitQueryStruct {
