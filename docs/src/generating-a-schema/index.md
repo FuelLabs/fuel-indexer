@@ -38,10 +38,10 @@ pub enum SimpleEnum {
 Will be translated to GraphQL as:
 
 ```GraphQL
-enum SimpleEnumEntity {
-    ONE
-    TWO
-    THREE
+enum SimpleEnum {
+    One
+    Two
+    Three
 }
 ```
 
@@ -56,59 +56,69 @@ forc index new --json-abi ./packages/fuel-indexer-tests/trybuild/abi/DAO-contrac
 We get the following schema:
 
 ```GraphQL
-enum CreationErrorEntity {
-    DURATIONCANNOTBEZERO
-    INVALIDACCEPTANCEPERCENTAGE
+enum CreationError {
+    DurationCannotBeZero
+    InvalidAcceptancePercentage
 }
-enum InitializationErrorEntity {
-    CANNOTREINITIALIZE
-    CONTRACTNOTINITIALIZED
+
+enum InitializationError {
+    CannotReinitialize
+    ContractNotInitialized
 }
-enum ProposalErrorEntity {
-    INSUFFICIENTAPPROVALS
-    PROPOSALEXECUTED
-    PROPOSALEXPIRED
-    PROPOSALSTILLACTIVE
+
+enum ProposalError {
+    InsufficientApprovals
+    ProposalExecuted
+    ProposalExpired
+    ProposalStillActive
 }
-enum UserErrorEntity {
-    AMOUNTCANNOTBEZERO
-    INCORRECTASSETSENT
-    INSUFFICIENTBALANCE
-    INVALIDID
-    VOTEAMOUNTCANNOTBEZERO
+
+enum UserError {
+    AmountCannotBeZero
+    IncorrectAssetSent
+    InsufficientBalance
+    InvalidId
+    VoteAmountCannotBeZero
 }
-type CallDataEntity {
+
+type CallDataEntity @entity {
     id: ID!
     arguments: U64!
     function_selector: U64!
 }
-type CreateProposalEventEntity {
+
+type CreateProposalEventEntity @entity {
     id: ID!
     proposal_info: ProposalInfoEntity!
 }
-type DepositEventEntity {
+
+type DepositEventEntity @entity {
     id: ID!
     amount: U64!
     user: Identity!
 }
-type ExecuteEventEntity {
+
+type ExecuteEventEntity @entity {
     id: ID!
     acceptance_percentage: U64!
     user: Identity!
 }
-type InitializeEventEntity {
+
+type InitializeEventEntity @entity {
     id: ID!
     author: Identity!
     token: ContractId!
 }
-type ProposalEntity {
+
+type ProposalEntity @entity {
     id: ID!
     amount: U64!
     asset: ContractId!
     call_data: CallDataEntity!
     gas: U64!
 }
-type ProposalInfoEntity {
+
+type ProposalInfoEntity @entity {
     id: ID!
     acceptance_percentage: U64!
     author: Identity!
@@ -118,22 +128,26 @@ type ProposalInfoEntity {
     proposal_transaction: ProposalEntity!
     yes_votes: U64!
 }
-type UnlockVotesEventEntity {
+
+type UnlockVotesEventEntity @entity {
     id: ID!
     user: Identity!
     vote_amount: U64!
 }
-type VoteEventEntity {
+
+type VoteEventEntity @entity {
     id: ID!
     user: Identity!
     vote_amount: U64!
 }
-type VotesEntity {
+
+type VotesEntity @entity {
     id: ID!
     no_votes: U64!
     yes_votes: U64!
 }
-type WithdrawEventEntity {
+
+type WithdrawEventEntity @entity {
     id: ID!
     amount: U64!
     user: Identity!

@@ -19,9 +19,9 @@ use std::collections::HashMap;
 // can be converted to GraphQL:
 //
 // enum SimpleEnumEntity {
-//     ONE
-//     TWO
-//     THREE
+//     One
+//     Two
+//     Three
 // }
 fn decode_enum(types: &[TypeDeclaration], ty: &TypeDeclaration) -> Option<String> {
     let name = ty.type_field.strip_prefix("enum ").unwrap();
@@ -31,7 +31,7 @@ fn decode_enum(types: &[TypeDeclaration], ty: &TypeDeclaration) -> Option<String
         for c in components {
             let ty = &types.get(c.type_id)?;
             if is_unit_type(ty) {
-                fields.push(c.name.to_uppercase().to_string());
+                fields.push(c.name.to_string());
             } else {
                 return None;
             }
@@ -44,7 +44,7 @@ fn decode_enum(types: &[TypeDeclaration], ty: &TypeDeclaration) -> Option<String
         .collect::<Vec<String>>()
         .join("\n");
 
-    let output = format!("enum {name}Entity {{\n{fields}\n}}");
+    let output = format!("enum {name} {{\n{fields}\n}}");
 
     Some(output)
 }
@@ -98,7 +98,7 @@ fn decode_struct(
         .collect::<Vec<String>>()
         .join("\n");
 
-    let output = format!("type {name}Entity {{\n{fields}\n}}");
+    let output = format!("type {name}Entity @entity {{\n{fields}\n}}");
 
     Some(output)
 }
@@ -144,5 +144,5 @@ pub fn generate_schema(json_abi: &std::path::Path) -> Option<String> {
         }
     }
 
-    Some(output.join("\n"))
+    Some(output.join("\n\n"))
 }
