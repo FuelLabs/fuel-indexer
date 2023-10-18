@@ -3348,6 +3348,7 @@ version = "0.21.1"
 dependencies = [
  "anyhow",
  "async-graphql-parser 5.0.10",
+ "async-graphql-value 5.0.10",
  "bincode",
  "clap 3.2.25",
  "fuel-indexer-types",

@@ -6,29 +6,18 @@
 
 To run the Fuel indexer, you'll need to install a few dependencies on your system:
 
-1. The [Rust programming language, with its package manager](https://www.rust-lang.org/tools/install)
-2. [`fuelup`](#fuelup), the Fuel toolchain manager
-3. A [PostgresQL](#postgresql) server backend
-4. The [`wasm32-unknown-unknown`](#web-assembly-wasm) `rustup` target
-5. [`wasm-snip`](#web-assembly-wasm), a utility for stripping symbols from WebAssemly binaries.
+1. The [Fuel toolchain](https://docs.fuel.network/guides/installation)
+2. A [PostgresQL](#postgresql) server backend
+3. The [`wasm32-unknown-unknown`](#web-assembly-wasm) `rustup` target
+4. [`wasm-snip`](#web-assembly-wasm), a utility for stripping symbols from WebAssemly binaries.
 
 > If you don't want to install a database directly onto your system, you can use Docker to run a database in an isolated container. You can install Docker by following its [installation instructions](https://docs.docker.com/get-docker/).
 >
 > For reference purposes, we provide a [`docker compose` file](https://github.com/FuelLabs/fuel-indexer/blob/develop/scripts/docker-compose.yaml) that comes with a PostgresSQL server and a Fuel indexer service.
 
-## `fuelup`
+## The `Fuel` toolchain
 
-We strongly recommend that you use the Fuel indexer that's made available via [`forc`, the Fuel orchestrator](https://fuellabs.github.io/sway/master/book/forc/index.html). You can get `forc` (and other Fuel components) by way of [`fuelup`, the Fuel toolchain manager](https://fuellabs.github.io/fuelup/latest).
-
-Install `fuelup` by running the following command, which downloads and runs the installation script.
-
-```bash
-curl --proto '=https' --tlsv1.2 -sSf https://install.fuel.network/fuelup-init.sh | sh
-```
-
-After `fuelup` has been installed, the `forc index` command and `fuel-indexer` binaries should be available on your system.
-
-> A simple `forc index check` can be used to show which indexer components you have installed via `fuelup`.
+Please visit the Fuel [installation guide](https://docs.fuel.network/guides/installation) to install the Fuel toolchain,  which includes binaries for the Fuel indexer.
 
 ## PostgreSQL
 

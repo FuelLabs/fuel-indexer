@@ -14,7 +14,7 @@ use chrono::{
 };
 use fuel_indexer_lib::{
     graphql::{
-        extract_foreign_key_info, field_id, is_list_type,
+        check_for_directive, extract_foreign_key_info, field_id, is_list_type,
         types::{IdCol, ObjectCol},
         JoinTableMeta, ParsedGraphQLSchema,
     },
@@ -305,10 +305,7 @@ impl Column {
                 ..Self::default()
             },
             false => {
-                let unique = f
-                    .directives
-                    .iter()
-                    .any(|d| d.node.name.to_string() == "unique");
+                let unique = check_for_directive(&f.directives, "unique");
 
                 Self {
                     type_id,
@@ -942,8 +939,9 @@ impl Table {
                 let mut columns = o
                     .fields
                     .iter()
+                    .filter(|f| !check_for_directive(&f.node.directives, "internal"))
                     .enumerate()
-                    .map(|(i, f)| {
+                    .map(|(i, f)|
                         Column::from_field_def(
                             &f.node,
                             parsed,
@@ -951,7 +949,7 @@ impl Table {
                             i as i32,
                             persistence,
                         )
-                    })
+                    )
                     .collect::<Vec<Column>>();
 
                 let mut constraints = Vec::new();
@@ -966,19 +964,11 @@ impl Table {
                             return;
                         }
 
-                        let has_index = f
-                            .node
-                            .directives
-                            .iter()
-                            .any(|d| d.node.name.to_string() == "indexed" || d.node.name.to_string() == "unique");
+                        let has_index = check_for_directive(&f.node.directives, "indexed");
 
-                        let has_unique = f
-                            .node
-                            .directives
-                            .iter()
-                            .any(|d| d.node.name.to_string() == "unique");
+                        let has_unique = check_for_directive(&f.node.directives, "unique");
 
-                        if has_index {
+                        if has_index || has_unique {
                             constraints.push(Constraint::Index(SqlIndex {
                                 db_type: DbType::Postgres,
                                 table_name: typ.name.to_string().to_lowercase(),
