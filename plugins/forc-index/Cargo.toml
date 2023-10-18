@@ -14,6 +14,7 @@ description = "Fuel Indexer forc plugin"
 actix-web = { version = "4", default-features = false, features = ["macros"] }
 anyhow = "1"
 clap = { features = ["derive", "env"], workspace = true }
+colorful = "0.2.2"
 filetime = "0.2"
 forc-postgres = { workspace = true }
 forc-tracing = { version = "0.31", default-features = false }

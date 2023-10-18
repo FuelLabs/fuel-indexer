@@ -12,7 +12,7 @@ use fuel_core_client::client::{
     types::TransactionStatus as ClientTransactionStatus,
     FuelClient,
 };
-use fuel_indexer_database::{queries, IndexerConnectionPool};
+use fuel_indexer_database::{queries, types::IndexerStatus, IndexerConnectionPool};
 use fuel_indexer_lib::{
     defaults::*, manifest::Manifest, utils::serialize, WasmIndexerError,
 };
@@ -105,9 +105,8 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
 
     info!("Indexer({indexer_uid}) subscribing to Fuel node at {fuel_node_addr}");
 
-    let client = FuelClient::from_str(&fuel_node_addr).with_context(|| {
-        format!("Indexer({indexer_uid}) client node connection failed.")
-    })?;
+    let client = FuelClient::from_str(&fuel_node_addr)
+        .with_context(|| "Client node connection failed".to_string())?;
 
     if let Some(end_block) = end_block {
         info!("Indexer({indexer_uid}) will stop at block #{end_block}.");
@@ -118,9 +117,10 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
     let allow_non_sequential_blocks = config.allow_non_sequential_blocks;
 
     let task = async move {
-        let mut conn = pool.acquire().await.with_context(|| {
-            format!("Indexer({indexer_uid}) was unable to acquire a database connection.")
-        })?;
+        let mut conn = pool
+            .acquire()
+            .await
+            .with_context(|| "Unable to acquire a database connection".to_string())?;
 
         if allow_non_sequential_blocks {
             queries::remove_ensure_block_height_consecutive_trigger(
@@ -128,7 +128,10 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                 executor.manifest().namespace(),
                 executor.manifest().identifier(),
             )
-            .await.with_context(|| format!("Unable to remove the sequential blocks trigger for Indexer({indexer_uid})"))?;
+            .await
+            .with_context(|| {
+                "Unable to remove the sequential blocks trigger".to_string()
+            })?;
         } else {
             queries::create_ensure_block_height_consecutive_trigger(
                 &mut conn,
@@ -136,7 +139,9 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                 executor.manifest().identifier(),
             )
             .await
-            .with_context(|| format!("Unable to create the sequential blocks trigger for Indexer({indexer_uid})"))?;
+            .with_context(|| {
+                "Unable to create the sequential blocks trigger".to_string()
+            })?;
         }
 
         // If we reach an issue that continues to fail, we'll retry a few times before giving up, as
@@ -163,7 +168,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
         loop {
             // If something else has signaled that this indexer should stop, then stop.
             if executor.kill_switch().load(Ordering::SeqCst) {
-                return Err(IndexerError::KillSwitch(indexer_uid));
+                return Err(IndexerError::KillSwitch);
             }
 
             // Fetch the next page of blocks, and the starting cursor for the subsequent page
@@ -219,24 +224,21 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
 
             // If the kill switch has been triggered, the executor exits early.
             if executor.kill_switch().load(Ordering::SeqCst) {
-                return Err(IndexerError::KillSwitch(indexer_uid));
+                return Err(IndexerError::KillSwitch);
             }
 
             if let Err(e) = result {
                 if let IndexerError::RuntimeError(ref e) = e {
                     match e.downcast_ref::<WasmIndexerError>() {
                         Some(&WasmIndexerError::MissingBlocksError) => {
-                            return Err(anyhow::format_err!(
-                                "Indexer({indexer_uid}) terminating due to missing blocks."
-                            )
-                            .into());
+                            return Err(anyhow::anyhow!("{e}").into());
                         }
                         Some(&WasmIndexerError::Panic) => {
                             let message = executor
                                 .get_panic_message()
                                 .await
                                 .unwrap_or("unknown".to_string());
-                            return Err(anyhow::anyhow!("Indexer({indexer_uid}) terminating due to a panic:\n{message}").into());
+                            return Err(anyhow::anyhow!("{message}").into());
                         }
                         _ => (),
                     }
@@ -281,9 +283,20 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
             // If we make it this far, we always go to the next page.
             cursor = next_cursor;
 
+            queries::set_indexer_status(
+                &mut conn,
+                executor.manifest().namespace(),
+                executor.manifest().identifier(),
+                IndexerStatus::running(format!(
+                    "Indexed {} blocks",
+                    cursor.clone().unwrap_or("0".to_string())
+                )),
+            )
+            .await?;
+
             // Again, check if something else has signaled that this indexer should stop, then stop.
             if executor.kill_switch().load(Ordering::SeqCst) {
-                return Err(IndexerError::KillSwitch(indexer_uid));
+                return Err(IndexerError::KillSwitch);
             }
 
             // Since we had successful call, we reset the retry count.
@@ -900,10 +913,11 @@ impl WasmIndexExecutor {
             );
             Ok(())
         } else {
-            Err(IndexerError::Unknown(
+            Err(anyhow::anyhow!(
                 "Attempting to set metering points when metering is not enables"
                     .to_string(),
-            ))
+            )
+            .into())
         }
     }
 }

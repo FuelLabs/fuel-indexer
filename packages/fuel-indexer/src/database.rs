@@ -145,7 +145,7 @@ impl Database {
         let table = match self.tables.get(&type_id) {
             Some(t) => t,
             None => {
-                return Err(IndexerError::Unknown(format!(
+                return Err(anyhow::anyhow!(
                     r#"TypeId({type_id}) not found in tables: {:?}. 
 
 Does the schema version in SchemaManager::new_schema match the schema version in Database::load_schema?
@@ -154,7 +154,7 @@ Do your WASM modules need to be rebuilt?
 
 "#,
                     self.tables,
-                )));
+                ).into());
             }
         };
 

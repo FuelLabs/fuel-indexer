@@ -565,6 +565,64 @@ impl RegisteredIndexer {
     }
 }
 
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, EnumString, strum::Display,
+)]
+pub enum IndexerStatusKind {
+    #[strum(serialize = "starting")]
+    Starting,
+    #[strum(serialize = "running")]
+    Running,
+    #[strum(serialize = "stopped")]
+    Stopped,
+    #[strum(serialize = "error")]
+    Error,
+    #[strum(serialize = "unknown")]
+    Unknown,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct IndexerStatus {
+    /// The current status of an indexer.
+    pub status_kind: IndexerStatusKind,
+    /// Additional status message. Might be empty.
+    pub status_message: String,
+}
+
+impl IndexerStatus {
+    pub fn starting() -> Self {
+        IndexerStatus {
+            status_kind: IndexerStatusKind::Starting,
+            status_message: "".to_string(),
+        }
+    }
+
+    pub fn running(status_message: String) -> Self {
+        IndexerStatus {
+            status_kind: IndexerStatusKind::Running,
+            status_message,
+        }
+    }
+    pub fn stopped(status_message: String) -> Self {
+        IndexerStatus {
+            status_kind: IndexerStatusKind::Stopped,
+            status_message,
+        }
+    }
+    pub fn error(status_message: String) -> Self {
+        IndexerStatus {
+            status_kind: IndexerStatusKind::Error,
+            status_message,
+        }
+    }
+    pub fn unknown() -> Self {
+        IndexerStatus {
+            status_kind: IndexerStatusKind::Unknown,
+            status_message: "".to_string(),
+        }
+    }
+}
+
 /// SQL database types used by indexers.
 #[derive(Eq, PartialEq, Debug, Clone, Default)]
 pub enum DbType {

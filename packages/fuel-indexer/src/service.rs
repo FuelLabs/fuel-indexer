@@ -2,10 +2,13 @@ use crate::{
     executor::{NativeIndexExecutor, WasmIndexExecutor},
     Database, Executor, IndexerConfig, IndexerError, IndexerResult, Manifest,
 };
+use anyhow::Context;
 use async_std::sync::{Arc, Mutex};
 use async_std::{fs::File, io::ReadExt};
 use fuel_indexer_database::{
-    queries, types::IndexerAssetType, IndexerConnection, IndexerConnectionPool,
+    queries,
+    types::{IndexerAssetType, IndexerStatus},
+    IndexerConnection, IndexerConnectionPool,
 };
 use fuel_indexer_lib::utils::ServiceRequest;
 use fuel_indexer_schema::db::manager::SchemaManager;
@@ -29,7 +32,7 @@ pub struct IndexerService {
     manager: SchemaManager,
 
     /// Tasks for the spawned indexers.
-    tasks: tokio::task::JoinSet<IndexerResult<()>>,
+    tasks: tokio::task::JoinSet<anyhow::Result<()>>,
 
     /// Channel used to receive `ServiceRequest`s.
     rx: Receiver<ServiceRequest>,
@@ -78,11 +81,12 @@ impl IndexerService {
             .is_ok();
         if indexer_exists {
             if !self.config.replace_indexer {
-                return Err(IndexerError::Unknown(format!(
+                return Err(anyhow::anyhow!(
                     "Indexer({}.{}) already exists.",
                     manifest.namespace(),
                     manifest.identifier()
-                )));
+                )
+                .into());
             } else if let Err(e) = queries::remove_indexer(
                 &mut conn,
                 manifest.namespace(),
@@ -177,7 +181,7 @@ impl IndexerService {
             manifest.identifier()
         );
 
-        self.start_executor(executor)?;
+        self.start_executor(executor).await?;
 
         Ok(())
     }
@@ -204,7 +208,7 @@ impl IndexerService {
             {
                 info!("Registered Indexer({})", manifest.uid());
 
-                self.start_executor(executor)?;
+                self.start_executor(executor).await?;
             } else {
                 error!(
                     "Failed to register Indexer({}) from registry.",
@@ -257,7 +261,7 @@ impl IndexerService {
 
         info!("Registered NativeIndex({})", uid);
 
-        self.start_executor(executor)?;
+        self.start_executor(executor).await?;
 
         Ok(())
     }
@@ -267,15 +271,8 @@ impl IndexerService {
         loop {
             tokio::select! {
                 // Calling join_next will remove finished tasks from the set.
-                Some(result) = self.tasks.join_next() => {
-                    match result {
-                        Ok(Ok(())) => (),
-                        Ok(Err(e)) => match e {
-                            IndexerError::KillSwitch(_) => info!{"{e}"},
-                            _ => error!("{e}"),
-                        }
-                        Err(e) => error!("Error retiring indexer task {e}"),
-                    }
+                Some(Err(e)) = self.tasks.join_next() => {
+                    error!("Error retiring indexer task {e}");
                 }
                 Some(service_request) = self.rx.recv() => {
                     match service_request {
@@ -318,7 +315,7 @@ impl IndexerService {
                                     )
                                     .await
                                     {
-                                        Ok(executor) => self.start_executor(executor)?,
+                                        Ok(executor) => self.start_executor(executor).await?,
                                         Err(e) => {
                                             error!(
                                                 "Failed to reload Indexer({}.{}): {e:?}",
@@ -358,20 +355,61 @@ impl IndexerService {
     // Spawn and register a tokio::task running the Executor loop, as well as
     // the kill switch and the abort handle.
     #[allow(clippy::result_large_err)]
-    fn start_executor<T: 'static + Executor + Send + Sync>(
+    async fn start_executor<T: 'static + Executor + Send + Sync>(
         &mut self,
         executor: T,
-    ) -> IndexerResult<()> {
+    ) -> anyhow::Result<()> {
         let uid = executor.manifest().uid();
+        let namespace = executor.manifest().namespace().to_string();
+        let identifier = executor.manifest().identifier().to_string();
+
+        let mut conn = self.pool.acquire().await?;
 
         self.killers
             .insert(uid.clone(), executor.kill_switch().clone());
 
-        self.tasks.spawn(crate::executor::run_executor(
-            &self.config,
-            self.pool.clone(),
-            executor,
-        )?);
+        let task =
+            crate::executor::run_executor(&self.config, self.pool.clone(), executor)?;
+        self.tasks.spawn(async move {
+            queries::set_indexer_status(
+                &mut conn,
+                &namespace,
+                &identifier,
+                IndexerStatus::starting(),
+            )
+            .await
+            .with_context(|| {
+                format!("Failed to set Indexer({namespace}.{identifier}) status.")
+            })?;
+
+            let result = task.await;
+
+            let status: IndexerStatus;
+
+            if let Err(ref e) = result {
+                match e {
+                    IndexerError::KillSwitch | IndexerError::EndBlockMet => {
+                        info!("Indexer({namespace}.{identifier}) terminated: {e}");
+                        status = IndexerStatus::stopped(e.to_string())
+                    }
+                    _ => {
+                        error!("Indexer({namespace}.{identifier}) terminated with an error: {e}");
+                        status = IndexerStatus::error(e.to_string())
+                    }
+                };
+            } else {
+                info!("Indexer({namespace}.{identifier}) stopped.");
+                status = IndexerStatus::stopped("".to_string());
+            }
+
+            queries::set_indexer_status(&mut conn, &namespace, &identifier, status)
+                .await
+                .with_context(|| {
+                    format!("Failed to set Indexer({namespace}.{identifier}) status.")
+                })?;
+
+            result.map_err(Into::into)
+        });
 
         Ok(())
     }

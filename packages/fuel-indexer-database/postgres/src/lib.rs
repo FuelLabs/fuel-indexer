@@ -4,6 +4,7 @@ use bigdecimal::ToPrimitive;
 use fuel_indexer_database_types::*;
 use fuel_indexer_lib::utils::sha256_digest;
 use sqlx::{pool::PoolConnection, postgres::PgRow, types::JsonValue, Postgres, Row};
+use std::collections::HashMap;
 use std::str::FromStr;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tracing::info;
@@ -913,6 +914,8 @@ pub async fn put_many_to_many_record(
     Ok(())
 }
 
+/// Create a database trigger on the indexer's indexmetadataentity table that
+/// ensures no blocks can be missing.
 pub async fn create_ensure_block_height_consecutive_trigger(
     conn: &mut PoolConnection<Postgres>,
     namespace: &str,
@@ -959,6 +962,8 @@ pub async fn create_ensure_block_height_consecutive_trigger(
     Ok(())
 }
 
+/// When -allow-non-sequential-blocks is set, we need to remove the trigger from
+/// indexer's indexmetadataentity table.
 pub async fn remove_ensure_block_height_consecutive_trigger(
     conn: &mut PoolConnection<Postgres>,
     namespace: &str,
@@ -971,4 +976,57 @@ pub async fn remove_ensure_block_height_consecutive_trigger(
     execute_query(conn, trigger).await?;
 
     Ok(())
+}
+
+/// Set the status of a registered indexer to be displayed by `forc index status`.
+pub async fn set_indexer_status(
+    conn: &mut PoolConnection<Postgres>,
+    namespace: &str,
+    identifier: &str,
+    status: IndexerStatus,
+) -> sqlx::Result<()> {
+    let indexer_id = get_indexer_id(conn, namespace, identifier).await?;
+    sqlx::query(
+        "INSERT INTO index_status (indexer_id, status, status_message)
+        VALUES ($1, $2, $3)
+        ON CONFLICT (indexer_id) DO UPDATE
+        SET status = EXCLUDED.status, status_message = EXCLUDED.status_message;",
+    )
+    .bind(indexer_id)
+    .bind(status.status_kind.to_string())
+    .bind(status.status_message)
+    .execute(conn)
+    .await?;
+
+    Ok(())
+}
+
+/// Fetch the statuses of all registered indexers.
+pub async fn all_registered_indexer_statuses(
+    conn: &mut PoolConnection<Postgres>,
+) -> sqlx::Result<HashMap<(String, String), IndexerStatus>> {
+    let rows = sqlx::query(
+        "SELECT index_registry.namespace, index_registry.identifier, status, status_message
+        FROM index_status
+        INNER JOIN index_registry
+        ON index_status.indexer_id = index_registry.id;"
+    )
+    .fetch_all(conn)
+    .await?;
+
+    let mut result = HashMap::new();
+    for row in rows {
+        let namespace: String = row.get(0);
+        let identifier: String = row.get(1);
+        let status_kind =
+            IndexerStatusKind::from_str(row.get(2)).unwrap_or(IndexerStatusKind::Unknown);
+        let status_message: String = row.get(3);
+        let status = IndexerStatus {
+            status_kind,
+            status_message,
+        };
+        result.insert((namespace, identifier), status);
+    }
+
+    Ok(result)
 }
