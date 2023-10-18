@@ -446,7 +446,7 @@ pub async fn remove_ensure_block_height_consecutive_trigger(
     }
 }
 
-/// Set the status of a registered indexers to be displayed by `forc index status`.
+/// Set the status of a registered indexer to be displayed by `forc index status`.
 pub async fn set_indexer_status(
     conn: &mut IndexerConnection,
     namespace: &str,
