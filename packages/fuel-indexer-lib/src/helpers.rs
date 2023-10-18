@@ -14,18 +14,11 @@ pub fn is_unit_type(typ: &TypeDeclaration) -> bool {
         && type_field_chars.next().is_some_and(|c| c == ')')
 }
 
-fn is_array_type(typ: &TypeDeclaration) -> bool {
-    typ.type_field.starts_with('[')
-        && typ.type_field.ends_with(']')
-        && typ.type_field.contains(';')
-}
-
-/// Whether the TypeDeclaration should be used to build struct fields and decoders
+/// Whether the `TypeDeclaration`` should be used to build struct fields and decoders
 pub fn is_non_decodable_type(typ: &TypeDeclaration) -> bool {
     is_tuple_type(typ)
         || is_unit_type(typ)
         || crate::constants::IGNORED_GENERIC_METADATA.contains(typ.type_field.as_str())
-        || is_array_type(typ)
 }
 
 /// Strip the call path from the type field of a `TypeDeclaration`.

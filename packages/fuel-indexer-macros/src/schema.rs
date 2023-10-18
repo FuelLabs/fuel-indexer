@@ -15,6 +15,10 @@ fn process_type_def(
     parsed: &ParsedGraphQLSchema,
     typ: &TypeDefinition,
 ) -> Option<proc_macro2::TokenStream> {
+    if parsed.is_internal_typedef(typ.name.node.as_str()) {
+        return None;
+    }
+
     let tokens = match &typ.kind {
         TypeKind::Object(_o) => ObjectDecoder::from_typedef(typ, parsed).into(),
         TypeKind::Enum(_e) => EnumDecoder::from_typedef(typ, parsed).into(),

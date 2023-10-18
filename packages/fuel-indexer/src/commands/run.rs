@@ -88,6 +88,19 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
             ..Default::default()
         };
 
+        println!(
+            r#"
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+Warning: Using the --embedded-database flag is experimental and should only be used for local development.
+
+If the --embedded-database flag demonstrates flaky behavior on your machine, or doesn't work altogether, we recommend that you simply use the provided docker compose file here:
+    https://github.com/FuelLabs/fuel-indexer/blob/develop/scripts/docker-compose.yaml.
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+"#
+        );
+
         forc_postgres::commands::create::exec(create_db_cmd).await?;
     }
 
