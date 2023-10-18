@@ -1,0 +1,43 @@
+app:
+  fuel_node_host: beta-4.fuel.network
+  fuel_node_port: 80
+  volume:
+    storageclass: gp3-generic
+    accessmodes: ReadWriteOnce
+    storagerequests: 4Gi
+    mountPath: /mnt/db
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    acme.cert-manager.io/http01-ingress-class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    external-dns.alpha.kubernetes.io/hostname: dev-fuel-indexer.swayswap.io
+    kubernetes.io/ingress.class: nginx
+    kubernetes.io/tls-acme: "true"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      more_set_headers "X-Content-Type-Options: nosniff";
+      more_set_headers "X-Download-Options: noopen";
+      more_set_headers "X-Frame-Options: DENY";
+      more_set_headers "X-XSS-Protection: 1; mode=block";
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
+  hosts:
+    - host: dev-fuel-indexer.swayswap.io
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls:
+    - secretName: dev-fuel-indexer.swayswap.io-tls
+      hosts:
+        - dev-fuel-indexer.swayswap.io
+service:
+  type: NodePort
+  port: 29987
+resources:
+  requests:
+    cpu: 500m
+    memory: 1Gi
+  limits:
+    cpu: 2
+    memory: 2Gi

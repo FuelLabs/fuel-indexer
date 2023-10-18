@@ -1,0 +1,111 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "fuel-indexer.fullname" . }}
+  labels:
+    {{- include "fuel-indexer.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "fuel-indexer.selectorLabels" . | nindent 6 }}
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "fuel-indexer.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "fuel-indexer.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: [ "./fuel-indexer" ]
+          args:
+            - "run"
+            - "--fuel-node-host"
+            - "{{ .Values.app.fuel_node_host }}"
+            - "--fuel-node-port"
+            - "{{ .Values.app.fuel_node_port }}"
+            - "--postgres-password"
+            - "$(POSTGRES_PASSWORD)"
+            - "--postgres-host"
+            - "$(POSTGRES_HOST)"
+            - "--postgres-port"
+            - "5432"
+            - "--postgres-user"
+            - "$(POSTGRES_USER)"
+            - "--postgres-database"
+            - "$(POSTGRES_DATABASE)"
+            - "--web-api-host"
+            - "0.0.0.0"
+            - "--run-migrations"
+            - "--auth-enabled"
+            - "--auth-strategy"
+            - "jwt"
+            - "--jwt-secret"
+            - "$(JWT_SECRET)"
+            - "--jwt-issuer"
+            - "$(JWT_ISSUER)"
+            - "--rate-limit"
+            - "--rate-limit-request-count"
+            - "3"
+            - "--rate-limit-window-size"
+            - "10"
+            - "--verbose"
+            - "--replace-indexer"
+            - "--accept-sql-queries"
+            - "--block-page-size"
+            - "10"
+          envFrom:
+            - configMapRef:
+                name: fuel-indexer
+            - secretRef:
+                name: fuel-indexer
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 10
+          volumeMounts:
+            - mountPath: {{ .Values.app.volume.mountPath }}
+              name: {{ include "fuel-indexer.fullname" . }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+        - name: {{ include "fuel-indexer.fullname" . }}
+          persistentVolumeClaim:
+            claimName: {{ include "fuel-indexer.fullname" . }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
