@@ -116,7 +116,7 @@ impl RawManifest {
             .lines()
             .enumerate()
             .filter_map(|(i, line)| {
-                if line.starts_with('#') {
+                if line.trim().starts_with('#') {
                     Some(RawManifestLine(i, line.to_string()))
                 } else {
                     None
@@ -128,7 +128,7 @@ impl RawManifest {
             .lines()
             .enumerate()
             .filter_map(|(i, line)| {
-                if !line.starts_with('#') {
+                if !line.trim().starts_with('#') {
                     Some(RawManifestLine(i, line.to_string()))
                 } else {
                     None
@@ -195,12 +195,23 @@ impl RawManifest {
             .collect::<Vec<_>>();
         content.sort_by(|a, b| a.0.cmp(&b.0));
 
-        let content = content
-            .iter()
-            .map(|line| line.1.to_string())
-            .collect::<Vec<_>>()
-            .join("\n");
-        write_content(path, content.into())
+        let mut result: Vec<String> = Vec::new();
+        for line in content.into_iter() {
+            result.push(line.1.clone());
+            if line.1.starts_with("  ") {
+                // Remove the last '\n' for nested lines.
+                println!(">>> LINE IS {}", line.1);
+                let _ = result.pop();
+                result.push(line.1.clone());
+            }
+            result.push("\n".to_string());
+        }
+
+        // Remove trailing newline.
+        let _ = result.pop();
+
+        let result = result.join(" ");
+        write_content(path, result.into())
     }
 }
 

@@ -80,13 +80,9 @@ pub fn default_indexer_manifest(
 
     let module = if is_native {
         r#"
-
-    # Native execution should not include any paths.
     native: ~"#
     } else {
         r#"
-
-    # Path to web assembly module.
     wasm: ~"#
     };
 

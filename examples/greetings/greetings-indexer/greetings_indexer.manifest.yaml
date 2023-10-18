@@ -32,7 +32,6 @@ graphql_schema: examples/greetings/greetings-indexer/schema/greetings_indexer.sc
 # of the indexer.
 # Important: At this time, wasm is the preferred method of execution.
 module:
-
   wasm: target/wasm32-unknown-unknown/release/greetings_indexer.wasm
 
 # The resumable field contains a boolean that specifies whether or not the indexer should, synchronise

@@ -32,7 +32,6 @@ graphql_schema:  examples/fuel-explorer/fuel-explorer/schema/fuel_explorer.schem
 # of the indexer.
 # Important: At this time, wasm is the preferred method of execution.
 module:
-
   wasm: target/wasm32-unknown-unknown/release/fuel_explorer.wasm
 
 # The resumable field contains a boolean that specifies whether or not the indexer should, synchronise
