@@ -1,8 +1,6 @@
 CREATE TABLE IF NOT EXISTS index_status (
-   id bigserial primary key,
-   namespace varchar(32) not null,
-   identifier varchar(32) not null,
+   indexer_id BIGSERIAL UNIQUE NOT NULL,
    status TEXT NOT NULL,
    status_message TEXT NOT NULL,
-   UNIQUE(namespace, identifier)
+   FOREIGN KEY (indexer_id) REFERENCES index_registry (id)
 );

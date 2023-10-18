@@ -985,15 +985,14 @@ pub async fn set_indexer_status(
     identifier: &str,
     status: IndexerStatus,
 ) -> sqlx::Result<()> {
+    let indexer_id = get_indexer_id(conn, namespace, identifier).await?;
     sqlx::query(
-        "INSERT INTO index_status (namespace, identifier, status, status_message)
-        VALUES ($1, $2, $3, $4)
-        ON CONFLICT (namespace, identifier)
-        DO UPDATE
+        "INSERT INTO index_status (indexer_id, status, status_message)
+        VALUES ($1, $2, $3)
+        ON CONFLICT (indexer_id) DO UPDATE
         SET status = EXCLUDED.status, status_message = EXCLUDED.status_message;",
     )
-    .bind(namespace)
-    .bind(identifier)
+    .bind(indexer_id)
     .bind(status.status_kind.to_string())
     .bind(status.status_message)
     .execute(conn)
@@ -1007,10 +1006,10 @@ pub async fn all_registered_indexer_statuses(
     conn: &mut PoolConnection<Postgres>,
 ) -> sqlx::Result<HashMap<(String, String), IndexerStatus>> {
     let rows = sqlx::query(
-        "SELECT index_status.namespace, index_status.identifier, status, status_message
+        "SELECT index_registry.namespace, index_registry.identifier, status, status_message
         FROM index_status
         INNER JOIN index_registry
-        ON index_status.namespace = index_registry.namespace AND index_status.identifier = index_registry.identifier;"
+        ON index_status.indexer_id = index_registry.id;"
     )
     .fetch_all(conn)
     .await?;
