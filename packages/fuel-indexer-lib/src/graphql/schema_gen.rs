@@ -104,8 +104,9 @@ fn decode_struct(
 }
 
 // Generate a GraphQL schema from JSON ABI.
-pub fn generate_schema(json_abi: &std::path::Path) -> Option<String> {
-    let source = fuels_code_gen::utils::Source::parse(json_abi.to_str()?).unwrap();
+pub fn generate_schema(json_abi: &std::path::Path) -> String {
+    let source =
+        fuels_code_gen::utils::Source::parse(json_abi.to_string_lossy()).unwrap();
     let source = source.get().unwrap();
     let abi: ProgramABI = serde_json::from_str(&source).unwrap();
     let abi_types: Vec<TypeDeclaration> = abi
@@ -144,5 +145,5 @@ pub fn generate_schema(json_abi: &std::path::Path) -> Option<String> {
         }
     }
 
-    Some(output.join("\n\n"))
+    output.join("\n\n")
 }
