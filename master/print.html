@@ -199,8 +199,7 @@
 </blockquote>
 <p>To run the Fuel indexer, you'll need to install a few dependencies on your system:</p>
 <ol>
-<li>The <a href="https://www.rust-lang.org/tools/install">Rust programming language, with its package manager</a></li>
-<li><a href="getting-started/dependencies.html#fuelup"><code>fuelup</code></a>, the Fuel toolchain manager</li>
+<li>The <a href="https://docs.fuel.network/guides/installation">Fuel toolchain</a></li>
 <li>A <a href="getting-started/dependencies.html#postgresql">PostgresQL</a> server backend</li>
 <li>The <a href="getting-started/dependencies.html#web-assembly-wasm"><code>wasm32-unknown-unknown</code></a> <code>rustup</code> target</li>
 <li><a href="getting-started/dependencies.html#web-assembly-wasm"><code>wasm-snip</code></a>, a utility for stripping symbols from WebAssemly binaries.</li>
@@ -209,15 +208,8 @@
 <p>If you don't want to install a database directly onto your system, you can use Docker to run a database in an isolated container. You can install Docker by following its <a href="https://docs.docker.com/get-docker/">installation instructions</a>.</p>
 <p>For reference purposes, we provide a <a href="https://github.com/FuelLabs/fuel-indexer/blob/develop/scripts/docker-compose.yaml"><code>docker compose</code> file</a> that comes with a PostgresSQL server and a Fuel indexer service.</p>
 </blockquote>
-<h2 id="fuelup"><a class="header" href="#fuelup"><code>fuelup</code></a></h2>
-<p>We strongly recommend that you use the Fuel indexer that's made available via <a href="https://fuellabs.github.io/sway/master/book/forc/index.html"><code>forc</code>, the Fuel orchestrator</a>. You can get <code>forc</code> (and other Fuel components) by way of <a href="https://fuellabs.github.io/fuelup/latest"><code>fuelup</code>, the Fuel toolchain manager</a>.</p>
-<p>Install <code>fuelup</code> by running the following command, which downloads and runs the installation script.</p>
-<pre><code class="language-bash">curl --proto '=https' --tlsv1.2 -sSf https://install.fuel.network/fuelup-init.sh | sh
-</code></pre>
-<p>After <code>fuelup</code> has been installed, the <code>forc index</code> command and <code>fuel-indexer</code> binaries should be available on your system.</p>
-<blockquote>
-<p>A simple <code>forc index check</code> can be used to show which indexer components you have installed via <code>fuelup</code>.</p>
-</blockquote>
+<h2 id="the-fuel-toolchain"><a class="header" href="#the-fuel-toolchain">The <code>Fuel</code> toolchain</a></h2>
+<p>Please visit the Fuel <a href="https://docs.fuel.network/guides/installation">installation guide</a> to install the Fuel toolchain,  which includes binaries for the Fuel indexer.</p>
 <h2 id="postgresql"><a class="header" href="#postgresql">PostgreSQL</a></h2>
 <p>The Fuel indexer requires the use of a database. We currently support <a href="https://www.postgresql.org/docs/">PostgresSQL</a>.</p>
 <blockquote>
@@ -3253,7 +3245,7 @@ OPTIONS:
 </li>
 </ul>
 <h2 id="dependencies-1"><a class="header" href="#dependencies-1">Dependencies</a></h2>
-<h3 id="fuelup-1"><a class="header" href="#fuelup-1"><code>fuelup</code></a></h3>
+<h3 id="fuelup"><a class="header" href="#fuelup"><code>fuelup</code></a></h3>
 <p>We use fuelup in order to get the binaries produced by services in the Fuel ecosystem. Fuelup will install binaries related to the Fuel node, the Fuel indexer, the Fuel orchestrator (forc), and other components. <code>fuelup</code> can be downloaded <a href="https://github.com/FuelLabs/fuelup">here</a>.</p>
 <h3 id="docker"><a class="header" href="#docker"><code>docker</code></a></h3>
 <p>We use Docker to produce reproducible environments for users that may be concerned with installing components with large sets of dependencies (e.g. Postgres). Docker can be downloaded <a href="https://docs.docker.com/engine/install/">here</a>.</p>
