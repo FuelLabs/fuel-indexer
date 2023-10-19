@@ -4,7 +4,6 @@ use std::path::PathBuf;
 pub const CARGO_MANIFEST_FILE_NAME: &str = "Cargo.toml";
 
 pub const INDEXER_LIB_FILENAME: &str = "lib.rs";
-pub const INDEXER_BINARY_FILENAME: &str = "main.rs";
 pub const CARGO_CONFIG_DIR_NAME: &str = ".cargo";
 pub const CARGO_CONFIG_FILENAME: &str = "config";
 pub const INDEXER_SERVICE_HOST: &str = "http://127.0.0.1:29987";
@@ -14,31 +13,6 @@ pub const MESSAGE_PADDING: usize = 55;
 pub const SUCCESS_EMOJI_PADDING: usize = 3;
 pub const FAIL_EMOJI_PADDING: usize = 6;
 pub const HEADER_PADDING: usize = 20;
-
-/// Generate default cargo manifest for native indexer.
-pub fn default_native_indexer_cargo_toml(indexer_name: &str) -> String {
-    format!(
-        r#"[package]
-name = "{indexer_name}"
-version = "0.0.0"
-edition = "2021"
-publish = false
-rust-version = "1.73.0"
-
-[[bin]]
-name = "{indexer_name}"
-path = "src/main.rs"
-
-[dependencies]
-async-trait = {{ version = "0.1" }}
-fuel-indexer = {{ version = "0.21", default-features = false }}
-fuel-indexer-utils = {{ version = "0.21", features = ["native-execution"] }}
-fuels = {{ version = "0.46", default-features = false, features = ["std"] }}
-getrandom = {{ version = "0.2", features = ["js"] }}
-serde = {{ version = "1.0", default-features = false, features = ["derive"] }}
-"#
-    )
-}
 
 /// Generate default cargo manifest for wasm indexer.
 pub fn default_indexer_cargo_toml(indexer_name: &str) -> String {
@@ -68,7 +42,6 @@ pub fn default_indexer_manifest(
     schema_filename: &str,
     indexer_name: &str,
     project_path: Option<&PathBuf>,
-    is_native: bool,
 ) -> String {
     let schema_path = match project_path {
         Some(p) => p.join("schema").join(schema_filename),
@@ -76,14 +49,6 @@ pub fn default_indexer_manifest(
             let p = format!("schema/{schema_filename}");
             PathBuf::from(&p)
         }
-    };
-
-    let module = if is_native {
-        r#"
-    native: ~"#
-    } else {
-        r#"
-    wasm: ~"#
     };
 
     let schema_path = schema_path.display();
@@ -121,8 +86,8 @@ graphql_schema: {schema_path}
 
 # The module field contains a file path that points to code that will be run as an executor inside
 # of the indexer.
-# Important: At this time, wasm is the preferred method of execution.
-module: {module}
+module:
+  wasm: ~
 
 # The resumable field contains a boolean that specifies whether or not the indexer should, synchronise
 # with the latest block if it has fallen out of sync.
@@ -162,44 +127,6 @@ pub mod {indexer_name}_index_mod {{
         for transaction in block_data.transactions.iter() {{
             let tx = Transaction::new(block_data.id, Bytes32::from(<[u8; 32]>::from(transaction.id)));
             tx.save();
-        }}
-    }}
-}}
-"#
-    )
-}
-
-/// Generate default binary module for native indexer.
-pub fn default_indexer_binary(
-    indexer_name: &str,
-    manifest_filename: &str,
-    project_path: Option<&PathBuf>,
-) -> String {
-    let manifest_path = match project_path {
-        Some(p) => p.join(manifest_filename),
-        None => PathBuf::from(manifest_filename),
-    };
-
-    let manifest_path = manifest_path.display();
-
-    format!(
-        r#"extern crate alloc;
-use fuel_indexer_utils::prelude::*;
-
-#[indexer(manifest = "{manifest_path}")]
-pub mod {indexer_name}_index_mod {{
-
-    async fn {indexer_name}_handler(block_data: BlockData) {{
-        if block_data.header.height % 1000 == 0 {{
-            info!("Processing Block#{{}}. (>'.')>", block_data.header.height);
-        }}
-        
-        let block = Block::new(block_data.header.height.into(), block_data.id);
-        block.save().await;
-
-        for transaction in block_data.transactions.iter() {{
-            let tx = Transaction::new(block_data.id, Bytes32::from(<[u8; 32]>::from(transaction.id)));
-            tx.save().await;
         }}
     }}
 }}

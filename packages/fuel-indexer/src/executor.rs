@@ -565,8 +565,6 @@ pub async fn retrieve_blocks_from_node(
 }
 
 /// Executors are responsible for the actual indexing of data.
-///
-/// Executors can either be WASM modules or native Rust functions.
 #[async_trait]
 pub trait Executor
 where
@@ -617,107 +615,6 @@ impl IndexEnv {
             db: Arc::new(Mutex::new(db)),
             kill_switch,
         })
-    }
-}
-
-/// Native executors differ from WASM executors in that they are not sandboxed; they are merely a
-/// set of native Rust functions that (run/execute/are spawned) directly from the indexer service
-/// process.
-pub struct NativeIndexExecutor<F>
-where
-    F: Future<Output = IndexerResult<()>> + Send,
-{
-    /// Reference to the connected database.
-    db: Arc<Mutex<Database>>,
-
-    /// Manifest of the indexer.
-    manifest: Manifest,
-
-    /// Function that handles events.
-    handle_events_fn: fn(Vec<BlockData>, Arc<Mutex<Database>>) -> F,
-
-    /// Kill switch. When set to true, the indexer must stop execution.
-    kill_switch: Arc<AtomicBool>,
-}
-
-impl<F> NativeIndexExecutor<F>
-where
-    F: Future<Output = IndexerResult<()>> + Send,
-{
-    /// Create a new `NativeIndexExecutor`.
-    pub async fn new(
-        manifest: &Manifest,
-        pool: IndexerConnectionPool,
-        config: &IndexerConfig,
-        handle_events_fn: fn(Vec<BlockData>, Arc<Mutex<Database>>) -> F,
-    ) -> IndexerResult<Self> {
-        let mut db = Database::new(pool.clone(), manifest, config).await;
-        let mut conn = pool.acquire().await?;
-        let version = fuel_indexer_database::queries::type_id_latest(
-            &mut conn,
-            manifest.namespace(),
-            manifest.identifier(),
-        )
-        .await?;
-        db.load_schema(version).await?;
-        let kill_switch = Arc::new(AtomicBool::new(false));
-        Ok(Self {
-            db: Arc::new(Mutex::new(db)),
-            manifest: manifest.to_owned(),
-            handle_events_fn,
-            kill_switch,
-        })
-    }
-
-    /// Create a new `NativeIndexExecutor`.
-    pub async fn create(
-        config: &IndexerConfig,
-        manifest: &Manifest,
-        pool: IndexerConnectionPool,
-        handle_events: fn(Vec<BlockData>, Arc<Mutex<Database>>) -> F,
-    ) -> IndexerResult<Self> {
-        NativeIndexExecutor::new(manifest, pool.clone(), config, handle_events).await
-    }
-}
-
-#[async_trait]
-impl<F> Executor for NativeIndexExecutor<F>
-where
-    F: Future<Output = IndexerResult<()>> + Send,
-{
-    /// Handle events for  native executor.
-    async fn handle_events(&mut self, blocks: Vec<BlockData>) -> IndexerResult<()> {
-        self.db.lock().await.start_transaction().await?;
-        let res = (self.handle_events_fn)(blocks, self.db.clone()).await;
-        let uid = self.manifest.uid();
-        if let Err(e) = res {
-            error!("NativeIndexExecutor({uid}) handle_events failed: {e:?}.");
-            self.db.lock().await.revert_transaction().await?;
-            return Err(IndexerError::NativeExecutionRuntimeError);
-        } else {
-            // Do not commit if kill switch has been triggered.
-            if self.kill_switch.load(Ordering::SeqCst) {
-                self.db.lock().await.revert_transaction().await?;
-            } else {
-                self.db.lock().await.commit_transaction().await?;
-            }
-        }
-        Ok(())
-    }
-
-    fn kill_switch(&self) -> &Arc<AtomicBool> {
-        &self.kill_switch
-    }
-
-    fn manifest(&self) -> &Manifest {
-        &self.manifest
-    }
-
-    async fn get_panic_message(&self) -> IndexerResult<String> {
-        return Err(anyhow::anyhow!(
-            "get_panic_message() not supported in native exetutor."
-        )
-        .into());
     }
 }
 

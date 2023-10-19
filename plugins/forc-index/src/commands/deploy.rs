@@ -38,10 +38,6 @@ pub struct Command {
     #[clap(long, help = "Ensure that the Cargo.lock file is up-to-date.")]
     pub locked: bool,
 
-    /// Building for native execution.
-    #[clap(long, help = "Building for native execution.")]
-    pub native: bool,
-
     /// Enable verbose logging.
     #[clap(short, long, help = "Enable verbose logging.")]
     pub verbose: bool,
@@ -62,23 +58,6 @@ pub struct Command {
     pub remove_data: bool,
 }
 
-impl Default for Command {
-    fn default() -> Self {
-        Command {
-            url: "http://127.0.0.1:29987".to_string(),
-            manifest: Some(String::new()),
-            path: None,
-            auth: Some("".to_string()),
-            debug: false,
-            verbose: false,
-            locked: false,
-            native: false,
-            skip_build: false,
-            replace_indexer: false,
-            remove_data: false,
-        }
-    }
-}
 pub async fn exec(command: Command) -> Result<()> {
     forc_index_deploy::init(command).await?;
     Ok(())

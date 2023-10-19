@@ -4,12 +4,9 @@ use async_graphql_parser::types::{
 };
 use async_graphql_parser::{Pos, Positioned};
 use async_graphql_value::Name;
-use fuel_indexer_lib::{
-    graphql::{
-        check_for_directive, field_id, types::IdCol, ParsedGraphQLSchema,
-        MAX_FOREIGN_KEY_LIST_FIELDS,
-    },
-    ExecutionSource,
+use fuel_indexer_lib::graphql::{
+    check_for_directive, field_id, types::IdCol, ParsedGraphQLSchema,
+    MAX_FOREIGN_KEY_LIST_FIELDS,
 };
 use fuel_indexer_types::type_id;
 use proc_macro2::TokenStream;
@@ -37,9 +34,6 @@ pub struct ImplementationDecoder {
     /// Token stream of struct fields.
     struct_fields: TokenStream,
 
-    /// Execution source of indexer.
-    exec_source: ExecutionSource,
-
     /// `TypeDefinition`.
     typdef: TypeDefinition,
 
@@ -56,7 +50,6 @@ impl Default for ImplementationDecoder {
             parameters: quote! {},
             hasher: quote! {},
             struct_fields: quote! {},
-            exec_source: ExecutionSource::Wasm,
             typdef: TypeDefinition {
                 description: None,
                 extend: false,
@@ -154,7 +147,6 @@ impl Decoder for ImplementationDecoder {
                     parameters,
                     hasher,
                     struct_fields,
-                    exec_source: parsed.exec_source().clone(),
                     typdef: typ.clone(),
                     parsed: parsed.clone(),
                 }
@@ -246,7 +238,6 @@ impl From<ImplementationDecoder> for TokenStream {
             parameters,
             hasher,
             struct_fields,
-            exec_source,
             typdef,
             parsed,
         } = decoder;
@@ -266,31 +257,14 @@ impl From<ImplementationDecoder> for TokenStream {
         // `TypeDefinition::Union`.
         let typdef = parsed.get_union(&typdef_name).unwrap_or(&typdef);
 
-        let impl_get_or_create = match exec_source {
-            ExecutionSource::Native => {
-                quote! {
-                    pub async fn get_or_create(self) -> Self {
-                        match Self::load(self.id.clone()).await {
-                            Some(instance) => instance,
-                            None => {
-                                self.save().await;
-                                self
-                            },
-                        }
-                    }
-                }
-            }
-            ExecutionSource::Wasm => {
-                quote! {
-                    pub fn get_or_create(self) -> Self {
-                        match Self::load(self.id.clone()) {
-                            Some(instance) => instance,
-                            None => {
-                                self.save();
-                                self
-                            },
-                        }
-                    }
+        let impl_get_or_create = quote! {
+            pub fn get_or_create(self) -> Self {
+                match Self::load(self.id.clone()) {
+                    Some(instance) => instance,
+                    None => {
+                        self.save();
+                        self
+                    },
                 }
             }
         };
@@ -501,9 +475,6 @@ pub struct ObjectDecoder {
     /// Tokens for the parameters of the `Entity::new` function.
     impl_decoder: ImplementationDecoder,
 
-    /// The source of the GraphQL schema.
-    exec_source: ExecutionSource,
-
     /// The unique ID of this GraphQL type.
     type_id: i64,
 }
@@ -516,7 +487,6 @@ impl Default for ObjectDecoder {
             field_extractors: quote! {},
             from_row: quote! {},
             to_row: quote! {},
-            exec_source: ExecutionSource::Wasm,
             impl_decoder: ImplementationDecoder::default(),
             type_id: std::i64::MAX,
         }
@@ -600,7 +570,6 @@ impl Decoder for ObjectDecoder {
                     field_extractors,
                     from_row,
                     to_row,
-                    exec_source: parsed.exec_source().clone(),
                     impl_decoder: ImplementationDecoder::from_typedef(typ, parsed),
                     type_id,
                 }
@@ -760,7 +729,6 @@ impl From<ObjectDecoder> for TokenStream {
             from_row,
             to_row,
             impl_decoder,
-            exec_source,
             type_id,
             ..
         } = decoder;
@@ -820,116 +788,30 @@ impl From<ObjectDecoder> for TokenStream {
             quote! { None }
         };
 
-        let impl_entity = match exec_source {
-            ExecutionSource::Native => quote! {
-                #[derive(Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
-                pub struct #ident {
-                    #struct_fields
-                }
+        let impl_entity = quote! {
+            #[derive(Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+            pub struct #ident {
+                #struct_fields
+            }
 
-                #[async_trait::async_trait]
-                impl<'a> Entity<'a> for #ident {
-                    const TYPE_ID: i64 = #type_id;
-                    const JOIN_METADATA: Option<[Option<JoinMetadata<'a>>; MAX_FOREIGN_KEY_LIST_FIELDS]> = #join_metadata;
+            impl<'a> Entity<'a> for #ident {
+                const TYPE_ID: i64 = #type_id;
+                const JOIN_METADATA: Option<[Option<JoinMetadata<'a>>; MAX_FOREIGN_KEY_LIST_FIELDS]> = #join_metadata;
 
-                    fn from_row(mut vec: Vec<FtColumn>) -> Self {
-                        #field_extractors
-                        Self {
-                            #from_row
-                        }
-                    }
-
-                    fn to_row(&self) -> Vec<FtColumn> {
-                        vec![
-                            #to_row
-                        ]
-                    }
-
-                    async fn save_many_to_many(&self) {
-                        unsafe {
-                            match &db {
-                                Some(d) => {
-                                    if let Some(meta) = Self::JOIN_METADATA {
-                                        let items = meta.iter().filter_map(|x| x.clone()).collect::<Vec<_>>();
-                                        let row = self.to_row();
-                                        let queries = items
-                                            .iter()
-                                            .map(|item| RawQuery::from_metadata(item, &row))
-                                            .filter(|query| !query.is_empty())
-                                            .map(|query| query.to_string())
-                                            .collect::<Vec<_>>();
-
-                                        d.lock().await.put_many_to_many_record(queries).await.expect(&format!("Entity::save_many_to_many for {} failed.", stringify!(#ident)));
-                                    }
-                                }
-                                None => {}
-                            }
-                        }
-                    }
-
-                    async fn load(id: UID) -> Option<Self> {
-                        unsafe {
-                            match &db {
-                                Some(d) => {
-                                    match d.lock().await.get_object(Self::TYPE_ID, id.to_string()).await {
-                                        Ok(Some(bytes)) => {
-                                            let columns: Vec<FtColumn> = bincode::deserialize(&bytes).expect("Failed to deserialize Vec<FtColumn> for Entity::load.");
-                                            let obj = Self::from_row(columns);
-                                            Some(obj)
-                                        },
-                                        Ok(None) => None,
-                                        Err(e) => {
-                                            panic!("Entity::load for {} failed.", stringify!(#ident))
-                                        }
-                                    }
-                                }
-                                None => None,
-                            }
-                        }
-                    }
-
-                    async fn save(&self) {
-                        unsafe {
-                            match &db {
-                                Some(d) => {
-                                    self.save_many_to_many().await;
-                                    d.lock().await.put_object(
-                                        Self::TYPE_ID,
-                                        self.to_row(),
-                                        serialize(&self.to_row())
-                                    ).await.expect(&format!("Entity::save for {} failed.", stringify!(#ident)));
-                                }
-                                None => {},
-                            }
-                        }
+                fn from_row(mut vec: Vec<FtColumn>) -> Self {
+                    #field_extractors
+                    Self {
+                        #from_row
                     }
                 }
-            },
-            ExecutionSource::Wasm => quote! {
-                #[derive(Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
-                pub struct #ident {
-                    #struct_fields
+
+                fn to_row(&self) -> Vec<FtColumn> {
+                    vec![
+                        #to_row
+                    ]
                 }
 
-                impl<'a> Entity<'a> for #ident {
-                    const TYPE_ID: i64 = #type_id;
-                    const JOIN_METADATA: Option<[Option<JoinMetadata<'a>>; MAX_FOREIGN_KEY_LIST_FIELDS]> = #join_metadata;
-
-                    fn from_row(mut vec: Vec<FtColumn>) -> Self {
-                        #field_extractors
-                        Self {
-                            #from_row
-                        }
-                    }
-
-                    fn to_row(&self) -> Vec<FtColumn> {
-                        vec![
-                            #to_row
-                        ]
-                    }
-
-                }
-            },
+            }
         };
 
         let impl_new = TokenStream::from(impl_decoder);

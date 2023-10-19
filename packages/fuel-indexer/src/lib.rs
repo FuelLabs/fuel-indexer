@@ -8,7 +8,7 @@ pub(crate) mod queries;
 mod service;
 
 pub use database::Database;
-pub use executor::{Executor, IndexEnv, NativeIndexExecutor, WasmIndexExecutor};
+pub use executor::{Executor, IndexEnv, WasmIndexExecutor};
 pub use fuel_indexer_database::IndexerDatabaseError;
 pub use fuel_indexer_lib::{
     config::IndexerConfig,
@@ -26,8 +26,7 @@ use openssl as _;
 pub mod prelude {
     pub use super::{
         Database, Executor, FtColumn, IndexEnv, IndexerConfig, IndexerError,
-        IndexerResult, IndexerService, Manifest, Module, NativeIndexExecutor,
-        WasmIndexExecutor,
+        IndexerResult, IndexerService, Manifest, Module, WasmIndexExecutor,
     };
     pub use async_std::sync::{Arc, Mutex};
     pub use fuel_indexer_lib::config::{DatabaseConfig, FuelClientConfig, WebApiConfig};
@@ -76,8 +75,6 @@ pub enum IndexerError {
     ManifestError(#[from] ManifestError),
     #[error("Error creating wasm executor.")]
     WasmExecutionInstantiationError,
-    #[error("Error creating native executor.")]
-    NativeExecutionInstantiationError,
     #[error("Native execution runtime error.")]
     NativeExecutionRuntimeError,
     #[error("Tokio time error: {0:?}")]

@@ -1,4 +1,4 @@
-use crate::{graphql::GraphQLSchema, ExecutionSource};
+use crate::graphql::GraphQLSchema;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -27,14 +27,10 @@ pub enum ManifestError {
 ///
 /// When using a `Wasm` module, the WASM binary at the given path
 /// is read and those bytes are registered into a `WasmIndexerExecutor`.
-/// `Native` modules on the other hand do not require a path, because
-/// native indexers compile to binaries that can be executed without having
-/// to read the bytes of some compiled module.
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "snake_case")]
 pub enum Module {
     Wasm(String),
-    Native,
 }
 
 impl From<PathBuf> for Module {
@@ -47,7 +43,6 @@ impl ToString for Module {
     fn to_string(&self) -> String {
         match self {
             Self::Wasm(o) => o.to_string(),
-            Self::Native => "native".to_string(),
         }
     }
 }
@@ -56,9 +51,6 @@ impl AsRef<Path> for Module {
     fn as_ref(&self) -> &Path {
         match self {
             Self::Wasm(o) => Path::new(o),
-            Self::Native => {
-                unimplemented!("Only WASM execution supports module path access.")
-            }
         }
     }
 }
@@ -140,19 +132,7 @@ impl Manifest {
         format!("{}.{}", &self.namespace, &self.identifier)
     }
 
-    /// Determine what type of execution source this indexer is using.
-    pub fn execution_source(&self) -> ExecutionSource {
-        match &self.module {
-            Module::Native => ExecutionSource::Native,
-            Module::Wasm(_o) => ExecutionSource::Wasm,
-        }
-    }
-
     /// Return the bytes of the compiled indexer WASM module.
-    ///
-    /// Note that as mentioned, because native execution does not compile
-    /// to a module that can be uploaded (as WASM execution does), there is
-    /// no way to read module bytes if native execution is specified.
     pub fn module_bytes(&self) -> ManifestResult<Vec<u8>> {
         match &self.module {
             Module::Wasm(p) => {
@@ -163,9 +143,6 @@ impl Manifest {
                     .map_err(|err| ManifestError::FileError(p.clone(), err))?;
 
                 Ok(bytes)
-            }
-            Module::Native => {
-                unimplemented!("Native execution does not support this method.")
             }
         }
     }

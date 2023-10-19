@@ -27,7 +27,6 @@ use fuel_indexer_lib::{
         FuelClientHealthResponse, ReloadRequest, ServiceRequest, ServiceStatus,
         StopRequest,
     },
-    ExecutionSource,
 };
 use fuel_indexer_schema::db::manager::SchemaManager;
 use hyper::Client;
@@ -376,14 +375,7 @@ async fn register_indexer_assets_transaction(
                 schema_manager
                     .write()
                     .await
-                    .new_schema(
-                        namespace,
-                        identifier,
-                        schema,
-                        // Only WASM can be sent over the web.
-                        ExecutionSource::Wasm,
-                        conn,
-                    )
+                    .new_schema(namespace, identifier, schema, conn)
                     .await?;
 
                 assets.push(asset);

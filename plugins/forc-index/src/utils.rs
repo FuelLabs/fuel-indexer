@@ -1,5 +1,4 @@
 use crate::{defaults, defaults::manifest_name};
-use fuel_indexer_lib::ExecutionSource;
 use reqwest::{multipart::Part, Body};
 use std::{
     fs::canonicalize,
@@ -154,7 +153,6 @@ pub fn ensure_rebuild_if_schema_or_manifest_changed(
     project_dir: &Path,
     schema: &Path,
     manifest: &Path,
-    exec_source: ExecutionSource,
 ) -> std::io::Result<()> {
     let schema_mtime = {
         let metadata = std::fs::metadata(schema).unwrap_or_else(|e| {
@@ -173,10 +171,7 @@ pub fn ensure_rebuild_if_schema_or_manifest_changed(
     };
 
     let entrypoint_rs = {
-        let sourcefile = match exec_source {
-            ExecutionSource::Native => "main.rs",
-            ExecutionSource::Wasm => "lib.rs",
-        };
+        let sourcefile = "lib.rs";
         let mut path = project_dir.to_owned();
         path.push("src");
         path.push(sourcefile);

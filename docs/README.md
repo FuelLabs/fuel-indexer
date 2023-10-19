@@ -79,7 +79,6 @@ SUBCOMMANDS:
     new           Create a new indexer project in a new directory
     postgres      Fuel Postgres Orchestrator
     remove        Stop and remove a running indexer
-    run-native    Run a native indexer
     start         Standalone binary for the Fuel indexer service
     status        Check the status of a registered indexer
 ```

@@ -59,34 +59,6 @@ sleep 2
 forc_index_kill
 
 # ********************************
-# examples/greetings-native
-# ********************************
-
-# cd ../greetings-native
-
-# forc-index build --path ./greetings-native-indexer --native
-
-# # Update manifest with paths relative to the example due to cargo workspace
-# sed -i \
-#   "s|^graphql_schema: examples/greetings-native/greetings-native-indexer/schema/greetings_native_indexer\.schema\.graphql|graphql_schema: $PWD/greetings-native-indexer/schema/greetings_native_indexer.schema.graphql|" \
-#     ./greetings-native-indexer/greetings_native_indexer.manifest.yaml
-
-# Start indexer in the background
-# forc-index run-native --path ./greetings-native-indexer -- --run-migrations --postgres-password my-secret
-# sleep 60
-
-# check_service_status
-
-# cargo run -p greetings-data --bin greetings-data
-# sleep 5
-
-# # Check data is indexed
-# echo "SELECT COUNT(*) FROM fuellabs_greetings_native.salutation;" | psql -h localhost -p 5432 -U postgres
-# sleep 2
-
-# forc_index_kill
-
-# ********************************
 # examples/fuel-explorer
 # ********************************
 

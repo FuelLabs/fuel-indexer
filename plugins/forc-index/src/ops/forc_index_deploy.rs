@@ -25,7 +25,6 @@ pub async fn init(command: DeployCommand) -> anyhow::Result<()> {
         auth,
         debug,
         locked,
-        native,
         verbose,
         replace_indexer,
         remove_data,
@@ -39,7 +38,6 @@ pub async fn init(command: DeployCommand) -> anyhow::Result<()> {
             debug,
             verbose,
             locked,
-            native,
         })?;
     }
 
