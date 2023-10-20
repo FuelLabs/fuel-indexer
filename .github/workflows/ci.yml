@@ -168,6 +168,9 @@ jobs:
         with:
           toolchain: ${{ env.RUSTC_VERSION }}
           targets: wasm32-unknown-unknown
+      - name: Install wasm-snip
+        run: |
+          if ! which wasm-snip; then cargo install wasm-snip; fi
       - name: Build simple-wasm WASM
         run: |
           cargo build -p simple-wasm --release --target wasm32-unknown-unknown
