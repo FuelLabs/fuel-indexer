@@ -18,7 +18,6 @@ use fuel_indexer_database::{
     types::{IndexerAsset, IndexerAssetType, IndexerStatus, RegisteredIndexer},
     IndexerConnectionPool,
 };
-use fuel_indexer_graphql::dynamic::{build_dynamic_schema, execute_query};
 use fuel_indexer_lib::{
     config::{auth::AuthenticationStrategy, IndexerConfig},
     defaults,
@@ -58,13 +57,28 @@ pub(crate) async fn query_graph(
         .await
     {
         Ok(schema) => {
-            let dynamic_schema = build_dynamic_schema(&schema)?;
+            let dynamic_schema =
+                fuel_indexer_graphql::dynamic::build_dynamic_schema(&schema)?;
             let user_query = req.0.query.clone();
-            let response =
-                execute_query(req.into_inner(), dynamic_schema, user_query, pool, schema)
-                    .await?;
-            let data = serde_json::json!({ "data": response });
-            Ok(axum::Json(data))
+            match fuel_indexer_graphql::query::execute(
+                req.into_inner(),
+                dynamic_schema,
+                user_query,
+                pool,
+                schema,
+            )
+            .await
+            {
+                Ok(response) => {
+                    let data = serde_json::json!({"data": response});
+                    Ok(axum::Json(data))
+                }
+                Err(e) => {
+                    let data =
+                        serde_json::json!({"errors": [{"message": e.to_string()}]});
+                    Ok(axum::Json(data))
+                }
+            }
         }
         Err(_e) => Err(ApiError::Http(HttpError::NotFound(format!(
             "The graph '{namespace}.{identifier}' was not found."

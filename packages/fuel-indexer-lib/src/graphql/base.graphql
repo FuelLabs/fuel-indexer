@@ -36,3 +36,9 @@ directive @join(on: String) on OBJECT
 directive @unique on FIELD_DEFINITION | ENUM_VALUE
 
 directive @virtual on FIELD_DEFINITION
+
+directive @search on FIELD_DEFINITION
+
+directive @filter on FIELD_DEFINITION
+
+directive @queryable on OBJECT

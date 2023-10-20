@@ -15,9 +15,12 @@ async-graphql-parser = "5.0"
 async-graphql-value = "5.0"
 fuel-indexer-database = { workspace = true }
 fuel-indexer-database-types = { workspace = true }
+fuel-indexer-lib = { workspace = true }
 fuel-indexer-schema = { workspace = true, features = ["db-models"] }
 fuel-indexer-types = { workspace = true }
+indexmap = "2.1"
 lazy_static = "1.4"
+petgraph = "0.6"
 serde_json = { workspace = true }
 thiserror = { workspace = true }
 

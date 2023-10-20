@@ -19,7 +19,7 @@ use axum::{
     Router,
 };
 use fuel_indexer_database::{IndexerConnectionPool, IndexerDatabaseError};
-use fuel_indexer_graphql::graphql::GraphqlError;
+use fuel_indexer_graphql::GraphqlError;
 use fuel_indexer_lib::{config::IndexerConfig, defaults, utils::ServiceRequest};
 use fuel_indexer_schema::db::{manager::SchemaManager, IndexerSchemaDbError};
 use hyper::Method;

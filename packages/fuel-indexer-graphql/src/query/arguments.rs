@@ -1,6 +1,6 @@
-use super::graphql::GraphqlError;
+use crate::{GraphqlError, GraphqlResult};
 use fuel_indexer_database::DbType;
-use fuel_indexer_schema::db::tables::IndexerSchema;
+use fuel_indexer_lib::graphql::ParsedGraphQLSchema;
 
 use async_graphql_value::{indexmap::IndexMap, Name, Value};
 use std::fmt;
@@ -10,8 +10,9 @@ use std::fmt;
 pub struct QueryParams {
     pub filters: Vec<Filter>,
     pub sorts: Vec<Sort>,
-    pub offset: Option<u64>,
     pub limit: Option<u64>,
+    pub cursor: Option<(String, Direction)>,
+    pub pagination: Option<Pagination>,
 }
 
 impl QueryParams {
@@ -24,18 +25,29 @@ impl QueryParams {
         for param in params {
             match param {
                 ParamType::Filter(f) => self.filters.push(Filter {
-                    fully_qualified_table_name: fully_qualified_table_name.clone(),
+                    fully_qualified_table_name: fully_qualified_table_name
+                        .clone()
+                        .to_lowercase(),
                     filter_type: f,
                 }),
                 ParamType::Sort(field, order) => self.sorts.push(Sort {
-                    fully_qualified_table_name: format!(
+                    fully_qualified_table_column: format!(
                         "{}.{}",
-                        fully_qualified_table_name, field
+                        fully_qualified_table_name.to_lowercase(),
+                        field
                     ),
                     order,
                 }),
-                ParamType::Offset(n) => self.offset = Some(n),
                 ParamType::Limit(n) => self.limit = Some(n),
+                ParamType::Pagination(s, d) => {
+                    self.pagination = Some(Pagination {
+                        cursor: s,
+                        direction: d,
+                        fully_qualified_table_name: fully_qualified_table_name
+                            .clone()
+                            .to_lowercase(),
+                    })
+                }
             }
         }
     }
@@ -68,7 +80,9 @@ impl QueryParams {
                     let sort_expressions = self
                         .sorts
                         .iter()
-                        .map(|s| format!("{} {}", s.fully_qualified_table_name, s.order))
+                        .map(|s| {
+                            format!("{} {}", s.fully_qualified_table_column, s.order)
+                        })
                         .collect::<Vec<String>>()
                         .join(", ");
                     query_clause =
@@ -79,6 +93,62 @@ impl QueryParams {
         }
 
         query_clause
+    }
+
+    pub(crate) fn parse_pagination(&mut self, db_type: &DbType) -> GraphqlResult<()> {
+        match db_type {
+            DbType::Postgres => {
+                if self.sorts.is_empty() {
+                    return Err(GraphqlError::UnorderedPaginatedQuery);
+                }
+
+                if self.limit.is_none() {
+                    return Err(GraphqlError::NoCompleteRangeQueriesAllowed);
+                }
+
+                if let Some(pagination) = &self.pagination {
+                    match pagination.direction {
+                        Direction::Forward => {
+                            let comp = Comparison::Greater(
+                                "id".to_string(),
+                                ParsedValue::String(pagination.cursor.clone()),
+                            );
+                            self.filters.push(Filter {
+                                fully_qualified_table_name: pagination
+                                    .fully_qualified_table_name
+                                    .clone(),
+                                filter_type: FilterType::Comparison(comp),
+                            });
+                        }
+                        Direction::Backward => {
+                            let comp = Comparison::Less(
+                                "id".to_string(),
+                                ParsedValue::String(pagination.cursor.clone()),
+                            );
+                            self.filters.push(Filter {
+                                fully_qualified_table_name: pagination
+                                    .fully_qualified_table_name
+                                    .clone(),
+                                filter_type: FilterType::Comparison(comp),
+                            });
+                        }
+                    }
+                }
+                Ok(())
+            }
+        }
+    }
+
+    pub(crate) fn get_limit(&self, db_type: &DbType) -> String {
+        match db_type {
+            DbType::Postgres => {
+                if let Some(limit) = self.limit {
+                    format!("LIMIT {limit}")
+                } else {
+                    "".to_string()
+                }
+            }
+        }
     }
 }
 
@@ -95,18 +165,24 @@ impl Filter {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Direction {
+    Forward,
+    Backward,
+}
+
 /// Represents the different types of parameters that can be created.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParamType {
     Filter(FilterType),
     Sort(String, SortOrder),
-    Offset(u64),
     Limit(u64),
+    Pagination(String, Direction),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Sort {
-    pub fully_qualified_table_name: String,
+    pub fully_qualified_table_column: String,
     pub order: SortOrder,
 }
 
@@ -114,6 +190,13 @@ pub struct Sort {
 pub enum SortOrder {
     Asc,
     Desc,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Pagination {
+    pub cursor: String,
+    pub direction: Direction,
+    pub fully_qualified_table_name: String,
 }
 
 impl fmt::Display for SortOrder {
@@ -161,7 +244,7 @@ impl fmt::Display for ParsedValue {
 /// Represents an operation through which records can be included or excluded.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FilterType {
-    IdSelection(ParsedValue),
+    RecordSelection(String, ParsedValue),
     Comparison(Comparison),
     Membership(Membership),
     NullValueCheck(NullValueCheck),
@@ -230,8 +313,8 @@ impl FilterType {
                         format!("{fully_qualified_table}.{field} <= {val}",)
                     }
                 },
-                Self::IdSelection(id) => {
-                    format!("{fully_qualified_table}.id = {id}")
+                Self::RecordSelection(field, val) => {
+                    format!("{fully_qualified_table}.{field} = {val}")
                 }
                 Self::LogicOp(lo) => match lo {
                     LogicOp::And(r1, r2) => format!(
@@ -302,8 +385,8 @@ impl FilterType {
     /// should be given as to if and how it can be represented in the inverse.
     fn invert(&self) -> Result<FilterType, GraphqlError> {
         match self {
-            FilterType::IdSelection(_) => Err(GraphqlError::UnsupportedNegation(
-                "ID selection".to_string(),
+            FilterType::RecordSelection(_, _) => Err(GraphqlError::UnsupportedNegation(
+                "Record selection".to_string(),
             )),
             FilterType::Comparison(c) => match c {
                 Comparison::Between(field, val1, val2) => {
@@ -368,7 +451,7 @@ impl FilterType {
     }
 }
 
-/// Parse an argument key-value pair into a `Filter`.
+/// Parse an argument key-value pair into a `ParamType`.
 ///
 /// `parse_arguments` is the entry point for parsing all API query arguments.
 /// Any new top-level operators should first be added here.
@@ -376,7 +459,7 @@ pub fn parse_argument_into_param(
     entity_type: Option<&String>,
     arg: &str,
     value: Value,
-    schema: &IndexerSchema,
+    schema: &ParsedGraphQLSchema,
 ) -> Result<ParamType, GraphqlError> {
     match arg {
         "filter" => {
@@ -393,19 +476,15 @@ pub fn parse_argument_into_param(
                 Err(GraphqlError::UnsupportedValueType(value.to_string()))
             }
         }
-        "id" => Ok(ParamType::Filter(FilterType::IdSelection(parse_value(
-            &value,
-        )?))),
+        // "id" => Ok(ParamType::Filter(FilterType::IdSelection(parse_value(
+        //     &value,
+        // )?))),
         "order" => {
             if let Value::Object(obj) = value {
                 if let Some((field, sort_order)) = obj.into_iter().next() {
-                    if schema
-                        .parsed()
-                        .graphql_type(entity_type, field.as_str())
-                        .is_some()
-                    {
-                        if let Value::Enum(sort_order) = sort_order {
-                            match sort_order.as_str() {
+                    if schema.graphql_type(entity_type, field.as_str()).is_some() {
+                        if let Value::Enum(sort) = sort_order {
+                            match sort.to_lowercase().as_str() {
                                 "asc" => {
                                     return Ok(ParamType::Sort(
                                         field.to_string(),
@@ -426,23 +505,13 @@ pub fn parse_argument_into_param(
                             }
                         }
                     } else {
-                        return Err(GraphqlError::UnsupportedValueType(
-                            sort_order.to_string(),
+                        return Err(GraphqlError::UnrecognizedField(
+                            entity_type.unwrap_or(&"QueryRoot".to_string()).to_string(),
+                            field.to_string(),
                         ));
                     }
                 }
                 Err(GraphqlError::NoPredicatesInFilter)
-            } else {
-                Err(GraphqlError::UnsupportedValueType(value.to_string()))
-            }
-        }
-        "offset" => {
-            if let Value::Number(number) = value {
-                if let Some(offset) = number.as_u64() {
-                    Ok(ParamType::Offset(offset))
-                } else {
-                    Err(GraphqlError::UnsupportedValueType(number.to_string()))
-                }
             } else {
                 Err(GraphqlError::UnsupportedValueType(value.to_string()))
             }
@@ -458,8 +527,27 @@ pub fn parse_argument_into_param(
                 Err(GraphqlError::UnsupportedValueType(value.to_string()))
             }
         }
-        _ => {
-            if let Some(entity) = entity_type {
+        "before" => {
+            if let Value::String(s) = value {
+                Ok(ParamType::Pagination(s, Direction::Backward))
+            } else {
+                Err(GraphqlError::UnsupportedValueType(value.to_string()))
+            }
+        }
+        "after" => {
+            if let Value::String(s) = value {
+                Ok(ParamType::Pagination(s, Direction::Forward))
+            } else {
+                Err(GraphqlError::UnsupportedValueType(value.to_string()))
+            }
+        }
+        other => {
+            if schema.graphql_type(entity_type, other).is_some() {
+                Ok(ParamType::Filter(FilterType::RecordSelection(
+                    other.to_string(),
+                    parse_value(&value)?,
+                )))
+            } else if let Some(entity) = entity_type {
                 Err(GraphqlError::UnrecognizedArgument(
                     entity.to_string(),
                     arg.to_string(),
@@ -471,7 +559,20 @@ pub fn parse_argument_into_param(
                     arg.to_string(),
                 ))
             }
-        }
+        } // _ => {
+          //     if let Some(entity) = entity_type {
+          //         Err(GraphqlError::UnrecognizedArgument(
+          //             entity.to_string(),
+          //             arg.to_string(),
+          //         ))
+          //     } else {
+          //         // Returned when using an argument at the root of query
+          //         Err(GraphqlError::UnrecognizedArgument(
+          //             "root level object".to_string(),
+          //             arg.to_string(),
+          //         ))
+          //     }
+          // }
     }
 }
 
@@ -481,7 +582,7 @@ pub fn parse_argument_into_param(
 fn parse_filter_object(
     obj: IndexMap<Name, Value>,
     entity_type: Option<&String>,
-    schema: &IndexerSchema,
+    schema: &ParsedGraphQLSchema,
     prior_filter: &mut Option<FilterType>,
 ) -> Result<FilterType, GraphqlError> {
     let mut iter = obj.into_iter();
@@ -510,7 +611,7 @@ fn parse_arg_pred_pair(
     key: &str,
     predicate: Value,
     entity_type: Option<&String>,
-    schema: &IndexerSchema,
+    schema: &ParsedGraphQLSchema,
     prior_filter: &mut Option<FilterType>,
     top_level_arg_value_iter: &mut impl Iterator<Item = (Name, Value)>,
 ) -> Result<FilterType, GraphqlError> {
@@ -520,11 +621,7 @@ fn parse_arg_pred_pair(
                 let mut column_list = vec![];
                 for element in elements {
                     if let Value::Enum(column) = element {
-                        if schema
-                            .parsed()
-                            .graphql_type(entity_type, column.as_str())
-                            .is_some()
-                        {
+                        if schema.graphql_type(entity_type, column.as_str()).is_some() {
                             column_list.push(column.to_string())
                         } else if let Some(entity) = entity_type {
                             return Err(GraphqlError::UnrecognizedField(
@@ -570,7 +667,7 @@ fn parse_arg_pred_pair(
             }
         }
         other => {
-            if schema.parsed().graphql_type(entity_type, other).is_some() {
+            if schema.graphql_type(entity_type, other).is_some() {
                 if let Value::Object(inner_obj) = predicate {
                     for (key, predicate) in inner_obj.iter() {
                         match key.as_str() {
@@ -668,7 +765,7 @@ fn parse_binary_logical_operator(
     key: &str,
     predicate: Value,
     entity_type: Option<&String>,
-    schema: &IndexerSchema,
+    schema: &ParsedGraphQLSchema,
     top_level_arg_value_iter: &mut impl Iterator<Item = (Name, Value)>,
     prior_filter: &mut Option<FilterType>,
 ) -> Result<FilterType, GraphqlError> {

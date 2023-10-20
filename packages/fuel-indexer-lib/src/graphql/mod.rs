@@ -9,8 +9,9 @@ pub use validator::GraphQLSchemaValidator;
 
 use async_graphql_parser::{
     types::{
-        BaseType, ConstDirective, FieldDefinition, ObjectType, ServiceDocument, Type,
-        TypeDefinition, TypeKind, TypeSystemDefinition,
+        BaseType, ConstDirective, EnumType, EnumValueDefinition, FieldDefinition,
+        InputObjectType, InputValueDefinition, ObjectType, SchemaDefinition,
+        ServiceDocument, Type, TypeDefinition, TypeKind, TypeSystemDefinition,
     },
     Pos, Positioned,
 };
@@ -18,6 +19,26 @@ use fuel_indexer_types::graphql::IndexMetadata;
 use sha2::{Digest, Sha256};
 use std::collections::{HashMap, HashSet};
 use types::IdCol;
+
+lazy_static::lazy_static!(
+    static ref SORTABLE_SCALAR_TYPES: HashSet<&'static str> = HashSet::from([
+        "Address",
+        "AssetId",
+        "ContractId",
+        "I128",
+        "I16",
+        "I32",
+        "I64",
+        "ID",
+        "Identity",
+        "String",
+        "U128",
+        "U16",
+        "U32",
+        "U64",
+        "UID",
+    ]);
+);
 
 /// Maximum amount of foreign key list fields that can exist on a `TypeDefinition`
 pub const MAX_FOREIGN_KEY_LIST_FIELDS: usize = 10;
@@ -39,6 +60,297 @@ fn inject_native_entities_into_schema(schema: &str) -> String {
     }
 }
 
+pub(crate) fn inject_query_type(
+    mut ast: ServiceDocument,
+    input_obj_type_def_map: HashMap<
+        String,
+        (Option<TypeSystemDefinition>, Option<TypeSystemDefinition>),
+    >,
+) -> ServiceDocument {
+    let dummy_position = Pos {
+        line: usize::MAX,
+        column: usize::MAX,
+    };
+
+    let mut fields: Vec<Positioned<FieldDefinition>> = vec![];
+    for ty in ast.definitions.iter() {
+        if let TypeSystemDefinition::Type(t) = ty {
+            if t.node.name.node == "IndexMetadataEntity" {
+                continue;
+            }
+            if let TypeKind::Object(obj) = &t.node.kind {
+                if check_for_directive(&t.node.directives, "queryable") {
+                    if !check_for_directive(&t.node.directives, "internal") {
+                        // We are now parsing a user-generated entity.
+                        let selector = obj.fields.iter().find(|f| {
+                            check_for_directive(&f.node.directives, "search")
+                                && check_for_directive(&f.node.directives, "unique")
+                        });
+                        if let Some(selector_field) = selector {
+                            let field = Positioned::new(
+                                FieldDefinition {
+                                    description: None,
+                                    name: Positioned::new(
+                                        Name::new(t.node.name.node.to_lowercase()),
+                                        dummy_position,
+                                    ),
+                                    arguments: vec![Positioned::new(
+                                        InputValueDefinition {
+                                            description: None,
+                                            name: selector_field.node.name.clone(),
+                                            ty: selector_field.node.ty.clone(),
+                                            default_value: None,
+                                            directives: vec![],
+                                        },
+                                        dummy_position,
+                                    )],
+                                    ty: Positioned::new(
+                                        Type {
+                                            base: BaseType::Named(
+                                                t.node.name.node.clone(),
+                                            ),
+                                            nullable: true,
+                                        },
+                                        dummy_position,
+                                    ),
+                                    directives: vec![],
+                                },
+                                dummy_position,
+                            );
+                            fields.push(field);
+                        } else {
+                            // change signature to return error
+                        }
+                    } else if check_for_directive(&t.node.directives, "internal")
+                        && check_for_directive(&t.node.directives, "connection")
+                    {
+                        let mut field = Positioned::new(
+                            FieldDefinition {
+                                description: None,
+                                name: Positioned::new(
+                                    Name::new(format!(
+                                        "{}s",
+                                        t.node
+                                            .name
+                                            .node
+                                            .replace("Connection", "")
+                                            .to_lowercase()
+                                    )),
+                                    dummy_position,
+                                ),
+                                arguments: vec![
+                                    Positioned::new(
+                                        InputValueDefinition {
+                                            description: None,
+                                            name: Positioned::new(
+                                                Name::new("first"),
+                                                dummy_position,
+                                            ),
+                                            ty: Positioned::new(
+                                                Type {
+                                                    base: BaseType::Named(Name::new(
+                                                        "U64",
+                                                    )),
+                                                    nullable: true,
+                                                },
+                                                dummy_position,
+                                            ),
+                                            default_value: None,
+                                            directives: vec![],
+                                        },
+                                        dummy_position,
+                                    ),
+                                    Positioned::new(
+                                        InputValueDefinition {
+                                            description: None,
+                                            name: Positioned::new(
+                                                Name::new("after"),
+                                                dummy_position,
+                                            ),
+                                            ty: Positioned::new(
+                                                Type {
+                                                    base: BaseType::Named(Name::new(
+                                                        "String",
+                                                    )),
+                                                    nullable: true,
+                                                },
+                                                dummy_position,
+                                            ),
+                                            default_value: None,
+                                            directives: vec![],
+                                        },
+                                        dummy_position,
+                                    ),
+                                    Positioned::new(
+                                        InputValueDefinition {
+                                            description: None,
+                                            name: Positioned::new(
+                                                Name::new("last"),
+                                                dummy_position,
+                                            ),
+                                            ty: Positioned::new(
+                                                Type {
+                                                    base: BaseType::Named(Name::new(
+                                                        "U64",
+                                                    )),
+                                                    nullable: true,
+                                                },
+                                                dummy_position,
+                                            ),
+                                            default_value: None,
+                                            directives: vec![],
+                                        },
+                                        dummy_position,
+                                    ),
+                                    Positioned::new(
+                                        InputValueDefinition {
+                                            description: None,
+                                            name: Positioned::new(
+                                                Name::new("before"),
+                                                dummy_position,
+                                            ),
+                                            ty: Positioned::new(
+                                                Type {
+                                                    base: BaseType::Named(Name::new(
+                                                        "String",
+                                                    )),
+                                                    nullable: true,
+                                                },
+                                                dummy_position,
+                                            ),
+                                            default_value: None,
+                                            directives: vec![],
+                                        },
+                                        dummy_position,
+                                    ),
+                                ],
+                                ty: Positioned::new(
+                                    Type {
+                                        base: BaseType::Named(t.node.name.node.clone()),
+                                        nullable: false,
+                                    },
+                                    dummy_position,
+                                ),
+                                directives: vec![],
+                            },
+                            dummy_position,
+                        );
+
+                        if let Some((sort_input_obj, filter_input_obj)) =
+                            input_obj_type_def_map
+                                .get(&t.node.name.node.replace("Connection", ""))
+                        {
+                            if sort_input_obj.is_some() {
+                                field.node.arguments.push(Positioned::new(
+                                    InputValueDefinition {
+                                        description: None,
+                                        name: Positioned::new(
+                                            Name::new("order"),
+                                            dummy_position,
+                                        ),
+                                        ty: Positioned::new(
+                                            Type {
+                                                base: BaseType::Named(Name::new(
+                                                    format!(
+                                                        "{}OrderInput",
+                                                        t.node
+                                                            .name
+                                                            .node
+                                                            .replace("Connection", "")
+                                                    ),
+                                                )),
+                                                nullable: false,
+                                            },
+                                            dummy_position,
+                                        ),
+                                        default_value: None,
+                                        directives: vec![],
+                                    },
+                                    dummy_position,
+                                ))
+                            }
+
+                            if filter_input_obj.is_some() {
+                                field.node.arguments.push(Positioned::new(
+                                    InputValueDefinition {
+                                        description: None,
+                                        name: Positioned::new(
+                                            Name::new("filter"),
+                                            dummy_position,
+                                        ),
+                                        ty: Positioned::new(
+                                            Type {
+                                                base: BaseType::Named(Name::new(
+                                                    format!(
+                                                        "{}FilterInput",
+                                                        t.node
+                                                            .name
+                                                            .node
+                                                            .replace("Connection", "")
+                                                    ),
+                                                )),
+                                                nullable: true,
+                                            },
+                                            dummy_position,
+                                        ),
+                                        default_value: None,
+                                        directives: vec![],
+                                    },
+                                    dummy_position,
+                                ))
+                            }
+                        }
+
+                        fields.push(field);
+                    }
+                }
+            }
+        }
+    }
+
+    let query_type_def = TypeSystemDefinition::Type(Positioned::new(
+        TypeDefinition {
+            extend: false,
+            description: None,
+            name: Positioned::new(Name::new("Query"), dummy_position),
+            directives: vec![Positioned::new(
+                ConstDirective {
+                    name: Positioned::new(Name::new("internal"), dummy_position),
+                    arguments: vec![],
+                },
+                dummy_position,
+            )],
+            kind: TypeKind::Object(ObjectType {
+                implements: vec![],
+                fields,
+            }),
+        },
+        dummy_position,
+    ));
+
+    let schema_def = TypeSystemDefinition::Schema(Positioned::new(
+        SchemaDefinition {
+            extend: false,
+            directives: vec![Positioned::new(
+                ConstDirective {
+                    name: Positioned::new(Name::new("internal"), dummy_position),
+                    arguments: vec![],
+                },
+                dummy_position,
+            )],
+            query: Some(Positioned::new(Name::new("Query"), dummy_position)),
+            mutation: None,
+            subscription: None,
+        },
+        dummy_position,
+    ));
+
+    ast.definitions.push(query_type_def);
+    ast.definitions.push(schema_def);
+
+    ast
+}
+
 /// Inject internal types into the schema. In order to support popular
 /// functionality (e.g. cursor-based pagination) and minimize the amount
 /// of types that a user needs to create, internal types are injected into
@@ -46,105 +358,511 @@ fn inject_native_entities_into_schema(schema: &str) -> String {
 /// or entity structs in handler functions.
 pub(crate) fn inject_internal_types_into_document(
     mut ast: ServiceDocument,
-    base_type_names: &HashSet<String>,
 ) -> ServiceDocument {
+    ast.definitions.push(create_sort_order_enum());
+    ast.definitions.push(create_comparison_obj_for_filtering());
+
+    let input_obj_type_def_map = create_input_object_types(&ast);
+    for (_, (sort_input_obj, filter_input_obj)) in input_obj_type_def_map.iter() {
+        if let Some(s_obj) = sort_input_obj {
+            ast.definitions.push(s_obj.clone());
+        }
+        if let Some(f_obj) = filter_input_obj {
+            ast.definitions.push(f_obj.clone());
+        }
+    }
+
+    ast.definitions.append(&mut create_pagination_types(&ast));
+
+    ast = inject_query_type(ast, input_obj_type_def_map);
+
+    ast
+}
+
+fn create_input_object_types(
+    ast: &ServiceDocument,
+) -> HashMap<String, (Option<TypeSystemDefinition>, Option<TypeSystemDefinition>)> {
+    let mut input_obj_type_def_map: HashMap<
+        String,
+        (Option<TypeSystemDefinition>, Option<TypeSystemDefinition>),
+    > = HashMap::new();
+
+    // Iterate through all objects in document and create special
+    // pagination types for each object with a list field.
+    for ty in ast.definitions.iter() {
+        if let TypeSystemDefinition::Type(t) = ty {
+            if t.node.name.node == "IndexMetadataEntity" {
+                continue;
+            }
+
+            if let TypeKind::Object(obj) = &t.node.kind {
+                input_obj_type_def_map.insert(
+                    t.node.name.node.to_string(),
+                    (
+                        create_sort_order_input_obj(obj, &t.node.name.node),
+                        create_filter_input_obj_for_entity(obj, &t.node.name.node),
+                    ),
+                );
+            }
+        }
+    }
+
+    input_obj_type_def_map
+}
+
+fn create_pagination_types(ast: &ServiceDocument) -> Vec<TypeSystemDefinition> {
     let mut pagination_types: Vec<TypeSystemDefinition> = Vec::new();
     pagination_types.push(create_page_info_type_def());
 
     // Iterate through all objects in document and create special
     // pagination types for each object with a list field.
-    for ty in ast.definitions.iter_mut() {
+    for ty in ast.definitions.iter() {
         if let TypeSystemDefinition::Type(t) = ty {
-            if let TypeKind::Object(obj) = &mut t.node.kind {
-                let mut internal_fields: Vec<Positioned<FieldDefinition>> = Vec::new();
+            if t.node.name.node == "IndexMetadataEntity" {
+                continue;
+            }
 
-                for f in &obj.fields {
-                    if let BaseType::List(inner_type) = &f.node.ty.node.base {
-                        if let BaseType::Named(name) = &inner_type.base {
-                            if base_type_names.contains(&name.to_string()) {
-                                continue;
-                            }
-                            let edge_type = create_edge_type_for_list_field(f);
-                            pagination_types.push(edge_type);
+            if matches!(&t.node.kind, TypeKind::Object(_)) {
+                let edge_type = create_edge_type(t);
+                pagination_types.push(edge_type);
 
-                            let connection_type =
-                                create_connection_type_def_for_list_entity(name);
-                            pagination_types.push(connection_type);
-
-                            let connection_field = Positioned::position_node(
-                                f,
-                                FieldDefinition {
-                                    description: None,
-                                    name: Positioned::position_node(
-                                        f,
-                                        Name::new(format!(
-                                            "{}Connection",
-                                            f.node.name.node
-                                        )),
-                                    ),
-                                    arguments: vec![],
-                                    ty: Positioned::position_node(
-                                        f,
-                                        Type {
-                                            base: BaseType::Named(Name::new(format!(
-                                                "{name}Connection"
-                                            ))),
-                                            nullable: false,
-                                        },
-                                    ),
-                                    directives: vec![Positioned::position_node(
-                                        f,
-                                        ConstDirective {
-                                            name: Positioned::position_node(
-                                                f,
-                                                Name::new("internal"),
-                                            ),
-                                            arguments: vec![],
-                                        },
-                                    )],
-                                },
-                            );
-                            internal_fields.push(connection_field);
-                        }
-                    }
-                }
-
-                obj.fields.append(&mut internal_fields);
+                let connection_type = create_connection_type_def(
+                    &t.node.name.node,
+                    check_for_directive(&t.node.directives, "queryable"),
+                );
+                pagination_types.push(connection_type);
             }
         }
     }
 
-    ast.definitions.append(&mut pagination_types);
-
-    ast
+    pagination_types
 }
 
-fn create_edge_type_for_list_field(
-    list_field: &Positioned<FieldDefinition>,
-) -> TypeSystemDefinition {
-    let (base_type, name) = if let BaseType::List(t) = &list_field.node.ty.node.base {
-        if let BaseType::Named(n) = &t.base {
-            (t, n)
-        } else {
-            unreachable!("Edge type creation should not occur for non-list fields")
-        }
-    } else {
-        unreachable!("Edge type creation should not occur for non-list fields")
+fn create_sort_order_enum() -> TypeSystemDefinition {
+    let dummy_position = Pos {
+        line: usize::MAX,
+        column: usize::MAX,
+    };
+    let sort_enum_type = EnumType {
+        values: vec![
+            Positioned::new(
+                EnumValueDefinition {
+                    description: None,
+                    value: Positioned::new(Name::new("ASC"), dummy_position),
+                    directives: vec![],
+                },
+                dummy_position,
+            ),
+            Positioned::new(
+                EnumValueDefinition {
+                    description: None,
+                    value: Positioned::new(Name::new("DESC"), dummy_position),
+                    directives: vec![],
+                },
+                dummy_position,
+            ),
+        ],
     };
 
+    TypeSystemDefinition::Type(Positioned::new(
+        TypeDefinition {
+            extend: false,
+            description: None,
+            name: Positioned::new(Name::new("SortOrder"), dummy_position),
+            directives: vec![Positioned::new(
+                ConstDirective {
+                    name: Positioned::new(Name::new("internal"), dummy_position),
+                    arguments: vec![],
+                },
+                dummy_position,
+            )],
+            kind: TypeKind::Enum(sort_enum_type),
+        },
+        dummy_position,
+    ))
+}
+
+fn create_sort_order_input_obj(
+    obj: &ObjectType,
+    entity_name: &Name,
+) -> Option<TypeSystemDefinition> {
+    let dummy_position = Pos {
+        line: usize::MAX,
+        column: usize::MAX,
+    };
+    let sortable_fields = obj
+        .fields
+        .iter()
+        .filter(|f| {
+            if let BaseType::Named(base_type) = &f.node.ty.node.base {
+                SORTABLE_SCALAR_TYPES.contains(base_type.as_str())
+            } else {
+                false
+            }
+        })
+        .collect::<Vec<&Positioned<FieldDefinition>>>();
+
+    if sortable_fields.is_empty() {
+        return None;
+    }
+
+    let input_val_defs = sortable_fields
+        .into_iter()
+        .map(|f| {
+            Positioned::new(
+                InputValueDefinition {
+                    description: None,
+                    name: f.node.name.clone(),
+                    ty: Positioned::new(
+                        Type {
+                            base: BaseType::Named(Name::new("SortOrder")),
+                            nullable: true,
+                        },
+                        dummy_position,
+                    ),
+                    default_value: None,
+                    directives: vec![Positioned::new(
+                        ConstDirective {
+                            name: Positioned::new(Name::new("internal"), dummy_position),
+                            arguments: vec![],
+                        },
+                        dummy_position,
+                    )],
+                },
+                dummy_position,
+            )
+        })
+        .collect::<Vec<Positioned<InputValueDefinition>>>();
+
+    let sort_input_obj = InputObjectType {
+        fields: input_val_defs,
+    };
+
+    Some(TypeSystemDefinition::Type(Positioned::new(
+        TypeDefinition {
+            extend: false,
+            description: None,
+            name: Positioned::new(
+                Name::new(format!("{}OrderInput", entity_name)),
+                dummy_position,
+            ),
+            directives: vec![Positioned::new(
+                ConstDirective {
+                    name: Positioned::new(Name::new("internal"), dummy_position),
+                    arguments: vec![],
+                },
+                dummy_position,
+            )],
+            kind: TypeKind::InputObject(sort_input_obj),
+        },
+        dummy_position,
+    )))
+}
+
+fn create_comparison_obj_for_filtering() -> TypeSystemDefinition {
+    let dummy_position = Pos {
+        line: usize::MAX,
+        column: usize::MAX,
+    };
+
+    let comparison_obj = InputObjectType {
+        fields: vec![
+            Positioned::new(
+                InputValueDefinition {
+                    description: None,
+                    name: Positioned::new(Name::new("equals"), dummy_position),
+                    ty: Positioned::new(
+                        Type {
+                            base: BaseType::Named(Name::new("String")),
+                            nullable: true,
+                        },
+                        dummy_position,
+                    ),
+                    default_value: None,
+                    directives: vec![Positioned::new(
+                        ConstDirective {
+                            name: Positioned::new(Name::new("internal"), dummy_position),
+                            arguments: vec![],
+                        },
+                        dummy_position,
+                    )],
+                },
+                dummy_position,
+            ),
+            Positioned::new(
+                InputValueDefinition {
+                    description: None,
+                    name: Positioned::new(Name::new("gt"), dummy_position),
+                    ty: Positioned::new(
+                        Type {
+                            base: BaseType::Named(Name::new("String")),
+                            nullable: true,
+                        },
+                        dummy_position,
+                    ),
+                    default_value: None,
+                    directives: vec![Positioned::new(
+                        ConstDirective {
+                            name: Positioned::new(Name::new("internal"), dummy_position),
+                            arguments: vec![],
+                        },
+                        dummy_position,
+                    )],
+                },
+                dummy_position,
+            ),
+            Positioned::new(
+                InputValueDefinition {
+                    description: None,
+                    name: Positioned::new(Name::new("gte"), dummy_position),
+                    ty: Positioned::new(
+                        Type {
+                            base: BaseType::Named(Name::new("String")),
+                            nullable: true,
+                        },
+                        dummy_position,
+                    ),
+                    default_value: None,
+                    directives: vec![Positioned::new(
+                        ConstDirective {
+                            name: Positioned::new(Name::new("internal"), dummy_position),
+                            arguments: vec![],
+                        },
+                        dummy_position,
+                    )],
+                },
+                dummy_position,
+            ),
+            Positioned::new(
+                InputValueDefinition {
+                    description: None,
+                    name: Positioned::new(Name::new("lt"), dummy_position),
+                    ty: Positioned::new(
+                        Type {
+                            base: BaseType::Named(Name::new("String")),
+                            nullable: true,
+                        },
+                        dummy_position,
+                    ),
+                    default_value: None,
+                    directives: vec![Positioned::new(
+                        ConstDirective {
+                            name: Positioned::new(Name::new("internal"), dummy_position),
+                            arguments: vec![],
+                        },
+                        dummy_position,
+                    )],
+                },
+                dummy_position,
+            ),
+            Positioned::new(
+                InputValueDefinition {
+                    description: None,
+                    name: Positioned::new(Name::new("lte"), dummy_position),
+                    ty: Positioned::new(
+                        Type {
+                            base: BaseType::Named(Name::new("String")),
+                            nullable: true,
+                        },
+                        dummy_position,
+                    ),
+                    default_value: None,
+                    directives: vec![Positioned::new(
+                        ConstDirective {
+                            name: Positioned::new(Name::new("internal"), dummy_position),
+                            arguments: vec![],
+                        },
+                        dummy_position,
+                    )],
+                },
+                dummy_position,
+            ),
+        ],
+    };
+
+    TypeSystemDefinition::Type(Positioned::new(
+        TypeDefinition {
+            extend: false,
+            description: None,
+            name: Positioned::new(Name::new("ComparisonInput"), dummy_position),
+            directives: vec![Positioned::new(
+                ConstDirective {
+                    name: Positioned::new(Name::new("internal"), dummy_position),
+                    arguments: vec![],
+                },
+                dummy_position,
+            )],
+            kind: TypeKind::InputObject(comparison_obj),
+        },
+        dummy_position,
+    ))
+}
+
+fn create_filter_input_obj_for_entity(
+    obj: &ObjectType,
+    entity_name: &Name,
+) -> Option<TypeSystemDefinition> {
+    let dummy_position = Pos {
+        line: usize::MAX,
+        column: usize::MAX,
+    };
+
+    let filterable_fields = obj
+        .fields
+        .iter()
+        .filter(|f| check_for_directive(&f.node.directives, "filterable"))
+        .collect::<Vec<&Positioned<FieldDefinition>>>();
+
+    if filterable_fields.is_empty() {
+        return None;
+    }
+
+    let mut input_val_defs = filterable_fields
+        .into_iter()
+        .map(|f| {
+            Positioned::new(
+                InputValueDefinition {
+                    description: None,
+                    name: f.node.name.clone(),
+                    ty: Positioned::new(
+                        Type {
+                            base: BaseType::Named(Name::new("ComparisonInput")),
+                            nullable: true,
+                        },
+                        dummy_position,
+                    ),
+                    default_value: None,
+                    directives: vec![Positioned::new(
+                        ConstDirective {
+                            name: Positioned::new(Name::new("internal"), dummy_position),
+                            arguments: vec![],
+                        },
+                        dummy_position,
+                    )],
+                },
+                dummy_position,
+            )
+        })
+        .collect::<Vec<Positioned<InputValueDefinition>>>();
+
+    // Allow for combinations of filters
+    input_val_defs.push(Positioned::new(
+        InputValueDefinition {
+            description: None,
+            name: Positioned::new(Name::new("and"), dummy_position),
+            ty: Positioned::new(
+                Type {
+                    base: BaseType::Named(Name::new(format!(
+                        "{}FilterInput",
+                        entity_name
+                    ))),
+                    nullable: true,
+                },
+                dummy_position,
+            ),
+            default_value: None,
+            directives: vec![Positioned::new(
+                ConstDirective {
+                    name: Positioned::new(Name::new("internal"), dummy_position),
+                    arguments: vec![],
+                },
+                dummy_position,
+            )],
+        },
+        dummy_position,
+    ));
+
+    input_val_defs.push(Positioned::new(
+        InputValueDefinition {
+            description: None,
+            name: Positioned::new(Name::new("or"), dummy_position),
+            ty: Positioned::new(
+                Type {
+                    base: BaseType::Named(Name::new(format!(
+                        "{}FilterInput",
+                        entity_name
+                    ))),
+                    nullable: true,
+                },
+                dummy_position,
+            ),
+            default_value: None,
+            directives: vec![Positioned::new(
+                ConstDirective {
+                    name: Positioned::new(Name::new("internal"), dummy_position),
+                    arguments: vec![],
+                },
+                dummy_position,
+            )],
+        },
+        dummy_position,
+    ));
+
+    input_val_defs.push(Positioned::new(
+        InputValueDefinition {
+            description: None,
+            name: Positioned::new(Name::new("not"), dummy_position),
+            ty: Positioned::new(
+                Type {
+                    base: BaseType::Named(Name::new(format!(
+                        "{}FilterInput",
+                        entity_name
+                    ))),
+                    nullable: true,
+                },
+                dummy_position,
+            ),
+            default_value: None,
+            directives: vec![Positioned::new(
+                ConstDirective {
+                    name: Positioned::new(Name::new("internal"), dummy_position),
+                    arguments: vec![],
+                },
+                dummy_position,
+            )],
+        },
+        dummy_position,
+    ));
+
+    let filter_input_obj = InputObjectType {
+        fields: input_val_defs,
+    };
+
+    Some(TypeSystemDefinition::Type(Positioned::new(
+        TypeDefinition {
+            extend: false,
+            description: None,
+            name: Positioned::new(
+                Name::new(format!("{}FilterInput", entity_name)),
+                dummy_position,
+            ),
+            directives: vec![Positioned::new(
+                ConstDirective {
+                    name: Positioned::new(Name::new("internal"), dummy_position),
+                    arguments: vec![],
+                },
+                dummy_position,
+            )],
+            kind: TypeKind::InputObject(filter_input_obj),
+        },
+        dummy_position,
+    )))
+}
+
+fn create_edge_type(entity_def: &Positioned<TypeDefinition>) -> TypeSystemDefinition {
     let edge_obj_type = ObjectType {
         implements: vec![],
         fields: vec![
             Positioned::position_node(
-                list_field,
+                entity_def,
                 FieldDefinition {
                     description: None,
-                    name: Positioned::position_node(list_field, Name::new("node")),
+                    name: Positioned::position_node(entity_def, Name::new("node")),
                     arguments: vec![],
                     ty: Positioned::position_node(
-                        list_field,
+                        entity_def,
                         Type {
-                            base: base_type.base.clone(),
+                            base: BaseType::Named(entity_def.node.name.node.clone()),
                             nullable: false,
                         },
                     ),
@@ -152,13 +870,13 @@ fn create_edge_type_for_list_field(
                 },
             ),
             Positioned::position_node(
-                list_field,
+                entity_def,
                 FieldDefinition {
                     description: None,
-                    name: Positioned::position_node(list_field, Name::new("cursor")),
+                    name: Positioned::position_node(entity_def, Name::new("cursor")),
                     arguments: vec![],
                     ty: Positioned::position_node(
-                        list_field,
+                        entity_def,
                         Type {
                             base: BaseType::Named(Name::new("String")),
                             nullable: false,
@@ -171,28 +889,43 @@ fn create_edge_type_for_list_field(
     };
 
     TypeSystemDefinition::Type(Positioned::position_node(
-        list_field,
+        entity_def,
         TypeDefinition {
             extend: false,
             description: None,
             name: Positioned::position_node(
-                list_field,
-                Name::new(format!("{}Edge", name)),
+                entity_def,
+                Name::new(format!("{}Edge", entity_def.node.name.node.clone())),
             ),
-            directives: vec![Positioned::position_node(
-                list_field,
-                ConstDirective {
-                    name: Positioned::position_node(list_field, Name::new("internal")),
-                    arguments: vec![],
-                },
-            )],
+            directives: vec![
+                Positioned::position_node(
+                    entity_def,
+                    ConstDirective {
+                        name: Positioned::position_node(
+                            entity_def,
+                            Name::new("internal"),
+                        ),
+                        arguments: vec![],
+                    },
+                ),
+                Positioned::position_node(
+                    entity_def,
+                    ConstDirective {
+                        name: Positioned::position_node(entity_def, Name::new("edge")),
+                        arguments: vec![],
+                    },
+                ),
+            ],
             kind: TypeKind::Object(edge_obj_type),
         },
     ))
 }
 
-/// Generate connection type defintion for a list field on an entity.
-fn create_connection_type_def_for_list_entity(name: &Name) -> TypeSystemDefinition {
+/// Generate connection type defintion for an entity.
+fn create_connection_type_def(
+    name: &Name,
+    base_entity_queryable_at_root: bool,
+) -> TypeSystemDefinition {
     let dummy_position = Pos {
         line: usize::MAX,
         column: usize::MAX,
@@ -261,6 +994,33 @@ fn create_connection_type_def_for_list_entity(name: &Name) -> TypeSystemDefiniti
         ],
     };
 
+    let mut directives = vec![
+        Positioned::new(
+            ConstDirective {
+                name: Positioned::new(Name::new("internal"), dummy_position),
+                arguments: vec![],
+            },
+            dummy_position,
+        ),
+        Positioned::new(
+            ConstDirective {
+                name: Positioned::new(Name::new("connection"), dummy_position),
+                arguments: vec![],
+            },
+            dummy_position,
+        ),
+    ];
+
+    if base_entity_queryable_at_root {
+        directives.push(Positioned::new(
+            ConstDirective {
+                name: Positioned::new(Name::new("queryable"), dummy_position),
+                arguments: vec![],
+            },
+            dummy_position,
+        ))
+    }
+
     TypeSystemDefinition::Type(Positioned::new(
         TypeDefinition {
             extend: false,
@@ -269,13 +1029,7 @@ fn create_connection_type_def_for_list_entity(name: &Name) -> TypeSystemDefiniti
                 Name::new(format!("{}Connection", name.clone())),
                 dummy_position,
             ),
-            directives: vec![Positioned::new(
-                ConstDirective {
-                    name: Positioned::new(Name::new("internal"), dummy_position),
-                    arguments: vec![],
-                },
-                dummy_position,
-            )],
+            directives,
             kind: TypeKind::Object(obj_type),
         },
         dummy_position,

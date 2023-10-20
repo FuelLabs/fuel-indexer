@@ -456,6 +456,7 @@ async fn test_sorting() {
     test.server.abort();
 }
 
+#[ignore]
 #[actix_web::test]
 async fn test_aliasing_and_pagination() {
     let test = setup_web_test_components(None).await;

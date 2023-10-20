@@ -15,13 +15,13 @@ use crate::{
 use async_graphql_parser::{
     parse_schema,
     types::{
-        EnumType, FieldDefinition, ObjectType, ServiceDocument, TypeDefinition, TypeKind,
-        TypeSystemDefinition, UnionType,
+        BaseType, EnumType, FieldDefinition, InputObjectType, ObjectType,
+        ServiceDocument, TypeDefinition, TypeKind, TypeSystemDefinition, UnionType,
     },
 };
 use async_graphql_value::ConstValue;
 
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use thiserror::Error;
 
 use super::check_for_directive;
@@ -176,6 +176,14 @@ pub fn build_schema_types_set(
 #[derive(Debug, Clone)]
 pub struct OrderedField(pub FieldDefinition, pub usize);
 
+#[derive(Debug, Clone)]
+pub enum InternalType {
+    Connection,
+    Edge,
+    PageInfo,
+    InputObject,
+}
+
 /// A wrapper object used to encapsulate a lot of the boilerplate logic related
 /// to parsing schema, creating mappings of types, fields, objects, etc.
 ///
@@ -265,7 +273,20 @@ pub struct ParsedGraphQLSchema {
 
     /// Internal types. These types should not be added to a
     /// database in any way; they are used to augment repsonses for introspection queries.
-    internal_types: HashSet<String>,
+    internal_types: HashMap<String, InternalType>,
+
+    /// A mapping of pagination types to the underlying types that they should be used with.
+    pagination_type_map: HashMap<String, String>,
+
+    /// A mapping of query names to their field definitions.
+    queries: HashMap<String, FieldDefinition>,
+
+    /// Input objects.
+    input_objs: HashMap<String, InputObjectType>,
+
+    enum_member_map: HashMap<String, BTreeSet<String>>,
+
+    union_member_map: HashMap<String, BTreeSet<String>>,
 }
 
 impl Default for ParsedGraphQLSchema {
@@ -293,7 +314,12 @@ impl Default for ParsedGraphQLSchema {
             join_table_meta: HashMap::new(),
             object_ordered_fields: HashMap::new(),
             version: String::default(),
-            internal_types: HashSet::new(),
+            internal_types: HashMap::new(),
+            pagination_type_map: HashMap::new(),
+            queries: HashMap::new(),
+            input_objs: HashMap::new(),
+            enum_member_map: HashMap::new(),
+            union_member_map: HashMap::new(),
         }
     }
 }
@@ -318,8 +344,7 @@ impl ParsedGraphQLSchema {
             // Parse _everything_ in the GraphQL schema
             let mut ast = parse_schema(schema.schema())?;
 
-            ast = inject_internal_types_into_document(ast, &base_type_names);
-
+            ast = inject_internal_types_into_document(ast);
             decoder.decode_service_document(ast)?;
 
             decoder.parsed_graphql_schema.namespace = namespace.to_string();
@@ -389,6 +414,30 @@ impl ParsedGraphQLSchema {
 
     pub fn object_ordered_fields(&self) -> &HashMap<String, Vec<OrderedField>> {
         &self.object_ordered_fields
+    }
+
+    pub fn internal_types(&self) -> &HashMap<String, InternalType> {
+        &self.internal_types
+    }
+
+    pub fn pagination_types(&self) -> &HashMap<String, String> {
+        &self.pagination_type_map
+    }
+
+    pub fn queries(&self) -> &HashMap<String, FieldDefinition> {
+        &self.queries
+    }
+
+    pub fn input_objs(&self) -> &HashMap<String, InputObjectType> {
+        &self.input_objs
+    }
+
+    pub fn enum_member_map(&self) -> &HashMap<String, BTreeSet<String>> {
+        &self.enum_member_map
+    }
+
+    pub fn union_member_map(&self) -> &HashMap<String, BTreeSet<String>> {
+        &self.union_member_map
     }
 
     /// Return the base scalar type for a given `FieldDefinition`.
@@ -479,7 +528,7 @@ impl ParsedGraphQLSchema {
     }
 
     pub fn is_internal_typedef(&self, name: &str) -> bool {
-        self.internal_types.contains(name)
+        self.internal_types.contains_key(name)
     }
 
     /// Return the GraphQL type for a given `FieldDefinition` name.
@@ -527,6 +576,19 @@ impl ParsedGraphQLSchema {
     pub fn version(&self) -> &str {
         &self.version
     }
+
+    /// Return the response type of a generated query.
+    pub fn query_response_type(&self, query: &str) -> Option<String> {
+        if let Some(field_def) = self.queries.get(query) {
+            if let BaseType::Named(ty) = &field_def.ty.node.base {
+                Some(ty.to_string())
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    }
 }
 
 #[derive(Default)]
@@ -570,10 +632,19 @@ impl SchemaDecoder {
 
             match &t.node.kind {
                 TypeKind::Object(o) => self.decode_object_type(name, node, o),
-                TypeKind::Enum(e) => self.decode_enum_type(name, e),
+                TypeKind::Enum(e) => self.decode_enum_type(name, node, e),
                 TypeKind::Union(u) => self.decode_union_type(name, node, u),
                 TypeKind::Scalar => {
                     self.parsed_graphql_schema.scalar_names.insert(name.clone());
+                }
+                TypeKind::InputObject(io) => {
+                    self.parsed_graphql_schema
+                        .internal_types
+                        .insert(name.clone(), InternalType::InputObject);
+
+                    self.parsed_graphql_schema
+                        .input_objs
+                        .insert(name, io.clone());
                 }
                 _ => {
                     return Err(ParsedError::UnsupportedTypeKind);
@@ -584,23 +655,33 @@ impl SchemaDecoder {
         Ok(())
     }
 
-    fn decode_enum_type(&mut self, name: String, e: &EnumType) {
-        self.parsed_graphql_schema
-            .virtual_type_names
-            .insert(name.clone());
-        self.parsed_graphql_schema.enum_names.insert(name.clone());
-
+    fn decode_enum_type(&mut self, name: String, node: TypeDefinition, e: &EnumType) {
         for val in &e.values {
-            let val_name = &val.node.value.to_string();
-            let val_id = format!("{}.{val_name}", name.clone());
             self.parsed_graphql_schema
-                .object_field_mappings
+                .enum_member_map
                 .entry(name.clone())
                 .or_default()
-                .insert(val_name.to_string(), name.clone());
+                .insert(val.node.value.to_string());
+        }
+
+        if !check_for_directive(&node.directives, "internal") {
             self.parsed_graphql_schema
-                .field_type_mappings
-                .insert(val_id, name.to_string());
+                .virtual_type_names
+                .insert(name.clone());
+            self.parsed_graphql_schema.enum_names.insert(name.clone());
+
+            for val in &e.values {
+                let val_name = &val.node.value.to_string();
+                let val_id = format!("{}.{val_name}", name.clone());
+                self.parsed_graphql_schema
+                    .object_field_mappings
+                    .entry(name.clone())
+                    .or_default()
+                    .insert(val_name.to_string(), name.clone());
+                self.parsed_graphql_schema
+                    .field_type_mappings
+                    .insert(val_id, name.to_string());
+            }
         }
     }
 
@@ -611,6 +692,14 @@ impl SchemaDecoder {
         u: &UnionType,
     ) {
         GraphQLSchemaValidator::check_disallowed_graphql_typedef_name(&union_name);
+
+        for val in &u.members {
+            self.parsed_graphql_schema
+                .union_member_map
+                .entry(union_name.clone())
+                .or_default()
+                .insert(val.node.to_string());
+        }
 
         self.parsed_graphql_schema
             .parsed_typedef_names
@@ -703,7 +792,10 @@ impl SchemaDecoder {
                         .parsed_graphql_schema
                         .virtual_type_names
                         .contains(&ftype)
-                    && !self.parsed_graphql_schema.internal_types.contains(&ftype)
+                    && !self
+                        .parsed_graphql_schema
+                        .internal_types
+                        .contains_key(&ftype)
                 {
                     let (_ref_coltype, ref_colname, ref_tablename) =
                         extract_foreign_key_info(
@@ -775,13 +867,44 @@ impl SchemaDecoder {
     ) {
         GraphQLSchemaValidator::check_disallowed_graphql_typedef_name(&obj_name);
 
+        if &obj_name == "Query" {
+            for f in o.fields.iter() {
+                self.parsed_graphql_schema
+                    .queries
+                    .insert(f.node.name.node.to_string(), f.node.clone());
+            }
+        }
+
         let is_internal = check_for_directive(&node.directives, "internal");
         let is_entity = check_for_directive(&node.directives, "entity");
 
         if is_internal {
-            self.parsed_graphql_schema
-                .internal_types
-                .insert(obj_name.clone());
+            if check_for_directive(&node.directives, "connection") {
+                self.parsed_graphql_schema
+                    .internal_types
+                    .insert(obj_name.clone(), InternalType::Connection);
+                if let Some(stripped) = obj_name.strip_suffix("Connection") {
+                    self.parsed_graphql_schema
+                        .pagination_type_map
+                        .insert(obj_name.clone(), stripped.to_string());
+                }
+            } else if check_for_directive(&node.directives, "edge") {
+                self.parsed_graphql_schema
+                    .internal_types
+                    .insert(obj_name.clone(), InternalType::Edge);
+                if let Some(stripped) = obj_name.strip_suffix("Edge") {
+                    self.parsed_graphql_schema
+                        .pagination_type_map
+                        .insert(obj_name.clone(), stripped.to_string());
+                }
+            } else {
+                self.parsed_graphql_schema
+                    .internal_types
+                    .insert(obj_name.clone(), InternalType::PageInfo);
+                self.parsed_graphql_schema
+                    .pagination_type_map
+                    .insert(obj_name.clone(), obj_name.clone());
+            }
         }
 
         if !is_entity && !is_internal {
@@ -855,7 +978,10 @@ impl SchemaDecoder {
                     .parsed_graphql_schema
                     .virtual_type_names
                     .contains(&ftype)
-                && !self.parsed_graphql_schema.internal_types.contains(&ftype)
+                && !self
+                    .parsed_graphql_schema
+                    .internal_types
+                    .contains_key(&ftype)
                 && !is_internal
             {
                 GraphQLSchemaValidator::foreign_key_field_contains_no_unique_directive(
@@ -1064,10 +1190,10 @@ union Storage = Safe | Vault
         );
 
         // Internal types
-        assert!(parsed.internal_types.contains("AccountConnection"));
-        assert!(parsed.internal_types.contains("AccountEdge"));
-        assert!(parsed.internal_types.contains("UserConnection"));
-        assert!(parsed.internal_types.contains("UserEdge"));
+        assert!(parsed.internal_types.contains_key("AccountConnection"));
+        assert!(parsed.internal_types.contains_key("AccountEdge"));
+        assert!(parsed.internal_types.contains_key("UserConnection"));
+        assert!(parsed.internal_types.contains_key("UserEdge"));
     }
 
     #[test]
