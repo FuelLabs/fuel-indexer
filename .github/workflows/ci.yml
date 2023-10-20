@@ -167,6 +167,7 @@ jobs:
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ env.RUSTC_VERSION }}
+          targets: wasm32-unknown-unknown
       - name: Build simple-wasm WASM
         run: |
           cargo build -p simple-wasm --release --target wasm32-unknown-unknown
