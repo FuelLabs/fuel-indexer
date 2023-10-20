@@ -33,7 +33,7 @@ pub mod assets {
         include_str!("./../indexers/simple-wasm/schema/simple_wasm.graphql");
 
     pub const SIMPLE_WASM_WASM: &[u8] =
-        include_bytes!("./../indexers/simple-wasm/simple_wasm.wasm");
+        include_bytes!("../../../target/wasm32-unknown-unknown/release/simple_wasm.wasm");
 }
 
 pub mod defaults {
