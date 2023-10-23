@@ -927,7 +927,6 @@ type Person @entity {
         let schema = ParsedGraphQLSchema::new(
             "test",
             "test",
-            ExecutionSource::Wasm,
             Some(&GraphQLSchema::new(schema.to_string())),
         )
         .unwrap();
@@ -1031,7 +1030,6 @@ type Wallet @entity {
         let schema = ParsedGraphQLSchema::new(
             "test",
             "test",
-            ExecutionSource::Wasm,
             Some(&GraphQLSchema::new(schema.to_string())),
         )
         .unwrap();
