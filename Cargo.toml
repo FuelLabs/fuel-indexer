@@ -8,6 +8,7 @@ members = [
    "examples/greetings/greetings-fuel-client",
    "examples/greetings/greetings-indexer",
    "examples/hello-world/hello-world",
+   "packages/fuel-indexer",
    "packages/fuel-indexer-api-server",
    "packages/fuel-indexer-benchmarks",
    "packages/fuel-indexer-database",
@@ -27,7 +28,6 @@ members = [
    "packages/fuel-indexer-tests/indexers/simple-wasm/simple-wasm",
    "packages/fuel-indexer-types",
    "packages/fuel-indexer-utils",
-   "packages/fuel-indexer",
    "plugins/forc-index",
    "plugins/forc-postgres",
 ]
