@@ -233,9 +233,10 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                         Some(&WasmIndexerError::MissingBlocksError) => {
                             return Err(anyhow::anyhow!("{e}").into());
                         }
-                        Some(&WasmIndexerError::Panic) => {
+                        Some(&WasmIndexerError::Panic)
+                        | Some(&WasmIndexerError::GeneralError) => {
                             let message = executor
-                                .get_panic_message()
+                                .get_error_message()
                                 .await
                                 .unwrap_or("unknown".to_string());
                             return Err(anyhow::anyhow!("{message}").into());
@@ -578,7 +579,7 @@ where
 
     fn kill_switch(&self) -> &Arc<AtomicBool>;
 
-    async fn get_panic_message(&self) -> IndexerResult<String>;
+    async fn get_error_message(&self) -> IndexerResult<String>;
 }
 
 /// WASM indexer runtime environment responsible for fetching/saving data to and from the database.
@@ -713,9 +714,9 @@ where
         &self.manifest
     }
 
-    async fn get_panic_message(&self) -> IndexerResult<String> {
+    async fn get_error_message(&self) -> IndexerResult<String> {
         return Err(anyhow::anyhow!(
-            "get_panic_message() not supported in native exetutor."
+            "get_error_message() not supported in native exetutor."
         )
         .into());
     }
@@ -1006,9 +1007,9 @@ impl Executor for WasmIndexExecutor {
         &self.manifest
     }
 
-    async fn get_panic_message(&self) -> IndexerResult<String> {
+    async fn get_error_message(&self) -> IndexerResult<String> {
         let mut store = self.store.lock().await;
-        let result = ffi::get_panic_message(&mut store, &self.instance)?;
+        let result = ffi::get_error_message(&mut store, &self.instance)?;
         Ok(result)
     }
 }
