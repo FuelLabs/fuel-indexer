@@ -10,7 +10,7 @@ use fuel_indexer_database::{
     queries, types::*, DbType, IndexerConnection, IndexerConnectionPool,
 };
 use fuel_indexer_lib::graphql::{GraphQLSchema, ParsedGraphQLSchema};
-use fuel_indexer_lib::{manifest::Manifest, ExecutionSource};
+use fuel_indexer_lib::manifest::Manifest;
 use itertools::Itertools;
 
 /// `IndexerSchema` is used to encapsulate most of the logic related to parsing
@@ -44,19 +44,13 @@ impl IndexerSchema {
         identifier: &str,
         schema: &GraphQLSchema,
         db_type: DbType,
-        exec_source: ExecutionSource,
     ) -> IndexerSchemaDbResult<Self> {
         Ok(IndexerSchema {
             db_type,
             namespace: namespace.to_string(),
             identifier: identifier.to_string(),
             schema: schema.to_owned(),
-            parsed: ParsedGraphQLSchema::new(
-                namespace,
-                identifier,
-                exec_source,
-                Some(schema),
-            )?,
+            parsed: ParsedGraphQLSchema::new(namespace, identifier, Some(schema))?,
             tables: Vec::new(),
         })
     }
@@ -75,15 +69,10 @@ impl IndexerSchema {
     pub async fn commit(
         mut self,
         schema: &GraphQLSchema,
-        exec_source: ExecutionSource,
         conn: &mut IndexerConnection,
     ) -> IndexerSchemaDbResult<Self> {
-        let parsed_schema = ParsedGraphQLSchema::new(
-            &self.namespace,
-            &self.identifier,
-            exec_source,
-            Some(schema),
-        )?;
+        let parsed_schema =
+            ParsedGraphQLSchema::new(&self.namespace, &self.identifier, Some(schema))?;
 
         let mut statements = Vec::new();
         self.schema = schema.to_owned();
@@ -206,15 +195,10 @@ impl IndexerSchema {
         let IndexerAsset { bytes, .. } =
             queries::indexer_asset(&mut conn, &indexer_id, IndexerAssetType::Manifest)
                 .await?;
-        let manifest = Manifest::try_from(&bytes)?;
+        let _manifest = Manifest::try_from(&bytes)?;
 
         let schema = GraphQLSchema::new(root.schema.clone());
-        let parsed = ParsedGraphQLSchema::new(
-            namespace,
-            identifier,
-            manifest.execution_source(),
-            Some(&schema),
-        )?;
+        let parsed = ParsedGraphQLSchema::new(namespace, identifier, Some(&schema))?;
 
         let tables = parsed
             .storage_backed_typedefs()

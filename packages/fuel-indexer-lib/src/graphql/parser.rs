@@ -10,7 +10,7 @@ use crate::{
         inject_internal_types_into_document, is_list_type, list_field_type_name,
         GraphQLSchema, GraphQLSchemaValidator, IdCol, BASE_SCHEMA,
     },
-    join_table_name, ExecutionSource,
+    join_table_name,
 };
 use async_graphql_parser::{
     parse_schema,
@@ -190,9 +190,6 @@ pub struct ParsedGraphQLSchema {
     /// Identifier of the indexer.
     identifier: String,
 
-    /// Indexer method of execution.
-    exec_source: ExecutionSource,
-
     /// All unique names of types in the schema (whether objects, enums, or scalars).
     type_names: HashSet<String>,
 
@@ -276,7 +273,6 @@ impl Default for ParsedGraphQLSchema {
         Self {
             namespace: "".to_string(),
             identifier: "".to_string(),
-            exec_source: ExecutionSource::Wasm,
             type_names: HashSet::new(),
             typedef_names_to_types: HashMap::new(),
             enum_names: HashSet::new(),
@@ -307,7 +303,6 @@ impl ParsedGraphQLSchema {
     pub fn new(
         namespace: &str,
         identifier: &str,
-        exec_source: ExecutionSource,
         schema: Option<&GraphQLSchema>,
     ) -> ParsedResult<Self> {
         let base_type_names = {
@@ -329,7 +324,6 @@ impl ParsedGraphQLSchema {
 
             decoder.parsed_graphql_schema.namespace = namespace.to_string();
             decoder.parsed_graphql_schema.identifier = identifier.to_string();
-            decoder.parsed_graphql_schema.exec_source = exec_source.clone();
             decoder.parsed_graphql_schema.version = schema.version.clone();
         };
 
@@ -349,11 +343,6 @@ impl ParsedGraphQLSchema {
     /// Identifier of the indexer.
     pub fn identifier(&self) -> &str {
         &self.identifier
-    }
-
-    /// Indexer method of execution.
-    pub fn exec_source(&self) -> &ExecutionSource {
-        &self.exec_source
     }
 
     /// Mapping of object names to objects.    
@@ -1033,7 +1022,6 @@ union Storage = Safe | Vault
         let parsed = ParsedGraphQLSchema::new(
             "test",
             "test",
-            ExecutionSource::Wasm,
             Some(&GraphQLSchema::new(schema.to_string())),
         );
 
@@ -1099,7 +1087,6 @@ type Bar @entity {
         let parsed = ParsedGraphQLSchema::new(
             "test",
             "test",
-            ExecutionSource::Wasm,
             Some(&GraphQLSchema::new(schema.to_string())),
         );
 
@@ -1130,7 +1117,6 @@ type TransactionData @entity {
         let _ = ParsedGraphQLSchema::new(
             "test",
             "test",
-            ExecutionSource::Wasm,
             Some(&GraphQLSchema::new(schema.to_string())),
         )
         .unwrap();
@@ -1162,7 +1148,6 @@ union Baz = Foo | Bar | Zoo
         let _ = ParsedGraphQLSchema::new(
             "test",
             "test",
-            ExecutionSource::Wasm,
             Some(&GraphQLSchema::new(schema.to_string())),
         )
         .unwrap();
@@ -1195,7 +1180,6 @@ union Baz = Foo | Bar | Zoo
         let _ = ParsedGraphQLSchema::new(
             "test",
             "test",
-            ExecutionSource::Wasm,
             Some(&GraphQLSchema::new(schema.to_string())),
         )
         .unwrap();
@@ -1221,7 +1205,6 @@ type Zoo @entity {
         let _ = ParsedGraphQLSchema::new(
             "test",
             "test",
-            ExecutionSource::Wasm,
             Some(&GraphQLSchema::new(schema.to_string())),
         )
         .unwrap();
@@ -1241,7 +1224,6 @@ type Foo @entity {
         let _ = ParsedGraphQLSchema::new(
             "test",
             "test",
-            ExecutionSource::Wasm,
             Some(&GraphQLSchema::new(schema.to_string())),
         )
         .unwrap();
@@ -1261,7 +1243,6 @@ type Foo @entity(virtual: true) {
         let _ = ParsedGraphQLSchema::new(
             "test",
             "test",
-            ExecutionSource::Wasm,
             Some(&GraphQLSchema::new(schema.to_string())),
         )
         .unwrap();
@@ -1287,7 +1268,6 @@ type Bar @entity {
         let _ = ParsedGraphQLSchema::new(
             "test",
             "test",
-            ExecutionSource::Wasm,
             Some(&GraphQLSchema::new(schema.to_string())),
         )
         .unwrap();
@@ -1373,7 +1353,6 @@ type Bar @entity {
         let _ = ParsedGraphQLSchema::new(
             "test",
             "test",
-            ExecutionSource::Wasm,
             Some(&GraphQLSchema::new(schema.to_string())),
         )
         .unwrap();
@@ -1399,7 +1378,6 @@ type Bar @entity {
         let _ = ParsedGraphQLSchema::new(
             "test",
             "test",
-            ExecutionSource::Wasm,
             Some(&GraphQLSchema::new(schema.to_string())),
         )
         .unwrap();

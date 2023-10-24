@@ -20,6 +20,5 @@ OPTIONS:
     -h, --help                     Print help information
         --name <NAME>              Name of indexer.
         --namespace <NAMESPACE>    Namespace to which indexer belongs.
-        --native                   Initialize an indexer with native execution enabled.
     -v, --verbose                  Enable verbose output.
 ```

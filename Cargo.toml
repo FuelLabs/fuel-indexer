@@ -3,7 +3,6 @@
 resolver = "2"
 members = [
    "examples/fuel-explorer/fuel-explorer",
-   "examples/greetings-native/greetings-native-indexer",
    "examples/greetings/greetings-data",
    "examples/greetings/greetings-fuel-client",
    "examples/greetings/greetings-indexer",

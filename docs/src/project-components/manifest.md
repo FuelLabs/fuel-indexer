@@ -76,9 +76,7 @@ The `end_block` field indicates the block height after which the indexer should 
 
 _Required._
 
-The `module` field contains a file path that points to code that will be run as an _executor_ inside of the indexer. There are two available options for modules/execution: `wasm` and `native`. Note that when specifying a `wasm` module, the provided path must lead to a compiled WASM binary.
-
-> Important: At this time, `wasm` is the preferred method of execution.
+The `module` field contains a file path that points to code that will be run as an _executor_ inside of the indexer.
 
 ## `resumable`
 

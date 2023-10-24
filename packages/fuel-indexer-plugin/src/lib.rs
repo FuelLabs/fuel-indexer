@@ -1,5 +1,3 @@
-#[cfg(feature = "native-execution")]
-pub mod native;
 pub mod wasm;
 
 pub mod types {

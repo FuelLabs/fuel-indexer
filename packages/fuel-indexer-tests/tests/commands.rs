@@ -127,12 +127,3 @@ fn test_forc_index_start_help_output() {
         .unwrap();
     insta::assert_snapshot!(output);
 }
-
-#[test]
-fn test_forc_index_run_native_help_output() {
-    let output = cmd!(FORC_INDEX, "run-native", "--help")
-        .pipe(cmd!("tail", "-n", "+2"))
-        .read()
-        .unwrap();
-    insta::assert_snapshot!(output);
-}
