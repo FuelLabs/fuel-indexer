@@ -580,8 +580,12 @@ mod fuel_indexer_test {
         ping.save();
     }
 
+    fn trigger_sail_blockdata_test(b: BlockData) {
+        info!("Sail test block #{}", b.header.height);
+    }
+
     fn trigger_sail_test(cancel: CancelLimitOrder) {
-        info!("trigger_sail_test handling trigger_sail_test event.");
+        info!("trigger_sail_test handling trigger_sail_test event");
 
         let limit_entity = LimitOrderEntity {
             id: uid(cancel.order.id),
