@@ -556,6 +556,7 @@ fn process_fn_items(
                 }
 
                 let fn_name = &fn_item.sig.ident;
+                let fn_name_string = fn_name.to_string();
 
                 if arg_list.is_empty() {
                     proc_macro_error::abort_call_site!(
@@ -564,9 +565,26 @@ fn process_fn_items(
                     );
                 }
 
+                let fn_call = if fn_item.sig.output == syn::ReturnType::Default {
+                    quote! {
+                        #fn_name(#(#arg_list),*)
+                    }
+                } else {
+                    quote! {
+                        if let Err(e) = #fn_name(#(#arg_list),*) {
+                            unsafe {
+                                if !ERROR_MESSAGE.is_empty() {
+                                    ERROR_MESSAGE += "\n";
+                                }
+                                ERROR_MESSAGE += &format!("{} failed with an error: {}", #fn_name_string, e.to_string());
+                            }
+                        }
+                    }
+                };
+
                 abi_dispatchers.push(quote! {
                     if ( #(#input_checks)&&* ) {
-                        #fn_name(#(#arg_list),*);
+                        #fn_call
                     }
                 });
 
@@ -661,8 +679,16 @@ fn process_fn_items(
                 }
             }
 
-            pub fn dispatch(&self) {
+            pub fn dispatch(&self, block_height: u32) {
                 #(#abi_dispatchers)*
+
+                unsafe {
+                    if !ERROR_MESSAGE.is_empty() {
+                        let message = ERROR_MESSAGE.lines().map(|l| format!("    {l}")).collect::<Vec<String>>().join("\n");
+                        ERROR_MESSAGE = format!("At height {}:\n", block_height) + &message;
+                        early_exit(WasmIndexerError::GeneralError)
+                    }
+                }
             }
         }
     };
@@ -876,7 +902,8 @@ fn process_fn_items(
                         }
                     }
                 }
-                decoder.dispatch();
+
+                decoder.dispatch(block.header.height);
 
                 let metadata = IndexMetadataEntity::new(block.time as u64, block.header.height, block.id);
                 metadata.save();

@@ -17,6 +17,7 @@ pub fn handler_block_wasm(
         #[no_mangle]
         fn handle_events(blob: *mut u8, len: usize) {
             register_panic_hook();
+
             use fuel_indexer_utils::plugin::deserialize;
             let bytes = unsafe { Vec::from_raw_parts(blob, len, len) };
             let blocks: Vec<BlockData> = match deserialize(&bytes) {
@@ -41,16 +42,16 @@ pub fn handler_block_wasm(
 /// retrieved by the indexer service and logged.
 fn panic_hook() -> proc_macro2::TokenStream {
     quote! {
-        static mut PANIC_MESSAGE: String = String::new();
+        static mut ERROR_MESSAGE: String = String::new();
 
         #[no_mangle]
-        fn get_panic_message_ptr() -> *const u8 {
-            unsafe { PANIC_MESSAGE.as_ptr() }
+        fn get_error_message_ptr() -> *const u8 {
+            unsafe { ERROR_MESSAGE.as_ptr() }
         }
 
         #[no_mangle]
-        fn get_panic_message_len() -> u32 {
-            unsafe { PANIC_MESSAGE.len() as u32 }
+        fn get_error_message_len() -> u32 {
+            unsafe { ERROR_MESSAGE.len() as u32 }
         }
 
         #[no_mangle]
@@ -62,7 +63,7 @@ fn panic_hook() -> proc_macro2::TokenStream {
             SET_HOOK.call_once(|| {
                 panic::set_hook(Box::new(|info| {
                     unsafe {
-                        PANIC_MESSAGE = info.to_string();
+                        ERROR_MESSAGE = info.to_string();
                     }
                     early_exit(WasmIndexerError::Panic);
                 }));
