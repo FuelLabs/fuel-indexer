@@ -8,6 +8,7 @@ _*If you're an internal FuelLabs contributor, please feel free to remove this te
 
 - [ ] Can you reproduce the problem?
 - [ ] Do you know which version of the indexer you're using?
+- [ ] Are you using the latest versions of Fuel ecosystem components available in `fuelup`?
 - [ ] Did you already check for an answer in previous [Discussions](https://github.com/FuelLabs/fuel-indexer/discussions)?
 
 ### Description
@@ -34,3 +35,4 @@ Please list what version of indexer components you're using. Latest is currently
 
 - `fuel-indexer`: 0.0.0
 - `forc-index`: 0.0.0
+- `forc`: 0.0.0 (if applicable)
