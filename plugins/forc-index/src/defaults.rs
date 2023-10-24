@@ -28,7 +28,7 @@ rust-version = "1.73.0"
 crate-type = ['cdylib']
 
 [dependencies]
-fuel-indexer-utils = {{ version = "0.21" }}
+fuel-indexer-utils = {{ version = "0.22" }}
 fuels = {{ version = "0.46", default-features = false }}
 getrandom = {{ version = "0.2", features = ["js"] }}
 serde = {{ version = "1.0", default-features = false, features = ["derive"] }}
