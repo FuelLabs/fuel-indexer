@@ -3,8 +3,8 @@ pub(crate) use crate::commands::{
     auth::Command as AuthCommand, build::Command as BuildCommand,
     check::Command as CheckCommand, deploy::Command as DeployCommand,
     kill::Command as KillCommand, new::Command as NewCommand,
-    remove::Command as RemoveCommand, run_native::Command as RunNativeCommand,
-    start::Command as StartCommand, status::Command as StatusCommand,
+    remove::Command as RemoveCommand, start::Command as StartCommand,
+    status::Command as StatusCommand,
 };
 use clap::{Parser, Subcommand};
 use forc_postgres::{
@@ -31,7 +31,6 @@ pub enum ForcIndex {
     New(NewCommand),
     Postgres(ForcPostgresOpt),
     Remove(RemoveCommand),
-    RunNative(RunNativeCommand),
     Start(Box<StartCommand>),
     Status(StatusCommand),
 }
@@ -59,6 +58,5 @@ pub async fn run_cli() -> Result<(), anyhow::Error> {
         },
         ForcIndex::Kill(command) => crate::commands::kill::exec(command),
         ForcIndex::Status(command) => crate::commands::status::exec(command).await,
-        ForcIndex::RunNative(command) => crate::commands::run_native::exec(command).await,
     }
 }

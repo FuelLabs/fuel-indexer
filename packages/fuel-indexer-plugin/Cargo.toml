@@ -13,35 +13,12 @@ description = "Fuel Indexer Plugin"
 crate-type = ['rlib']
 
 [dependencies]
-anyhow = { version = "1.0", default-features = false, optional = true }
-async-trait = { version = "0.1", optional = true }
 bincode = { workspace = true }
-fuel-indexer = { workspace = true, features = ["api-server"], optional = true }
-fuel-indexer-api-server = { workspace = true, optional = true }
-fuel-indexer-database = { workspace = true, optional = true }
 fuel-indexer-lib = { workspace = true }
 fuel-indexer-schema = { workspace = true, default-features = false }
 fuel-indexer-types = { workspace = true }
-futures = { version = "0.3", optional = true }
 getrandom = { version = "0.2", features = ["js"] }
 hex = "0.4"
 serde = { workspace = true }
 serde_json = { workspace = true }
 sha2 = { version = "0.10" }
-tokio = { features = ["macros", "rt-multi-thread", "sync", "process"], optional = true, workspace = true }
-tracing = { optional = true, workspace = true }
-tracing-subscriber = { version = "0.2", features = ["env-filter"], optional = true }
-
-[features]
-default = []
-native-execution = [
-    "anyhow",
-    "async-trait",
-    "fuel-indexer-api-server",
-    "fuel-indexer-database",
-    "fuel-indexer",
-    "futures",
-    "tokio",
-    "tracing-subscriber",
-    "tracing",
-]

@@ -1253,7 +1253,6 @@ mod tests {
     use async_graphql_parser::types::ObjectType;
     use async_graphql_parser::types::Type;
     use fuel_indexer_lib::graphql::GraphQLSchema;
-    use fuel_indexer_lib::ExecutionSource;
 
     #[test]
     fn test_can_create_well_formed_table_and_table_components_when_passed_typedef() {
@@ -1323,7 +1322,6 @@ type Person @entity {
         let schema = ParsedGraphQLSchema::new(
             "test",
             "test",
-            ExecutionSource::Wasm,
             Some(&GraphQLSchema::new(schema.to_string())),
         )
         .unwrap();
@@ -1345,7 +1343,6 @@ type Person @entity {
         let schema = ParsedGraphQLSchema::new(
             "test",
             "test",
-            ExecutionSource::Wasm,
             Some(&GraphQLSchema::new(schema.to_string())),
         )
         .unwrap();
@@ -1402,7 +1399,6 @@ type Wallet @entity {
         let schema = ParsedGraphQLSchema::new(
             "test",
             "test",
-            ExecutionSource::Wasm,
             Some(&GraphQLSchema::new(schema.to_string())),
         )
         .unwrap();

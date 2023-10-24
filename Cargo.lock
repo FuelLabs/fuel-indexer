@@ -3354,8 +3354,6 @@ dependencies = [
  "fuel-indexer-types",
  "http",
  "lazy_static",
- "proc-macro2",
- "quote",
  "serde",
  "serde_json",
  "serde_yaml",
@@ -3414,24 +3412,15 @@ dependencies = [
 name = "fuel-indexer-plugin"
 version = "0.21.2"
 dependencies = [
- "anyhow",
- "async-trait",
  "bincode",
- "fuel-indexer",
- "fuel-indexer-api-server",
- "fuel-indexer-database",
  "fuel-indexer-lib",
  "fuel-indexer-schema",
  "fuel-indexer-types",
- "futures",
  "getrandom",
  "hex",
  "serde",
  "serde_json",
  "sha2 0.10.7",
- "tokio",
- "tracing",
- "tracing-subscriber 0.2.25",
 ]
 
 [[package]]
@@ -4119,17 +4108,6 @@ dependencies = [
 name = "greetings_indexer"
 version = "0.0.0"
 dependencies = [
- "fuel-indexer-utils",
- "fuels",
- "serde",
-]
-
-[[package]]
-name = "greetings_native_indexer"
-version = "0.0.0"
-dependencies = [
- "async-trait",
- "fuel-indexer",
  "fuel-indexer-utils",
  "fuels",
  "serde",

@@ -27,19 +27,4 @@ fn test_rustc_version_in_default_indexer_cargo_manifest_matches_project_rustc_ve
     let cargo_toml: Config = toml::from_str(&cargo_toml).unwrap();
     assert_eq!(cargo_toml.package.rust_version, rustc_version.to_string());
     fs::remove_dir_all("./indexer-test").unwrap();
-
-    let _ = Command::new("forc-index")
-        .arg("new")
-        .arg("indexer-test")
-        .arg("--namespace")
-        .arg("fuellabs")
-        .arg("--native")
-        .spawn()
-        .unwrap()
-        .wait()
-        .unwrap();
-    let cargo_toml = fs::read_to_string("./indexer-test/Cargo.toml").unwrap();
-    let cargo_toml: Config = toml::from_str(&cargo_toml).unwrap();
-    assert_eq!(cargo_toml.package.rust_version, rustc_version.to_string());
-    fs::remove_dir_all("./indexer-test").unwrap();
 }

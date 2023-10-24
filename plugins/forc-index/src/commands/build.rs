@@ -22,26 +22,9 @@ pub struct Command {
     #[clap(long, help = "Ensure that the Cargo.lock file is up-to-date.")]
     pub locked: bool,
 
-    /// Building for native execution.
-    #[clap(long, help = "Building for native execution.")]
-    pub native: bool,
-
     /// Enable verbose output.
     #[clap(short, long, help = "Enable verbose output.")]
     pub verbose: bool,
-}
-
-impl Default for Command {
-    fn default() -> Self {
-        Command {
-            manifest: Some(String::new()),
-            path: None,
-            debug: false,
-            verbose: false,
-            locked: false,
-            native: false,
-        }
-    }
 }
 
 pub fn exec(command: Command) -> Result<()> {

@@ -83,9 +83,6 @@ async fn test_wasm_executor_can_meter_execution() {
                 }
             }
         }
-        _ => panic!(
-            "Expected a WASM module in the manifest but got a Native module instead."
-        ),
     }
 }
 
@@ -205,8 +202,5 @@ async fn test_wasm_executor_error_codes() {
                 }
             }
         }
-        _ => panic!(
-            "Expected a WASM module in the manifest but got a Native module instead."
-        ),
     }
 }

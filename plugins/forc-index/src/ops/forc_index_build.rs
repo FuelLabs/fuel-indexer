@@ -17,7 +17,6 @@ use tracing::info;
 
 pub fn init(command: BuildCommand) -> anyhow::Result<()> {
     let BuildCommand {
-        native,
         path,
         debug,
         locked,
@@ -68,7 +67,6 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
         root_dir.as_path(),
         Path::new(manifest_schema_file.as_path()),
         indexer_manifest_path.as_path(),
-        manifest.execution_source(),
     )?;
 
     // Construct our build command
@@ -77,11 +75,9 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
     let mut cmd = Command::new("cargo");
     cmd.arg("build")
         .arg("--manifest-path")
-        .arg(&cargo_manifest_path);
-
-    if !native {
-        cmd.arg("--target").arg(defaults::WASM_TARGET);
-    }
+        .arg(&cargo_manifest_path)
+        .arg("--target")
+        .arg(defaults::WASM_TARGET);
 
     let bool_opts = [
         (release, "--release"),
@@ -165,47 +161,45 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
     }
 
     // Write the build artifacts to the indexer manifest
-    if !native {
-        let binary = format!("{}.wasm", config.package.name);
-        let profile = if release { "release" } else { "debug" };
+    let binary = format!("{}.wasm", config.package.name);
+    let profile = if release { "release" } else { "debug" };
 
-        let target_dir: std::path::PathBuf =
-            crate::utils::cargo_target_dir(path.as_path()).unwrap();
+    let target_dir: std::path::PathBuf =
+        crate::utils::cargo_target_dir(path.as_path()).unwrap();
 
-        let abs_artifact_path = target_dir
-            .join(defaults::WASM_TARGET)
-            .join(profile)
-            .join(&binary);
+    let abs_artifact_path = target_dir
+        .join(defaults::WASM_TARGET)
+        .join(profile)
+        .join(&binary);
 
-        let rel_artifact_path = Path::new("target")
-            .join(defaults::WASM_TARGET)
-            .join(profile)
-            .join(&binary);
+    let rel_artifact_path = Path::new("target")
+        .join(defaults::WASM_TARGET)
+        .join(profile)
+        .join(&binary);
 
-        let abs_wasm = abs_artifact_path.as_path().display().to_string();
-        let relative_wasm = rel_artifact_path.as_path().display().to_string();
+    let abs_wasm = abs_artifact_path.as_path().display().to_string();
+    let relative_wasm = rel_artifact_path.as_path().display().to_string();
 
-        manifest.set_module(Module::Wasm(relative_wasm));
+    manifest.set_module(Module::Wasm(relative_wasm));
 
-        let status = Command::new("wasm-snip")
-            .arg(&abs_wasm)
-            .arg("-o")
-            .arg(&abs_wasm)
-            .arg("-p")
-            .arg("__wbindgen")
-            .spawn()
-            .unwrap_or_else(|e| panic!("❌ Failed to spawn wasm-snip process: {e}",))
-            .wait()
-            .unwrap_or_else(|e| panic!("❌ Failed to finish wasm-snip process: {e}",));
+    let status = Command::new("wasm-snip")
+        .arg(&abs_wasm)
+        .arg("-o")
+        .arg(&abs_wasm)
+        .arg("-p")
+        .arg("__wbindgen")
+        .spawn()
+        .unwrap_or_else(|e| panic!("❌ Failed to spawn wasm-snip process: {e}",))
+        .wait()
+        .unwrap_or_else(|e| panic!("❌ Failed to finish wasm-snip process: {e}",));
 
-        if !status.success() {
-            let code = status.code();
-            anyhow::bail!("❌ Failed to execute wasm-snip: (Code: {code:?})",)
-        }
-
-        // FIXME: This should include whatever comments were in the original doc
-        manifest.write(&indexer_manifest_path)?;
+    if !status.success() {
+        let code = status.code();
+        anyhow::bail!("❌ Failed to execute wasm-snip: (Code: {code:?})",)
     }
+
+    // FIXME: This should include whatever comments were in the original doc
+    manifest.write(&indexer_manifest_path)?;
 
     Ok(())
 }

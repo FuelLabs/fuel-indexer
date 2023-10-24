@@ -44,7 +44,6 @@
   - [remove](./forc-index/remove.md)
   - [start](./forc-index/start.md)
   - [status](./forc-index/status.md)
-  - [run-native](./forc-index/run-native.md)
 - [forc postgres](./forc-postgres/index.md)
   - [create](./forc-postgres/create.md)
   - [drop](./forc-postgres/drop.md)

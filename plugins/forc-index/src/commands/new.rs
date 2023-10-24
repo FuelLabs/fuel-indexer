@@ -17,10 +17,6 @@ pub struct Command {
     #[clap(long, help = "Namespace to which indexer belongs.")]
     pub namespace: Option<String>,
 
-    /// Initialize an indexer with native execution enabled.
-    #[clap(long, help = "Initialize an indexer with native execution enabled.")]
-    pub native: bool,
-
     /// Resolve indexer asset filepaths using absolute paths.
     #[clap(long, help = "Resolve indexer asset filepaths using absolute paths.")]
     pub absolute_paths: bool,

@@ -679,7 +679,7 @@ impl<'a> GraphqlQueryBuilder<'a> {
 mod tests {
 
     use super::*;
-    use fuel_indexer_lib::{graphql::GraphQLSchema, ExecutionSource};
+    use fuel_indexer_lib::graphql::GraphQLSchema;
 
     #[test]
     fn test_operation_parse_into_user_query() {
@@ -773,7 +773,6 @@ type Tx @entity {
             "test_index",
             &GraphQLSchema::new(schema.to_string()),
             DbType::Postgres,
-            ExecutionSource::Wasm,
         )
         .unwrap();
 
