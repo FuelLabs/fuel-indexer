@@ -12,6 +12,24 @@ use std::{
     bytes::Bytes,
 };
 
+
+struct LimitOrder {
+    id: str[64],
+    address: Option<u64>,
+    maker_asset: Address,
+    taker_asset: Address,
+    maker_amount: u64,
+    taker_amount: u64,
+    taker_is_owner: Address,
+    salt: u64,
+    ts: u64,
+}
+
+struct CancelLimitOrder {
+    id: str[64],
+    order: LimitOrder,
+}
+
 pub enum UserError {
     Unauthorized: (),
 }
@@ -106,6 +124,7 @@ abi FuelIndexer {
     #[payable]
     fn trigger_burn();
     fn trigger_generics() -> Option<Ping>;
+    fn trigger_sail_test();
 }
 
 impl FuelIndexer for Contract {
@@ -288,5 +307,28 @@ impl FuelIndexer for Contract {
         log(v);
 
         x
+    }
+
+    fn trigger_sail_test() {
+        let limit_order = LimitOrder {
+            id: "0000000000000000000000000000000000000000000000000000000000000000",
+            address: Some(0),
+            maker_asset: Address::from(0x532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96),
+            taker_asset: Address::from(0x532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96),
+            maker_amount: 0,
+            taker_amount: 0,
+            taker_is_owner: Address::from(0x532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96),
+            salt: 0,
+            ts: 0,
+        };
+
+        log(limit_order);
+
+        let cancel_limit_order = CancelLimitOrder {
+            id: "0000000000000000000000000000000000000000000000000000000000000000",
+            order: limit_order,
+        };
+
+        log(cancel_limit_order);
     }
 }

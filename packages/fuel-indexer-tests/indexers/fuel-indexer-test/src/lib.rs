@@ -579,4 +579,29 @@ mod fuel_indexer_test {
 
         ping.save();
     }
+
+    fn trigger_sail_test(cancel: CancelLimitOrder) {
+        info!("trigger_sail_test handling trigger_sail_test event.");
+
+        let limit_entity = LimitOrderEntity {
+            id: uid(cancel.order.id),
+            address: cancel.order.address,
+            makerAsset: cancel.order.maker_asset,
+            takerAsset: cancel.order.taker_asset,
+            makerAmount: cancel.order.maker_amount,
+            takerAmount: cancel.order.taker_amount,
+            takerIsOwner: cancel.order.taker_is_owner,
+            salt: cancel.order.salt,
+            ts: cancel.order.ts,
+        };
+
+        limit_entity.save();
+
+        let cancel_entity = CancelOrderEntity {
+            id: uid(cancel.id),
+            limit_order: limit_entity.id.clone(),
+        };
+
+        cancel_entity.save();
+    }
 }

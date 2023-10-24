@@ -824,6 +824,21 @@ pub mod test_web {
         HttpResponse::Ok()
     }
 
+    async fn fuel_indexer_test_trigger_sail(
+        state: web::Data<Arc<AppState>>,
+    ) -> impl Responder {
+        let _ = state
+            .contract
+            .methods()
+            .trigger_sail_test()
+            .tx_params(tx_params())
+            .call()
+            .await
+            .unwrap();
+
+        HttpResponse::Ok()
+    }
+
     pub struct AppState {
         pub contract: FuelIndexerTest<WalletUnlocked>,
     }
@@ -893,6 +908,7 @@ pub mod test_web {
                 "/generics",
                 web::post().to(fuel_indexer_test_trigger_generics),
             )
+            .route("/sail", web::post().to(fuel_indexer_test_trigger_sail))
     }
 
     pub async fn server() -> Result<(), Box<dyn std::error::Error>> {

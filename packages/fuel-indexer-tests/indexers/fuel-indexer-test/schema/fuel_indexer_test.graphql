@@ -333,3 +333,22 @@ type ListTypeEntity @entity {
   virtual_optional_inner: [VirtualEntity]!
   enum_required_all: [EnumEntity!]!
 }
+
+type LimitOrderEntity @entity {
+  id: ID!
+  address: U64
+  makerAsset: Address!
+  takerAsset: Address!
+  makerAmount: U64!
+  takerAmount: U64!
+  takerIsOwner: Address!
+  salt: U64!
+  ts: U64!
+}
+
+
+type CancelOrderEntity @entity {
+  id: ID!
+  # `order` is a reserved keyword
+  limit_order: LimitOrderEntity!
+}
