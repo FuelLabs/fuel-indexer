@@ -694,221 +694,221 @@ fn process_fn_items(
     };
     (
         quote! {
-                    #subscribed_contract_ids
+            #subscribed_contract_ids
 
-                    for block in blocks {
+            for block in blocks {
 
-                        #start_block
+                #start_block
 
-                        let mut decoder = Decoders::default();
+                let mut decoder = Decoders::default();
 
-                        let ty_id = BlockData::type_id();
-                        let data = serialize(&block);
-                        decoder.decode_type(ty_id, data);
+                let ty_id = BlockData::type_id();
+                let data = serialize(&block);
+                decoder.decode_type(ty_id, data);
 
-                        for tx in block.transactions {
+                for tx in block.transactions {
 
-                            let mut return_types = Vec::new();
-                            let mut callees = HashSet::new();
+                    let mut return_types = Vec::new();
+                    let mut callees = HashSet::new();
 
-                            for receipt in tx.receipts {
-                                match receipt {
-                                    fuel::Receipt::Call { id: contract_id, amount, asset_id, gas, param1, to: id, .. } => {
-                                        #check_if_subscribed_to_contract
+                    for receipt in tx.receipts {
+                        match receipt {
+                            fuel::Receipt::Call { id: contract_id, amount, asset_id, gas, param1, to: id, .. } => {
+                                #check_if_subscribed_to_contract
 
-                                        let fn_name = decoder.selector_to_fn_name(param1);
-                                        return_types.push(param1);
-                                        callees.insert(id);
+                                let fn_name = decoder.selector_to_fn_name(param1);
+                                return_types.push(param1);
+                                callees.insert(id);
 
-                                        let data = serialize(
-                                            &Call {
-                                                contract_id: ContractId::from(<[u8; 32]>::from(contract_id)),
-                                                to: ContractId::from(<[u8; 32]>::from(id)),
-                                                amount,
-                                                asset_id: AssetId::from(<[u8; 32]>::from(asset_id)),
-                                                gas,
-                                                fn_name
-                                            }
-                                        );
-                                        let ty_id = Call::type_id();
-                                        decoder.decode_type(ty_id, data);
+                                let data = serialize(
+                                    &Call {
+                                        contract_id: ContractId::from(<[u8; 32]>::from(contract_id)),
+                                        to: ContractId::from(<[u8; 32]>::from(id)),
+                                        amount,
+                                        asset_id: AssetId::from(<[u8; 32]>::from(asset_id)),
+                                        gas,
+                                        fn_name
                                     }
-                                    fuel::Receipt::Log { id, ra, rb, .. } => {
-                                        #check_if_subscribed_to_contract
-                                        let ty_id = Log::type_id();
-                                        let data = serialize(
-                                            &Log {
-                                                contract_id: ContractId::from(<[u8; 32]>::from(id)),
-                                                ra,
-                                                rb
-                                            }
-                                        );
-                                        decoder.decode_type(ty_id, data);
+                                );
+                                let ty_id = Call::type_id();
+                                decoder.decode_type(ty_id, data);
+                            }
+                            fuel::Receipt::Log { id, ra, rb, .. } => {
+                                #check_if_subscribed_to_contract
+                                let ty_id = Log::type_id();
+                                let data = serialize(
+                                    &Log {
+                                        contract_id: ContractId::from(<[u8; 32]>::from(id)),
+                                        ra,
+                                        rb
                                     }
-                                    fuel::Receipt::LogData { rb, data, ptr, len, id, .. } => {
-                                        #check_if_subscribed_to_contract
-                                        decoder.decode_logdata(rb as usize, data.unwrap_or(Vec::<u8>::new()));
-                                    }
-                                    fuel::Receipt::Return { id, val, pc, is } => {
-                                        #check_if_subscribed_to_contract
-                                        if callees.contains(&id) {
-                                            let ty_id = Return::type_id();
-                                            let data = serialize(
-                                                &Return {
-                                                    contract_id: ContractId::from(<[u8; 32]>::from(id)),
-                                                    val,
-                                                    pc,
-                                                    is
-                                                }
-                                            );
-                                            decoder.decode_type(ty_id, data);
+                                );
+                                decoder.decode_type(ty_id, data);
+                            }
+                            fuel::Receipt::LogData { rb, data, ptr, len, id, .. } => {
+                                #check_if_subscribed_to_contract
+                                decoder.decode_logdata(rb as usize, data.unwrap_or(Vec::<u8>::new()));
+                            }
+                            fuel::Receipt::Return { id, val, pc, is } => {
+                                #check_if_subscribed_to_contract
+                                if callees.contains(&id) {
+                                    let ty_id = Return::type_id();
+                                    let data = serialize(
+                                        &Return {
+                                            contract_id: ContractId::from(<[u8; 32]>::from(id)),
+                                            val,
+                                            pc,
+                                            is
                                         }
-                                    }
-                                    fuel::Receipt::ReturnData { data, id, .. } => {
-                                        #check_if_subscribed_to_contract
-                                        if callees.contains(&id) {
-                                            let selector = return_types.pop().expect("No return type available. <('-'<)");
-                                            decoder.decode_return_type(selector, data.unwrap_or(Vec::<u8>::new()));
-                                        }
-                                    }
-                                    fuel::Receipt::MessageOut { sender, recipient, amount, nonce, len, digest, data, .. } => {
-                                        let sender = Address::from(<[u8; 32]>::from(sender));
-                                        let recipient = Address::from(<[u8; 32]>::from(recipient));
-                                        let message_id = decoder.compute_message_id(&sender, &recipient, nonce, amount, data.clone());
-
-                                        // It's possible that the data field was generated from an empty Sway `Bytes` array
-                                        // in the send_message() instruction in which case the data field in the receipt will
-                                        // have no type information or data to decode. Thus, we check for a None value or
-                                        // an empty byte vector; if either condition is present, then we decode to a unit struct instead.
-                                        let (type_id, data) = data
-                                            .map_or((u64::MAX, Vec::<u8>::new()), |buffer| {
-                                                if buffer.is_empty() {
-                                                    (u64::MAX, Vec::<u8>::new())
-                                                } else {
-                                                    let (type_id_bytes, data_bytes) = buffer.split_at(8);
-                                                    let type_id = u64::from_be_bytes(
-                                                        <[u8; 8]>::try_from(type_id_bytes)
-                                                        .expect("Could not get type ID for data in MessageOut receipt")
-                                                    );
-                                                    let data = data_bytes.to_vec();
-                                                    (type_id, data)
-                                                }
-                                            });
-
-
-                                        decoder.decode_messagedata(type_id, data.clone());
-
-                                        let ty_id = MessageOut::type_id();
-                                        let data = serialize(
-                                            &MessageOut {
-                                                message_id,
-                                                sender,
-                                                recipient,
-                                                amount,
-                                                nonce,
-                                                len,
-                                                digest,
-                                                data
-                                            }
-                                        );
-                                        decoder.decode_type(ty_id, data);
-                                    }
-                                    fuel::Receipt::ScriptResult { result, gas_used } => {
-                                        let ty_id = ScriptResult::type_id();
-                                        let data = serialize(&ScriptResult{ result: u64::from(result), gas_used });
-                                        decoder.decode_type(ty_id, data);
-                                    }
-                                    fuel::Receipt::Transfer { id, to, asset_id, amount, pc, is, .. } => {
-                                        #check_if_subscribed_to_contract
-                                        let ty_id = Transfer::type_id();
-                                        let data = serialize(
-                                            &Transfer {
-                                                contract_id: ContractId::from(<[u8; 32]>::from(id)),
-                                                to: ContractId::from(<[u8; 32]>::from(to)),
-                                                asset_id: AssetId::from(<[u8; 32]>::from(asset_id)),
-                                                amount,
-                                                pc,
-                                                is
-                                            }
-                                        );
-                                        decoder.decode_type(ty_id, data);
-                                    }
-                                    fuel::Receipt::TransferOut { id, to, asset_id, amount, pc, is, .. } => {
-                                        #check_if_subscribed_to_contract
-                                        let ty_id = TransferOut::type_id();
-                                        let data = serialize(
-                                            &TransferOut {
-                                                contract_id: ContractId::from(<[u8; 32]>::from(id)),
-                                                to: Address::from(<[u8; 32]>::from(to)),
-                                                asset_id: AssetId::from(<[u8; 32]>::from(asset_id)),
-                                                amount,
-                                                pc,
-                                                is
-                                            }
-                                        );
-                                        decoder.decode_type(ty_id, data);
-                                    }
-                                    fuel::Receipt::Panic { id, reason, .. } => {
-                                        #check_if_subscribed_to_contract
-                                        let ty_id = Panic::type_id();
-                                        let data = serialize(
-                                            &Panic {
-                                                contract_id: ContractId::from(<[u8; 32]>::from(id)),
-                                                reason: *reason.reason() as u32
-                                            }
-                                        );
-                                        decoder.decode_type(ty_id, data);
-                                    }
-                                    fuel::Receipt::Revert { id, ra, .. } => {
-                                        #check_if_subscribed_to_contract
-                                        let ty_id = Revert::type_id();
-                                        let data = serialize(
-                                            &Revert {
-                                                contract_id: ContractId::from(<[u8; 32]>::from(id)),
-                                                error_val: u64::from(ra & 0xF)
-                                            }
-                                        );
-                                        decoder.decode_type(ty_id, data);
-                                    }
-                                    fuel::Receipt::Mint { sub_id, contract_id, val, pc, is } => {
-                                        let ty_id = Mint::type_id();
-                                        let data = serialize(
-                                            &Mint {
-                                                sub_id: AssetId::from(<[u8; 32]>::from(sub_id)),
-                                                contract_id: ContractId::from(<[u8; 32]>::from(contract_id)),
-                                                val,
-                                                pc,
-                                                is
-                                            }
-                                        );
-                                        decoder.decode_type(ty_id, data);
-                                    }
-                                    fuel::Receipt::Burn { sub_id, contract_id, val, pc, is } => {
-                                        let ty_id = Burn::type_id();
-                                        let data = serialize(
-                                            &Burn {
-                                                sub_id: AssetId::from(<[u8; 32]>::from(sub_id)),
-                                                contract_id: ContractId::from(<[u8; 32]>::from(contract_id)),
-                                                val,
-                                                pc,
-                                                is
-                                            }
-                                        );
-                                        decoder.decode_type(ty_id, data);
-                                    }
-                                    _ => {
-                                        info!("This type is not handled yet. (>'.')>");
-                                    }
+                                    );
+                                    decoder.decode_type(ty_id, data);
                                 }
                             }
+                            fuel::Receipt::ReturnData { data, id, .. } => {
+                                #check_if_subscribed_to_contract
+                                if callees.contains(&id) {
+                                    let selector = return_types.pop().expect("No return type available. <('-'<)");
+                                    decoder.decode_return_type(selector, data.unwrap_or(Vec::<u8>::new()));
+                                }
+                            }
+                            fuel::Receipt::MessageOut { sender, recipient, amount, nonce, len, digest, data, .. } => {
+                                let sender = Address::from(<[u8; 32]>::from(sender));
+                                let recipient = Address::from(<[u8; 32]>::from(recipient));
+                                let message_id = decoder.compute_message_id(&sender, &recipient, nonce, amount, data.clone());
+
+                                // It's possible that the data field was generated from an empty Sway `Bytes` array
+                                // in the send_message() instruction in which case the data field in the receipt will
+                                // have no type information or data to decode. Thus, we check for a None value or
+                                // an empty byte vector; if either condition is present, then we decode to a unit struct instead.
+                                let (type_id, data) = data
+                                    .map_or((u64::MAX, Vec::<u8>::new()), |buffer| {
+                                        if buffer.is_empty() {
+                                            (u64::MAX, Vec::<u8>::new())
+                                        } else {
+                                            let (type_id_bytes, data_bytes) = buffer.split_at(8);
+                                            let type_id = u64::from_be_bytes(
+                                                <[u8; 8]>::try_from(type_id_bytes)
+                                                .expect("Could not get type ID for data in MessageOut receipt")
+                                            );
+                                            let data = data_bytes.to_vec();
+                                            (type_id, data)
+                                        }
+                                    });
+
+
+                                decoder.decode_messagedata(type_id, data.clone());
+
+                                let ty_id = MessageOut::type_id();
+                                let data = serialize(
+                                    &MessageOut {
+                                        message_id,
+                                        sender,
+                                        recipient,
+                                        amount,
+                                        nonce,
+                                        len,
+                                        digest,
+                                        data
+                                    }
+                                );
+                                decoder.decode_type(ty_id, data);
+                            }
+                            fuel::Receipt::ScriptResult { result, gas_used } => {
+                                let ty_id = ScriptResult::type_id();
+                                let data = serialize(&ScriptResult{ result: u64::from(result), gas_used });
+                                decoder.decode_type(ty_id, data);
+                            }
+                            fuel::Receipt::Transfer { id, to, asset_id, amount, pc, is, .. } => {
+                                #check_if_subscribed_to_contract
+                                let ty_id = Transfer::type_id();
+                                let data = serialize(
+                                    &Transfer {
+                                        contract_id: ContractId::from(<[u8; 32]>::from(id)),
+                                        to: ContractId::from(<[u8; 32]>::from(to)),
+                                        asset_id: AssetId::from(<[u8; 32]>::from(asset_id)),
+                                        amount,
+                                        pc,
+                                        is
+                                    }
+                                );
+                                decoder.decode_type(ty_id, data);
+                            }
+                            fuel::Receipt::TransferOut { id, to, asset_id, amount, pc, is, .. } => {
+                                #check_if_subscribed_to_contract
+                                let ty_id = TransferOut::type_id();
+                                let data = serialize(
+                                    &TransferOut {
+                                        contract_id: ContractId::from(<[u8; 32]>::from(id)),
+                                        to: Address::from(<[u8; 32]>::from(to)),
+                                        asset_id: AssetId::from(<[u8; 32]>::from(asset_id)),
+                                        amount,
+                                        pc,
+                                        is
+                                    }
+                                );
+                                decoder.decode_type(ty_id, data);
+                            }
+                            fuel::Receipt::Panic { id, reason, .. } => {
+                                #check_if_subscribed_to_contract
+                                let ty_id = Panic::type_id();
+                                let data = serialize(
+                                    &Panic {
+                                        contract_id: ContractId::from(<[u8; 32]>::from(id)),
+                                        reason: *reason.reason() as u32
+                                    }
+                                );
+                                decoder.decode_type(ty_id, data);
+                            }
+                            fuel::Receipt::Revert { id, ra, .. } => {
+                                #check_if_subscribed_to_contract
+                                let ty_id = Revert::type_id();
+                                let data = serialize(
+                                    &Revert {
+                                        contract_id: ContractId::from(<[u8; 32]>::from(id)),
+                                        error_val: u64::from(ra & 0xF)
+                                    }
+                                );
+                                decoder.decode_type(ty_id, data);
+                            }
+                            fuel::Receipt::Mint { sub_id, contract_id, val, pc, is } => {
+                                let ty_id = Mint::type_id();
+                                let data = serialize(
+                                    &Mint {
+                                        sub_id: AssetId::from(<[u8; 32]>::from(sub_id)),
+                                        contract_id: ContractId::from(<[u8; 32]>::from(contract_id)),
+                                        val,
+                                        pc,
+                                        is
+                                    }
+                                );
+                                decoder.decode_type(ty_id, data);
+                            }
+                            fuel::Receipt::Burn { sub_id, contract_id, val, pc, is } => {
+                                let ty_id = Burn::type_id();
+                                let data = serialize(
+                                    &Burn {
+                                        sub_id: AssetId::from(<[u8; 32]>::from(sub_id)),
+                                        contract_id: ContractId::from(<[u8; 32]>::from(contract_id)),
+                                        val,
+                                        pc,
+                                        is
+                                    }
+                                );
+                                decoder.decode_type(ty_id, data);
+                            }
+                            _ => {
+                                info!("This type is not handled yet. (>'.')>");
+                            }
                         }
-
-                        decoder.dispatch(block.header.height);
-
-                        let metadata = IndexMetadataEntity::new(block.time as u64, block.header.height, block.id);
-                        metadata.save();
                     }
-                },
+                }
+
+                decoder.dispatch(block.header.height);
+
+                let metadata = IndexMetadataEntity::new(block.time as u64, block.header.height, block.id);
+                metadata.save();
+            }
+        },
         quote! {
             #decoder_struct
 
