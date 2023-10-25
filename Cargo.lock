@@ -3412,6 +3412,7 @@ dependencies = [
 name = "fuel-indexer-plugin"
 version = "0.21.2"
 dependencies = [
+ "anyhow",
  "bincode",
  "fuel-indexer-lib",
  "fuel-indexer-schema",
@@ -3459,7 +3460,6 @@ dependencies = [
 name = "fuel-indexer-test"
 version = "0.0.0"
 dependencies = [
- "anyhow",
  "fuel-indexer-utils",
  "fuels",
  "getrandom",
@@ -3700,7 +3700,6 @@ dependencies = [
 name = "fuel_explorer"
 version = "0.0.0"
 dependencies = [
- "anyhow",
  "fuel-indexer-utils",
  "fuels",
  "serde",
@@ -4111,7 +4110,6 @@ dependencies = [
 name = "greetings_indexer"
 version = "0.0.0"
 dependencies = [
- "anyhow",
  "fuel-indexer-utils",
  "fuels",
  "serde",
@@ -4284,7 +4282,6 @@ dependencies = [
 name = "hello_world"
 version = "0.0.0"
 dependencies = [
- "anyhow",
  "fuel-indexer-utils",
  "fuels",
  "serde",
@@ -6832,7 +6829,6 @@ checksum = "420acb44afdae038210c99e69aae24109f32f15500aa708e81d46c9f29d55fcf"
 name = "simple-wasm"
 version = "0.0.0"
 dependencies = [
- "anyhow",
  "fuel-indexer-utils",
  "fuel-tx 0.35.3",
  "fuels",

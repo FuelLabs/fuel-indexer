@@ -8,7 +8,6 @@ publish = false
 crate-type = ['cdylib']
 
 [dependencies]
-anyhow = "1"
 fuel-indexer-utils = { workspace = true }
 fuel-tx = { workspace = true }
 fuels = { workspace = true }

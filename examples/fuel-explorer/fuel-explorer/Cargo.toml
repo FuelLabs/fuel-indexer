@@ -9,7 +9,6 @@ rust-version = "1.73.0"
 crate-type = ['cdylib']
 
 [dependencies]
-anyhow = "1"
 fuel-indexer-utils = { workspace = true }
 fuels = { workspace = true }
 serde = { workspace = true }
