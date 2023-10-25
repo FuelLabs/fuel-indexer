@@ -190,6 +190,7 @@ pub fn decode_snippet(
     typ: &TypeDeclaration,
 ) -> proc_macro2::TokenStream {
     let name = typ.decoder_field_ident();
+    let type_field_string = typ.type_field.clone();
     let ty_id = typ.type_id;
 
     if is_fuel_primitive(typ) {
@@ -221,8 +222,10 @@ pub fn decode_snippet(
                 let inner = format_ident! { "{}", inner };
                 quote! {
                     #ty_id => {
-                        let decoded = ABIDecoder::decode_single(&#typ::<#inner>::param_type(), &data).expect("Failed decoding.");
-                        let obj = #typ::<#inner>::from_token(decoded).expect("Failed detokenizing.");
+                        let decoded = ABIDecoder::decode_single(&#typ::<#inner>::param_type(), &data)
+                            .with_context(|| format!("[codegen] Failed decoding {}", #type_field_string))?;
+                        let obj = #typ::<#inner>::from_token(decoded)
+                            .with_context(|| format!("[codegen] Failed detokenizing {}",  #type_field_string))?;
                         self.#name.push(obj);
                     }
                 }
@@ -235,8 +238,10 @@ pub fn decode_snippet(
     } else {
         quote! {
             #ty_id => {
-                let decoded = ABIDecoder::decode_single(&#type_tokens::param_type(), &data).expect("Failed decoding.");
-                let obj = #type_tokens::from_token(decoded).expect("Failed detokenizing.");
+                let decoded = ABIDecoder::decode_single(&#type_tokens::param_type(), &data)
+                    .with_context(|| format!("[codegen] Failed decoding {}", #type_field_string))?;
+                let obj = #type_tokens::from_token(decoded)
+                    .with_context(|| format!("[codegen] Failed detokenizing {}", #type_field_string))?;
                 self.#name.push(obj);
             }
         }
