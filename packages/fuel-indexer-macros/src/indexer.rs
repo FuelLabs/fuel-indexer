@@ -703,7 +703,7 @@ fn process_fn_items(
             #subscribed_contract_ids
 
             use anyhow::Context;
-            use fuel_indexer_utils::plugin::types::fuel::TransactionData;
+            use fuel::TransactionData;
 
             let mut process_transaction = |decoder: &mut Decoders, tx: TransactionData| -> anyhow::Result<()> {
                 let mut return_types = Vec::new();
