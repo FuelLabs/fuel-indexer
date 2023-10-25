@@ -16,8 +16,6 @@ pub fn handler_block_wasm(
 
         #[no_mangle]
         fn handle_events(blob: *mut u8, len: usize) {
-
-
             if let Err(e) = handle_events_internal(blob, len) {
                 unsafe {
                     ERROR_MESSAGE = format!("{e:?}");
