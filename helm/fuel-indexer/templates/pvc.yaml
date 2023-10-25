@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "fuel-indexer.fullname" . }}
+  labels:
+    {{- include "fuel-indexer.labels" . | nindent 4 }}
+spec:
+  storageClassName: {{ .Values.app.volume.storageclass }}
+  accessModes:
+    - {{ .Values.app.volume.accessmodes }}
+  resources:
+    requests:
+      storage: {{ .Values.app.volume.storagerequests }}
