@@ -3472,6 +3472,7 @@ version = "0.0.0"
 dependencies = [
  "actix-service",
  "actix-web",
+ "anyhow",
  "async-std",
  "axum 0.6.20",
  "bigdecimal",
