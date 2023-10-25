@@ -1,4 +1,3 @@
-
 use crate::{
     helpers::*, parse::IndexerConfig, schema::process_graphql_schema,
     wasm::handler_block_wasm,
