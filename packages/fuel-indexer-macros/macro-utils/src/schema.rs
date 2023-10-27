@@ -2,6 +2,8 @@ use fuel_abi_types::abi::program::{ProgramABI, TypeDeclaration};
 use fuel_indexer_lib::{constants, graphql};
 use std::collections::HashMap;
 
+use crate::helpers::{is_unit_type, strip_callpath_from_type_field};
+
 // Given a `TypeDeclaration` for an ABI enum, generate a corresponding GraphQL
 // `enum`.
 //
@@ -109,7 +111,7 @@ pub fn generate_schema(json_abi: &std::path::Path) -> String {
     let abi_types: Vec<TypeDeclaration> = abi
         .types
         .into_iter()
-        .map(crate::helpers::strip_callpath_from_type_field)
+        .map(strip_callpath_from_type_field)
         .collect();
 
     let mut output: Vec<String> = vec![];
