@@ -9,9 +9,6 @@ repository = { workspace = true }
 rust-version = { workspace = true }
 description = "Fuel Indexer Macro Utils"
 
-[lib]
-proc-macro = true
-
 [dependencies]
 proc-macro-error = "1.0"
 proc-macro2 = "1.0"
