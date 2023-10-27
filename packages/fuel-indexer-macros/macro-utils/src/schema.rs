@@ -1,8 +1,8 @@
-use crate::{
-    graphql::constants::ABI_TYPE_MAP,
+use fuel_abi_types::abi::program::{ProgramABI, TypeDeclaration};
+use fuel_indexer_lib::{
+    constants, graphql,
     helpers::{is_unit_type, strip_callpath_from_type_field},
 };
-use fuel_abi_types::abi::program::{ProgramABI, TypeDeclaration};
 use std::collections::HashMap;
 
 // Given a `TypeDeclaration` for an ABI enum, generate a corresponding GraphQL
@@ -69,7 +69,7 @@ fn decode_struct(
 
             // Enum field.
             if let Some(ty) = ty.strip_prefix("enum ") {
-                if crate::constants::RESERVED_TYPEDEF_NAMES.contains(ty) {
+                if constants::RESERVED_TYPEDEF_NAMES.contains(ty) {
                     // For reserved type names, we take the type as is.
                     fields.push(format!("{}: {}!", c.name, ty));
                 } else {
@@ -78,7 +78,7 @@ fn decode_struct(
                 }
             // Struct field.
             } else if let Some(ty) = ty.strip_prefix("struct ") {
-                if crate::constants::RESERVED_TYPEDEF_NAMES.contains(ty) {
+                if constants::RESERVED_TYPEDEF_NAMES.contains(ty) {
                     // For reserved type names, we take the type as is.
                     fields.push(format!("{}: {}!", c.name, ty));
                 } else {
@@ -119,23 +119,25 @@ pub fn generate_schema(json_abi: &std::path::Path) -> String {
 
     for ty in abi_types.iter() {
         // Skip all generic types
-        if crate::constants::IGNORED_GENERIC_METADATA.contains(ty.type_field.as_str()) {
+        if constants::IGNORED_GENERIC_METADATA.contains(ty.type_field.as_str()) {
             continue;
         }
 
         // Only generate schema types for structs and enums
         if let Some(name) = ty.type_field.strip_prefix("struct ") {
-            if crate::constants::RESERVED_TYPEDEF_NAMES.contains(name)
-                || crate::constants::GENERIC_STRUCTS.contains(name)
+            if constants::RESERVED_TYPEDEF_NAMES.contains(name)
+                || constants::GENERIC_STRUCTS.contains(name)
             {
                 continue;
             }
-            if let Some(result) = decode_struct(&ABI_TYPE_MAP, &abi_types, ty) {
+            if let Some(result) =
+                decode_struct(&graphql::constants::ABI_TYPE_MAP, &abi_types, ty)
+            {
                 output.push(result);
             }
         } else if let Some(name) = ty.type_field.strip_prefix("enum ") {
-            if crate::constants::RESERVED_TYPEDEF_NAMES.contains(name)
-                || crate::constants::GENERIC_STRUCTS.contains(name)
+            if constants::RESERVED_TYPEDEF_NAMES.contains(name)
+                || constants::GENERIC_STRUCTS.contains(name)
             {
                 continue;
             }

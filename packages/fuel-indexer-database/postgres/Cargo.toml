@@ -14,12 +14,12 @@ bigdecimal = { version = "0.3" }
 chrono = "0.4.24"
 fuel-indexer-database-types = { workspace = true }
 fuel-indexer-lib = { workspace = true }
-fuel-indexer-macros = { workspace = true, optional = true }
 fuel-indexer-metrics = { workspace = true, optional = true }
+fuel-indexer-metrics-macros = { workspace = true, optional = true }
 sqlx = { version = "0.6", features = ["runtime-tokio-rustls", "postgres", "offline", "time", "chrono", "bigdecimal"] }
 tracing = { workspace = true }
 uuid = { version = "1.3", features = ["v4"] }
 
 [features]
 default = ["metrics"]
-metrics = ["fuel-indexer-macros", "fuel-indexer-metrics"]
+metrics = ["fuel-indexer-metrics-macros", "fuel-indexer-metrics"]

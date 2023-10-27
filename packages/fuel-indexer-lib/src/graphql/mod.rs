@@ -1,6 +1,5 @@
 pub mod constants;
 pub mod parser;
-pub mod schema_gen;
 pub mod types;
 pub mod validator;
 

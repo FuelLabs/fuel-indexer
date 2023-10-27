@@ -15,7 +15,7 @@ use std::time::Instant;
 use fuel_indexer_metrics::METRICS;
 
 #[cfg(feature = "metrics")]
-use fuel_indexer_macros::metrics;
+use fuel_indexer_metrics_macros::metrics;
 
 use chrono::{DateTime, NaiveDateTime, Utc};
 

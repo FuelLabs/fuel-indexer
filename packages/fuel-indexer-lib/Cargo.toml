@@ -17,7 +17,6 @@ bincode = { workspace = true }
 clap = { features = ["cargo", "derive", "env"], workspace = true }
 fuel-abi-types = "0.3"
 fuel-indexer-types = { workspace = true }
-fuels-code-gen = { version = "0.46", default-features = false }
 http = { version = "0.2", default-features = false }
 lazy_static = { version = "1.4" }
 proc-macro2 = "1.0"

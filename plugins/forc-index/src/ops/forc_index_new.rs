@@ -156,7 +156,7 @@ pub fn create_indexer(command: NewCommand) -> anyhow::Result<()> {
     fs::create_dir_all(Path::new(&project_dir).join("schema"))?;
     let schema_contents = {
         if let Some(json_abi) = json_abi {
-            fuel_indexer_lib::graphql::schema_gen::generate_schema(&json_abi)
+            fuel_indexer_macro_utils::schema::generate_schema(&json_abi)
         } else {
             defaults::default_indexer_schema()
         }

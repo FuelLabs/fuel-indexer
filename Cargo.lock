@@ -2683,6 +2683,7 @@ dependencies = [
  "forc-util",
  "fuel-indexer-database-types",
  "fuel-indexer-lib",
+ "fuel-indexer-macro-utils",
  "fuel-tx 0.35.3",
  "fuels",
  "hex",
@@ -3346,7 +3347,6 @@ dependencies = [
  "clap 3.2.25",
  "fuel-abi-types 0.3.0",
  "fuel-indexer-types",
- "fuels-code-gen",
  "http",
  "lazy_static",
  "proc-macro2",
@@ -3367,9 +3367,18 @@ dependencies = [
 name = "fuel-indexer-macro-utils"
 version = "0.21.1"
 dependencies = [
+ "async-graphql-parser 5.0.10",
+ "async-graphql-value 5.0.10",
+ "fuel-abi-types 0.3.0",
+ "fuel-indexer-lib",
+ "fuels",
+ "fuels-code-gen",
+ "lazy_static",
  "proc-macro-error",
  "proc-macro2",
  "quote",
+ "serde_json",
+ "sha2 0.10.7",
  "syn 2.0.29",
 ]
 
@@ -3406,6 +3415,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "fuel-indexer-metrics-macros"
+version = "0.21.1"
+dependencies = [
+ "proc-macro-error",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.29",
+]
+
+[[package]]
 name = "fuel-indexer-plugin"
 version = "0.21.1"
 dependencies = [
@@ -3437,8 +3456,8 @@ dependencies = [
  "chrono",
  "fuel-indexer-database-types",
  "fuel-indexer-lib",
- "fuel-indexer-macro-utils",
  "fuel-indexer-metrics",
+ "fuel-indexer-metrics-macros",
  "sqlx",
  "tracing",
  "uuid 1.4.1",

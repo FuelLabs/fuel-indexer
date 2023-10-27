@@ -5,7 +5,9 @@ use proc_macro_error::proc_macro_error;
 use quote::quote;
 use syn::{parse_macro_input, ItemFn};
 
-fn process_with_prometheus_metrics(input: TokenStream) -> TokenStream {
+#[proc_macro_error]
+#[proc_macro_attribute]
+pub fn metrics(_attrs: TokenStream, input: TokenStream) -> TokenStream {
     let ast = parse_macro_input!(input as ItemFn);
     let fn_name = &ast.sig.ident;
     let label = fn_name.to_string();

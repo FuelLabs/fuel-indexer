@@ -20,6 +20,7 @@ forc-tracing = { version = "0.31", default-features = false }
 forc-util = { version = "0.35.0" }
 fuel-indexer-database-types = { workspace = true }
 fuel-indexer-lib = { workspace = true }
+fuel-indexer-macro-utils = { workspace = true }
 fuel-tx = { features = ["builder"], workspace = true }
 fuels = { default-features = false, workspace = true }
 hex = "0.4.3"
