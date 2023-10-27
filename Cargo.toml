@@ -41,7 +41,7 @@ default-members = [
    "packages/fuel-indexer-graphql",
    "packages/fuel-indexer-lib",
    "packages/fuel-indexer-macros",
-      "packages/fuel-indexer-metrics-macros",
+   "packages/fuel-indexer-metrics-macros",
    "packages/fuel-indexer-metrics",
    "packages/fuel-indexer-plugin",
    "packages/fuel-indexer-schema",

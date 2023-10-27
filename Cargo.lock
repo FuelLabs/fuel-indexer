@@ -3352,7 +3352,6 @@ dependencies = [
  "async-graphql-value 5.0.10",
  "bincode",
  "clap 3.2.25",
- "fuel-abi-types 0.3.0",
  "fuel-indexer-types",
  "http",
  "lazy_static",
@@ -3372,19 +3371,10 @@ dependencies = [
 name = "fuel-indexer-macro-utils"
 version = "0.22.0"
 dependencies = [
- "async-graphql-parser 5.0.10",
- "async-graphql-value 5.0.10",
  "fuel-abi-types 0.3.0",
  "fuel-indexer-lib",
- "fuels",
  "fuels-code-gen",
- "lazy_static",
- "proc-macro-error",
- "proc-macro2",
- "quote",
  "serde_json",
- "sha2 0.10.7",
- "syn 2.0.29",
 ]
 
 [[package]]
@@ -3396,6 +3386,7 @@ dependencies = [
  "fuel-abi-types 0.3.0",
  "fuel-indexer-database-types",
  "fuel-indexer-lib",
+ "fuel-indexer-macro-utils",
  "fuel-indexer-schema",
  "fuel-indexer-types",
  "fuels",

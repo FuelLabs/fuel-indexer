@@ -15,7 +15,6 @@ async-graphql-parser = { workspace = true }
 async-graphql-value = { workspace = true }
 bincode = { workspace = true }
 clap = { features = ["cargo", "derive", "env"], workspace = true }
-fuel-abi-types = "0.3"
 fuel-indexer-types = { workspace = true }
 http = { version = "0.2", default-features = false }
 lazy_static = { version = "1.4" }

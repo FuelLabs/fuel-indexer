@@ -18,6 +18,7 @@ async-graphql-value = "5.0"
 fuel-abi-types = "0.3"
 fuel-indexer-database-types = { workspace = true }
 fuel-indexer-lib = { workspace = true, default-features = true }
+fuel-indexer-macro-utils = { workspace = true }
 fuel-indexer-schema = { workspace = true, default-features = false }
 fuel-indexer-types = { workspace = true }
 fuels = { workspace = true }

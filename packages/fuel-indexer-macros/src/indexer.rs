@@ -4,11 +4,11 @@ use crate::{
 };
 use fuel_abi_types::abi::program::TypeDeclaration;
 use fuel_indexer_lib::{
-    constants::*,
-    helpers::{is_non_decodable_type, is_tuple_type, strip_callpath_from_type_field},
-    manifest::ContractIds,
-    manifest::Manifest,
+    constants::*, manifest::ContractIds, manifest::Manifest,
     utils::workspace_manifest_prefix,
+};
+use fuel_indexer_macro_utils::helpers::{
+    is_non_decodable_type, is_tuple_type, strip_callpath_from_type_field,
 };
 use fuel_indexer_types::{type_id, FUEL_TYPES_NAMESPACE};
 use fuels::{core::codec::resolve_fn_selector, types::param_types::ParamType};
