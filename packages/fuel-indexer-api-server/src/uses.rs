@@ -15,7 +15,7 @@ use axum::{
 use fuel_crypto::{Message, Signature};
 use fuel_indexer_database::{
     queries,
-    types::{IndexerAsset, IndexerAssetType},
+    types::{IndexerAsset, IndexerAssetType, IndexerStatus, RegisteredIndexer},
     IndexerConnectionPool,
 };
 use fuel_indexer_graphql::dynamic::{build_dynamic_schema, execute_query};
@@ -27,7 +27,6 @@ use fuel_indexer_lib::{
         FuelClientHealthResponse, ReloadRequest, ServiceRequest, ServiceStatus,
         StopRequest,
     },
-    ExecutionSource,
 };
 use fuel_indexer_schema::db::manager::SchemaManager;
 use hyper::Client;
@@ -133,7 +132,7 @@ pub(crate) async fn indexer_status(
 
     let mut conn = pool.acquire().await?;
 
-    let indexers: Vec<_> = {
+    let indexers: Vec<RegisteredIndexer> = {
         let indexers = queries::all_registered_indexers(&mut conn).await?;
         if claims.sub().is_empty() {
             indexers
@@ -144,6 +143,21 @@ pub(crate) async fn indexer_status(
                 .collect()
         }
     };
+
+    let statuses = queries::all_registered_indexer_statuses(&mut conn).await?;
+
+    let indexers: Vec<(RegisteredIndexer, IndexerStatus)> = indexers
+        .into_iter()
+        .map(|i| {
+            if let Some(status) =
+                statuses.get(&(i.namespace.clone(), i.identifier.clone()))
+            {
+                (i, status.clone())
+            } else {
+                (i, IndexerStatus::unknown())
+            }
+        })
+        .collect();
 
     let json: serde_json::Value = serde_json::to_value(indexers)?;
 
@@ -361,14 +375,7 @@ async fn register_indexer_assets_transaction(
                 schema_manager
                     .write()
                     .await
-                    .new_schema(
-                        namespace,
-                        identifier,
-                        schema,
-                        // Only WASM can be sent over the web.
-                        ExecutionSource::Wasm,
-                        conn,
-                    )
+                    .new_schema(namespace, identifier, schema, conn)
                     .await?;
 
                 assets.push(asset);

@@ -1,8 +1,5 @@
 use crate::{
-    helpers::*,
-    native::{handler_block_native, native_main},
-    parse::IndexerConfig,
-    schema::process_graphql_schema,
+    helpers::*, parse::IndexerConfig, schema::process_graphql_schema,
     wasm::handler_block_wasm,
 };
 use fuel_abi_types::abi::program::TypeDeclaration;
@@ -12,7 +9,6 @@ use fuel_indexer_lib::{
     manifest::ContractIds,
     manifest::Manifest,
     utils::workspace_manifest_prefix,
-    ExecutionSource,
 };
 use fuel_indexer_types::{type_id, FUEL_TYPES_NAMESPACE};
 use fuels::{core::codec::resolve_fn_selector, types::param_types::ParamType};
@@ -501,8 +497,6 @@ fn process_fn_items(
         }
     };
 
-    let (asyncness, awaitness) = manifest.execution_source().async_awaitness();
-
     for item in contents {
         match item {
             Item::Fn(fn_item) => {
@@ -565,6 +559,7 @@ fn process_fn_items(
                 }
 
                 let fn_name = &fn_item.sig.ident;
+                let fn_name_string = fn_name.to_string();
 
                 if arg_list.is_empty() {
                     proc_macro_error::abort_call_site!(
@@ -573,9 +568,26 @@ fn process_fn_items(
                     );
                 }
 
+                let fn_call = if fn_item.sig.output == syn::ReturnType::Default {
+                    quote! {
+                        #fn_name(#(#arg_list),*)
+                    }
+                } else {
+                    quote! {
+                        if let Err(e) = #fn_name(#(#arg_list),*) {
+                            unsafe {
+                                if !ERROR_MESSAGE.is_empty() {
+                                    ERROR_MESSAGE += "\n";
+                                }
+                                ERROR_MESSAGE += &format!("{} failed with an error: {}", #fn_name_string, e.to_string());
+                            }
+                        }
+                    }
+                };
+
                 abi_dispatchers.push(quote! {
                     if ( #(#input_checks)&&* ) {
-                        #fn_name(#(#arg_list),*)#awaitness;
+                        #fn_call
                     }
                 });
 
@@ -670,8 +682,16 @@ fn process_fn_items(
                 }
             }
 
-            pub #asyncness fn dispatch(&self) {
+            pub fn dispatch(&self, block_height: u32) {
                 #(#abi_dispatchers)*
+
+                unsafe {
+                    if !ERROR_MESSAGE.is_empty() {
+                        let message = ERROR_MESSAGE.lines().map(|l| format!("    {l}")).collect::<Vec<String>>().join("\n");
+                        ERROR_MESSAGE = format!("At height {}:\n", block_height) + &message;
+                        early_exit(WasmIndexerError::GeneralError)
+                    }
+                }
             }
         }
     };
@@ -885,10 +905,11 @@ fn process_fn_items(
                         }
                     }
                 }
-                decoder.dispatch()#awaitness;
+
+                decoder.dispatch(block.header.height);
 
                 let metadata = IndexMetadataEntity::new(block.time as u64, block.header.height, block.id);
-                metadata.save()#awaitness;
+                metadata.save();
             }
         },
         quote! {
@@ -930,23 +951,14 @@ pub fn prefix_abi_and_schema_paths(
     (None, schema.to_string())
 }
 
-pub fn get_abi_tokens(
-    namespace: &str,
-    abi: &str,
-    exec_source: ExecutionSource,
-) -> proc_macro2::TokenStream {
-    let no_std = match exec_source {
-        ExecutionSource::Native => false,
-        ExecutionSource::Wasm => true,
-    };
-
+pub fn get_abi_tokens(namespace: &str, abi: &str) -> proc_macro2::TokenStream {
     match Abigen::generate(
         vec![AbigenTarget {
             name: namespace.to_string(),
             abi: abi.to_owned(),
             program_type: ProgramType::Contract,
         }],
-        no_std,
+        true,
     ) {
         Ok(tokens) => tokens,
         Err(e) => {
@@ -975,9 +987,7 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
         prefix_abi_and_schema_paths(manifest.abi(), manifest.graphql_schema());
 
     let abi_tokens = match abi {
-        Some(ref abi_path) => {
-            get_abi_tokens(manifest.namespace(), abi_path, manifest.execution_source())
-        }
+        Some(ref abi_path) => get_abi_tokens(manifest.namespace(), abi_path),
         None => proc_macro2::TokenStream::new(),
     };
 
@@ -986,50 +996,23 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
         manifest.namespace(),
         manifest.identifier(),
         &schema_string,
-        manifest.execution_source(),
     );
 
     let decl_tokens = additional_declarations();
 
-    let output = match manifest.execution_source() {
-        ExecutionSource::Native => {
-            let (handler_block, fn_items) =
-                process_fn_items(&manifest, abi, indexer_module);
-            let handler_block = handler_block_native(handler_block);
-            let naitve_main_tokens = native_main();
+    let (handler_block, fn_items) = process_fn_items(&manifest, abi, indexer_module);
+    let handler_block = handler_block_wasm(handler_block);
+    let output = quote! {
 
-            quote! {
+        #decl_tokens
 
-                #decl_tokens
+        #abi_tokens
 
-                #abi_tokens
+        #graphql_tokens
 
-                #graphql_tokens
+        #handler_block
 
-                #handler_block
-
-                #fn_items
-
-                #naitve_main_tokens
-            }
-        }
-        ExecutionSource::Wasm => {
-            let (handler_block, fn_items) =
-                process_fn_items(&manifest, abi, indexer_module);
-            let handler_block = handler_block_wasm(handler_block);
-            quote! {
-
-                #decl_tokens
-
-                #abi_tokens
-
-                #graphql_tokens
-
-                #handler_block
-
-                #fn_items
-            }
-        }
+        #fn_items
     };
 
     proc_macro::TokenStream::from(output)

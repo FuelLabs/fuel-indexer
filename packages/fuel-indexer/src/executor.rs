@@ -12,7 +12,7 @@ use fuel_core_client::client::{
     types::TransactionStatus as ClientTransactionStatus,
     FuelClient,
 };
-use fuel_indexer_database::{queries, IndexerConnectionPool};
+use fuel_indexer_database::{queries, types::IndexerStatus, IndexerConnectionPool};
 use fuel_indexer_lib::{
     defaults::*, manifest::Manifest, utils::serialize, WasmIndexerError,
 };
@@ -105,9 +105,8 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
 
     info!("Indexer({indexer_uid}) subscribing to Fuel node at {fuel_node_addr}");
 
-    let client = FuelClient::from_str(&fuel_node_addr).with_context(|| {
-        format!("Indexer({indexer_uid}) client node connection failed.")
-    })?;
+    let client = FuelClient::from_str(&fuel_node_addr)
+        .with_context(|| "Client node connection failed".to_string())?;
 
     if let Some(end_block) = end_block {
         info!("Indexer({indexer_uid}) will stop at block #{end_block}.");
@@ -118,9 +117,10 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
     let allow_non_sequential_blocks = config.allow_non_sequential_blocks;
 
     let task = async move {
-        let mut conn = pool.acquire().await.with_context(|| {
-            format!("Indexer({indexer_uid}) was unable to acquire a database connection.")
-        })?;
+        let mut conn = pool
+            .acquire()
+            .await
+            .with_context(|| "Unable to acquire a database connection".to_string())?;
 
         if allow_non_sequential_blocks {
             queries::remove_ensure_block_height_consecutive_trigger(
@@ -128,7 +128,10 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                 executor.manifest().namespace(),
                 executor.manifest().identifier(),
             )
-            .await.with_context(|| format!("Unable to remove the sequential blocks trigger for Indexer({indexer_uid})"))?;
+            .await
+            .with_context(|| {
+                "Unable to remove the sequential blocks trigger".to_string()
+            })?;
         } else {
             queries::create_ensure_block_height_consecutive_trigger(
                 &mut conn,
@@ -136,7 +139,9 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                 executor.manifest().identifier(),
             )
             .await
-            .with_context(|| format!("Unable to create the sequential blocks trigger for Indexer({indexer_uid})"))?;
+            .with_context(|| {
+                "Unable to create the sequential blocks trigger".to_string()
+            })?;
         }
 
         // If we reach an issue that continues to fail, we'll retry a few times before giving up, as
@@ -163,7 +168,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
         loop {
             // If something else has signaled that this indexer should stop, then stop.
             if executor.kill_switch().load(Ordering::SeqCst) {
-                return Err(IndexerError::KillSwitch(indexer_uid));
+                return Err(IndexerError::KillSwitch);
             }
 
             // Fetch the next page of blocks, and the starting cursor for the subsequent page
@@ -219,24 +224,22 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
 
             // If the kill switch has been triggered, the executor exits early.
             if executor.kill_switch().load(Ordering::SeqCst) {
-                return Err(IndexerError::KillSwitch(indexer_uid));
+                return Err(IndexerError::KillSwitch);
             }
 
             if let Err(e) = result {
                 if let IndexerError::RuntimeError(ref e) = e {
                     match e.downcast_ref::<WasmIndexerError>() {
                         Some(&WasmIndexerError::MissingBlocksError) => {
-                            return Err(anyhow::format_err!(
-                                "Indexer({indexer_uid}) terminating due to missing blocks."
-                            )
-                            .into());
+                            return Err(anyhow::anyhow!("{e}").into());
                         }
-                        Some(&WasmIndexerError::Panic) => {
+                        Some(&WasmIndexerError::Panic)
+                        | Some(&WasmIndexerError::GeneralError) => {
                             let message = executor
-                                .get_panic_message()
+                                .get_error_message()
                                 .await
                                 .unwrap_or("unknown".to_string());
-                            return Err(anyhow::anyhow!("Indexer({indexer_uid}) terminating due to a panic:\n{message}").into());
+                            return Err(anyhow::anyhow!("{message}").into());
                         }
                         _ => (),
                     }
@@ -281,9 +284,20 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
             // If we make it this far, we always go to the next page.
             cursor = next_cursor;
 
+            queries::set_indexer_status(
+                &mut conn,
+                executor.manifest().namespace(),
+                executor.manifest().identifier(),
+                IndexerStatus::running(format!(
+                    "Indexed {} blocks",
+                    cursor.clone().unwrap_or("0".to_string())
+                )),
+            )
+            .await?;
+
             // Again, check if something else has signaled that this indexer should stop, then stop.
             if executor.kill_switch().load(Ordering::SeqCst) {
-                return Err(IndexerError::KillSwitch(indexer_uid));
+                return Err(IndexerError::KillSwitch);
             }
 
             // Since we had successful call, we reset the retry count.
@@ -552,8 +566,6 @@ pub async fn retrieve_blocks_from_node(
 }
 
 /// Executors are responsible for the actual indexing of data.
-///
-/// Executors can either be WASM modules or native Rust functions.
 #[async_trait]
 pub trait Executor
 where
@@ -565,7 +577,7 @@ where
 
     fn kill_switch(&self) -> &Arc<AtomicBool>;
 
-    async fn get_panic_message(&self) -> IndexerResult<String>;
+    async fn get_error_message(&self) -> IndexerResult<String>;
 }
 
 /// WASM indexer runtime environment responsible for fetching/saving data to and from the database.
@@ -604,107 +616,6 @@ impl IndexEnv {
             db: Arc::new(Mutex::new(db)),
             kill_switch,
         })
-    }
-}
-
-/// Native executors differ from WASM executors in that they are not sandboxed; they are merely a
-/// set of native Rust functions that (run/execute/are spawned) directly from the indexer service
-/// process.
-pub struct NativeIndexExecutor<F>
-where
-    F: Future<Output = IndexerResult<()>> + Send,
-{
-    /// Reference to the connected database.
-    db: Arc<Mutex<Database>>,
-
-    /// Manifest of the indexer.
-    manifest: Manifest,
-
-    /// Function that handles events.
-    handle_events_fn: fn(Vec<BlockData>, Arc<Mutex<Database>>) -> F,
-
-    /// Kill switch. When set to true, the indexer must stop execution.
-    kill_switch: Arc<AtomicBool>,
-}
-
-impl<F> NativeIndexExecutor<F>
-where
-    F: Future<Output = IndexerResult<()>> + Send,
-{
-    /// Create a new `NativeIndexExecutor`.
-    pub async fn new(
-        manifest: &Manifest,
-        pool: IndexerConnectionPool,
-        config: &IndexerConfig,
-        handle_events_fn: fn(Vec<BlockData>, Arc<Mutex<Database>>) -> F,
-    ) -> IndexerResult<Self> {
-        let mut db = Database::new(pool.clone(), manifest, config).await;
-        let mut conn = pool.acquire().await?;
-        let version = fuel_indexer_database::queries::type_id_latest(
-            &mut conn,
-            manifest.namespace(),
-            manifest.identifier(),
-        )
-        .await?;
-        db.load_schema(version).await?;
-        let kill_switch = Arc::new(AtomicBool::new(false));
-        Ok(Self {
-            db: Arc::new(Mutex::new(db)),
-            manifest: manifest.to_owned(),
-            handle_events_fn,
-            kill_switch,
-        })
-    }
-
-    /// Create a new `NativeIndexExecutor`.
-    pub async fn create(
-        config: &IndexerConfig,
-        manifest: &Manifest,
-        pool: IndexerConnectionPool,
-        handle_events: fn(Vec<BlockData>, Arc<Mutex<Database>>) -> F,
-    ) -> IndexerResult<Self> {
-        NativeIndexExecutor::new(manifest, pool.clone(), config, handle_events).await
-    }
-}
-
-#[async_trait]
-impl<F> Executor for NativeIndexExecutor<F>
-where
-    F: Future<Output = IndexerResult<()>> + Send,
-{
-    /// Handle events for  native executor.
-    async fn handle_events(&mut self, blocks: Vec<BlockData>) -> IndexerResult<()> {
-        self.db.lock().await.start_transaction().await?;
-        let res = (self.handle_events_fn)(blocks, self.db.clone()).await;
-        let uid = self.manifest.uid();
-        if let Err(e) = res {
-            error!("NativeIndexExecutor({uid}) handle_events failed: {e:?}.");
-            self.db.lock().await.revert_transaction().await?;
-            return Err(IndexerError::NativeExecutionRuntimeError);
-        } else {
-            // Do not commit if kill switch has been triggered.
-            if self.kill_switch.load(Ordering::SeqCst) {
-                self.db.lock().await.revert_transaction().await?;
-            } else {
-                self.db.lock().await.commit_transaction().await?;
-            }
-        }
-        Ok(())
-    }
-
-    fn kill_switch(&self) -> &Arc<AtomicBool> {
-        &self.kill_switch
-    }
-
-    fn manifest(&self) -> &Manifest {
-        &self.manifest
-    }
-
-    async fn get_panic_message(&self) -> IndexerResult<String> {
-        return Err(anyhow::anyhow!(
-            "get_panic_message() not supported in native exetutor."
-        )
-        .into());
     }
 }
 
@@ -900,10 +811,11 @@ impl WasmIndexExecutor {
             );
             Ok(())
         } else {
-            Err(IndexerError::Unknown(
+            Err(anyhow::anyhow!(
                 "Attempting to set metering points when metering is not enables"
                     .to_string(),
-            ))
+            )
+            .into())
         }
     }
 }
@@ -992,9 +904,9 @@ impl Executor for WasmIndexExecutor {
         &self.manifest
     }
 
-    async fn get_panic_message(&self) -> IndexerResult<String> {
+    async fn get_error_message(&self) -> IndexerResult<String> {
         let mut store = self.store.lock().await;
-        let result = ffi::get_panic_message(&mut store, &self.instance)?;
+        let result = ffi::get_error_message(&mut store, &self.instance)?;
         Ok(result)
     }
 }

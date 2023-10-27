@@ -33,9 +33,4 @@ bash scripts/stripper.bash greetings_indexer.wasm
 cp greetings_indexer.wasm target/wasm32-unknown-unknown/release/
 rm -fv greetings_indexer.wasm
 
-
-cargo build -p greetings_native_indexer --locked --release
-
-
-
 set +ex

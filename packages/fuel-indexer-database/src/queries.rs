@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::{types::*, IndexerConnection};
 use fuel_indexer_postgres as postgres;
 use sqlx::types::{
@@ -410,6 +412,8 @@ pub async fn put_many_to_many_record(
     }
 }
 
+/// Create a database trigger on the indexer's indexmetadataentity table that
+/// ensures no blocks can be missing.
 pub async fn create_ensure_block_height_consecutive_trigger(
     conn: &mut IndexerConnection,
     namespace: &str,
@@ -425,6 +429,8 @@ pub async fn create_ensure_block_height_consecutive_trigger(
     }
 }
 
+/// When -allow-non-sequential-blocks is set, we need to remove the trigger from
+/// indexer's indexmetadataentity table.
 pub async fn remove_ensure_block_height_consecutive_trigger(
     conn: &mut IndexerConnection,
     namespace: &str,
@@ -436,6 +442,31 @@ pub async fn remove_ensure_block_height_consecutive_trigger(
                 c, namespace, identifier,
             )
             .await
+        }
+    }
+}
+
+/// Set the status of a registered indexer to be displayed by `forc index status`.
+pub async fn set_indexer_status(
+    conn: &mut IndexerConnection,
+    namespace: &str,
+    identifier: &str,
+    status: IndexerStatus,
+) -> sqlx::Result<()> {
+    match conn {
+        IndexerConnection::Postgres(ref mut c) => {
+            postgres::set_indexer_status(c, namespace, identifier, status).await
+        }
+    }
+}
+
+/// Return the statuses of all indexers registered with the service.
+pub async fn all_registered_indexer_statuses(
+    conn: &mut IndexerConnection,
+) -> sqlx::Result<HashMap<(String, String), IndexerStatus>> {
+    match conn {
+        IndexerConnection::Postgres(ref mut c) => {
+            postgres::all_registered_indexer_statuses(c).await
         }
     }
 }

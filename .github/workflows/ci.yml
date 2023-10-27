@@ -64,7 +64,7 @@ jobs:
       - name: Install Cargo.toml linter
         run: cargo binstall --no-confirm cargo-sort
       - name: Run Cargo.toml sort check
-        run: cargo sort -w --check packages/**/Cargo.toml
+        run: cargo sort -w --check
   docs-test:
     uses: FuelLabs/github-actions/.github/workflows/mdbook-docs.yml@master
     with:
@@ -167,6 +167,15 @@ jobs:
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ env.RUSTC_VERSION }}
+          targets: wasm32-unknown-unknown
+      - name: Install wasm-snip
+        run: |
+          if ! which wasm-snip; then cargo install wasm-snip; fi
+      - name: Build simple-wasm WASM
+        run: |
+          cargo build -p simple-wasm --release --target wasm32-unknown-unknown
+          bash scripts/stripper.bash simple_wasm.wasm
+          cp simple_wasm.wasm target/wasm32-unknown-unknown/release/
       - name: cargo test --locked --all-targets --workspace --exclude fuel-indexer-tests
           --exclude plugin-tests --exclude fuel-indexer-benchmarks
         run: cargo test --locked --all-targets --workspace --exclude fuel-indexer-tests
@@ -216,10 +225,6 @@ jobs:
           if ! which wasm-snip; then cargo install wasm-snip; fi
       - name: Build fuel-indexer* and forc-index binaries
         run: cargo build -p forc-index -p fuel-indexer -p fuel-indexer-api-server --locked --release
-      - name: Build and test examples
-        run: |
-          export PATH=$PATH:$PWD/target/release
-          bash ./packages/fuel-indexer-tests/scripts/test-examples.bash
       - name: Build fuel-indexer-test WASM
         run: |
           cargo build -p fuel-indexer-test --release --target wasm32-unknown-unknown
@@ -230,6 +235,10 @@ jobs:
           cargo build -p simple-wasm --release --target wasm32-unknown-unknown
           bash scripts/stripper.bash simple_wasm.wasm
           cp simple_wasm.wasm target/wasm32-unknown-unknown/release/
+      - name: Build and test examples
+        run: |
+          export PATH=$PATH:$PWD/target/release
+          bash ./packages/fuel-indexer-tests/scripts/test-examples.bash
       - name: Integration tests
         run: |
           export PATH=$PATH:$PWD/target/release

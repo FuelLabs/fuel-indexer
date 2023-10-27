@@ -64,12 +64,12 @@ fn get_string_from_instance(
 }
 
 /// Get the version of the indexer schema stored in the WASM instance.
-pub fn get_panic_message(store: &mut Store, instance: &Instance) -> FFIResult<String> {
+pub fn get_error_message(store: &mut Store, instance: &Instance) -> FFIResult<String> {
     get_string_from_instance(
         store,
         instance,
-        "get_panic_message_ptr",
-        "get_panic_message_len",
+        "get_error_message_ptr",
+        "get_error_message_len",
     )
 }
 

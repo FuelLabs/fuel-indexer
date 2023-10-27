@@ -2,9 +2,7 @@
 use crate::{decoder::*, helpers::*};
 use async_graphql_parser::types::{TypeDefinition, TypeKind};
 use fuel_indexer_lib::graphql::GraphQLSchema;
-use fuel_indexer_lib::{
-    graphql::ParsedGraphQLSchema, utils::workspace_manifest_prefix, ExecutionSource,
-};
+use fuel_indexer_lib::{graphql::ParsedGraphQLSchema, utils::workspace_manifest_prefix};
 use quote::quote;
 use std::fs::File;
 use std::io::Read;
@@ -37,7 +35,6 @@ pub(crate) fn process_graphql_schema(
     namespace: &str,
     identifier: &str,
     schema_path: &str,
-    exec_source: ExecutionSource,
 ) -> proc_macro2::TokenStream {
     let namespace_tokens = const_item("NAMESPACE", namespace);
     let identifer_tokens = const_item("IDENTIFIER", identifier);
@@ -73,9 +70,8 @@ pub(crate) fn process_graphql_schema(
         #toolchain_version_tokens
     };
 
-    let schema =
-        ParsedGraphQLSchema::new(namespace, identifier, exec_source, Some(&schema))
-            .expect("Failed to parse GraphQL schema.");
+    let schema = ParsedGraphQLSchema::new(namespace, identifier, Some(&schema))
+        .expect("Failed to parse GraphQL schema.");
 
     for (_, type_def) in schema.type_defs().iter() {
         if let Some(def) = process_type_def(&schema, type_def) {

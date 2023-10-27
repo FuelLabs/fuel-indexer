@@ -1,7 +1,7 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use fuel_indexer_database::DbType;
 use fuel_indexer_graphql::graphql::GraphqlQueryBuilder;
-use fuel_indexer_lib::{graphql::GraphQLSchema, ExecutionSource};
+use fuel_indexer_lib::graphql::GraphQLSchema;
 use fuel_indexer_schema::db::tables::IndexerSchema;
 
 fn build_and_parse_query(c: &mut Criterion) {
@@ -25,7 +25,6 @@ fn build_and_parse_query(c: &mut Criterion) {
                 "default_indexer",
                 black_box(&gql_schema),
                 DbType::Postgres,
-                ExecutionSource::Wasm,
             )
             .unwrap();
 
@@ -60,7 +59,6 @@ fn build_and_parse_query_with_args(c: &mut Criterion) {
                 "fuel_explorer",
                 black_box(&gql_schema),
                 DbType::Postgres,
-                ExecutionSource::Wasm,
             )
             .unwrap();
 

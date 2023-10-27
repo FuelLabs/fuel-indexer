@@ -5,6 +5,5 @@ pub mod forc_index_deploy;
 pub mod forc_index_kill;
 pub mod forc_index_new;
 pub mod forc_index_remove;
-pub mod forc_index_run_native;
 pub mod forc_index_start;
 pub mod forc_index_status;

@@ -8,7 +8,7 @@ pub(crate) mod queries;
 mod service;
 
 pub use database::Database;
-pub use executor::{Executor, IndexEnv, NativeIndexExecutor, WasmIndexExecutor};
+pub use executor::{Executor, IndexEnv, WasmIndexExecutor};
 pub use fuel_indexer_database::IndexerDatabaseError;
 pub use fuel_indexer_lib::{
     config::IndexerConfig,
@@ -26,8 +26,7 @@ use openssl as _;
 pub mod prelude {
     pub use super::{
         Database, Executor, FtColumn, IndexEnv, IndexerConfig, IndexerError,
-        IndexerResult, IndexerService, Manifest, Module, NativeIndexExecutor,
-        WasmIndexExecutor,
+        IndexerResult, IndexerService, Manifest, Module, WasmIndexExecutor,
     };
     pub use async_std::sync::{Arc, Mutex};
     pub use fuel_indexer_lib::config::{DatabaseConfig, FuelClientConfig, WebApiConfig};
@@ -70,26 +69,23 @@ pub enum IndexerError {
     InvalidPortNumber(#[from] core::num::ParseIntError),
     #[error("No open transaction for {0}. Was a transaction started?")]
     NoTransactionError(String),
-    #[error("{0}.")]
-    Unknown(String),
     #[error("Indexer schema error: {0:?}")]
     SchemaError(#[from] IndexerSchemaDbError),
     #[error("Manifest error: {0:?}")]
     ManifestError(#[from] ManifestError),
     #[error("Error creating wasm executor.")]
     WasmExecutionInstantiationError,
-    #[error("Error creating native executor.")]
-    NativeExecutionInstantiationError,
     #[error("Native execution runtime error.")]
     NativeExecutionRuntimeError,
     #[error("Tokio time error: {0:?}")]
     Elapsed(#[from] tokio::time::error::Elapsed),
-    #[error("Indexer end block has been stopping execution.")]
-    EndBlockMet,
     #[error("Invalid schema: {0:?}")]
     SchemaVersionMismatch(String),
     #[error(transparent)]
     Other(#[from] anyhow::Error),
-    #[error("Indexer({0}) kill switch flipped. <('.')>")]
-    KillSwitch(String),
+    // The following errors actually signify a successful completion.
+    #[error("Kill switch has been flipped. <('.')>")]
+    KillSwitch,
+    #[error("End block has been met.")]
+    EndBlockMet,
 }

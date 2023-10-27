@@ -4,7 +4,6 @@ extern crate proc_macro;
 pub(crate) mod decoder;
 pub(crate) mod helpers;
 pub(crate) mod indexer;
-pub(crate) mod native;
 pub(crate) mod parse;
 pub(crate) mod schema;
 pub(crate) mod wasm;

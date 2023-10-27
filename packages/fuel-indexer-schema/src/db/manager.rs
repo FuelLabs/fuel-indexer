@@ -5,7 +5,7 @@
 
 use crate::db::{tables::IndexerSchema, IndexerSchemaDbResult};
 use fuel_indexer_database::{queries, IndexerConnection, IndexerConnectionPool};
-use fuel_indexer_lib::{graphql::GraphQLSchema, ExecutionSource};
+use fuel_indexer_lib::graphql::GraphQLSchema;
 use tracing::info;
 
 /// `SchemaManager` is a wrapper for `IndexerSchema` that also provides
@@ -26,7 +26,6 @@ impl SchemaManager {
         namespace: &str,
         identifier: &str,
         schema: GraphQLSchema,
-        exec_source: ExecutionSource,
         conn: &mut IndexerConnection,
     ) -> IndexerSchemaDbResult<()> {
         let version = schema.version();
@@ -38,9 +37,8 @@ impl SchemaManager {
                 identifier,
                 &schema,
                 self.pool.database_type(),
-                exec_source.clone(),
             )?
-            .commit(&schema, exec_source, conn)
+            .commit(&schema, conn)
             .await?;
         }
         Ok(())

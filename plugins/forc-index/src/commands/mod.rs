@@ -5,6 +5,5 @@ pub mod deploy;
 pub mod kill;
 pub mod new;
 pub mod remove;
-pub mod run_native;
 pub mod start;
 pub mod status;
