@@ -62,6 +62,7 @@ lazy_static! {
         "Option<Json>",
     ]);
 
+    /// The mapping of Sway types to GraphQL types used in automatic GraphQL schema generation.
     pub static ref ABI_TYPE_MAP: HashMap<&'static str, &'static str> = HashMap::from_iter([
         ("u128", "U128"),
         ("u64", "U64"),
