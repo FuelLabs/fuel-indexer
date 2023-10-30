@@ -235,10 +235,9 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                         }
                         Some(&WasmIndexerError::Panic)
                         | Some(&WasmIndexerError::GeneralError) => {
-                            let message = executor
-                                .get_error_message()
-                                .await
-                                .unwrap_or("unknown".to_string());
+                            let message = executor.get_error_message().await.unwrap_or(
+                                "unable to extract the error message".to_string(),
+                            );
                             return Err(anyhow::anyhow!("{message}").into());
                         }
                         _ => (),

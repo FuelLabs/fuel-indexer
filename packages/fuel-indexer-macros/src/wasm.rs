@@ -16,6 +16,16 @@ pub fn handler_block_wasm(
 
         #[no_mangle]
         fn handle_events(blob: *mut u8, len: usize) {
+            if let Err(e) = handle_events_internal(blob, len) {
+                unsafe {
+                    ERROR_MESSAGE = format!("{e:?}");
+                    early_exit(WasmIndexerError::GeneralError);
+                }
+            }
+        }
+
+        #[no_mangle]
+        fn handle_events_internal(blob: *mut u8, len: usize) -> anyhow::Result<()> {
             register_panic_hook();
 
             use fuel_indexer_utils::plugin::deserialize;
@@ -31,6 +41,8 @@ pub fn handler_block_wasm(
             core::mem::forget(bytes);
 
             #handler_block
+
+            Ok(())
         }
     }
 }
@@ -79,6 +91,7 @@ fn panic_hook() -> proc_macro2::TokenStream {
 /// indexer module, not within the scope of the entire lib module.
 fn wasm_prelude() -> proc_macro2::TokenStream {
     quote! {
+        use fuel_indexer_utils::plugin::anyhow::{self, Context};
         use alloc::{format, vec, vec::Vec};
         use std::str::FromStr;
 

@@ -23,6 +23,7 @@ harness = true
 [dependencies]
 actix-service = { version = "2", default-features = false }
 actix-web = { version = "4", default-features = false, features = ["macros"] }
+anyhow = "1"
 async-std = "1"
 axum = { version = "0.6", features = ["multipart"] }
 bigdecimal = { version = "0.3" }

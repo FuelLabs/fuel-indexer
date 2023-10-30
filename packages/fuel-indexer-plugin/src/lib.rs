@@ -25,6 +25,7 @@ pub mod utils {
     pub use fuel_indexer_lib::utils::sha256_digest;
 }
 
+pub use anyhow;
 pub use bincode;
 pub use fuel_indexer_lib::{
     graphql::MAX_FOREIGN_KEY_LIST_FIELDS,

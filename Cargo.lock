@@ -3412,6 +3412,7 @@ dependencies = [
 name = "fuel-indexer-plugin"
 version = "0.22.0"
 dependencies = [
+ "anyhow",
  "bincode",
  "fuel-indexer-lib",
  "fuel-indexer-schema",
@@ -3471,6 +3472,7 @@ version = "0.0.0"
 dependencies = [
  "actix-service",
  "actix-web",
+ "anyhow",
  "async-std",
  "axum 0.6.20",
  "bigdecimal",

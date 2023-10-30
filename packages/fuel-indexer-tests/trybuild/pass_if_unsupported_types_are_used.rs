@@ -24,6 +24,6 @@ mod indexer {
 }
 
 fn main() {
-    // We're not actually testing the serialization of the event from the ABI JSON here, 
+    // We're not actually testing the serialization of the event from the ABI JSON here,
     // we're just testing that this compiles.
 }
