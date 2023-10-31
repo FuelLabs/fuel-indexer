@@ -109,6 +109,7 @@ impl Default for IndexerArgs {
             block_page_size: defaults::NODE_BLOCK_PAGE_SIZE,
             allow_non_sequential_blocks: defaults::ALLOW_NON_SEQUENTIAL_BLOCKS,
             disable_toolchain_version_check: defaults::DISABLE_TOOLCHAIN_VERSION_CHECK,
+            node_request_delay: None,
         }
     }
 }
@@ -140,6 +141,7 @@ pub struct IndexerConfig {
     pub block_page_size: usize,
     pub allow_non_sequential_blocks: bool,
     pub disable_toolchain_version_check: bool,
+    pub node_request_delay: Option<u64>,
 }
 
 impl Default for IndexerConfig {
@@ -163,6 +165,7 @@ impl Default for IndexerConfig {
             block_page_size: defaults::NODE_BLOCK_PAGE_SIZE,
             allow_non_sequential_blocks: defaults::ALLOW_NON_SEQUENTIAL_BLOCKS,
             disable_toolchain_version_check: defaults::DISABLE_TOOLCHAIN_VERSION_CHECK,
+            node_request_delay: None,
         }
     }
 }
@@ -246,6 +249,7 @@ impl From<IndexerArgs> for IndexerConfig {
             block_page_size: args.block_page_size,
             allow_non_sequential_blocks: args.allow_non_sequential_blocks,
             disable_toolchain_version_check: args.disable_toolchain_version_check,
+            node_request_delay: args.node_request_delay,
         };
 
         config
@@ -335,6 +339,7 @@ impl From<ApiServerArgs> for IndexerConfig {
             block_page_size: defaults::NODE_BLOCK_PAGE_SIZE,
             allow_non_sequential_blocks: defaults::ALLOW_NON_SEQUENTIAL_BLOCKS,
             disable_toolchain_version_check: args.disable_toolchain_version_check,
+            node_request_delay: None,
         };
 
         config
@@ -372,6 +377,8 @@ impl IndexerConfig {
             serde_yaml::Value::String("accept_sql_queries".into());
 
         let block_page_size_key = serde_yaml::Value::String("block_page_size".into());
+        let node_request_delay_key =
+            serde_yaml::Value::String("node_request_delay".into());
 
         if let Some(accept_sql_queries) = content.get(accept_sql_config_key) {
             config.accept_sql_queries = accept_sql_queries.as_bool().unwrap();
@@ -415,6 +422,10 @@ impl IndexerConfig {
 
         if let Some(block_page_size) = content.get(block_page_size_key) {
             config.block_page_size = block_page_size.as_u64().unwrap() as usize;
+        }
+
+        if let Some(node_request_delay) = content.get(node_request_delay_key) {
+            config.node_request_delay = node_request_delay.as_u64();
         }
 
         let fuel_config_key = serde_yaml::Value::String("fuel_node".into());

@@ -205,6 +205,13 @@ pub struct IndexerArgs {
         help = "By default, Fuel Indexer will only accept WASM indexer modules compiled with the same toolchain version as the version of Fuel Indexer."
     )]
     pub disable_toolchain_version_check: bool,
+
+    /// If present, the Fuel indexer service will wait for this particular duration between requests to a Fuel node.
+    #[clap(
+        long,
+        help = "If present, the Fuel indexer service will wait for this particular duration between requests to a Fuel node"
+    )]
+    pub node_request_delay: Option<u64>,
 }
 
 #[derive(Debug, Parser, Clone)]

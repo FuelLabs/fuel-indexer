@@ -70,6 +70,10 @@ OPTIONS:
         --metrics
             Use Prometheus metrics reporting.
 
+        --node-request-delay <NODE_REQUEST_DELAY>
+            If present, the Fuel indexer service will wait for this particular duration between
+            requests to a Fuel node
+
         --postgres-database <POSTGRES_DATABASE>
             Postgres database.
 

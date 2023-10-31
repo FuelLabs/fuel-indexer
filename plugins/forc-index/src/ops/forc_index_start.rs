@@ -44,6 +44,7 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
         block_page_size,
         allow_non_sequential_blocks,
         disable_toolchain_version_check,
+        node_request_delay,
     } = command;
 
     let mut cmd = Command::new("fuel-indexer");
@@ -114,6 +115,10 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
             ("--jwt-secret", jwt_secret),
             ("--jwt-issuer", jwt_issuer),
             ("--jwt-expiry", jwt_expiry.map(|x| x.to_string())),
+            (
+                "--node-request-delay",
+                node_request_delay.map(|x| x.to_string()),
+            ),
         ];
         for (opt, value) in options.iter() {
             if let Some(value) = value {
