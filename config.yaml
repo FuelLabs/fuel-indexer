@@ -41,6 +41,9 @@ accept_sql_queries: false
 # Amount of blocks to return in a request to a Fuel node.
 block_page_size: 20
 
+# Make the service wait for the given duration between block requests to a Fuel client
+client_request_delay: ~
+
 # ***********************
 # Fuel Node configuration
 # ************************

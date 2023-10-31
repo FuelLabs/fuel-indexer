@@ -26,6 +26,9 @@ OPTIONS:
     -c, --config <FILE>
             Indexer service config file.
 
+        --client-request-delay <CLIENT_REQUEST_DELAY>
+            Make the service wait for the given duration between block requests to a Fuel client.
+
         --database <DATABASE>
             Database type. [default: postgres] [possible values: postgres]
 
