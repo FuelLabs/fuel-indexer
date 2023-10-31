@@ -23,6 +23,9 @@ OPTIONS:
         --block-page-size <BLOCK_PAGE_SIZE>
             Amount of blocks to return in a request to a Fuel node. [default: 20]
 
+        --client-request-delay <CLIENT_REQUEST_DELAY>
+            Make the service wait for the given duration between block requests to a Fuel client.
+
     -c, --config <FILE>
             Indexer service config file.
 
@@ -76,10 +79,6 @@ OPTIONS:
 
         --metrics
             Use Prometheus metrics reporting.
-
-        --node-request-delay <NODE_REQUEST_DELAY>
-            If present, the Fuel indexer service will wait for this particular duration between
-            requests to a Fuel node
 
         --postgres-database <POSTGRES_DATABASE>
             Postgres database.

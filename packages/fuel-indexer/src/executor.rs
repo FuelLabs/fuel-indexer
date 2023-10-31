@@ -115,7 +115,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
     }
 
     let allow_non_sequential_blocks = config.allow_non_sequential_blocks;
-    let node_request_delay = config.node_request_delay;
+    let client_request_delay = config.client_request_delay;
 
     let task = async move {
         let mut conn = pool
@@ -303,9 +303,8 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
             // Since we had successful call, we reset the retry count.
             consecutive_retries = 0;
 
-            if let Some(delay) = node_request_delay {
+            if let Some(delay) = client_request_delay {
                 sleep(Duration::from_secs(delay)).await;
-                continue;
             }
         }
     };

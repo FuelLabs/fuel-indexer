@@ -206,12 +206,12 @@ pub struct IndexerArgs {
     )]
     pub disable_toolchain_version_check: bool,
 
-    /// If present, the Fuel indexer service will wait for this particular duration between requests to a Fuel node.
+    /// Make the service wait for the given duration between block requests to a Fuel client.
     #[clap(
         long,
-        help = "If present, the Fuel indexer service will wait for this particular duration between requests to a Fuel node"
+        help = "Make the service wait for the given duration between block requests to a Fuel client."
     )]
-    pub node_request_delay: Option<u64>,
+    pub client_request_delay: Option<u64>,
 }
 
 #[derive(Debug, Parser, Clone)]
