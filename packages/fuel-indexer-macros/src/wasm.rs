@@ -100,8 +100,8 @@ fn wasm_prelude() -> proc_macro2::TokenStream {
         use fuel_indexer_utils::plugin::{serde_json, serialize, deserialize, bincode};
         use fuel_indexer_utils::plugin::serde::{Deserialize, Serialize};
         use fuels::{
-            core::{codec::ABIDecoder, Configurables, traits::{Parameterize, Tokenizable}},
-            types::{StringToken, param_types::ParamType},
+            core::{codec::{ABIDecoder}, Configurables, traits::{Parameterize, Tokenizable}},
+            types::{param_types::ParamType},
         };
     }
 }

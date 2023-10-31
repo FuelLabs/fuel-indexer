@@ -17,8 +17,9 @@ use fuel_indexer_postgres;
 use fuels::{
     macros::abigen,
     prelude::{
-        setup_single_asset_coins, setup_test_client, AssetId, Bech32ContractId, Contract,
-        LoadConfiguration, Provider, TxParameters, WalletUnlocked, DEFAULT_COIN_AMOUNT,
+        setup_single_asset_coins, setup_test_provider, AssetId, Bech32ContractId,
+        Contract, LoadConfiguration, Provider, TxParameters, WalletUnlocked,
+        DEFAULT_COIN_AMOUNT,
     },
     test_helpers::Config,
 };
@@ -268,7 +269,7 @@ pub fn tx_params() -> TxParameters {
     let gas_price = 0;
     let gas_limit = 1_000_000;
     let byte_price = 0;
-    TxParameters::new(gas_price, gas_limit, byte_price)
+    TxParameters::new(Some(gas_price), Some(gas_limit), byte_price)
 }
 
 pub async fn setup_test_fuel_node(
@@ -315,10 +316,7 @@ pub async fn setup_test_fuel_node(
         ..Config::local_node()
     };
 
-    let (client, _, consensus_params) =
-        setup_test_client(coins, vec![], Some(config), None).await;
-
-    let provider = Provider::new(client, consensus_params);
+    let provider = setup_test_provider(coins, vec![], Some(config), None).await;
 
     wallet.set_provider(provider.clone());
 
