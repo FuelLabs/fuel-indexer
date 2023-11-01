@@ -1,42 +1,43 @@
 # How it Compares
 
-Since many users may be familiar with indexing by using a solution like The Graph, it may be helpful to provide a comparison between it and the Fuel indexer. Generally, the biggest conceptual differences between the two are as follows:
+Since many users may be familiar with indexing by using a solution like The Graph, it may be helpful to provide a comparison between The Graph and the Fuel indexer.
 
-- The Fuel indexer does not support publishing indexers to decentralized networks. That being said, the Fuel indexer is developed with the intention of allowing anyone to run an instance and host whatever indexers they want.
-- Contracts on the Fuel network can be indexed without the need to add additional events. Whether a user wanted to index information from the very start of a contract or a recent block, the process is the same: define the schema and manifest, write custom handler logic, and deploy to an indexer service.
+## Differential Value
+
+Generally, the biggest conceptual differences between Fuel's indexer service and other indexer services (such as The Graph) are indexing speed, general ease of use, and indexable data types.
+
+### Speed of indexing
+
+Using Fuel's indexers, users can index about 30 blocks per second on a standard Macbook Pro on an M1 chip. This type of indexing speed is a boon to smart contract authors who need to iterate quickly while building dApps.
+
+### General usability
+
+Unlike other indexing services, users can use the forc index CLI tool to create, deploy, update, re-deploy, remove, and check the status of their indexers. The ability to completely manage, maintain, and improve remote indexers without having to open any files, or edit any source code completely sets Fuel's indexer apart from other services in the space.
+
+### What you can index
+
+The Fuel indexer is tailored for compatibility with the FuelVM. This means that instead of being limited to the primitives of the Etherem virtual machine (EVM), users of the Fuel indexer gain access to a much richer set of indexable abstractions provided by the FuelVM (e.g. predicates, transaction receipts, etc).
 
 Legend:
 
-- 🟩 : Functionally complete
-- 🟨 : Partially complete
-- 🟥 : Planned but incomplete
-- ⛔ : Not planned
-
-<!-- todo: continue this from https://www.notion.so/fuellabs/Indexer-Feature-Matrix-24d654f1bc3d411e8371d13db90fe237 -->
+- 🟩 : Supported
+- 🟥 : Not supported
+- 🟨 : Planned
 
 |  Feature |  The Graph  | Fuel Indexer   | Notes  |
 |:-:|:-:|:-:|:-:|
 |  Hosted Indexers |  🟩  | 🟩   |   |
 |  WASM Execution | 🟩   |  🟩  |   |
-|  Native Execution | 🟥   |  🟩  |   |
 |  Handlers | 🟩 | 🟩 | see [Indexing Fuel Types](../indexing-fuel-types/index.md) and [Indexing Custom Types](../indexing-custom-types/index.md)|
 |  Updateable Schemas | 🟩   |  🟩  |   |
 |  API Authentication | 🟩   |  🟩  |   |
 |  Starting Block Configuration | 🟩   |  🟩  |   |
-|  Grafted Indexes |  🟩  | 🟥 |  |
-|  Index Ownership Transfer |  🟩  | 🟥 |  |
-|  Unit Testing Framework |  🟩  | 🟥 | Users are able to use `cargo test` |
-|  Querying: Sorting | 🟩   |  🟩  |   |
-|  Querying: Pagination | 🟩   |  🟩  |   |
-|  Querying: Filtering | 🟩   |  🟩  |   |
-|  Querying: Time Travel |  🟩  | 🟥 |  |
-|  Querying: Fulltext Search |  🟩  | 🟥 |  |
-|  Querying: GraphQL Validation Spec |  🟩  | 🟨 |  |
-|  Schema: Enums | 🟩   |  🟩  |   |
-|  Schema: One-to-one relationships | 🟩   |  🟩  |   |
-|  Schema: One-to-many relationships| 🟩   |  🟩  |   |
-|  Schema: Many-to-many relationships | 🟩   |  🟩  |   |
-|  Schema: Reverse Lookup |  🟩  | 🟥 |  |
-|  AssemblyScript Support |  🟩 |  ⛔ |   |
-|  Admin Portal UI |  🟩 |  ⛔ |   |
-|  Decentralized Hosting |  🟩 |  ⛔ |   |
+|  Native Unit Testing Framework |  🟩  | 🟥 | Users are able to use `cargo test` |
+|  GraphQL: Sorting, Pagination, Filtering | 🟩   |  🟩  |   |
+|  Schema: Enum, Object, and Union types | 🟩   |  🟩  |   |
+|  Schema: One-to-one, one-to-many, many-to-many relationships | 🟩   |  🟩  |   |
+|  AssemblyScript Support |  🟩 |  🟥 |   |
+|  Admin Portal UI |  🟩 |  🟥 |    |
+| Stop, Remove, Re-deploy indexers without smart contract changes | 🟥  |  🟩  |  |
+| Update & redeploy indexers with 0 downtime |  🟥  |  🟩 |  |
+| Use third party dependencies in your indexers  |  🟥  |  🟩  |  |
