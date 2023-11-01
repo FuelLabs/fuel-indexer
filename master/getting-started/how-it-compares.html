@@ -175,44 +175,37 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="how-it-compares"><a class="header" href="#how-it-compares">How it Compares</a></h1>
-<p>Since many users may be familiar with indexing by using a solution like The Graph, it may be helpful to provide a comparison between it and the Fuel indexer. Generally, the biggest conceptual differences between the two are as follows:</p>
-<ul>
-<li>The Fuel indexer does not support publishing indexers to decentralized networks. That being said, the Fuel indexer is developed with the intention of allowing anyone to run an instance and host whatever indexers they want.</li>
-<li>Contracts on the Fuel network can be indexed without the need to add additional events. Whether a user wanted to index information from the very start of a contract or a recent block, the process is the same: define the schema and manifest, write custom handler logic, and deploy to an indexer service.</li>
-</ul>
+<p>Since many users may be familiar with indexing by using a solution like The Graph, it may be helpful to provide a comparison between The Graph and the Fuel indexer.</p>
+<h2 id="differential-value"><a class="header" href="#differential-value">Differential Value</a></h2>
+<p>Generally, the biggest conceptual differences between Fuel's indexer service and other indexer services (such as The Graph) are indexing speed, general ease of use, and indexable data types.</p>
+<h3 id="speed-of-indexing"><a class="header" href="#speed-of-indexing">Speed of indexing</a></h3>
+<p>Using Fuel's indexers, users can index about 30 blocks per second on a standard Macbook Pro on an M1 chip. This type of indexing speed is a boon to smart contract authors who need to iterate quickly while building dApps.</p>
+<h3 id="general-usability"><a class="header" href="#general-usability">General usability</a></h3>
+<p>Unlike other indexing services, users can use the forc index CLI tool to create, deploy, update, re-deploy, remove, and check the status of their indexers. The ability to completely manage, maintain, and improve remote indexers without having to open any files, or edit any source code completely sets Fuel's indexer apart from other services in the space.</p>
+<h3 id="what-you-can-index"><a class="header" href="#what-you-can-index">What you can index</a></h3>
+<p>The Fuel indexer is tailored for compatibility with the FuelVM. This means that instead of being limited to the primitives of the Etherem virtual machine (EVM), users of the Fuel indexer gain access to a much richer set of indexable abstractions provided by the FuelVM (e.g. predicates, transaction receipts, etc).</p>
 <p>Legend:</p>
 <ul>
-<li>🟩 : Functionally complete</li>
-<li>🟨 : Partially complete</li>
-<li>🟥 : Planned but incomplete</li>
-<li>⛔ : Not planned</li>
+<li>🟩 : Supported</li>
+<li>🟥 : Not supported</li>
+<li>🟨 : Planned</li>
 </ul>
-<!-- todo: continue this from https://www.notion.so/fuellabs/Indexer-Feature-Matrix-24d654f1bc3d411e8371d13db90fe237 -->
 <div class="table-wrapper"><table><thead><tr><th style="text-align: center">Feature</th><th style="text-align: center">The Graph</th><th style="text-align: center">Fuel Indexer</th><th style="text-align: center">Notes</th></tr></thead><tbody>
 <tr><td style="text-align: center">Hosted Indexers</td><td style="text-align: center">🟩</td><td style="text-align: center">🟩</td><td style="text-align: center"></td></tr>
 <tr><td style="text-align: center">WASM Execution</td><td style="text-align: center">🟩</td><td style="text-align: center">🟩</td><td style="text-align: center"></td></tr>
-<tr><td style="text-align: center">Native Execution</td><td style="text-align: center">🟥</td><td style="text-align: center">🟩</td><td style="text-align: center"></td></tr>
 <tr><td style="text-align: center">Handlers</td><td style="text-align: center">🟩</td><td style="text-align: center">🟩</td><td style="text-align: center">see <a href="../indexing-fuel-types/index.html">Indexing Fuel Types</a> and <a href="../indexing-custom-types/index.html">Indexing Custom Types</a></td></tr>
 <tr><td style="text-align: center">Updateable Schemas</td><td style="text-align: center">🟩</td><td style="text-align: center">🟩</td><td style="text-align: center"></td></tr>
 <tr><td style="text-align: center">API Authentication</td><td style="text-align: center">🟩</td><td style="text-align: center">🟩</td><td style="text-align: center"></td></tr>
 <tr><td style="text-align: center">Starting Block Configuration</td><td style="text-align: center">🟩</td><td style="text-align: center">🟩</td><td style="text-align: center"></td></tr>
-<tr><td style="text-align: center">Grafted Indexes</td><td style="text-align: center">🟩</td><td style="text-align: center">🟥</td><td style="text-align: center"></td></tr>
-<tr><td style="text-align: center">Index Ownership Transfer</td><td style="text-align: center">🟩</td><td style="text-align: center">🟥</td><td style="text-align: center"></td></tr>
-<tr><td style="text-align: center">Unit Testing Framework</td><td style="text-align: center">🟩</td><td style="text-align: center">🟥</td><td style="text-align: center">Users are able to use <code>cargo test</code></td></tr>
-<tr><td style="text-align: center">Querying: Sorting</td><td style="text-align: center">🟩</td><td style="text-align: center">🟩</td><td style="text-align: center"></td></tr>
-<tr><td style="text-align: center">Querying: Pagination</td><td style="text-align: center">🟩</td><td style="text-align: center">🟩</td><td style="text-align: center"></td></tr>
-<tr><td style="text-align: center">Querying: Filtering</td><td style="text-align: center">🟩</td><td style="text-align: center">🟩</td><td style="text-align: center"></td></tr>
-<tr><td style="text-align: center">Querying: Time Travel</td><td style="text-align: center">🟩</td><td style="text-align: center">🟥</td><td style="text-align: center"></td></tr>
-<tr><td style="text-align: center">Querying: Fulltext Search</td><td style="text-align: center">🟩</td><td style="text-align: center">🟥</td><td style="text-align: center"></td></tr>
-<tr><td style="text-align: center">Querying: GraphQL Validation Spec</td><td style="text-align: center">🟩</td><td style="text-align: center">🟨</td><td style="text-align: center"></td></tr>
-<tr><td style="text-align: center">Schema: Enums</td><td style="text-align: center">🟩</td><td style="text-align: center">🟩</td><td style="text-align: center"></td></tr>
-<tr><td style="text-align: center">Schema: One-to-one relationships</td><td style="text-align: center">🟩</td><td style="text-align: center">🟩</td><td style="text-align: center"></td></tr>
-<tr><td style="text-align: center">Schema: One-to-many relationships</td><td style="text-align: center">🟩</td><td style="text-align: center">🟩</td><td style="text-align: center"></td></tr>
-<tr><td style="text-align: center">Schema: Many-to-many relationships</td><td style="text-align: center">🟩</td><td style="text-align: center">🟩</td><td style="text-align: center"></td></tr>
-<tr><td style="text-align: center">Schema: Reverse Lookup</td><td style="text-align: center">🟩</td><td style="text-align: center">🟥</td><td style="text-align: center"></td></tr>
-<tr><td style="text-align: center">AssemblyScript Support</td><td style="text-align: center">🟩</td><td style="text-align: center">⛔</td><td style="text-align: center"></td></tr>
-<tr><td style="text-align: center">Admin Portal UI</td><td style="text-align: center">🟩</td><td style="text-align: center">⛔</td><td style="text-align: center"></td></tr>
-<tr><td style="text-align: center">Decentralized Hosting</td><td style="text-align: center">🟩</td><td style="text-align: center">⛔</td><td style="text-align: center"></td></tr>
+<tr><td style="text-align: center">Native Unit Testing Framework</td><td style="text-align: center">🟩</td><td style="text-align: center">🟥</td><td style="text-align: center">Users are able to use <code>cargo test</code></td></tr>
+<tr><td style="text-align: center">GraphQL: Sorting, Pagination, Filtering</td><td style="text-align: center">🟩</td><td style="text-align: center">🟩</td><td style="text-align: center"></td></tr>
+<tr><td style="text-align: center">Schema: Enum, Object, and Union types</td><td style="text-align: center">🟩</td><td style="text-align: center">🟩</td><td style="text-align: center"></td></tr>
+<tr><td style="text-align: center">Schema: One-to-one, one-to-many, many-to-many relationships</td><td style="text-align: center">🟩</td><td style="text-align: center">🟩</td><td style="text-align: center"></td></tr>
+<tr><td style="text-align: center">AssemblyScript Support</td><td style="text-align: center">🟩</td><td style="text-align: center">🟥</td><td style="text-align: center"></td></tr>
+<tr><td style="text-align: center">Admin Portal UI</td><td style="text-align: center">🟩</td><td style="text-align: center">🟥</td><td style="text-align: center"></td></tr>
+<tr><td style="text-align: center">Stop, Remove, Re-deploy indexers without smart contract changes</td><td style="text-align: center">🟥</td><td style="text-align: center">🟩</td><td style="text-align: center"></td></tr>
+<tr><td style="text-align: center">Update &amp; redeploy indexers with 0 downtime</td><td style="text-align: center">🟥</td><td style="text-align: center">🟩</td><td style="text-align: center"></td></tr>
+<tr><td style="text-align: center">Use third party dependencies in your indexers</td><td style="text-align: center">🟥</td><td style="text-align: center">🟩</td><td style="text-align: center"></td></tr>
 </tbody></table>
 </div>
                     </main>
