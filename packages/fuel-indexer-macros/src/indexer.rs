@@ -650,6 +650,7 @@ fn process_fn_items(
             }
 
             fn decode_type(&mut self, ty_id: usize, data: Vec<u8>) -> anyhow::Result<()> {
+                let decoder = ABIDecoder::default();
                 match ty_id {
                     #(#decoders),*
                     _ => {

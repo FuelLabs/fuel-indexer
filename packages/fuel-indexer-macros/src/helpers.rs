@@ -222,7 +222,7 @@ pub fn decode_snippet(
                 let inner = format_ident! { "{}", inner };
                 quote! {
                     #ty_id => {
-                        let decoded = ABIDecoder::decode_single(&#typ::<#inner>::param_type(), &data)
+                        let decoded = decoder.decode(&#typ::<#inner>::param_type(), &data)
                             .with_context(|| format!("[codegen] Failed decoding {}", #type_field_string))?;
                         let obj = #typ::<#inner>::from_token(decoded)
                             .with_context(|| format!("[codegen] Failed detokenizing {}",  #type_field_string))?;
@@ -238,7 +238,8 @@ pub fn decode_snippet(
     } else {
         quote! {
             #ty_id => {
-                let decoded = ABIDecoder::decode_single(&#type_tokens::param_type(), &data)
+                let decoder = ABIDecoder::default();
+                let decoded = decoder.decode(&#type_tokens::param_type(), &data)
                     .with_context(|| format!("[codegen] Failed decoding {}", #type_field_string))?;
                 let obj = #type_tokens::from_token(decoded)
                     .with_context(|| format!("[codegen] Failed detokenizing {}", #type_field_string))?;
