@@ -22,6 +22,7 @@ pub use std::collections::{HashMap, HashSet};
 // `Err` variant for ealy exit.
 extern "C" {
     fn ff_get_object(type_id: i64, ptr: *const u8, len: *mut u8) -> *mut u8;
+    fn ff_single_select(type_id: i64, ptr: *const u8, len: *mut u8) -> *mut u8;
     fn ff_log_data(ptr: *const u8, len: u32, log_level: u32);
     fn ff_put_object(type_id: i64, ptr: *const u8, len: u32);
     fn ff_put_many_to_many_record(ptr: *const u8, len: u32);
@@ -124,6 +125,26 @@ pub trait Entity<'a>: Sized + PartialEq + Eq + std::fmt::Debug {
         }
     }
 
+    /// Finds the first entity that satisfies the given constraints.
+    fn find(constraints: Constraint<Self>) -> Option<Self> {
+        unsafe {
+            let buff = bincode::serialize(&constraints.to_string()).unwrap();
+            let mut bufflen = (buff.len() as u32).to_le_bytes();
+
+            let ptr =
+                ff_single_select(Self::TYPE_ID, buff.as_ptr(), bufflen.as_mut_ptr());
+
+            if !ptr.is_null() {
+                let len = u32::from_le_bytes(bufflen) as usize;
+                let bytes = Vec::from_raw_parts(ptr, len, len);
+                let data = deserialize(&bytes).unwrap();
+                Some(Self::from_row(data))
+            } else {
+                None
+            }
+        }
+    }
+
     /// Saves a record.
     fn save(&self) {
         self.save_unsafe()
@@ -137,6 +158,136 @@ pub trait Entity<'a>: Sized + PartialEq + Eq + std::fmt::Debug {
         }
 
         self.save_many_to_many()
+    }
+}
+
+pub struct Constraint<T> {
+    constraint: String,
+    phantom: std::marker::PhantomData<T>,
+}
+
+impl<T> std::fmt::Display for Constraint<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.constraint)
+    }
+}
+
+impl<T> Constraint<T> {
+    fn new(constraint: String) -> Self {
+        Self {
+            constraint,
+            phantom: std::marker::PhantomData,
+        }
+    }
+
+    pub fn and(self, c: Constraint<T>) -> Constraint<T> {
+        Constraint {
+            constraint: format!(
+                "({} AND {})",
+                &self.constraint,
+                &c.constraint.to_string()
+            ),
+            phantom: std::marker::PhantomData,
+        }
+    }
+
+    pub fn or(self, c: Constraint<T>) -> Constraint<T> {
+        Constraint {
+            constraint: format!(
+                "({} OR {})",
+                &self.constraint,
+                &c.constraint.to_string()
+            ),
+            phantom: std::marker::PhantomData,
+        }
+    }
+}
+
+pub struct Field<T, F> {
+    field: String,
+    phantom: std::marker::PhantomData<(T, F)>,
+}
+
+impl<T, F> Field<T, F> {
+    pub fn new(field: String) -> Self {
+        Field {
+            field,
+            phantom: std::marker::PhantomData,
+        }
+    }
+}
+
+impl<T, F: std::fmt::Display> Field<T, F> {
+    pub fn eq(self, val: F) -> Constraint<T> {
+        Constraint::new(format!("{} = '{}'", self.field, val))
+    }
+
+    pub fn ne(self, val: F) -> Constraint<T> {
+        Constraint::new(format!("{} != '{}'", self.field, val))
+    }
+
+    pub fn gt(self, val: F) -> Constraint<T> {
+        Constraint::new(format!("{} > '{}'", self.field, val))
+    }
+
+    pub fn ge(self, val: F) -> Constraint<T> {
+        Constraint::new(format!("{} >= '{}'", self.field, val))
+    }
+
+    pub fn lt(self, val: F) -> Constraint<T> {
+        Constraint::new(format!("{} < '{}'", self.field, val))
+    }
+
+    pub fn le(self, val: F) -> Constraint<T> {
+        Constraint::new(format!("{} <= '{}'", self.field, val))
+    }
+}
+
+pub struct OptionField<T, F> {
+    field: String,
+    phantom: std::marker::PhantomData<(T, F)>,
+}
+
+impl<T, F> OptionField<T, F> {
+    pub fn new(field: String) -> Self {
+        OptionField {
+            field,
+            phantom: std::marker::PhantomData,
+        }
+    }
+}
+
+impl<T, F: std::fmt::Display> OptionField<T, F> {
+    pub fn eq(self, val: Option<F>) -> Constraint<T> {
+        self.constraint("=", val)
+    }
+
+    pub fn ne(self, val: Option<F>) -> Constraint<T> {
+        self.constraint("!=", val)
+    }
+
+    pub fn gt(self, val: Option<F>) -> Constraint<T> {
+        self.constraint(">", val)
+    }
+
+    pub fn ge(self, val: Option<F>) -> Constraint<T> {
+        self.constraint(">=", val)
+    }
+
+    pub fn lt(self, val: Option<F>) -> Constraint<T> {
+        self.constraint("<", val)
+    }
+
+    pub fn le(self, val: Option<F>) -> Constraint<T> {
+        self.constraint("<=", val)
+    }
+
+    // Helper function that unwraps the Option converting None to NULL.
+    fn constraint(self, op: &str, val: Option<F>) -> Constraint<T> {
+        let cond = val
+            .map(|x| format!("{op} '{x}'"))
+            .unwrap_or_else(|| "is NULL".to_string());
+        Constraint::new(format!("{} {}", self.field, cond))
     }
 }
 

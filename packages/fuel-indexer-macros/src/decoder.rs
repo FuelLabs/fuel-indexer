@@ -34,6 +34,11 @@ pub struct ImplementationDecoder {
     /// Token stream of struct fields.
     struct_fields: TokenStream,
 
+    /// Token stream used to generate `T::struct_field()` `Field<F>` or
+    /// `OptionField<F>` which are the used to construct `Constraint<T>` for use
+    /// with `T::find()`
+    pub field_selectors: Vec<TokenStream>,
+
     /// `TypeDefinition`.
     typdef: TypeDefinition,
 
@@ -50,6 +55,7 @@ impl Default for ImplementationDecoder {
             parameters: quote! {},
             hasher: quote! {},
             struct_fields: quote! {},
+            field_selectors: vec![],
             typdef: TypeDefinition {
                 description: None,
                 extend: false,
@@ -74,6 +80,7 @@ impl Decoder for ImplementationDecoder {
                 let obj_name = typ.name.to_string();
 
                 let mut struct_fields = quote! {};
+                let mut field_selectors = vec![];
                 let mut parameters = quote! {};
                 let mut hasher = quote! { Sha256::new() };
 
@@ -141,12 +148,37 @@ impl Decoder for ImplementationDecoder {
                             #field_name_ident,
                         };
                     }
+
+                    let ident = format_ident!("{obj_name}");
+                    let field_name_ident_string = field_name_ident.to_string();
+
+                    // Skip generics
+                    if processed_type_result.inner_type_ident.is_none()
+                        && !processed_type_result.nullable
+                    {
+                        field_selectors.push(quote! {
+                            pub fn #field_name_ident () -> Field<#ident, #field_type_tokens> {
+                                Field::new(#field_name_ident_string .to_string())
+                            }
+                        });
+                    }
+
+                    if processed_type_result.nullable
+                        && processed_type_result.field_type_ident != "Array"
+                    {
+                        field_selectors.push(quote! {
+                            pub fn #field_name_ident () -> OptionField<#ident, #field_type_ident> {
+                                OptionField::new(#field_name_ident_string .to_string())
+                            }
+                        });
+                    }
                 }
 
                 ImplementationDecoder {
                     parameters,
                     hasher,
                     struct_fields,
+                    field_selectors,
                     typdef: typ.clone(),
                     parsed: parsed.clone(),
                 }
@@ -240,6 +272,7 @@ impl From<ImplementationDecoder> for TokenStream {
             struct_fields,
             typdef,
             parsed,
+            field_selectors,
         } = decoder;
 
         let typdef_name = typdef.name.to_string();
@@ -296,10 +329,13 @@ impl From<ImplementationDecoder> for TokenStream {
                             }
                         }
 
+                        #(#field_selectors)*
+
                         #impl_get_or_create
                     }
                 }
             }
+
             TypeKind::Union(u) => {
                 let union_name = typdef.name.to_string();
 
@@ -309,6 +345,8 @@ impl From<ImplementationDecoder> for TokenStream {
                 } else {
                     quote! {
                         impl #ident {
+                            #(#field_selectors)*
+
                             #impl_get_or_create
                         }
                     }

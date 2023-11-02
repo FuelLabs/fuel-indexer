@@ -15,6 +15,7 @@ proc-macro = true
 [dependencies]
 async-graphql-parser = "5.0"
 async-graphql-value = "5.0"
+convert_case = "0.6"
 fuel-abi-types = "0.3"
 fuel-indexer-database-types = { workspace = true }
 fuel-indexer-lib = { workspace = true, default-features = true }
