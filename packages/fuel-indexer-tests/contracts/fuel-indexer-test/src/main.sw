@@ -2,14 +2,17 @@ contract;
 
 use std::{
     address::Address,
+    bytes::Bytes,
     call_frames::contract_id,
-    constants::BASE_ASSET_ID,
+    constants::{
+        BASE_ASSET_ID,
+        ZERO_B256,
+    },
     identity::Identity,
     logging::log,
     message::send_typed_message,
     revert::revert,
     token::*,
-    bytes::Bytes,
 };
 
 pub enum UserError {
@@ -20,7 +23,6 @@ pub struct Pong {
     id: u64,
     value: u64,
 }
-
 
 pub struct Ping {
     id: u64,
@@ -49,16 +51,16 @@ pub struct SimpleTupleStruct {
 }
 
 pub struct ExplicitQueryStruct {
-    id: u64
+    id: u64,
 }
 
 pub struct SimpleQueryStruct {
-    id: u64
+    id: u64,
 }
 
 pub struct ExampleMessageStruct {
     id: u64,
-    message: str[32]
+    message: str[32],
 }
 
 pub enum SimpleEnum {
@@ -74,8 +76,10 @@ pub enum AnotherSimpleEnum {
 }
 
 pub enum NestedEnum {
-    Inner: AnotherSimpleEnum
+    Inner: AnotherSimpleEnum,
 }
+
+pub struct Find {}
 
 abi FuelIndexer {
     fn trigger_multiargs() -> Ping;
@@ -106,6 +110,7 @@ abi FuelIndexer {
     #[payable]
     fn trigger_burn();
     fn trigger_generics() -> Option<Ping>;
+    fn trigger_find() -> Find;
 }
 
 impl FuelIndexer for Contract {
@@ -117,10 +122,16 @@ impl FuelIndexer for Contract {
             pung_from: Identity::ContractId(ContractId::from(0x322ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96)),
         });
 
-        log(Pong { id: 45678, value: 45678 });
+        log(Pong {
+            id: 45678,
+            value: 45678,
+        });
 
-
-        Ping { id: 12345, value: 12345, message: "a multiarg ping entity          " }
+        Ping {
+            id: 12345,
+            value: 12345,
+            message: __to_str_array("a multiarg ping entity          "),
+        }
     }
 
     fn trigger_callreturn() -> Pung {
@@ -136,7 +147,7 @@ impl FuelIndexer for Contract {
         let p = Ping {
             id: 1,
             value: 123,
-            message: "aaaasdfsdfasdfsdfaasdfsdfasdfsdf",
+            message: __to_str_array("aaaasdfsdfasdfsdfaasdfsdfasdfsdf"),
         };
         p
     }
@@ -145,7 +156,7 @@ impl FuelIndexer for Contract {
         let p = Ping {
             id: 8675309,
             value: 123,
-            message: "aaaasdfsdfasdfsdfaasdfsdfasdfsdf",
+            message: __to_str_array("aaaasdfsdfasdfsdfaasdfsdfasdfsdf"),
         };
         p
     }
@@ -194,15 +205,32 @@ impl FuelIndexer for Contract {
 
         let example = ExampleMessageStruct {
             id: 1234,
-            message: "abcdefghijklmnopqrstuvwxyz123456"
+            message: __to_str_array("abcdefghijklmnopqrstuvwxyz123456"),
         };
 
         send_typed_message(RECEIVER, example, 100);
     }
 
     fn trigger_tuple() -> ComplexTupleStruct {
-        log(SimpleTupleStruct { data: (4u32, 5u64, "hello world!")});
-        ComplexTupleStruct{ data: (1u32, (5u64, true, ("abcde", TupleStructItem { id: 54321, arr: [1u8, 2, 3] })))}
+        log(SimpleTupleStruct {
+            data: (4u32, 5u64, __to_str_array("hello world!")),
+        });
+        ComplexTupleStruct {
+            data: (
+                1u32,
+                (
+                    5u64,
+                    true,
+                    (
+                        __to_str_array("abcde"),
+                        TupleStructItem {
+                            id: 54321,
+                            arr: [1u8, 2, 3],
+                        },
+                    ),
+                ),
+            ),
+        }
     }
 
     fn trigger_explicit() -> ExplicitQueryStruct {
@@ -214,18 +242,33 @@ impl FuelIndexer for Contract {
     }
 
     // NOTE: Keeping this to ensure Vec in ABI JSON is ok, even though we don't support it yet
-    fn trigger_vec_pong_calldata(v: Vec<u8>) {
+    fn trigger_vec_pong_calldata(_v: Vec<u8>) {
         log("This does nothing as we don't handle CallData. But should implement this soon.");
     }
 
     fn trigger_vec_pong_logdata() {
         let mut v: Vec<Pong> = Vec::new();
-        v.push(Pong{ id: 5555, value: 5555 });
-        v.push(Pong{ id: 6666, value: 6666 });
-        v.push(Pong{ id: 7777, value: 7777 });
-        v.push(Pong{ id: 8888, value: 8888 });
-        v.push(Pong{ id: 9999, value: 9999 });
-    
+        v.push(Pong {
+            id: 5555,
+            value: 5555,
+        });
+        v.push(Pong {
+            id: 6666,
+            value: 6666,
+        });
+        v.push(Pong {
+            id: 7777,
+            value: 7777,
+        });
+        v.push(Pong {
+            id: 8888,
+            value: 8888,
+        });
+        v.push(Pong {
+            id: 9999,
+            value: 9999,
+        });
+
         log(v);
     }
 
@@ -237,7 +280,7 @@ impl FuelIndexer for Contract {
         let r0: u64 = 18_446_744_073_709_551_615u64;
         // add r0 & r0 (which is the maximum u64 value) and put the result in r1
         asm(r0: r0, r1) {
-            add r1 r0 r0; 
+            add  r1 r0 r0;
             r1: u64
         }
     }
@@ -261,32 +304,52 @@ impl FuelIndexer for Contract {
         log(NestedEnum::Inner(AnotherSimpleEnum::Call(SimpleEnum::Three)));
 
         AnotherSimpleEnum::Ping(Ping {
-            id: 7777, 
-            value: 7775, 
-            message: "hello world! I am, a log event!!"
+            id: 7777,
+            value: 7775,
+            message: __to_str_array("hello world! I am, a log event!!"),
         })
     }
 
-    fn trigger_mint () {
-        mint(BASE_ASSET_ID, 100);
+    fn trigger_mint() {
+        mint(ZERO_B256, 100);
     }
 
     #[payable]
     fn trigger_burn() {
-        burn(BASE_ASSET_ID, 100);
+        burn(ZERO_B256, 100);
     }
 
     fn trigger_generics() -> Option<Ping> {
-        let x = Some(Ping{ id: 8888, value: 8888, message: "aaaasdfsdfasdfsdfaasdfsdfasdfsdf" });
+        let x = Some(Ping {
+            id: 8888,
+            value: 8888,
+            message: __to_str_array("aaaasdfsdfasdfsdfaasdfsdfasdfsdf"),
+        });
 
         let mut v: Vec<Ping> = Vec::new();
-        v.push(Ping{ id: 5555, value: 5555, message: "aaaasdfsdfasdfsdfaasdfsdfasdfsdf" });
-        v.push(Ping{ id: 6666, value: 6666, message: "aaaasdfsdfasdfsdfaasdfsdfasdfsdf" });
-        v.push(Ping{ id: 7777, value: 7777, message: "aaaasdfsdfasdfsdfaasdfsdfasdfsdf" });
+        v.push(Ping {
+            id: 5555,
+            value: 5555,
+            message: __to_str_array("aaaasdfsdfasdfsdfaasdfsdfasdfsdf"),
+        });
+        v.push(Ping {
+            id: 6666,
+            value: 6666,
+            message: __to_str_array("aaaasdfsdfasdfsdfaasdfsdfasdfsdf"),
+        });
+        v.push(Ping {
+            id: 7777,
+            value: 7777,
+            message: __to_str_array("aaaasdfsdfasdfsdfaasdfsdfasdfsdf"),
+        });
 
         log(x);
         log(v);
 
         x
+    }
+
+    fn trigger_find() -> Find {
+        Find {}
     }
 }

@@ -310,6 +310,7 @@ impl Codegen for TypeDeclaration {
                 "u32" => quote! { u32 },
                 "u64" => quote! { u64 },
                 "u8" => quote! { u8 },
+                "str" => quote! { String },
                 o if o.starts_with("str[") => quote! { String },
                 o => {
                     proc_macro_error::abort_call_site!(

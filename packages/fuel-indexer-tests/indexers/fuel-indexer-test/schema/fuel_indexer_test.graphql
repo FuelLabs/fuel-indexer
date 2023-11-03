@@ -333,3 +333,8 @@ type ListTypeEntity @entity {
   virtual_optional_inner: [VirtualEntity]!
   enum_required_all: [EnumEntity!]!
 }
+
+type FindEntity @entity {
+  id: ID!
+  value: U64!
+}
