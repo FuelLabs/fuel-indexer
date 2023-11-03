@@ -579,4 +579,44 @@ mod fuel_indexer_test {
 
         ping.save();
     }
+
+    fn fuel_indexer_test_find(_: BlockData) {
+        static mut COUNTER: usize = 0;
+
+        unsafe {
+            // We're at block 4, and we have 3 blocks in the database. We can
+            // test some complex queries.
+            if COUNTER == 3 {
+                let i =
+                    IndexMetadataEntity::find(IndexMetadataEntity::block_height().eq(1))
+                        .unwrap();
+                assert_eq!(i.block_height, 1);
+
+                let i = IndexMetadataEntity::find(
+                    IndexMetadataEntity::block_height()
+                        .gt(1)
+                        .and(IndexMetadataEntity::block_height().lt(3)),
+                )
+                .unwrap();
+                assert_eq!(i.block_height, 2);
+
+                let i = IndexMetadataEntity::find(
+                    IndexMetadataEntity::block_height()
+                        .gt(1)
+                        .or(IndexMetadataEntity::block_height().gt(2)),
+                )
+                .unwrap();
+                assert_eq!(i.block_height, 2);
+            }
+
+            // We're at block 5, and we have 4 blocks in the database.
+            if COUNTER == 4 {
+                // There is no such block. The lookup will fail.
+                IndexMetadataEntity::find(IndexMetadataEntity::block_height().eq(7))
+                    .unwrap();
+            }
+
+            COUNTER += 1;
+        }
+    }
 }

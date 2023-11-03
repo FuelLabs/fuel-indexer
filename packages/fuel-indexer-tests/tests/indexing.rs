@@ -719,3 +719,42 @@ async fn test_no_missing_blocks() {
 
     assert_eq!(start, 2);
 }
+
+#[actix_web::test]
+async fn test_index_find() {
+    let IndexingTestComponents {
+        ref node, ref db, ..
+    } = setup_indexing_test_components(None).await;
+
+    mock_request("/block").await;
+    mock_request("/block").await;
+    mock_request("/block").await;
+
+    tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+
+    let mut conn = db.pool.acquire().await.unwrap();
+
+    let row = sqlx::query("SELECT * FROM index_status")
+        .fetch_one(&mut conn)
+        .await
+        .unwrap();
+
+    assert_eq!(row.get::<&str, usize>(2), "Indexed 4 blocks");
+    assert_eq!(row.get::<&str, usize>(1), "running");
+
+    mock_request("/block").await;
+
+    node.abort();
+
+    tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+
+    let row = sqlx::query("SELECT * FROM index_status")
+        .fetch_one(&mut conn)
+        .await
+        .unwrap();
+
+    assert_eq!(row.get::<&str, usize>(1), "error");
+    assert!(row
+        .get::<&str, usize>(2)
+        .contains("called `Option::unwrap()` on a `None` value"));
+}
