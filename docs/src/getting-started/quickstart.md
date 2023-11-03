@@ -212,9 +212,10 @@ If all goes well, you should see the following:
 >
 > A _deployment_ within the context of Fuel's indexer is a series of steps taken to get your indexer project running in the wild.
 >
-> These series of steps involves compiling your indexer project to a `wasm32-unknown-unknown` target, uploading the indexer to a running Fuel indexer service, and having that service register an executor, and build database tables for this indexer. These series of steps, by definition, constitute a ["deployment"](https://en.wikipedia.org/wiki/Software_deployment).
+> This series of steps involves compiling your indexer project to a wasm32-unknown-unknown target and uploading the indexer to a running Fuel indexer service. The service will then register an executor and build database tables for this indexer. Once this series of steps has completed, your indexer is considered to be ["deployed"](https://en.wikipedia.org/wiki/Software_deployment).
 >
-> Often times, for local development, users will find that they're simply deploying their indexers to a Fuel indexer service running on their local machine. This is just one valid use-cases described in [out infrastructure docs](./indexer-service-infrastructure.md). However, keep in mind that the more real intended use of a Fuel indexer service is as a standalone, remote service that may run _many_ different indexers at any given time.
+> Users will often find that they're simply deploying their indexers to a Fuel indexer service running on their local machine; this is just one valid use-case described in [out infrastructure docs](./indexer-service-infrastructure.md). Keep in mind that thel intended use of a Fuel indexer service is as a standalone remote service that may run many different indexers at any given time.
+
 
 ## 3. Querying for data
 
