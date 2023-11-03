@@ -214,8 +214,7 @@ If all goes well, you should see the following:
 >
 > This series of steps involves compiling your indexer project to a wasm32-unknown-unknown target and uploading the indexer to a running Fuel indexer service. The service will then register an executor and build database tables for this indexer. Once this series of steps has completed, your indexer is considered to be ["deployed"](https://en.wikipedia.org/wiki/Software_deployment).
 >
-> Users will often find that they're simply deploying their indexers to a Fuel indexer service running on their local machine; this is just one valid use-case described in [out infrastructure docs](./indexer-service-infrastructure.md). Keep in mind that thel intended use of a Fuel indexer service is as a standalone remote service that may run many different indexers at any given time.
-
+> Users will often find that they're simply deploying their indexers to a Fuel indexer service running on their local machine; this is just one valid use-case described in [our infrastructure docs](./indexer-service-infrastructure.md). Keep in mind that the intended use of a Fuel indexer service is as a standalone remote service that may run many different indexers at any given time.
 
 ## 3. Querying for data
 
