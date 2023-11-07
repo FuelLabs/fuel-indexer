@@ -256,7 +256,7 @@ impl From<IndexerArgs> for IndexerConfig {
             network: args.network,
         };
 
-        if config.network.is_some() {
+        if let Some(ref _n) = config.network {
             let (host, port) = utils::NETWORKS
                 .get(config.network.as_ref().unwrap().as_str())
                 .unwrap();
@@ -355,7 +355,7 @@ impl From<ApiServerArgs> for IndexerConfig {
             network: args.network,
         };
 
-        if config.network.is_some() {
+        if let Some(ref _n) = config.network {
             let (host, port) = utils::NETWORKS
                 .get(config.network.as_ref().unwrap().as_str())
                 .unwrap();
@@ -470,14 +470,10 @@ impl IndexerConfig {
             let network = section.get(&serde_yaml::Value::String("network".into()));
 
             if let Some(network) = network {
-                match network.as_str() {
-                    Some(n) => {
-                        let (host, port) =
-                            utils::NETWORKS.get(n).expect("Invalid network.");
-                        config.fuel_node.host = host.to_string();
-                        config.fuel_node.port = port.to_string();
-                    }
-                    None => {}
+                if let Some(n) = network.as_str() {
+                    let (host, port) = utils::NETWORKS.get(n).expect("Invalid network.");
+                    config.fuel_node.host = host.to_string();
+                    config.fuel_node.port = port.to_string();
                 }
             }
         }
