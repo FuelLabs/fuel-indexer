@@ -109,7 +109,7 @@ We can quickly create a bootstrapped database and start the Fuel indexer service
 > If you find that `--embedded-database` isn't working on your machine (for whatever reason), we strongly recommend that you simply used the Dockerized Fuel indexer components included in the project by using the `docker compose` script [included in the project](https://github.com/FuelLabs/fuel-indexer/blob/develop/scripts/docker-compose.yaml).
 
 ```bash
-forc index start --fuel-node-host beta-4.fuel.network --fuel-node-port 80 --run-migrations --postgres-host postgresql
+forc index start --network beta-4 --run-migrations --postgres-host postgresql
 ```
 
 You should see output indicating the successful creation of a database and start of the indexer service; there may be much more content in your session, but it should generally contain output similar to the following lines:

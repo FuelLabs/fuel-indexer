@@ -56,6 +56,9 @@ fuel_node:
   # Listening port of the running Fuel node.
   port: 4000
 
+  # Use a network alias when connecting to a Fuel client.
+  network: ~
+
 # *************************
 # Web API configuration
 # *************************

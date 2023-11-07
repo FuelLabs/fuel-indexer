@@ -42,4 +42,5 @@ block_page_size: 20
 allow_non_sequential_blocks: false
 disable_toolchain_version_check: false
 client_request_delay: ~
+network: ~
 

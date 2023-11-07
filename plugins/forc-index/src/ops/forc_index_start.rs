@@ -45,6 +45,7 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
         allow_non_sequential_blocks,
         disable_toolchain_version_check,
         client_request_delay,
+        network,
     } = command;
 
     let mut cmd = Command::new("fuel-indexer");
@@ -119,6 +120,7 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
                 "--client-request-delay",
                 client_request_delay.map(|x| x.to_string()),
             ),
+            ("--network", network),
         ];
         for (opt, value) in options.iter() {
             if let Some(value) = value {
