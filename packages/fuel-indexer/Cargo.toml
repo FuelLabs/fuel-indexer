@@ -26,8 +26,8 @@ fuel-core-client = "0.20"
 fuel-crypto = { version = "=0.35.3" }
 fuel-indexer-api-server = { workspace = true, optional = true }
 fuel-indexer-database = { workspace = true }
-fuel-indexer-metrics = { workspace = true, optional = true }
 fuel-indexer-lib = { workspace = true }
+fuel-indexer-metrics = { workspace = true, optional = true }
 fuel-indexer-schema = { workspace = true, features = ["db-models"] }
 fuel-indexer-types = { workspace = true }
 fuel-tx = { workspace = true }
