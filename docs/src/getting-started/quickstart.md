@@ -105,6 +105,8 @@ We can quickly create a bootstrapped database and start the Fuel indexer service
 > IMPORTANT: Below we're specifying our Postgres hostname as `--postgres-host postgresql`, but you might need to change this based on your own Postgres instance details (see `forc index start --help` for more details).
 >
 > Additionally, you can try using the `--embedded-database` flag in order to quickly use an embedded instance of Postgres, but this flag can be flaky, and its ease of use often depends on what platform you're using.
+>
+> If you find that `--embedded-database` isn't working on your machine (for whatever reason), we strongly recommend that you simply used the Dockerized Fuel indexer components included in the project by using the `docker compose` script [included in the project](https://github.com/FuelLabs/fuel-indexer/blob/develop/scripts/docker-compose.yaml).
 
 ```bash
 forc index start --fuel-node-host beta-4.fuel.network --fuel-node-port 80 --run-migrations --postgres-host postgresql
