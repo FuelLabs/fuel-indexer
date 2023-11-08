@@ -163,8 +163,6 @@ pub trait Entity<'a>: Sized + PartialEq + Eq + std::fmt::Debug {
     }
 }
 
-// Some(BinaryOp { left: BinaryOp { left: Identifier("a"), op: Gt, right: Identifier("b") }, op: And, right: BinaryOp { left: Identifier("b"), op: Lt, right: Value(Long(100))
-
 pub struct Query<T> {
     constraint: Constraint<T>,
     order_by: Option<sql::OrderByExpr>,
