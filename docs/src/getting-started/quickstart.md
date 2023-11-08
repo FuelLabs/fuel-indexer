@@ -210,6 +210,32 @@ If all goes well, you should see the following:
 ▪▪▪▪▪ ✅ Successfully deployed indexer.
 ```
 
+And we can check the status of our newly deployed indexer using:
+
+```bash
+forc index status
+```
+
+Which should show:
+
+```text
+✅ Successfully fetched service health:
+
+client status: OK
+database status: OK
+uptime: 1m 30s
+
+Indexers:
+
+─ fuellabs
+   └─ hello_world
+      • id: 1
+      • created at: 2023-11-08 15:09:49.205698 UTC (52s ago)
+      • status: running
+      • status message:
+          Indexed 5440 blocks
+```
+
 > #### What is a "deployment" exactly?
 >
 > A _deployment_ within the context of Fuel's indexer is a series of steps taken to get your indexer project running in the wild.
