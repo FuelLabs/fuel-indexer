@@ -120,7 +120,8 @@ OPTIONS:
             Use Prometheus metrics reporting.
 
         --network <NETWORK>
-            Use a network alias when connecting to a Fuel client. [default: beta-3 beta-4 beta-5]
+            Use a network alias when connecting to a Fuel client. [possible values: beta-3, beta-4,
+            beta-5]
 
         --postgres-database <POSTGRES_DATABASE>
             Postgres database.
@@ -170,7 +171,6 @@ OPTIONS:
 
         --web-api-port <WEB_API_PORT>
             Web API port. [default: 29987]
-
 ```
 
 ### Using a configuration file (Indexer Service)
@@ -250,7 +250,8 @@ OPTIONS:
             Use Prometheus metrics reporting.
 
         --network <NETWORK>
-            Use a network alias when connecting to a Fuel client. [default: beta-3 beta-4 beta-5]
+            Use a network alias when connecting to a Fuel client. [possible values: beta-3, beta-4,
+            beta-5]
 
         --postgres-database <POSTGRES_DATABASE>
             Postgres database.
@@ -290,7 +291,6 @@ OPTIONS:
 
         --web-api-port <WEB_API_PORT>
             Web API port. [default: 29987]
-
 ```
 
 ### Using A Configuration File (Web Server)

@@ -215,7 +215,7 @@ pub struct IndexerArgs {
     pub client_request_delay: Option<u64>,
 
     /// Use a network alias when connecting to a Fuel client.
-    #[clap(long, default_values = utils::default_network_values(), help = "Use a network alias when connecting to a Fuel client.")]
+    #[clap(long, value_parser(["beta-3", "beta-4", "beta-5"]), help = "Use a network alias when connecting to a Fuel client.")]
     pub network: Option<String>,
 }
 
@@ -350,6 +350,6 @@ pub struct ApiServerArgs {
     pub disable_toolchain_version_check: bool,
 
     /// Use a network alias when connecting to a Fuel client.
-    #[clap(long, default_values = utils::default_network_values(), help = "Use a network alias when connecting to a Fuel client.")]
+    #[clap(long, value_parser(["beta-3", "beta-4", "beta-5"]), help = "Use a network alias when connecting to a Fuel client.")]
     pub network: Option<String>,
 }

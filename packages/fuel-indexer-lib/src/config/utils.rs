@@ -3,15 +3,10 @@ use std::collections::HashMap;
 
 lazy_static! {
     pub static ref NETWORKS: HashMap<String, (String, u64)> = HashMap::from_iter(
-        default_network_values()
+        ["beta-3", "beta-4", "beta-5"]
             .iter()
             .map(|n| (n.to_string(), (format!("{n}.fuel.network"), 80)))
     );
-}
-
-/// Pass default network names to `clap`.
-pub fn default_network_values() -> &'static [&'static str] {
-    &["beta-3", "beta-4", "beta-5"]
 }
 
 /// Attach a protocol to a host and port.
