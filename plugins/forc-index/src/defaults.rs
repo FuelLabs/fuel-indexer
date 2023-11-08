@@ -29,7 +29,7 @@ crate-type = ['cdylib']
 
 [dependencies]
 fuel-indexer-utils = {{ version = "0.23" }}
-fuels = {{ version = "0.49", default-features = false }}
+fuels = {{ version = "0.50", default-features = false }}
 getrandom = {{ version = "0.2", features = ["js"] }}
 serde = {{ version = "1.0", default-features = false, features = ["derive"] }}
 "#
