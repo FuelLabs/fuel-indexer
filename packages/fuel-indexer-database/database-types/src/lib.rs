@@ -569,6 +569,8 @@ impl RegisteredIndexer {
     Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, EnumString, strum::Display,
 )]
 pub enum IndexerStatusKind {
+    #[strum(serialize = "instantiating")]
+    Instantiating,
     #[strum(serialize = "starting")]
     Starting,
     #[strum(serialize = "running")]
@@ -590,6 +592,13 @@ pub struct IndexerStatus {
 }
 
 impl IndexerStatus {
+    pub fn instantiating() -> Self {
+        IndexerStatus {
+            status_kind: IndexerStatusKind::Instantiating,
+            status_message: "".to_string(),
+        }
+    }
+
     pub fn starting() -> Self {
         IndexerStatus {
             status_kind: IndexerStatusKind::Starting,
