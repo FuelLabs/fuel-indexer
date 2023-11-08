@@ -321,48 +321,52 @@ impl<T, F> OptionField<T, F> {
 }
 
 impl<T, F: std::fmt::Display> OptionField<T, F> {
-    pub fn eq(self, val: Option<F>) -> Constraint<T> {
+    pub fn eq(self, val: F) -> Constraint<T> {
         self.constraint(sql::BinaryOperator::Eq, val)
     }
 
-    pub fn ne(self, val: Option<F>) -> Constraint<T> {
+    pub fn ne(self, val: F) -> Constraint<T> {
         self.constraint(sql::BinaryOperator::NotEq, val)
     }
 
-    pub fn gt(self, val: Option<F>) -> Constraint<T> {
+    pub fn gt(self, val: F) -> Constraint<T> {
         self.constraint(sql::BinaryOperator::Gt, val)
     }
 
-    pub fn ge(self, val: Option<F>) -> Constraint<T> {
+    pub fn ge(self, val: F) -> Constraint<T> {
         self.constraint(sql::BinaryOperator::GtEq, val)
     }
 
-    pub fn lt(self, val: Option<F>) -> Constraint<T> {
+    pub fn lt(self, val: F) -> Constraint<T> {
         self.constraint(sql::BinaryOperator::Lt, val)
     }
 
-    pub fn le(self, val: Option<F>) -> Constraint<T> {
+    pub fn le(self, val: F) -> Constraint<T> {
         self.constraint(sql::BinaryOperator::LtEq, val)
     }
 
+    pub fn is_null(self) -> Constraint<T> {
+        Constraint::new(sql::Expr::IsNull(Box::new(sql::Expr::Identifier(
+            sql::Ident::new(self.field),
+        ))))
+    }
+
+    pub fn is_not_null(self) -> Constraint<T> {
+        Constraint::new(sql::Expr::IsNotNull(Box::new(sql::Expr::Identifier(
+            sql::Ident::new(self.field),
+        ))))
+    }
+
     // Helper function that unwraps the Option converting None to NULL.
-    fn constraint(self, op: sql::BinaryOperator, val: Option<F>) -> Constraint<T> {
-        if let Some(val) = val {
-            let expr = sql::Expr::BinaryOp {
-                left: Box::new(sql::Expr::Identifier(sql::Ident::new(
-                    self.field.clone(),
-                ))),
-                op,
-                right: Box::new(sql::Expr::Value(sql::Value::SingleQuotedString(
-                    val.to_string(),
-                ))),
-            };
-            Constraint::new(expr)
-        } else {
-            Constraint::new(sql::Expr::IsNull(Box::new(sql::Expr::Identifier(
-                sql::Ident::new(self.field.clone()),
-            ))))
-        }
+    fn constraint(self, op: sql::BinaryOperator, val: F) -> Constraint<T> {
+        let expr = sql::Expr::BinaryOp {
+            left: Box::new(sql::Expr::Identifier(sql::Ident::new(self.field))),
+            op,
+            right: Box::new(sql::Expr::Value(sql::Value::SingleQuotedString(
+                val.to_string(),
+            ))),
+        };
+        Constraint::new(expr)
     }
 }
 
