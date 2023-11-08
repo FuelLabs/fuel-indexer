@@ -604,6 +604,24 @@ mod fuel_indexer_test {
             assert_eq!(i.block_height, 1);
             FindEntity::new(i.block_height as u64).save();
         } else if block_data.height == 5 {
+            // Test >= 2 order_by_asc. We have 4 indexed blocks, so the result should be 2.
+            let i = IndexMetadataEntity::find(
+                IndexMetadataEntity::block_height()
+                    .ge(2)
+                    .order_by_asc(IndexMetadataEntity::block_height()),
+            )
+            .unwrap();
+            assert_eq!(i.block_height, 2);
+
+            // Test >= 2 order_by_desc. We have 4 indexed blocks, so the result should be 4.
+            let i = IndexMetadataEntity::find(
+                IndexMetadataEntity::block_height()
+                    .ge(2)
+                    .order_by_desc(IndexMetadataEntity::block_height()),
+            )
+            .unwrap();
+            assert_eq!(i.block_height, 4);
+        } else if block_data.height == 6 {
             // There is no such block. The lookup will fail.
             let i =
                 IndexMetadataEntity::find(IndexMetadataEntity::block_height().eq(777))

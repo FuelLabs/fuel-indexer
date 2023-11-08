@@ -753,6 +753,7 @@ async fn test_find() {
     assert_eq!(values, vec![2, 1]);
 
     mock_request("/find").await;
+    mock_request("/find").await;
 
     node.abort();
 

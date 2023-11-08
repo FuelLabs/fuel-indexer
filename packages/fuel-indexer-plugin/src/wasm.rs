@@ -11,6 +11,7 @@ use fuel_indexer_schema::{
     FtColumn,
 };
 use fuel_indexer_types::{ffi::*, scalar::UID};
+use sqlparser::ast as sql;
 
 pub use bincode;
 pub use hex::FromHex;
@@ -126,9 +127,10 @@ pub trait Entity<'a>: Sized + PartialEq + Eq + std::fmt::Debug {
     }
 
     /// Finds the first entity that satisfies the given constraints.
-    fn find(constraints: Constraint<Self>) -> Option<Self> {
+    fn find(query: impl Into<Query<Self>>) -> Option<Self> {
+        let query: Query<Self> = query.into();
         unsafe {
-            let buff = bincode::serialize(&constraints.to_string()).unwrap();
+            let buff = bincode::serialize(&query.to_string()).unwrap();
             let mut bufflen = (buff.len() as u32).to_le_bytes();
 
             let ptr =
@@ -161,8 +163,34 @@ pub trait Entity<'a>: Sized + PartialEq + Eq + std::fmt::Debug {
     }
 }
 
+// Some(BinaryOp { left: BinaryOp { left: Identifier("a"), op: Gt, right: Identifier("b") }, op: And, right: BinaryOp { left: Identifier("b"), op: Lt, right: Value(Long(100))
+
+pub struct Query<T> {
+    constraint: Constraint<T>,
+    order_by: Option<sql::OrderByExpr>,
+}
+
+impl<T> std::fmt::Display for Query<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.constraint)?;
+        if let Some(ref order_by) = self.order_by {
+            write!(f, " ORDER BY {}", order_by)?;
+        }
+        Ok(())
+    }
+}
+
+impl<T> From<Constraint<T>> for Query<T> {
+    fn from(constraint: Constraint<T>) -> Self {
+        Query {
+            constraint,
+            order_by: None,
+        }
+    }
+}
+
 pub struct Constraint<T> {
-    constraint: String,
+    constraint: sql::Expr,
     phantom: std::marker::PhantomData<T>,
 }
 
@@ -173,32 +201,56 @@ impl<T> std::fmt::Display for Constraint<T> {
 }
 
 impl<T> Constraint<T> {
-    fn new(constraint: String) -> Self {
+    fn new(constraint: sql::Expr) -> Self {
         Self {
             constraint,
             phantom: std::marker::PhantomData,
         }
     }
 
-    pub fn and(self, c: Constraint<T>) -> Constraint<T> {
+    pub fn and(self, right: Constraint<T>) -> Constraint<T> {
+        let constraint = sql::Expr::BinaryOp {
+            left: Box::new(self.constraint),
+            op: sql::BinaryOperator::And,
+            right: Box::new(right.constraint),
+        };
         Constraint {
-            constraint: format!(
-                "({} AND {})",
-                &self.constraint,
-                &c.constraint.to_string()
-            ),
+            constraint,
             phantom: std::marker::PhantomData,
         }
     }
 
-    pub fn or(self, c: Constraint<T>) -> Constraint<T> {
+    pub fn or(self, right: Constraint<T>) -> Constraint<T> {
+        let constraint = sql::Expr::BinaryOp {
+            left: Box::new(self.constraint),
+            op: sql::BinaryOperator::Or,
+            right: Box::new(right.constraint),
+        };
         Constraint {
-            constraint: format!(
-                "({} OR {})",
-                &self.constraint,
-                &c.constraint.to_string()
-            ),
+            constraint,
             phantom: std::marker::PhantomData,
+        }
+    }
+
+    pub fn order_by_asc<F>(self, f: Field<T, F>) -> Query<T> {
+        Query {
+            constraint: self,
+            order_by: Some(sql::OrderByExpr {
+                expr: sql::Expr::Identifier(sql::Ident::new(f.field)),
+                asc: Some(true),
+                nulls_first: None,
+            }),
+        }
+    }
+
+    pub fn order_by_desc<F>(self, f: Field<T, F>) -> Query<T> {
+        Query {
+            constraint: self,
+            order_by: Some(sql::OrderByExpr {
+                expr: sql::Expr::Identifier(sql::Ident::new(f.field)),
+                asc: Some(false),
+                nulls_first: None,
+            }),
         }
     }
 }
@@ -219,27 +271,38 @@ impl<T, F> Field<T, F> {
 
 impl<T, F: std::fmt::Display> Field<T, F> {
     pub fn eq(self, val: F) -> Constraint<T> {
-        Constraint::new(format!("{} = '{}'", self.field, val))
+        self.constraint(sql::BinaryOperator::Eq, val)
     }
 
     pub fn ne(self, val: F) -> Constraint<T> {
-        Constraint::new(format!("{} != '{}'", self.field, val))
+        self.constraint(sql::BinaryOperator::NotEq, val)
     }
 
     pub fn gt(self, val: F) -> Constraint<T> {
-        Constraint::new(format!("{} > '{}'", self.field, val))
+        self.constraint(sql::BinaryOperator::Gt, val)
     }
 
     pub fn ge(self, val: F) -> Constraint<T> {
-        Constraint::new(format!("{} >= '{}'", self.field, val))
+        self.constraint(sql::BinaryOperator::GtEq, val)
     }
 
     pub fn lt(self, val: F) -> Constraint<T> {
-        Constraint::new(format!("{} < '{}'", self.field, val))
+        self.constraint(sql::BinaryOperator::Lt, val)
     }
 
     pub fn le(self, val: F) -> Constraint<T> {
-        Constraint::new(format!("{} <= '{}'", self.field, val))
+        self.constraint(sql::BinaryOperator::LtEq, val)
+    }
+
+    fn constraint(self, op: sql::BinaryOperator, val: F) -> Constraint<T> {
+        let expr = sql::Expr::BinaryOp {
+            left: Box::new(sql::Expr::Identifier(sql::Ident::new(self.field.clone()))),
+            op,
+            right: Box::new(sql::Expr::Value(sql::Value::SingleQuotedString(
+                val.to_string(),
+            ))),
+        };
+        Constraint::new(expr)
     }
 }
 
@@ -259,35 +322,47 @@ impl<T, F> OptionField<T, F> {
 
 impl<T, F: std::fmt::Display> OptionField<T, F> {
     pub fn eq(self, val: Option<F>) -> Constraint<T> {
-        self.constraint("=", val)
+        self.constraint(sql::BinaryOperator::Eq, val)
     }
 
     pub fn ne(self, val: Option<F>) -> Constraint<T> {
-        self.constraint("!=", val)
+        self.constraint(sql::BinaryOperator::NotEq, val)
     }
 
     pub fn gt(self, val: Option<F>) -> Constraint<T> {
-        self.constraint(">", val)
+        self.constraint(sql::BinaryOperator::Gt, val)
     }
 
     pub fn ge(self, val: Option<F>) -> Constraint<T> {
-        self.constraint(">=", val)
+        self.constraint(sql::BinaryOperator::GtEq, val)
     }
 
     pub fn lt(self, val: Option<F>) -> Constraint<T> {
-        self.constraint("<", val)
+        self.constraint(sql::BinaryOperator::Lt, val)
     }
 
     pub fn le(self, val: Option<F>) -> Constraint<T> {
-        self.constraint("<=", val)
+        self.constraint(sql::BinaryOperator::LtEq, val)
     }
 
     // Helper function that unwraps the Option converting None to NULL.
-    fn constraint(self, op: &str, val: Option<F>) -> Constraint<T> {
-        let cond = val
-            .map(|x| format!("{op} '{x}'"))
-            .unwrap_or_else(|| "is NULL".to_string());
-        Constraint::new(format!("{} {}", self.field, cond))
+    fn constraint(self, op: sql::BinaryOperator, val: Option<F>) -> Constraint<T> {
+        if let Some(val) = val {
+            let expr = sql::Expr::BinaryOp {
+                left: Box::new(sql::Expr::Identifier(sql::Ident::new(
+                    self.field.clone(),
+                ))),
+                op,
+                right: Box::new(sql::Expr::Value(sql::Value::SingleQuotedString(
+                    val.to_string(),
+                ))),
+            };
+            Constraint::new(expr)
+        } else {
+            Constraint::new(sql::Expr::IsNull(Box::new(sql::Expr::Identifier(
+                sql::Ident::new(self.field.clone()),
+            ))))
+        }
     }
 }
 
