@@ -35,7 +35,7 @@ use std::{
 };
 use tokio::{
     task::spawn_blocking,
-    time::{sleep, Duration, Instant},
+    time::{sleep, Duration},
 };
 use tracing::{debug, error, info, warn};
 use wasmer::{
@@ -43,6 +43,9 @@ use wasmer::{
     TypedFunction,
 };
 use wasmer_middlewares::metering::MeteringPoints;
+
+#[cfg(feature = "metrics")]
+use tokio::time::Instant;
 
 /// Source of the indexer's execution.
 #[derive(Debug, Clone)]
@@ -174,7 +177,8 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                 return Err(IndexerError::KillSwitch);
             }
 
-            let _start = Instant::now();
+            #[cfg(feature = "metrics")]
+            let start = Instant::now();
 
             // Fetch the next page of blocks, and the starting cursor for the subsequent page
             let (block_info, next_cursor, _has_next_page) =
@@ -210,7 +214,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                 METRICS
                     .exec
                     .web
-                    .record(&indexer_uid, _start.elapsed().as_millis() as f64);
+                    .record(&indexer_uid, start.elapsed().as_millis() as f64);
             }
 
             // If our block page request from the client returns empty, we sleep for a bit, and then continue.
@@ -860,7 +864,8 @@ impl Executor for WasmIndexExecutor {
 
         let _ = self.db.lock().await.start_transaction().await?;
 
-        let _start = Instant::now();
+        #[cfg(feature = "metrics")]
+        let start = Instant::now();
 
         let res = spawn_blocking({
             let store = self.store.clone();
@@ -886,7 +891,7 @@ impl Executor for WasmIndexExecutor {
             METRICS
                 .exec
                 .handler
-                .record(&self.manifest.uid(), _start.elapsed().as_millis() as f64);
+                .record(&self.manifest.uid(), start.elapsed().as_millis() as f64);
         }
 
         if let Err(e) = res {
