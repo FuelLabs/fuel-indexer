@@ -4,6 +4,7 @@ pub use crate::{
         client::FuelClientConfig,
         database::DatabaseConfig,
         limit::RateLimitConfig,
+        utils,
         web::WebApiConfig,
     },
     defaults,
@@ -212,6 +213,10 @@ pub struct IndexerArgs {
         help = "Make the service wait for the given duration between block requests to a Fuel client."
     )]
     pub client_request_delay: Option<u64>,
+
+    /// Use a network alias when connecting to a Fuel client.
+    #[clap(long, value_parser(["beta-3", "beta-4", "beta-5"]), help = "Use a network alias when connecting to a Fuel client.")]
+    pub network: Option<String>,
 }
 
 #[derive(Debug, Parser, Clone)]
@@ -343,4 +348,8 @@ pub struct ApiServerArgs {
         help = "By default, Fuel Indexer will only accept WASM indexer modules compiled with the same toolchain version as the version of Fuel Indexer."
     )]
     pub disable_toolchain_version_check: bool,
+
+    /// Use a network alias when connecting to a Fuel client.
+    #[clap(long, value_parser(["beta-3", "beta-4", "beta-5"]), help = "Use a network alias when connecting to a Fuel client.")]
+    pub network: Option<String>,
 }

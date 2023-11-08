@@ -35,8 +35,7 @@ Create, deploy, and check the status of a new indexer.
 
 ```bash
 fuel-indexer run \
-    --fuel-node-host beta-4.fuel.network \
-    --fuel-node-port 80 \
+    --network beta-4 \
     --run-migrations \
     --accept-sql-queries \
     --replace-indexer

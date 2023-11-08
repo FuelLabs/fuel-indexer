@@ -16,6 +16,9 @@ OPTIONS:
         --accept-sql-queries
             Allow the web server to accept raw SQL queries.
 
+        --allow-non-sequential-blocks
+            Allow missing blocks or non-sequential block processing.
+
         --auth-enabled
             Require users to authenticate for some operations.
 
@@ -28,8 +31,15 @@ OPTIONS:
     -c, --config <FILE>
             Indexer service config file.
 
+        --client-request-delay <CLIENT_REQUEST_DELAY>
+            Make the service wait for the given duration between block requests to a Fuel client.
+
         --database <DATABASE>
             Database type. [default: postgres] [possible values: postgres]
+
+        --disable-toolchain-version-check
+            By default, Fuel Indexer will only accept WASM indexer modules compiled with the same
+            toolchain version as the version of Fuel Indexer.
 
         --embedded-database
             Automatically create and start database using provided options or defaults.
@@ -74,6 +84,9 @@ OPTIONS:
 
         --metrics
             Use Prometheus metrics reporting.
+
+        --network <NETWORK>
+            Use a network alias when connecting to a Fuel client. [default: beta-3 beta-4 beta-5]
 
         --postgres-database <POSTGRES_DATABASE>
             Postgres database.
@@ -123,5 +136,4 @@ OPTIONS:
 
         --web-api-port <WEB_API_PORT>
             Web API port. [default: 29987]
-
 ```

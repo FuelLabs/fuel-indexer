@@ -110,6 +110,7 @@ impl Default for IndexerArgs {
             allow_non_sequential_blocks: defaults::ALLOW_NON_SEQUENTIAL_BLOCKS,
             disable_toolchain_version_check: defaults::DISABLE_TOOLCHAIN_VERSION_CHECK,
             client_request_delay: None,
+            network: None,
         }
     }
 }
@@ -142,6 +143,7 @@ pub struct IndexerConfig {
     pub allow_non_sequential_blocks: bool,
     pub disable_toolchain_version_check: bool,
     pub client_request_delay: Option<u64>,
+    pub network: Option<String>,
 }
 
 impl Default for IndexerConfig {
@@ -166,6 +168,7 @@ impl Default for IndexerConfig {
             allow_non_sequential_blocks: defaults::ALLOW_NON_SEQUENTIAL_BLOCKS,
             disable_toolchain_version_check: defaults::DISABLE_TOOLCHAIN_VERSION_CHECK,
             client_request_delay: None,
+            network: None,
         }
     }
 }
@@ -250,7 +253,16 @@ impl From<IndexerArgs> for IndexerConfig {
             allow_non_sequential_blocks: args.allow_non_sequential_blocks,
             disable_toolchain_version_check: args.disable_toolchain_version_check,
             client_request_delay: args.client_request_delay,
+            network: args.network,
         };
+
+        if let Some(ref _n) = config.network {
+            let (host, port) = utils::NETWORKS
+                .get(config.network.as_ref().unwrap().as_str())
+                .unwrap();
+            config.fuel_node.host = host.to_string();
+            config.fuel_node.port = port.to_string();
+        }
 
         config
             .inject_opt_env_vars()
@@ -340,7 +352,16 @@ impl From<ApiServerArgs> for IndexerConfig {
             allow_non_sequential_blocks: defaults::ALLOW_NON_SEQUENTIAL_BLOCKS,
             disable_toolchain_version_check: args.disable_toolchain_version_check,
             client_request_delay: None,
+            network: args.network,
         };
+
+        if let Some(ref _n) = config.network {
+            let (host, port) = utils::NETWORKS
+                .get(config.network.as_ref().unwrap().as_str())
+                .unwrap();
+            config.fuel_node.host = host.to_string();
+            config.fuel_node.port = port.to_string();
+        }
 
         config
             .inject_opt_env_vars()
@@ -444,6 +465,16 @@ impl IndexerConfig {
 
             if let Some(fuel_node_port) = fuel_node_port {
                 config.fuel_node.port = fuel_node_port.as_u64().unwrap().to_string();
+            }
+
+            let network = section.get(&serde_yaml::Value::String("network".into()));
+
+            if let Some(network) = network {
+                if let Some(n) = network.as_str() {
+                    let (host, port) = utils::NETWORKS.get(n).expect("Invalid network.");
+                    config.fuel_node.host = host.to_string();
+                    config.fuel_node.port = port.to_string();
+                }
             }
         }
 
