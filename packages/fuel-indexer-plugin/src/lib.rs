@@ -1,3 +1,5 @@
+mod find;
+
 pub mod wasm;
 
 pub mod types {
