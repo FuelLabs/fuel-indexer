@@ -779,12 +779,35 @@ impl WasmIndexExecutor {
     ) -> IndexerResult<Self> {
         let uid = manifest.uid();
 
-        match WasmIndexExecutor::new(config, manifest, wasm_bytes, pool, schema_version)
-            .await
+        let mut conn = pool.acquire().await?;
+        queries::set_indexer_status(
+            &mut conn,
+            manifest.namespace(),
+            manifest.identifier(),
+            IndexerStatus::instantiating(),
+        )
+        .await?;
+
+        match WasmIndexExecutor::new(
+            config,
+            manifest,
+            wasm_bytes,
+            pool.clone(),
+            schema_version,
+        )
+        .await
         {
             Ok(executor) => Ok(executor),
             Err(e) => {
                 error!("Could not instantiate WasmIndexExecutor({uid}): {e:?}.");
+                let mut conn = pool.acquire().await?;
+                queries::set_indexer_status(
+                    &mut conn,
+                    manifest.namespace(),
+                    manifest.identifier(),
+                    IndexerStatus::error(format!("{e}")),
+                )
+                .await?;
                 Err(IndexerError::WasmExecutionInstantiationError)
             }
         }
