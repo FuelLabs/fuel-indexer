@@ -1,7 +1,7 @@
 use fuel_indexer_types::scalar::{Boolean, UID};
 use sqlparser::ast as sql;
 
-/// Represents `WHERE filter ORDER BY ASC | DSC` part of the SQL statement. 
+/// Represents `WHERE filter ORDER BY ASC | DSC` part of the SQL statement.
 pub struct QueryFragment<T> {
     constraint: Filter<T>,
     order_by: Option<sql::OrderByExpr>,
@@ -114,7 +114,6 @@ impl ToSQLValue for String {
         sql::Value::SingleQuotedString(self)
     }
 }
-
 
 impl ToSQLValue for Boolean {
     fn to_sql_value(self) -> sql::Value {

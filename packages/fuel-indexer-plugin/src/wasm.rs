@@ -17,7 +17,7 @@ pub use hex::FromHex;
 pub use sha2::{Digest, Sha256};
 pub use std::collections::{HashMap, HashSet};
 
-pub use crate::find::{Filter, Field, OptionField, QueryFragment};
+pub use crate::find::{Field, Filter, OptionField, QueryFragment};
 
 // These are instantiated with functions which return
 // `Result<T, WasmIndexerError>`. `wasmer` unwraps the `Result` and uses the
