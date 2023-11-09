@@ -17,7 +17,7 @@ pub use hex::FromHex;
 pub use sha2::{Digest, Sha256};
 pub use std::collections::{HashMap, HashSet};
 
-pub use crate::find::{Constraint, Field, OptionField, Query};
+pub use crate::find::{Filter, Field, OptionField, QueryFragment};
 
 // These are instantiated with functions which return
 // `Result<T, WasmIndexerError>`. `wasmer` unwraps the `Result` and uses the
@@ -128,8 +128,8 @@ pub trait Entity<'a>: Sized + PartialEq + Eq + std::fmt::Debug {
     }
 
     /// Finds the first entity that satisfies the given constraints.
-    fn find(query: impl Into<Query<Self>>) -> Option<Self> {
-        let query: Query<Self> = query.into();
+    fn find(query: impl Into<QueryFragment<Self>>) -> Option<Self> {
+        let query: QueryFragment<Self> = query.into();
         unsafe {
             let buff = bincode::serialize(&query.to_string()).unwrap();
             let mut bufflen = (buff.len() as u32).to_le_bytes();
