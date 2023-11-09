@@ -3244,6 +3244,7 @@ dependencies = [
  "fuel-indexer-api-server",
  "fuel-indexer-database",
  "fuel-indexer-lib",
+ "fuel-indexer-metrics",
  "fuel-indexer-schema",
  "fuel-indexer-types",
  "fuel-tx 0.35.4",

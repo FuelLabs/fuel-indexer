@@ -16,6 +16,8 @@ use fuel_indexer_database::{queries, types::IndexerStatus, IndexerConnectionPool
 use fuel_indexer_lib::{
     defaults::*, manifest::Manifest, utils::serialize, WasmIndexerError,
 };
+#[cfg(feature = "metrics")]
+use fuel_indexer_metrics::METRICS;
 use fuel_indexer_types::{
     fuel::{field::*, *},
     scalar::{Bytes, Bytes32},
@@ -41,6 +43,9 @@ use wasmer::{
     TypedFunction,
 };
 use wasmer_middlewares::metering::MeteringPoints;
+
+#[cfg(feature = "metrics")]
+use tokio::time::Instant;
 
 /// Source of the indexer's execution.
 #[derive(Debug, Clone)]
@@ -172,6 +177,9 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                 return Err(IndexerError::KillSwitch);
             }
 
+            #[cfg(feature = "metrics")]
+            let start = Instant::now();
+
             // Fetch the next page of blocks, and the starting cursor for the subsequent page
             let (block_info, next_cursor, _has_next_page) =
                 match retrieve_blocks_from_node(
@@ -200,6 +208,14 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                         }
                     }
                 };
+
+            #[cfg(feature = "metrics")]
+            {
+                METRICS
+                    .exec
+                    .web
+                    .record(&indexer_uid, start.elapsed().as_millis() as f64);
+            }
 
             // If our block page request from the client returns empty, we sleep for a bit, and then continue.
             if block_info.is_empty() {
@@ -848,6 +864,9 @@ impl Executor for WasmIndexExecutor {
 
         let _ = self.db.lock().await.start_transaction().await?;
 
+        #[cfg(feature = "metrics")]
+        let start = Instant::now();
+
         let res = spawn_blocking({
             let store = self.store.clone();
             let instance = self.instance.clone();
@@ -866,6 +885,14 @@ impl Executor for WasmIndexExecutor {
             }
         })
         .await?;
+
+        #[cfg(feature = "metrics")]
+        {
+            METRICS
+                .exec
+                .handler
+                .record(&self.manifest.uid(), start.elapsed().as_millis() as f64);
+        }
 
         if let Err(e) = res {
             if self.metering_points_exhausted().await {

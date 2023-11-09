@@ -27,6 +27,7 @@ fuel-crypto = { version = "=0.35.4" }
 fuel-indexer-api-server = { workspace = true, optional = true }
 fuel-indexer-database = { workspace = true }
 fuel-indexer-lib = { workspace = true }
+fuel-indexer-metrics = { workspace = true, optional = true }
 fuel-indexer-schema = { workspace = true, features = ["db-models"] }
 fuel-indexer-types = { workspace = true }
 fuel-tx = { workspace = true }
@@ -48,6 +49,7 @@ features = ["vendored"]
 fuel-core-client = { version = "0.20", features = ["test-helpers"] }
 
 [features]
-default = ["api-server"]
+default = ["api-server", "metrics"]
 fuel-core-lib = ["fuel-core"]
 api-server = ["fuel-indexer-api-server"]
+metrics = ["fuel-indexer-metrics"]

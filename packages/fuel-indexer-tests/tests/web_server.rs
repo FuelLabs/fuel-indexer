@@ -23,7 +23,7 @@ const SIGNATURE: &str = "cb19384361af5dd7fec2a0052ca49d289f997238ea90590baf47f16
 const NONCE: &str = "ea35be0c98764e7ca06d02067982e3b4";
 
 #[tokio::test]
-async fn test_metrics_endpoint_returns_proper_count_of_metrics_postgres() {
+async fn test_metrics_endpoint_returns_proper_count_of_metrics() {
     let WebTestComponents { server, client, .. } = setup_web_test_components(None).await;
 
     let _ = client

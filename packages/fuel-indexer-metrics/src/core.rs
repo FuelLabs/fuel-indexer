@@ -46,6 +46,72 @@ impl Postgres {
     }
 }
 
+pub struct ExecutorHandler {
+    pub registry: Registry,
+    requests: Family<Label, Histogram>,
+}
+
+impl Metric for ExecutorHandler {
+    fn init() -> Self {
+        let mut registry = Registry::default();
+        let requests = Family::<Label, Histogram>::new_with_constructor(|| {
+            Histogram::new(TIMING_HISTOGRAM_BUCKETS.iter().cloned())
+        });
+        registry.register("executor_handler_operation_duration", "", requests.clone());
+
+        Self { registry, requests }
+    }
+}
+
+impl ExecutorHandler {
+    pub fn record(&self, indexer_uid: &str, time: f64) {
+        let histogram = self.requests.get_or_create(&Label {
+            path: indexer_uid.to_string(),
+        });
+        histogram.observe(time);
+    }
+}
+
+pub struct ExecutorWeb {
+    pub registry: Registry,
+    requests: Family<Label, Histogram>,
+}
+
+impl Metric for ExecutorWeb {
+    fn init() -> Self {
+        let mut registry = Registry::default();
+        let requests = Family::<Label, Histogram>::new_with_constructor(|| {
+            Histogram::new(TIMING_HISTOGRAM_BUCKETS.iter().cloned())
+        });
+        registry.register("executor_web_request_duration", "", requests.clone());
+
+        Self { registry, requests }
+    }
+}
+
+impl ExecutorWeb {
+    pub fn record(&self, indexer_uid: &str, time: f64) {
+        let histogram = self.requests.get_or_create(&Label {
+            path: indexer_uid.to_string(),
+        });
+        histogram.observe(time);
+    }
+}
+
+pub struct Executor {
+    pub handler: ExecutorHandler,
+    pub web: ExecutorWeb,
+}
+
+impl Metric for Executor {
+    fn init() -> Self {
+        Self {
+            handler: ExecutorHandler::init(),
+            web: ExecutorWeb::init(),
+        }
+    }
+}
+
 pub struct Database {
     pub write_ops: IntCounter,
     pub read_ops: IntCounter,
@@ -104,6 +170,7 @@ impl Web {
 pub struct Metrics {
     pub web: Web,
     pub db: Database,
+    pub exec: Executor,
 }
 
 impl Metric for Metrics {
@@ -111,6 +178,7 @@ impl Metric for Metrics {
         Self {
             web: Web::init(),
             db: Database::init(),
+            exec: Executor::init(),
         }
     }
 }

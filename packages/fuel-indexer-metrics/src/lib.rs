@@ -26,6 +26,14 @@ pub fn encode_metrics_response() -> impl IntoResponse {
         return error_body();
     }
 
+    if encode(&mut encoded, &METRICS.exec.handler.registry).is_err() {
+        return error_body();
+    }
+
+    if encode(&mut encoded, &METRICS.exec.web.registry).is_err() {
+        return error_body();
+    }
+
     Response::builder()
         .status(StatusCode::OK)
         .body(Body::from(encoded))
