@@ -582,13 +582,14 @@ mod fuel_indexer_test {
 
     fn fuel_indexer_test_trigger_find(_find: Find, block_data: BlockData) {
         if block_data.height == 4 {
-            // == 1
+            // Test == 1
             let i = IndexMetadataEntity::find(IndexMetadataEntity::block_height().eq(1))
                 .unwrap();
             assert_eq!(i.block_height, 1);
-            FindEntity::new(i.block_height as u64).save();
+            FindEntity::new(i.block_height as u64, format!("find{}", i.block_height))
+                .save();
 
-            // > 1 && < 3 => 2
+            // Test > 1 && < 3 (expected: 2)
             let i = IndexMetadataEntity::find(
                 IndexMetadataEntity::block_height()
                     .gt(1)
@@ -596,13 +597,11 @@ mod fuel_indexer_test {
             )
             .unwrap();
             assert_eq!(i.block_height, 2);
-            FindEntity::new(i.block_height as u64).save();
 
-            // < 2 => 1
+            // Test < 2 (expected: 1)
             let i = IndexMetadataEntity::find(IndexMetadataEntity::block_height().lt(2))
                 .unwrap();
             assert_eq!(i.block_height, 1);
-            FindEntity::new(i.block_height as u64).save();
         } else if block_data.height == 5 {
             // Test >= 2 order_by_asc. We have 4 indexed blocks, so the result should be 2.
             let i = IndexMetadataEntity::find(
@@ -621,12 +620,31 @@ mod fuel_indexer_test {
             )
             .unwrap();
             assert_eq!(i.block_height, 4);
+
+            // Test searching for a string field
+            let f = FindEntity::find(
+                FindEntity::string_value()
+                    .gt("f".to_string())
+                    .order_by_asc(FindEntity::value()),
+            )
+            .unwrap();
+            assert_eq!(&f.string_value, "find1");
+
+            // Test searching for a string field
+            let f = FindEntity::find(
+                FindEntity::string_value()
+                    .gt("f".to_string())
+                    .order_by_desc(FindEntity::value()),
+            )
+            .unwrap();
+            assert_eq!(&f.string_value, "find5");
         } else if block_data.height == 6 {
             // There is no such block. The lookup will fail.
             let i =
                 IndexMetadataEntity::find(IndexMetadataEntity::block_height().eq(777))
                     .unwrap();
-            FindEntity::new(i.block_height as u64).save();
+            FindEntity::new(i.block_height as u64, format!("find{}", i.block_height))
+                .save();
         }
     }
 }

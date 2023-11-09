@@ -742,15 +742,16 @@ async fn test_find() {
     assert_eq!(row.get::<&str, usize>(2), "Indexed 4 blocks");
     assert_eq!(row.get::<&str, usize>(1), "running");
 
-    let values = sqlx::query("SELECT * FROM fuel_indexer_test_index1.findentity")
+    let mut values = sqlx::query("SELECT * FROM fuel_indexer_test_index1.findentity")
         .fetch_all(&mut conn)
         .await
         .unwrap()
         .iter()
         .map(|r| r.get::<BigDecimal, usize>(1).to_u64().unwrap())
         .collect::<Vec<u64>>();
+    values.sort();
 
-    assert_eq!(values, vec![2, 1]);
+    assert_eq!(values, vec![1, 2, 3, 4]);
 
     mock_request("/find").await;
     mock_request("/find").await;

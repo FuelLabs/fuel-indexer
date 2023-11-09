@@ -337,4 +337,5 @@ type ListTypeEntity @entity {
 type FindEntity @entity {
   id: ID!
   value: U64!
+  string_value: String!
 }

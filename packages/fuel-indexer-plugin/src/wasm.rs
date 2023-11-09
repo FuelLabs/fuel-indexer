@@ -10,7 +10,10 @@ use fuel_indexer_schema::{
     join::{JoinMetadata, RawQuery},
     FtColumn,
 };
-use fuel_indexer_types::{ffi::*, scalar::UID};
+use fuel_indexer_types::{
+    ffi::*,
+    scalar::{Boolean, Bytes, B256, UID},
+};
 use sqlparser::ast as sql;
 
 pub use bincode;
@@ -267,7 +270,74 @@ impl<T, F> Field<T, F> {
     }
 }
 
-impl<T, F: std::fmt::Display> Field<T, F> {
+pub trait ToSQLValue
+where
+    Self: Sized,
+{
+    fn to_sql_value(self) -> sql::Value;
+}
+
+impl ToSQLValue for String {
+    fn to_sql_value(self) -> sql::Value {
+        sql::Value::SingleQuotedString(self)
+    }
+}
+
+impl ToSQLValue for B256 {
+    fn to_sql_value(self) -> sql::Value {
+        unsafe {
+            sql::Value::SingleQuotedByteStringLiteral(
+                std::str::from_utf8_unchecked(&self).to_string(),
+            )
+        }
+    }
+}
+
+impl ToSQLValue for Bytes {
+    fn to_sql_value(self) -> sql::Value {
+        unsafe {
+            sql::Value::SingleQuotedByteStringLiteral(
+                std::str::from_utf8_unchecked(&self).to_string(),
+            )
+        }
+    }
+}
+
+impl ToSQLValue for Boolean {
+    fn to_sql_value(self) -> sql::Value {
+        sql::Value::Boolean(self)
+    }
+}
+
+impl ToSQLValue for UID {
+    fn to_sql_value(self) -> sql::Value {
+        sql::Value::SingleQuotedString(self.to_string())
+    }
+}
+
+macro_rules! impl_number_to_sql_value {
+    ($T:ident) => {
+        impl ToSQLValue for fuel_indexer_types::scalar::$T {
+            fn to_sql_value(self) -> sql::Value {
+                sqlparser::test_utils::number(&self.to_string())
+            }
+        }
+    };
+}
+
+impl_number_to_sql_value!(I128);
+impl_number_to_sql_value!(U128);
+
+impl_number_to_sql_value!(I64);
+impl_number_to_sql_value!(U64);
+
+impl_number_to_sql_value!(I32);
+impl_number_to_sql_value!(U32);
+
+impl_number_to_sql_value!(I8);
+impl_number_to_sql_value!(U8);
+
+impl<T, F: ToSQLValue> Field<T, F> {
     pub fn eq(self, val: F) -> Constraint<T> {
         self.constraint(sql::BinaryOperator::Eq, val)
     }
@@ -296,9 +366,7 @@ impl<T, F: std::fmt::Display> Field<T, F> {
         let expr = sql::Expr::BinaryOp {
             left: Box::new(sql::Expr::Identifier(sql::Ident::new(self.field.clone()))),
             op,
-            right: Box::new(sql::Expr::Value(sql::Value::SingleQuotedString(
-                val.to_string(),
-            ))),
+            right: Box::new(sql::Expr::Value(val.to_sql_value())),
         };
         Constraint::new(expr)
     }
@@ -318,7 +386,7 @@ impl<T, F> OptionField<T, F> {
     }
 }
 
-impl<T, F: std::fmt::Display> OptionField<T, F> {
+impl<T, F: ToSQLValue> OptionField<T, F> {
     pub fn eq(self, val: F) -> Constraint<T> {
         self.constraint(sql::BinaryOperator::Eq, val)
     }
@@ -360,9 +428,7 @@ impl<T, F: std::fmt::Display> OptionField<T, F> {
         let expr = sql::Expr::BinaryOp {
             left: Box::new(sql::Expr::Identifier(sql::Ident::new(self.field))),
             op,
-            right: Box::new(sql::Expr::Value(sql::Value::SingleQuotedString(
-                val.to_string(),
-            ))),
+            right: Box::new(sql::Expr::Value(val.to_sql_value())),
         };
         Constraint::new(expr)
     }
