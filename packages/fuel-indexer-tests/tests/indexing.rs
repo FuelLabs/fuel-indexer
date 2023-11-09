@@ -751,8 +751,10 @@ async fn test_find() {
         .collect::<Vec<u64>>();
     values.sort();
 
-    assert_eq!(values, vec![1, 2, 3, 4]);
+    // We've triggered 3x /find above, at blocks 2, 3, 4.
+    assert_eq!(values, vec![2, 3, 4]);
 
+    // Trigger 2x more /find, at blocks 5, and 6.
     mock_request("/find").await;
     mock_request("/find").await;
 
@@ -765,6 +767,7 @@ async fn test_find() {
         .await
         .unwrap();
 
+    // Failure is expected at block 6.
     assert_eq!(row.get::<&str, usize>(1), "error");
     assert!(row
         .get::<&str, usize>(2)

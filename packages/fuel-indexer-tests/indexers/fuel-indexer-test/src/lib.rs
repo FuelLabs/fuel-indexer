@@ -632,7 +632,7 @@ mod fuel_indexer_test {
                     .order_by_asc(FindEntity::value()),
             )
             .unwrap();
-            assert_eq!(&f.string_value, "find1");
+            assert_eq!(&f.string_value, "find2");
 
             // Test searching for a string field
             let f = FindEntity::find(
