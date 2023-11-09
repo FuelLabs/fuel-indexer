@@ -581,13 +581,17 @@ mod fuel_indexer_test {
     }
 
     fn fuel_indexer_test_trigger_find(_find: Find, block_data: BlockData) {
+        FindEntity::new(
+            block_data.height as u64,
+            format!("find{}", block_data.height),
+        )
+        .save();
+
         if block_data.height == 4 {
             // Test == 1
             let i = IndexMetadataEntity::find(IndexMetadataEntity::block_height().eq(1))
                 .unwrap();
             assert_eq!(i.block_height, 1);
-            FindEntity::new(i.block_height as u64, format!("find{}", i.block_height))
-                .save();
 
             // Test > 1 && < 3 (expected: 2)
             let i = IndexMetadataEntity::find(
@@ -640,11 +644,8 @@ mod fuel_indexer_test {
             assert_eq!(&f.string_value, "find5");
         } else if block_data.height == 6 {
             // There is no such block. The lookup will fail.
-            let i =
-                IndexMetadataEntity::find(IndexMetadataEntity::block_height().eq(777))
-                    .unwrap();
-            FindEntity::new(i.block_height as u64, format!("find{}", i.block_height))
-                .save();
+            IndexMetadataEntity::find(IndexMetadataEntity::block_height().eq(777))
+                .unwrap();
         }
     }
 }
