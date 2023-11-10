@@ -1,9 +1,13 @@
 use fuel_indexer_types::scalar::{Boolean, UID};
 use sqlparser::ast as sql;
 
-/// Represents `WHERE filter ORDER BY ASC | DSC` part of the SQL statement.
+/// Represents `filter` and `order_by` parts of the `SELECT object from {table}
+/// WHERE {filter} {order_by}` statement that is assembled by the indexer to
+/// fetch an object from the database. The table name is not available to the
+/// plugin and thus only a part of the statment is generated there. The indexer
+/// maps the TYPE_ID to the tale name and assemles the full statemnt.
 pub struct QueryFragment<T> {
-    constraint: Filter<T>,
+    filter: Filter<T>,
     order_by: Option<sql::OrderByExpr>,
 }
 
@@ -11,7 +15,7 @@ pub struct QueryFragment<T> {
 /// added by the Fuel indexer to generate the entire query.
 impl<T> std::fmt::Display for QueryFragment<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.constraint)?;
+        write!(f, "{}", self.filter)?;
         if let Some(ref order_by) = self.order_by {
             write!(f, " ORDER BY {}", order_by)?;
         }
@@ -22,9 +26,9 @@ impl<T> std::fmt::Display for QueryFragment<T> {
 /// Automatic lifting of `Filter` into `QueryFragment` leaving `ORDER BY`
 /// unspecified.
 impl<T> From<Filter<T>> for QueryFragment<T> {
-    fn from(constraint: Filter<T>) -> Self {
+    fn from(filter: Filter<T>) -> Self {
         QueryFragment {
-            constraint,
+            filter,
             order_by: None,
         }
     }
@@ -34,51 +38,51 @@ impl<T> From<Filter<T>> for QueryFragment<T> {
 /// joined with `and` and `or` and also ordered, at which point they become
 /// `QueryFragment`s.
 pub struct Filter<T> {
-    constraint: sql::Expr,
+    filter: sql::Expr,
     phantom: std::marker::PhantomData<T>,
 }
 
 impl<T> std::fmt::Display for Filter<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.constraint)
+        write!(f, "{}", self.filter)
     }
 }
 
 impl<T> Filter<T> {
-    fn new(constraint: sql::Expr) -> Self {
+    fn new(filter: sql::Expr) -> Self {
         Self {
-            constraint,
+            filter,
             phantom: std::marker::PhantomData,
         }
     }
 
     pub fn and(self, right: Filter<T>) -> Filter<T> {
-        let constraint = sql::Expr::BinaryOp {
-            left: Box::new(self.constraint),
+        let filter = sql::Expr::BinaryOp {
+            left: Box::new(self.filter),
             op: sql::BinaryOperator::And,
-            right: Box::new(right.constraint),
+            right: Box::new(right.filter),
         };
         Filter {
-            constraint,
+            filter,
             phantom: std::marker::PhantomData,
         }
     }
 
     pub fn or(self, right: Filter<T>) -> Filter<T> {
-        let constraint = sql::Expr::BinaryOp {
-            left: Box::new(self.constraint),
+        let filter = sql::Expr::BinaryOp {
+            left: Box::new(self.filter),
             op: sql::BinaryOperator::Or,
-            right: Box::new(right.constraint),
+            right: Box::new(right.filter),
         };
         Filter {
-            constraint,
+            filter,
             phantom: std::marker::PhantomData,
         }
     }
 
     pub fn order_by_asc<F>(self, f: Field<T, F>) -> QueryFragment<T> {
         QueryFragment {
-            constraint: self,
+            filter: self,
             order_by: Some(sql::OrderByExpr {
                 expr: sql::Expr::Identifier(sql::Ident::new(f.field)),
                 asc: Some(true),
@@ -89,7 +93,7 @@ impl<T> Filter<T> {
 
     pub fn order_by_desc<F>(self, f: Field<T, F>) -> QueryFragment<T> {
         QueryFragment {
-            constraint: self,
+            filter: self,
             order_by: Some(sql::OrderByExpr {
                 expr: sql::Expr::Identifier(sql::Ident::new(f.field)),
                 asc: Some(false),
