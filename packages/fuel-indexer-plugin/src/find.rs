@@ -11,7 +11,7 @@ pub struct QueryFragment<T> {
     order_by: Option<sql::OrderByExpr>,
 }
 
-/// Convert `QueryFragment` to `String`. `SELECT * from table_name` is lated
+/// Convert `QueryFragment` to `String`. `SELECT * from table_name` is later
 /// added by the Fuel indexer to generate the entire query.
 impl<T> std::fmt::Display for QueryFragment<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
