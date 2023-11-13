@@ -8,7 +8,32 @@ use sqlparser::ast as sql;
 /// maps the TYPE_ID to the tale name and assemles the full statemnt.
 pub struct QueryFragment<T> {
     filter: Filter<T>,
+    field: Option<String>,
     order_by: Option<sql::OrderByExpr>,
+}
+
+impl<T> QueryFragment<T> {
+    pub fn asc(mut self) -> Self {
+        if let Some(ref field) = self.field {
+            self.order_by = Some(sql::OrderByExpr {
+                expr: sql::Expr::Identifier(sql::Ident::new(field)),
+                asc: Some(true),
+                nulls_first: None,
+            });
+        }
+        self
+    }
+
+    pub fn desc(mut self) -> Self {
+        if let Some(ref field) = self.field {
+            self.order_by = Some(sql::OrderByExpr {
+                expr: sql::Expr::Identifier(sql::Ident::new(field)),
+                asc: Some(false),
+                nulls_first: None,
+            });
+        }
+        self
+    }
 }
 
 /// Convert `QueryFragment` to `String`. `SELECT * from table_name` is later
@@ -29,6 +54,7 @@ impl<T> From<Filter<T>> for QueryFragment<T> {
     fn from(filter: Filter<T>) -> Self {
         QueryFragment {
             filter,
+            field: None,
             order_by: None,
         }
     }
@@ -80,25 +106,11 @@ impl<T> Filter<T> {
         }
     }
 
-    pub fn order_by_asc<F>(self, f: Field<T, F>) -> QueryFragment<T> {
+    pub fn order_by<F>(self, f: Field<T, F>) -> QueryFragment<T> {
         QueryFragment {
             filter: self,
-            order_by: Some(sql::OrderByExpr {
-                expr: sql::Expr::Identifier(sql::Ident::new(f.field)),
-                asc: Some(true),
-                nulls_first: None,
-            }),
-        }
-    }
-
-    pub fn order_by_desc<F>(self, f: Field<T, F>) -> QueryFragment<T> {
-        QueryFragment {
-            filter: self,
-            order_by: Some(sql::OrderByExpr {
-                expr: sql::Expr::Identifier(sql::Ident::new(f.field)),
-                asc: Some(false),
-                nulls_first: None,
-            }),
+            field: Some(f.field),
+            order_by: None,
         }
     }
 }

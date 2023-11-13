@@ -611,7 +611,8 @@ mod fuel_indexer_test {
             let i = IndexMetadataEntity::find(
                 IndexMetadataEntity::block_height()
                     .ge(2)
-                    .order_by_asc(IndexMetadataEntity::block_height()),
+                    .order_by(IndexMetadataEntity::block_height())
+                    .asc(),
             )
             .unwrap();
             assert_eq!(i.block_height, 2);
@@ -620,7 +621,8 @@ mod fuel_indexer_test {
             let i = IndexMetadataEntity::find(
                 IndexMetadataEntity::block_height()
                     .ge(2)
-                    .order_by_desc(IndexMetadataEntity::block_height()),
+                    .order_by(IndexMetadataEntity::block_height())
+                    .desc(),
             )
             .unwrap();
             assert_eq!(i.block_height, 4);
@@ -629,7 +631,8 @@ mod fuel_indexer_test {
             let f = FindEntity::find(
                 FindEntity::string_value()
                     .gt("f".to_string())
-                    .order_by_asc(FindEntity::value()),
+                    .order_by(FindEntity::value())
+                    .asc(),
             )
             .unwrap();
             assert_eq!(&f.string_value, "find2");
@@ -638,7 +641,8 @@ mod fuel_indexer_test {
             let f = FindEntity::find(
                 FindEntity::string_value()
                     .gt("f".to_string())
-                    .order_by_desc(FindEntity::value()),
+                    .order_by(FindEntity::value())
+                    .desc(),
             )
             .unwrap();
             assert_eq!(&f.string_value, "find5");
