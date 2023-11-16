@@ -1,6 +1,6 @@
 contract;
 
-use std::{address::Address, hash::sha256};
+use std::{address::Address, hash::{sha256, Hash}};
 
 abi Simple {
     fn gimme_someevent(num: u64) -> SomeEvent;
