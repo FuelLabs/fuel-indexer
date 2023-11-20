@@ -17,11 +17,14 @@ pub use hex::FromHex;
 pub use sha2::{Digest, Sha256};
 pub use std::collections::{HashMap, HashSet};
 
+pub use crate::find::{Field, Filter, OptionField, QueryFragment};
+
 // These are instantiated with functions which return
 // `Result<T, WasmIndexerError>`. `wasmer` unwraps the `Result` and uses the
 // `Err` variant for ealy exit.
 extern "C" {
     fn ff_get_object(type_id: i64, ptr: *const u8, len: *mut u8) -> *mut u8;
+    fn ff_single_select(type_id: i64, ptr: *const u8, len: *mut u8) -> *mut u8;
     fn ff_log_data(ptr: *const u8, len: u32, log_level: u32);
     fn ff_put_object(type_id: i64, ptr: *const u8, len: u32);
     fn ff_put_many_to_many_record(ptr: *const u8, len: u32);
@@ -121,6 +124,27 @@ pub trait Entity<'a>: Sized + PartialEq + Eq + std::fmt::Debug {
             }
 
             None
+        }
+    }
+
+    /// Finds the first entity that satisfies the given constraints.
+    fn find(query: impl Into<QueryFragment<Self>>) -> Option<Self> {
+        let query: QueryFragment<Self> = query.into();
+        unsafe {
+            let buff = bincode::serialize(&query.to_string()).unwrap();
+            let mut bufflen = (buff.len() as u32).to_le_bytes();
+
+            let ptr =
+                ff_single_select(Self::TYPE_ID, buff.as_ptr(), bufflen.as_mut_ptr());
+
+            if !ptr.is_null() {
+                let len = u32::from_le_bytes(bufflen) as usize;
+                let bytes = Vec::from_raw_parts(ptr, len, len);
+                let data = deserialize(&bytes).unwrap();
+                Some(Self::from_row(data))
+            } else {
+                None
+            }
         }
     }
 

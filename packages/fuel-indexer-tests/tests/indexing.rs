@@ -10,7 +10,7 @@ use std::{collections::HashSet, str::FromStr};
 
 const REVERT_VM_CODE: u64 = 0x0004;
 const EXPECTED_CONTRACT_ID: &str =
-    "9487238a4496230a82ce8d69b5d3db74e9afcf05138135d2c3198bcdb8ddc0d9";
+    "f243849dbbbb53783de7ffc1ec12a1d6a42152b456d1b460e413a097694d247d";
 const TRANSFER_BASE_ASSET_ID: &str =
     "0000000000000000000000000000000000000000000000000000000000000000";
 
@@ -718,4 +718,58 @@ async fn test_no_missing_blocks() {
     .unwrap();
 
     assert_eq!(start, 2);
+}
+
+#[actix_web::test]
+async fn test_find() {
+    let IndexingTestComponents {
+        ref node, ref db, ..
+    } = setup_indexing_test_components(None).await;
+
+    mock_request("/find").await;
+    mock_request("/find").await;
+    mock_request("/find").await;
+
+    tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+
+    let mut conn = db.pool.acquire().await.unwrap();
+
+    let row = sqlx::query("SELECT * FROM index_status")
+        .fetch_one(&mut conn)
+        .await
+        .unwrap();
+
+    assert_eq!(row.get::<&str, usize>(2), "Indexed 4 blocks");
+    assert_eq!(row.get::<&str, usize>(1), "running");
+
+    let mut values = sqlx::query("SELECT * FROM fuel_indexer_test_index1.findentity")
+        .fetch_all(&mut conn)
+        .await
+        .unwrap()
+        .iter()
+        .map(|r| r.get::<BigDecimal, usize>(1).to_u64().unwrap())
+        .collect::<Vec<u64>>();
+    values.sort();
+
+    // We've triggered 3x /find above, at blocks 2, 3, 4.
+    assert_eq!(values, vec![2, 3, 4]);
+
+    // Trigger 2x more /find, at blocks 5, and 6.
+    mock_request("/find").await;
+    mock_request("/find").await;
+
+    node.abort();
+
+    tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+
+    let row = sqlx::query("SELECT * FROM index_status")
+        .fetch_one(&mut conn)
+        .await
+        .unwrap();
+
+    // Failure is expected at block 6.
+    assert_eq!(row.get::<&str, usize>(1), "error");
+    assert!(row
+        .get::<&str, usize>(2)
+        .contains("called `Option::unwrap()` on a `None` value"));
 }

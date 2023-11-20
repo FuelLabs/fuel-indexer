@@ -212,6 +212,38 @@ Do your WASM modules need to be rebuilt?
         }
     }
 
+    /// Get an object from the database.
+    pub async fn single_select(
+        &mut self,
+        type_id: i64,
+        constraints: String,
+    ) -> IndexerResult<Option<Vec<u8>>> {
+        let table = &self
+            .tables
+            .get(&type_id)
+            .ok_or(IndexerDatabaseError::TableMappingDoesNotExist(type_id))?;
+
+        let query = format!("SELECT object from {table} WHERE {constraints} LIMIT 1");
+
+        let conn = self
+            .stashed
+            .as_mut()
+            .ok_or(IndexerError::NoTransactionError(
+                "single_select".to_string(),
+            ))?;
+        match queries::get_object(conn, query).await {
+            Ok(v) => Ok(Some(v)),
+            Err(e) => {
+                if let sqlx::Error::RowNotFound = e {
+                    debug!("Row not found");
+                } else {
+                    error!("Failed to get_object: {e:?}");
+                }
+                Ok(None)
+            }
+        }
+    }
+
     /// Load the schema for this indexer from the database, and build a mapping of `TypeId`s to tables.
     pub async fn load_schema(&mut self, version: String) -> IndexerResult<()> {
         self.version = version;
