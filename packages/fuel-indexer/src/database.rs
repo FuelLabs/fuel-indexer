@@ -267,7 +267,7 @@ Do your WASM modules need to be rebuilt?
                 if let sqlx::Error::RowNotFound = e {
                     debug!("Row not found");
                 } else {
-                    error!("Failed to get_object: {e:?}");
+                    error!("Failed to get_objects: {e:?}");
                 }
                 Ok(vec![])
             }
