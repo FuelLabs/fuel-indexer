@@ -206,7 +206,7 @@ fn get_object(
     }
 }
 
-fn single_select(
+fn find_first(
     mut env: FunctionEnvMut<IndexEnv>,
     type_id: i64,
     ptr: u32,
@@ -243,7 +243,7 @@ fn single_select(
                 .db
                 .lock()
                 .await
-                .single_select(type_id, constraints)
+                .find_first(type_id, constraints)
                 .await
         })
         .unwrap();
@@ -278,6 +278,163 @@ fn single_select(
     } else {
         Ok(0)
     }
+}
+
+fn find_many(
+    mut env: FunctionEnvMut<IndexEnv>,
+    type_id: i64,
+    ptr: u32,
+    len_ptr: u32,
+) -> Result<u32, WasmIndexerError> {
+    let (idx_env, mut store) = env.data_and_store_mut();
+
+    if idx_env
+        .kill_switch
+        .load(std::sync::atomic::Ordering::SeqCst)
+    {
+        // If the kill switch has been flipped, returning an error will cause an
+        // early termination of WASM execution.
+        return Err(WasmIndexerError::KillSwitch);
+    }
+
+    let mem = idx_env
+        .memory
+        .as_mut()
+        .ok_or(WasmIndexerError::UninitializedMemory)?
+        .view(&store);
+
+    let len = WasmPtr::<u32>::new(len_ptr)
+        .deref(&mem)
+        .read()
+        .expect("Failed to read length from memory.");
+
+    let constraints = get_object_id(&mem, ptr + 1, len - 1).unwrap();
+
+    let rt = tokio::runtime::Handle::current();
+    let bytes = rt
+        .block_on(async {
+            idx_env
+                .db
+                .lock()
+                .await
+                .find_many(type_id, constraints)
+                .await
+        })
+        .unwrap();
+
+    if !bytes.is_empty() {
+        let bytes = fuel_indexer_lib::utils::serialize(&bytes);
+
+        let alloc_fn = idx_env
+            .alloc
+            .as_mut()
+            .ok_or(WasmIndexerError::AllocMissing)?;
+
+        let size = bytes.len() as u32;
+        let result = alloc_fn
+            .call(&mut store, size)
+            .map_err(|_| WasmIndexerError::AllocFailed)?;
+        let range = result as usize..result as usize + size as usize;
+
+        let mem = idx_env
+            .memory
+            .as_mut()
+            .expect("Memory unitialized.")
+            .view(&store);
+        WasmPtr::<u32>::new(len_ptr)
+            .deref(&mem)
+            .write(size)
+            .expect("Failed to write length to memory.");
+
+        unsafe {
+            mem.data_unchecked_mut()[range].copy_from_slice(&bytes);
+        }
+
+        Ok(result)
+    } else {
+        Ok(0)
+    }
+}
+
+fn find_many_2(
+    mut env: FunctionEnvMut<IndexEnv>,
+    type_id: i64,
+    ptr: u32,
+    len_ptr: u32,
+) -> Result<u32, WasmIndexerError> {
+    let (idx_env, mut store) = env.data_and_store_mut();
+
+    if idx_env
+        .kill_switch
+        .load(std::sync::atomic::Ordering::SeqCst)
+    {
+        // If the kill switch has been flipped, returning an error will cause an
+        // early termination of WASM execution.
+        return Err(WasmIndexerError::KillSwitch);
+    }
+
+    let mem = idx_env
+        .memory
+        .as_mut()
+        .ok_or(WasmIndexerError::UninitializedMemory)?
+        .view(&store);
+
+    let len = WasmPtr::<u32>::new(len_ptr)
+        .deref(&mem)
+        .read()
+        .expect("Failed to read length from memory.");
+
+    let constraints = get_object_id(&mem, ptr + 1, len - 1).unwrap();
+
+    let rt: tokio::runtime::Handle = tokio::runtime::Handle::current();
+    let blobs = rt
+        .block_on(async {
+            idx_env
+                .db
+                .lock()
+                .await
+                .find_many(type_id, constraints)
+                .await
+        })
+        .unwrap();
+
+    // Pack all the results into a single Vec<u8>.
+    let mut buf: Vec<u8> = vec![];
+    // First, the number of items.
+    buf.extend(blobs.len().to_be_bytes());
+    for bytes in blobs {
+        // Then, for each item, the number of bytes.
+        buf.extend(bytes.len().to_be_bytes());
+        // And the bytes themselves.
+        buf.extend(bytes);
+    }
+
+    let alloc_fn = idx_env
+        .alloc
+        .as_mut()
+        .ok_or(WasmIndexerError::AllocMissing)?;
+
+    let size = buf.len() as u32;
+    let result = alloc_fn
+        .call(&mut store, size)
+        .map_err(|_| WasmIndexerError::AllocFailed)?;
+    let range = result as usize..result as usize + size as usize;
+
+    let mem = idx_env
+        .memory
+        .as_mut()
+        .expect("Memory unitialized.")
+        .view(&store);
+    WasmPtr::<u32>::new(len_ptr)
+        .deref(&mem)
+        .write(size)
+        .expect("Failed to write length to memory.");
+
+    unsafe {
+        mem.data_unchecked_mut()[range].copy_from_slice(&buf);
+    }
+
+    Ok(result)
 }
 
 /// Put the given type at the given pointer into memory.
@@ -425,7 +582,8 @@ pub fn get_exports(store: &mut Store, env: &wasmer::FunctionEnv<IndexEnv>) -> Ex
     let mut exports = Exports::new();
 
     let f_get_obj = Function::new_typed_with_env(store, env, get_object);
-    let f_single_select = Function::new_typed_with_env(store, env, single_select);
+    let f_find_first = Function::new_typed_with_env(store, env, find_first);
+    let f_find_many = Function::new_typed_with_env(store, env, find_many);
     let f_put_obj = Function::new_typed_with_env(store, env, put_object);
     let f_log_data = Function::new_typed_with_env(store, env, log_data);
     let f_put_many_to_many_record =
@@ -434,7 +592,8 @@ pub fn get_exports(store: &mut Store, env: &wasmer::FunctionEnv<IndexEnv>) -> Ex
 
     exports.insert("ff_early_exit".to_string(), f_early_exit);
     exports.insert("ff_get_object".to_string(), f_get_obj);
-    exports.insert("ff_single_select".to_string(), f_single_select);
+    exports.insert("ff_find_first".to_string(), f_find_first);
+    exports.insert("ff_find_many".to_string(), f_find_many);
     exports.insert("ff_put_object".to_string(), f_put_obj);
     exports.insert(
         "ff_put_many_to_many_record".to_string(),

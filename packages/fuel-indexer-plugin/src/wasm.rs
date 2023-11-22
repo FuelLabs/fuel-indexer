@@ -17,14 +17,15 @@ pub use hex::FromHex;
 pub use sha2::{Digest, Sha256};
 pub use std::collections::{HashMap, HashSet};
 
-pub use crate::find::{Field, Filter, OptionField, QueryFragment};
+pub use crate::find::{Field, Filter, OptionField, ToFilter};
 
 // These are instantiated with functions which return
 // `Result<T, WasmIndexerError>`. `wasmer` unwraps the `Result` and uses the
 // `Err` variant for ealy exit.
 extern "C" {
     fn ff_get_object(type_id: i64, ptr: *const u8, len: *mut u8) -> *mut u8;
-    fn ff_single_select(type_id: i64, ptr: *const u8, len: *mut u8) -> *mut u8;
+    fn ff_find_first(type_id: i64, ptr: *const u8, len: *mut u8) -> *mut u8;
+    fn ff_find_many(type_id: i64, ptr: *const u8, len: *mut u8) -> *mut u8;
     fn ff_log_data(ptr: *const u8, len: u32, log_level: u32);
     fn ff_put_object(type_id: i64, ptr: *const u8, len: u32);
     fn ff_put_many_to_many_record(ptr: *const u8, len: u32);
@@ -128,14 +129,12 @@ pub trait Entity<'a>: Sized + PartialEq + Eq + std::fmt::Debug {
     }
 
     /// Finds the first entity that satisfies the given constraints.
-    fn find(query: impl Into<QueryFragment<Self>>) -> Option<Self> {
-        let query: QueryFragment<Self> = query.into();
+    fn find(query: impl ToFilter<Self>) -> Option<Self> {
         unsafe {
-            let buff = bincode::serialize(&query.to_string()).unwrap();
+            let buff = bincode::serialize(&query.to_filter()).unwrap();
             let mut bufflen = (buff.len() as u32).to_le_bytes();
 
-            let ptr =
-                ff_single_select(Self::TYPE_ID, buff.as_ptr(), bufflen.as_mut_ptr());
+            let ptr = ff_find_first(Self::TYPE_ID, buff.as_ptr(), bufflen.as_mut_ptr());
 
             if !ptr.is_null() {
                 let len = u32::from_le_bytes(bufflen) as usize;
@@ -144,6 +143,26 @@ pub trait Entity<'a>: Sized + PartialEq + Eq + std::fmt::Debug {
                 Some(Self::from_row(data))
             } else {
                 None
+            }
+        }
+    }
+
+    fn find_many(query: impl ToFilter<Self>) -> Vec<Self> {
+        unsafe {
+            let buff = bincode::serialize(&query.to_filter()).unwrap();
+            let mut bufflen = (buff.len() as u32).to_le_bytes();
+
+            let ptr = ff_find_many(Self::TYPE_ID, buff.as_ptr(), bufflen.as_mut_ptr());
+
+            if !ptr.is_null() {
+                let len = u32::from_le_bytes(bufflen) as usize;
+                let bytes = Vec::from_raw_parts(ptr, len, len);
+                let data: Vec<Vec<u8>> = deserialize(&bytes).unwrap();
+                data.iter()
+                    .map(|x| Self::from_row(deserialize(x).unwrap()))
+                    .collect()
+            } else {
+                vec![]
             }
         }
     }

@@ -144,6 +144,16 @@ pub async fn get_object(
     }
 }
 
+/// Fetch multiple blobs of serialized `FtColumns` from the database.
+pub async fn get_objects(
+    conn: &mut IndexerConnection,
+    query: String,
+) -> sqlx::Result<Vec<Vec<u8>>> {
+    match conn {
+        IndexerConnection::Postgres(ref mut c) => postgres::get_objects(c, query).await,
+    }
+}
+
 /// Run an arbitrary query and fetch all results.
 ///
 /// Note that if the results of the query can't be converted to `JsonValue`, this function

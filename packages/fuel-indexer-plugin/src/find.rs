@@ -6,63 +6,54 @@ use sqlparser::ast as sql;
 /// fetch an object from the database. The table name is not available to the
 /// plugin and thus only a part of the statment is generated there. The indexer
 /// maps the TYPE_ID to the tale name and assemles the full statemnt.
-pub struct QueryFragment<T> {
+pub struct OrderedFilter<T> {
     filter: Filter<T>,
-    field: Option<String>,
-    order_by: Option<sql::OrderByExpr>,
+    order_by: sql::OrderByExpr,
 }
 
-impl<T> QueryFragment<T> {
+impl<T> OrderedFilter<T> {
     pub fn asc(mut self) -> Self {
-        if let Some(ref field) = self.field {
-            self.order_by = Some(sql::OrderByExpr {
-                expr: sql::Expr::Identifier(sql::Ident::new(field)),
-                asc: Some(true),
-                nulls_first: None,
-            });
-        }
+        self.order_by.asc = Some(true);
         self
     }
 
     pub fn desc(mut self) -> Self {
-        if let Some(ref field) = self.field {
-            self.order_by = Some(sql::OrderByExpr {
-                expr: sql::Expr::Identifier(sql::Ident::new(field)),
-                asc: Some(false),
-                nulls_first: None,
-            });
-        }
+        self.order_by.asc = Some(false);
         self
     }
 }
 
-/// Convert `QueryFragment` to `String`. `SELECT * from table_name` is later
+/// Convert `OrderedFilter` to `String`. `SELECT * from table_name` is later
 /// added by the Fuel indexer to generate the entire query.
-impl<T> std::fmt::Display for QueryFragment<T> {
+impl<T> std::fmt::Display for OrderedFilter<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.filter)?;
-        if let Some(ref order_by) = self.order_by {
-            write!(f, " ORDER BY {}", order_by)?;
-        }
+        write!(f, "{} ORDER BY {}", self.filter, self.order_by)?;
         Ok(())
     }
 }
 
-/// Automatic lifting of `Filter` into `QueryFragment` leaving `ORDER BY`
-/// unspecified.
-impl<T> From<Filter<T>> for QueryFragment<T> {
-    fn from(filter: Filter<T>) -> Self {
-        QueryFragment {
-            filter,
-            field: None,
-            order_by: None,
-        }
+pub trait ToFilter<T>
+where
+    Self: Sized,
+{
+    fn to_filter(self) -> String;
+}
+
+impl<T> ToFilter<T> for Filter<T> {
+    fn to_filter(self) -> String {
+        self.to_string()
+    }
+}
+
+impl<T> ToFilter<T> for OrderedFilter<T> {
+    fn to_filter(self) -> String {
+        self.to_string()
     }
 }
 
 /// Represents a WHERE clause of the SQL statement. Multiple `Filter`s can be
 /// joined with `and` and `or` and also ordered, at which point they become
-/// `QueryFragment`s.
+/// `OrderedFilter`s.
 pub struct Filter<T> {
     filter: sql::Expr,
     phantom: std::marker::PhantomData<T>,
@@ -106,18 +97,21 @@ impl<T> Filter<T> {
         }
     }
 
-    pub fn order_by<F>(self, f: Field<T, F>) -> QueryFragment<T> {
-        QueryFragment {
+    pub fn order_by<F>(self, f: Field<T, F>) -> OrderedFilter<T> {
+        OrderedFilter {
             filter: self,
-            field: Some(f.field),
-            order_by: None,
+            order_by: sql::OrderByExpr {
+                expr: sql::Expr::Identifier(sql::Ident::new(f.field)),
+                asc: None,
+                nulls_first: None,
+            },
         }
     }
 }
 
 /// A trait used to convert a value of scalar type into `sqlparser::ast::Value`.
 /// That is, for injecting a value into the `sqlparser`'s representation which
-/// we then use to generate a `QueryFragment`.
+/// we then use to generate a `OrderedFilter`.
 pub trait ToSQLValue
 where
     Self: Sized,

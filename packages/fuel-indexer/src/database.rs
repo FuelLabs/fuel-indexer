@@ -213,7 +213,7 @@ Do your WASM modules need to be rebuilt?
     }
 
     /// Get an object from the database.
-    pub async fn single_select(
+    pub async fn find_first(
         &mut self,
         type_id: i64,
         constraints: String,
@@ -228,9 +228,7 @@ Do your WASM modules need to be rebuilt?
         let conn = self
             .stashed
             .as_mut()
-            .ok_or(IndexerError::NoTransactionError(
-                "single_select".to_string(),
-            ))?;
+            .ok_or(IndexerError::NoTransactionError("find_first".to_string()))?;
         match queries::get_object(conn, query).await {
             Ok(v) => Ok(Some(v)),
             Err(e) => {
@@ -240,6 +238,36 @@ Do your WASM modules need to be rebuilt?
                     error!("Failed to get_object: {e:?}");
                 }
                 Ok(None)
+            }
+        }
+    }
+
+    /// Get an object from the database.
+    pub async fn find_many(
+        &mut self,
+        type_id: i64,
+        constraints: String,
+    ) -> IndexerResult<Vec<Vec<u8>>> {
+        let table = &self
+            .tables
+            .get(&type_id)
+            .ok_or(IndexerDatabaseError::TableMappingDoesNotExist(type_id))?;
+
+        let query = format!("SELECT object from {table} WHERE {constraints}");
+
+        let conn = self
+            .stashed
+            .as_mut()
+            .ok_or(IndexerError::NoTransactionError("find_many".to_string()))?;
+        match queries::get_objects(conn, query).await {
+            Ok(v) => Ok(v),
+            Err(e) => {
+                if let sqlx::Error::RowNotFound = e {
+                    debug!("Row not found");
+                } else {
+                    error!("Failed to get_object: {e:?}");
+                }
+                Ok(vec![])
             }
         }
     }

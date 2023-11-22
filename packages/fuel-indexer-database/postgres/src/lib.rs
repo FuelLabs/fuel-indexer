@@ -49,6 +49,19 @@ pub async fn get_object(
     Ok(row.get(0))
 }
 
+/// Fetch multiple blobs of serialized `FtColumn`s from the database.
+#[cfg_attr(feature = "metrics", metrics)]
+pub async fn get_objects(
+    conn: &mut PoolConnection<Postgres>,
+    query: String,
+) -> sqlx::Result<Vec<Vec<u8>>> {
+    let mut builder = sqlx::QueryBuilder::new(query);
+    let query = builder.build();
+    let rows = query.fetch_all(conn).await?;
+    let objects = rows.iter().map(|r| r.get(0)).collect::<Vec<Vec<u8>>>();
+    Ok(objects)
+}
+
 /// Run database migrations.
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn run_migration(conn: &mut PoolConnection<Postgres>) -> sqlx::Result<()> {
