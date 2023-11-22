@@ -659,6 +659,19 @@ mod fuel_indexer_test {
             assert_eq!(fs[1].string_value, "find3");
             assert_eq!(fs[2].string_value, "find4");
             assert_eq!(fs[3].string_value, "find5");
+
+            let fs: Vec<FindEntity> = FindEntity::find_many(
+                FindEntity::string_value()
+                    .gt("f".to_string())
+                    .order_by(FindEntity::value())
+                    .desc(),
+            );
+
+            assert_eq!(fs.len(), 4);
+            assert_eq!(fs[0].string_value, "find5");
+            assert_eq!(fs[1].string_value, "find4");
+            assert_eq!(fs[2].string_value, "find3");
+            assert_eq!(fs[3].string_value, "find2");
         } else if block_data.height == 6 {
             // There is no such block. The lookup will fail.
             IndexMetadataEntity::find(IndexMetadataEntity::block_height().eq(777))
