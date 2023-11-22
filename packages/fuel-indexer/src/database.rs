@@ -254,7 +254,8 @@ Do your WASM modules need to be rebuilt?
             .get(&type_id)
             .ok_or(IndexerDatabaseError::TableMappingDoesNotExist(type_id))?;
 
-        let query = format!("SELECT object from {table} WHERE {constraints} LIMIT {limit}");
+        let query =
+            format!("SELECT object from {table} WHERE {constraints} LIMIT {limit}");
 
         let conn = self
             .stashed
