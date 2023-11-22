@@ -212,7 +212,7 @@ Do your WASM modules need to be rebuilt?
         }
     }
 
-    /// Get an object from the database.
+    /// Get an object from the database that satisfies the given constraints.
     pub async fn find_first(
         &mut self,
         type_id: i64,
@@ -242,7 +242,7 @@ Do your WASM modules need to be rebuilt?
         }
     }
 
-    /// Get an object from the database.
+    /// Get multiple objects from the database that satisfy the given constraints.
     pub async fn find_many(
         &mut self,
         type_id: i64,

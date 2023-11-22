@@ -32,6 +32,7 @@ impl<T> std::fmt::Display for OrderedFilter<T> {
     }
 }
 
+/// Convert different filter implementations to a query string.
 pub trait ToFilter<T>
 where
     Self: Sized,

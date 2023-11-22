@@ -133,6 +133,7 @@ pub trait Entity<'a>: Sized + PartialEq + Eq + std::fmt::Debug {
         result.into_iter().next()
     }
 
+    /// Finds the entities that satisfy the given constraints.
     fn find_many(query: impl ToFilter<Self>, limit: Option<usize>) -> Vec<Self> {
         unsafe {
             let buff = bincode::serialize(&query.to_filter())
