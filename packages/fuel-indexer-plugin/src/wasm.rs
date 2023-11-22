@@ -135,7 +135,8 @@ pub trait Entity<'a>: Sized + PartialEq + Eq + std::fmt::Debug {
 
     fn find_many(query: impl ToFilter<Self>, limit: Option<usize>) -> Vec<Self> {
         unsafe {
-            let buff = bincode::serialize(&query.to_filter()).expect("Failed to serialize query");
+            let buff = bincode::serialize(&query.to_filter())
+                .expect("Failed to serialize query");
             let mut bufflen = (buff.len() as u32).to_le_bytes();
 
             let ptr = ff_find_many(
@@ -148,9 +149,14 @@ pub trait Entity<'a>: Sized + PartialEq + Eq + std::fmt::Debug {
             if !ptr.is_null() {
                 let len = u32::from_le_bytes(bufflen) as usize;
                 let bytes = Vec::from_raw_parts(ptr, len, len);
-                let data: Vec<Vec<u8>> = deserialize(&bytes).expect("Failed to deserialize data");
+                let data: Vec<Vec<u8>> =
+                    deserialize(&bytes).expect("Failed to deserialize data");
                 data.iter()
-                    .map(|x| Self::from_row(deserialize(x).expect("Failed to deserialize data")))
+                    .map(|x| {
+                        Self::from_row(
+                            deserialize(x).expect("Failed to deserialize data"),
+                        )
+                    })
                     .collect()
             } else {
                 vec![]
