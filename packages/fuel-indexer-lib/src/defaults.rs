@@ -143,6 +143,3 @@ pub const DISABLE_TOOLCHAIN_VERSION_CHECK: bool = false;
 
 /// Default Fuel network to use.
 pub const NETWORK: &str = "beta-4";
-
-/// Default limit for the number of `find_many` results.
-pub const FIND_MANY_LIMIT: usize = 255;

@@ -21,7 +21,7 @@ pub use crate::find::{Field, Filter, OptionField, ToFilter};
 
 // These are instantiated with functions which return
 // `Result<T, WasmIndexerError>`. `wasmer` unwraps the `Result` and uses the
-// `Err` variant for ealy exit.
+// `Err` variant for early exit.
 extern "C" {
     fn ff_get_object(type_id: i64, ptr: *const u8, len: *mut u8) -> *mut u8;
     fn ff_find_many(type_id: i64, limit: u64, ptr: *const u8, len: *mut u8) -> *mut u8;
@@ -69,7 +69,7 @@ pub trait Entity<'a>: Sized + PartialEq + Eq + std::fmt::Debug {
     /// Convert database row representation into an instance of an entity.
     fn from_row(vec: Vec<FtColumn>) -> Self;
 
-    /// Convert an instance of an entity into row representation for use in a database.
+    /// Convert an instance of an entity into a row representation for use in a database.
     fn to_row(&self) -> Vec<FtColumn>;
 
     /// Returns an entity's internal type ID.
@@ -129,12 +129,12 @@ pub trait Entity<'a>: Sized + PartialEq + Eq + std::fmt::Debug {
 
     /// Finds the first entity that satisfies the given constraints.
     fn find(query: impl ToFilter<Self>) -> Option<Self> {
-        let result = Self::find_many(query, Some(1));
+        let result = Self::find_many(1, query);
         result.into_iter().next()
     }
 
     /// Finds the entities that satisfy the given constraints.
-    fn find_many(query: impl ToFilter<Self>, limit: Option<usize>) -> Vec<Self> {
+    fn find_many(limit: usize, query: impl ToFilter<Self>) -> Vec<Self> {
         unsafe {
             let buff = bincode::serialize(&query.to_filter())
                 .expect("Failed to serialize query");
@@ -142,7 +142,7 @@ pub trait Entity<'a>: Sized + PartialEq + Eq + std::fmt::Debug {
 
             let ptr = ff_find_many(
                 Self::TYPE_ID,
-                limit.unwrap_or(fuel_indexer_lib::defaults::FIND_MANY_LIMIT) as u64,
+                limit as u64,
                 buff.as_ptr(),
                 bufflen.as_mut_ptr(),
             );

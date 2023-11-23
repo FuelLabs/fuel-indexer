@@ -649,11 +649,11 @@ mod fuel_indexer_test {
 
             // Test searching for multiple entities
             let fs: Vec<FindEntity> = FindEntity::find_many(
+                10,
                 FindEntity::string_value()
                     .gt("f".to_string())
                     .order_by(FindEntity::value())
                     .asc(),
-                None,
             );
             assert_eq!(fs.len(), 4);
             assert_eq!(fs[0].string_value, "find2");
@@ -662,11 +662,11 @@ mod fuel_indexer_test {
             assert_eq!(fs[3].string_value, "find5");
 
             let fs: Vec<FindEntity> = FindEntity::find_many(
+                10,
                 FindEntity::string_value()
                     .gt("f".to_string())
                     .order_by(FindEntity::value())
                     .desc(),
-                None,
             );
 
             assert_eq!(fs.len(), 4);
@@ -677,11 +677,11 @@ mod fuel_indexer_test {
 
             // Test searching for multiple entities with a result limit
             let fs: Vec<FindEntity> = FindEntity::find_many(
+                2,
                 FindEntity::string_value()
                     .gt("f".to_string())
                     .order_by(FindEntity::value())
                     .desc(),
-                Some(2),
             );
 
             assert_eq!(fs.len(), 2);
