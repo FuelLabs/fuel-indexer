@@ -17,6 +17,7 @@ The Fuel indexer has a collection of GraphQL scalars that cover virtually any va
 | I128 | `i128` |
 | I32 | `i32` |
 | I64 | `i64` |
+| I16 | `i16` |
 | I8 | `i8` |
 | ID | `SizedAsciiString<64>` | Alias of `UID`
 | Json | `String` | JSON string of arbitary size |
