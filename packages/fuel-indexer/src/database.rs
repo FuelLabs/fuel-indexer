@@ -246,7 +246,6 @@ Do your WASM modules need to be rebuilt?
     pub async fn find_many(
         &mut self,
         type_id: i64,
-        limit: usize,
         constraints: String,
     ) -> IndexerResult<Vec<Vec<u8>>> {
         let table = &self
@@ -254,8 +253,7 @@ Do your WASM modules need to be rebuilt?
             .get(&type_id)
             .ok_or(IndexerDatabaseError::TableMappingDoesNotExist(type_id))?;
 
-        let query =
-            format!("SELECT object from {table} WHERE {constraints} LIMIT {limit}");
+        let query = format!("SELECT object from {table} WHERE {constraints}");
 
         let conn = self
             .stashed

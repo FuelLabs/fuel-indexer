@@ -17,14 +17,14 @@ pub use hex::FromHex;
 pub use sha2::{Digest, Sha256};
 pub use std::collections::{HashMap, HashSet};
 
-pub use crate::find::{Field, Filter, OptionField, ToFilter};
+pub use crate::find::{Field, Filter, ManyFilter, OptionField, SingleFilter};
 
 // These are instantiated with functions which return
 // `Result<T, WasmIndexerError>`. `wasmer` unwraps the `Result` and uses the
 // `Err` variant for early exit.
 extern "C" {
     fn ff_get_object(type_id: i64, ptr: *const u8, len: *mut u8) -> *mut u8;
-    fn ff_find_many(type_id: i64, limit: u64, ptr: *const u8, len: *mut u8) -> *mut u8;
+    fn ff_find_many(type_id: i64, ptr: *const u8, len: *mut u8) -> *mut u8;
     fn ff_log_data(ptr: *const u8, len: u32, log_level: u32);
     fn ff_put_object(type_id: i64, ptr: *const u8, len: u32);
     fn ff_put_many_to_many_record(ptr: *const u8, len: u32);
@@ -128,24 +128,20 @@ pub trait Entity<'a>: Sized + PartialEq + Eq + std::fmt::Debug {
     }
 
     /// Finds the first entity that satisfies the given constraints.
-    fn find(query: impl ToFilter<Self>) -> Option<Self> {
-        let result = Self::find_many(1, query);
+    fn find(filter: impl Into<SingleFilter<Self>>) -> Option<Self> {
+        let result = Self::find_many(filter.into());
         result.into_iter().next()
     }
 
     /// Finds the entities that satisfy the given constraints.
-    fn find_many(limit: usize, query: impl ToFilter<Self>) -> Vec<Self> {
+    fn find_many(filter: impl Into<ManyFilter<Self>>) -> Vec<Self> {
         unsafe {
-            let buff = bincode::serialize(&query.to_filter())
+            let filter: ManyFilter<Self> = filter.into();
+            let buff = bincode::serialize(&filter.to_string())
                 .expect("Failed to serialize query");
             let mut bufflen = (buff.len() as u32).to_le_bytes();
 
-            let ptr = ff_find_many(
-                Self::TYPE_ID,
-                limit as u64,
-                buff.as_ptr(),
-                bufflen.as_mut_ptr(),
-            );
+            let ptr = ff_find_many(Self::TYPE_ID, buff.as_ptr(), bufflen.as_mut_ptr());
 
             if !ptr.is_null() {
                 let len = u32::from_le_bytes(bufflen) as usize;

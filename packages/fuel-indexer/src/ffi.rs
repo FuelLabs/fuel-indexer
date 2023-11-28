@@ -209,7 +209,6 @@ fn get_object(
 fn find_many(
     mut env: FunctionEnvMut<IndexEnv>,
     type_id: i64,
-    limit: u64,
     ptr: u32,
     len_ptr: u32,
 ) -> Result<u32, WasmIndexerError> {
@@ -244,7 +243,7 @@ fn find_many(
                 .db
                 .lock()
                 .await
-                .find_many(type_id, limit as usize, constraints)
+                .find_many(type_id, constraints)
                 .await
         })
         .unwrap();
