@@ -77,6 +77,8 @@ pub enum ColumnType {
     // primary key columns, so we need a version of `ID` that does not include
     // a primary key constraint.
     UID = 25,
+    I16 = 26,
+    U16 = 27,
 }
 
 impl From<ColumnType> for i32 {
@@ -108,6 +110,8 @@ impl From<ColumnType> for i32 {
             ColumnType::U8 => 23,
             ColumnType::Array => 24,
             ColumnType::UID => 25,
+            ColumnType::I16 => 26,
+            ColumnType::U16 => 27,
         }
     }
 }
@@ -154,6 +158,8 @@ impl From<i32> for ColumnType {
             23 => ColumnType::U8,
             24 => ColumnType::Array,
             25 => ColumnType::UID,
+            26 => ColumnType::I16,
+            27 => ColumnType::U16,
             _ => unimplemented!("Invalid ColumnType: {num}."),
         }
     }
@@ -188,6 +194,8 @@ impl From<&str> for ColumnType {
             "U64" => ColumnType::U64,
             "U8" => ColumnType::U8,
             "UID" => ColumnType::UID,
+            "U16" => ColumnType::U16,
+            "I16" => ColumnType::I16,
             _ => unimplemented!("Invalid ColumnType: '{name}'."),
         }
     }
@@ -356,6 +364,8 @@ impl Column {
             ColumnType::U32 => "integer".to_string(),
             ColumnType::U64 => "numeric(20, 0)".to_string(),
             ColumnType::UID => "varchar(64)".to_string(),
+            ColumnType::U16 => "integer".to_string(),
+            ColumnType::I16 => "integer".to_string(),
             ColumnType::Array => {
                 let t = match self.array_coltype.expect(
                     "Column.array_coltype cannot be None when using `ColumnType::Array`.",
@@ -364,6 +374,8 @@ impl Column {
                     | ColumnType::U8
                     | ColumnType::I32
                     | ColumnType::U32
+                    | ColumnType::I16
+                    | ColumnType::U16
                     | ColumnType::I64 => "bigint",
                     ColumnType::U64 => "numeric(20, 0)",
                     ColumnType::U128 | ColumnType::I128 => "numeric(39, 0)",
