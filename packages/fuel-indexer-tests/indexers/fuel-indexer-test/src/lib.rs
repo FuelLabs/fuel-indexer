@@ -646,6 +646,47 @@ mod fuel_indexer_test {
             )
             .unwrap();
             assert_eq!(&f.string_value, "find5");
+
+            // Test searching for multiple entities, no limit
+            let fs: Vec<FindEntity> = FindEntity::find_many(
+                FindEntity::string_value()
+                    .gt("f".to_string())
+                    .order_by(FindEntity::value())
+                    .asc(),
+            );
+            assert_eq!(fs.len(), 4);
+            assert_eq!(fs[0].string_value, "find2");
+            assert_eq!(fs[1].string_value, "find3");
+            assert_eq!(fs[2].string_value, "find4");
+            assert_eq!(fs[3].string_value, "find5");
+
+            // Test searching for multiple entities, with limit
+            let fs: Vec<FindEntity> = FindEntity::find_many(
+                FindEntity::string_value()
+                    .gt("f".to_string())
+                    .order_by(FindEntity::value())
+                    .desc()
+                    .limit(10),
+            );
+
+            assert_eq!(fs.len(), 4);
+            assert_eq!(fs[0].string_value, "find5");
+            assert_eq!(fs[1].string_value, "find4");
+            assert_eq!(fs[2].string_value, "find3");
+            assert_eq!(fs[3].string_value, "find2");
+
+            // Test searching for multiple entities, with limit
+            let fs: Vec<FindEntity> = FindEntity::find_many(
+                FindEntity::string_value()
+                    .gt("f".to_string())
+                    .order_by(FindEntity::value())
+                    .desc()
+                    .limit(2),
+            );
+
+            assert_eq!(fs.len(), 2);
+            assert_eq!(fs[0].string_value, "find5");
+            assert_eq!(fs[1].string_value, "find4");
         } else if block_data.height == 6 {
             // There is no such block. The lookup will fail.
             IndexMetadataEntity::find(IndexMetadataEntity::block_height().eq(777))

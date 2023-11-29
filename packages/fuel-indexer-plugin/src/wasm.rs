@@ -17,14 +17,14 @@ pub use hex::FromHex;
 pub use sha2::{Digest, Sha256};
 pub use std::collections::{HashMap, HashSet};
 
-pub use crate::find::{Field, Filter, OptionField, QueryFragment};
+pub use crate::find::{Field, Filter, ManyFilter, OptionField, SingleFilter};
 
 // These are instantiated with functions which return
 // `Result<T, WasmIndexerError>`. `wasmer` unwraps the `Result` and uses the
-// `Err` variant for ealy exit.
+// `Err` variant for early exit.
 extern "C" {
     fn ff_get_object(type_id: i64, ptr: *const u8, len: *mut u8) -> *mut u8;
-    fn ff_single_select(type_id: i64, ptr: *const u8, len: *mut u8) -> *mut u8;
+    fn ff_find_many(type_id: i64, ptr: *const u8, len: *mut u8) -> *mut u8;
     fn ff_log_data(ptr: *const u8, len: u32, log_level: u32);
     fn ff_put_object(type_id: i64, ptr: *const u8, len: u32);
     fn ff_put_many_to_many_record(ptr: *const u8, len: u32);
@@ -69,7 +69,7 @@ pub trait Entity<'a>: Sized + PartialEq + Eq + std::fmt::Debug {
     /// Convert database row representation into an instance of an entity.
     fn from_row(vec: Vec<FtColumn>) -> Self;
 
-    /// Convert an instance of an entity into row representation for use in a database.
+    /// Convert an instance of an entity into a row representation for use in a database.
     fn to_row(&self) -> Vec<FtColumn>;
 
     /// Returns an entity's internal type ID.
@@ -128,22 +128,35 @@ pub trait Entity<'a>: Sized + PartialEq + Eq + std::fmt::Debug {
     }
 
     /// Finds the first entity that satisfies the given constraints.
-    fn find(query: impl Into<QueryFragment<Self>>) -> Option<Self> {
-        let query: QueryFragment<Self> = query.into();
+    fn find(filter: impl Into<SingleFilter<Self>>) -> Option<Self> {
+        let result = Self::find_many(filter.into());
+        result.into_iter().next()
+    }
+
+    /// Finds the entities that satisfy the given constraints.
+    fn find_many(filter: impl Into<ManyFilter<Self>>) -> Vec<Self> {
         unsafe {
-            let buff = bincode::serialize(&query.to_string()).unwrap();
+            let filter: ManyFilter<Self> = filter.into();
+            let buff = bincode::serialize(&filter.to_string())
+                .expect("Failed to serialize query");
             let mut bufflen = (buff.len() as u32).to_le_bytes();
 
-            let ptr =
-                ff_single_select(Self::TYPE_ID, buff.as_ptr(), bufflen.as_mut_ptr());
+            let ptr = ff_find_many(Self::TYPE_ID, buff.as_ptr(), bufflen.as_mut_ptr());
 
             if !ptr.is_null() {
                 let len = u32::from_le_bytes(bufflen) as usize;
                 let bytes = Vec::from_raw_parts(ptr, len, len);
-                let data = deserialize(&bytes).unwrap();
-                Some(Self::from_row(data))
+                let data: Vec<Vec<u8>> =
+                    deserialize(&bytes).expect("Failed to deserialize data");
+                data.iter()
+                    .map(|x| {
+                        Self::from_row(
+                            deserialize(x).expect("Failed to deserialize data"),
+                        )
+                    })
+                    .collect()
             } else {
-                None
+                vec![]
             }
         }
     }

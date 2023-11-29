@@ -1,68 +1,134 @@
 use fuel_indexer_types::scalar::{Boolean, UID};
 use sqlparser::ast as sql;
 
-/// Represents `filter` and `order_by` parts of the `SELECT object from {table}
-/// WHERE {filter} {order_by}` statement that is assembled by the indexer to
-/// fetch an object from the database. The table name is not available to the
-/// plugin and thus only a part of the statment is generated there. The indexer
-/// maps the TYPE_ID to the tale name and assemles the full statemnt.
-pub struct QueryFragment<T> {
-    filter: Filter<T>,
-    field: Option<String>,
-    order_by: Option<sql::OrderByExpr>,
+/// Represents a filter that returns a single results.
+pub struct SingleFilter<T> {
+    filter: String,
+    phantom: std::marker::PhantomData<T>,
 }
 
-impl<T> QueryFragment<T> {
-    pub fn asc(mut self) -> Self {
-        if let Some(ref field) = self.field {
-            self.order_by = Some(sql::OrderByExpr {
-                expr: sql::Expr::Identifier(sql::Ident::new(field)),
-                asc: Some(true),
-                nulls_first: None,
-            });
-        }
-        self
+impl<T> std::fmt::Display for SingleFilter<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} LIMIT 1", self.filter)?;
+        Ok(())
     }
+}
+/// Represents a filter with a an optional LIMIT clause that returns many
+/// results.
+pub struct ManyFilter<T> {
+    filter: String,
+    limit: Option<usize>,
+    phantom: std::marker::PhantomData<T>,
+}
 
-    pub fn desc(mut self) -> Self {
-        if let Some(ref field) = self.field {
-            self.order_by = Some(sql::OrderByExpr {
-                expr: sql::Expr::Identifier(sql::Ident::new(field)),
-                asc: Some(false),
-                nulls_first: None,
-            });
-        }
-        self
+impl<T> ManyFilter<T> {
+    pub fn limit(&self) -> Option<usize> {
+        self.limit
     }
 }
 
-/// Convert `QueryFragment` to `String`. `SELECT * from table_name` is later
-/// added by the Fuel indexer to generate the entire query.
-impl<T> std::fmt::Display for QueryFragment<T> {
+impl<T> std::fmt::Display for ManyFilter<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.filter)?;
-        if let Some(ref order_by) = self.order_by {
-            write!(f, " ORDER BY {}", order_by)?;
+        if let Some(limit) = self.limit {
+            write!(f, " LIMIT {limit}")?;
         }
         Ok(())
     }
 }
 
-/// Automatic lifting of `Filter` into `QueryFragment` leaving `ORDER BY`
-/// unspecified.
-impl<T> From<Filter<T>> for QueryFragment<T> {
-    fn from(filter: Filter<T>) -> Self {
-        QueryFragment {
-            filter,
-            field: None,
-            order_by: None,
+/// Represents `filter` and `order_by` parts of the `SELECT object from {table}
+/// WHERE {filter} {order_by}` statement that is assembled by the indexer to
+/// fetch an object from the database. The table name is not available to the
+/// plugin and thus only a part of the statment is generated there. The indexer
+/// maps the TYPE_ID to the tale name and assemles the full statemnt.
+pub struct OrderedFilter<T> {
+    filter: Filter<T>,
+    order_by: sql::OrderByExpr,
+}
+
+impl<T> OrderedFilter<T> {
+    pub fn asc(mut self) -> Self {
+        self.order_by.asc = Some(true);
+        self
+    }
+
+    pub fn desc(mut self) -> Self {
+        self.order_by.asc = Some(false);
+        self
+    }
+
+    pub fn limit(self, limit: usize) -> ManyFilter<T> {
+        ManyFilter {
+            filter: self.to_string(),
+            limit: Some(limit),
+            phantom: std::marker::PhantomData,
+        }
+    }
+}
+
+/// Convert `OrderedFilter` to `String`. `SELECT * from table_name` is later
+/// added by the Fuel indexer to generate the entire query.
+impl<T> std::fmt::Display for OrderedFilter<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} ORDER BY {}", self.filter, self.order_by)?;
+        Ok(())
+    }
+}
+
+// Conversions between different filter structs.
+
+impl<T> From<Filter<T>> for SingleFilter<T> {
+    fn from(filter: Filter<T>) -> SingleFilter<T> {
+        SingleFilter {
+            filter: filter.to_string(),
+            phantom: std::marker::PhantomData,
+        }
+    }
+}
+
+impl<T> From<OrderedFilter<T>> for SingleFilter<T> {
+    fn from(filter: OrderedFilter<T>) -> SingleFilter<T> {
+        SingleFilter {
+            filter: filter.to_string(),
+            phantom: std::marker::PhantomData,
+        }
+    }
+}
+
+impl<T> From<Filter<T>> for ManyFilter<T> {
+    fn from(filter: Filter<T>) -> ManyFilter<T> {
+        ManyFilter {
+            filter: filter.to_string(),
+            limit: None,
+            phantom: std::marker::PhantomData,
+        }
+    }
+}
+
+impl<T> From<OrderedFilter<T>> for ManyFilter<T> {
+    fn from(filter: OrderedFilter<T>) -> ManyFilter<T> {
+        ManyFilter {
+            filter: filter.to_string(),
+            limit: None,
+            phantom: std::marker::PhantomData,
+        }
+    }
+}
+
+impl<T> From<SingleFilter<T>> for ManyFilter<T> {
+    fn from(filter: SingleFilter<T>) -> ManyFilter<T> {
+        ManyFilter {
+            filter: filter.filter,
+            limit: Some(1),
+            phantom: std::marker::PhantomData,
         }
     }
 }
 
 /// Represents a WHERE clause of the SQL statement. Multiple `Filter`s can be
 /// joined with `and` and `or` and also ordered, at which point they become
-/// `QueryFragment`s.
+/// `OrderedFilter`s.
 pub struct Filter<T> {
     filter: sql::Expr,
     phantom: std::marker::PhantomData<T>,
@@ -106,18 +172,29 @@ impl<T> Filter<T> {
         }
     }
 
-    pub fn order_by<F>(self, f: Field<T, F>) -> QueryFragment<T> {
-        QueryFragment {
+    pub fn order_by<F>(self, f: Field<T, F>) -> OrderedFilter<T> {
+        OrderedFilter {
             filter: self,
-            field: Some(f.field),
-            order_by: None,
+            order_by: sql::OrderByExpr {
+                expr: sql::Expr::Identifier(sql::Ident::new(f.field)),
+                asc: None,
+                nulls_first: None,
+            },
+        }
+    }
+
+    pub fn limit(self, limit: usize) -> ManyFilter<T> {
+        ManyFilter {
+            filter: self.to_string(),
+            limit: Some(limit),
+            phantom: std::marker::PhantomData,
         }
     }
 }
 
 /// A trait used to convert a value of scalar type into `sqlparser::ast::Value`.
 /// That is, for injecting a value into the `sqlparser`'s representation which
-/// we then use to generate a `QueryFragment`.
+/// we then use to generate a `OrderedFilter`.
 pub trait ToSQLValue
 where
     Self: Sized,
@@ -306,5 +383,48 @@ impl<T, F: ToSQLValue> OptionField<T, F> {
             right: Box::new(sql::Expr::Value(val.to_sql_value())),
         };
         Filter::new(expr)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_find_query_generation() {
+        struct MyStruct {}
+
+        fn my_field() -> Field<MyStruct, fuel_indexer_types::scalar::I32> {
+            Field {
+                field: "my_field".to_string(),
+                phantom: std::marker::PhantomData,
+            }
+        }
+
+        let f: Filter<MyStruct> = my_field().gt(7);
+        assert_eq!(&f.to_string(), "my_field > 7");
+
+        let f: OrderedFilter<MyStruct> = my_field().gt(7).order_by(my_field()).asc();
+        assert_eq!(&f.to_string(), "my_field > 7 ORDER BY my_field ASC");
+
+        // Converting to SingleFilter imposes a LIMIT 1
+        let sf: SingleFilter<MyStruct> =
+            my_field().gt(7).order_by(my_field()).asc().into();
+        assert_eq!(
+            &sf.to_string(),
+            "my_field > 7 ORDER BY my_field ASC LIMIT 1"
+        );
+
+        // SingleFilter converted to ManyFilter retains the LIMIT 1
+        let mf: ManyFilter<MyStruct> = sf.into();
+        assert_eq!(
+            &mf.to_string(),
+            "my_field > 7 ORDER BY my_field ASC LIMIT 1"
+        );
+
+        // Converting to ManyFilter does not impose a LIMIT
+        let mf: ManyFilter<MyStruct> =
+            my_field().gt(7).order_by(my_field()).desc().into();
+        assert_eq!(&mf.to_string(), "my_field > 7 ORDER BY my_field DESC");
     }
 }

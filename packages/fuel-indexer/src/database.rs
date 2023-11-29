@@ -212,34 +212,32 @@ Do your WASM modules need to be rebuilt?
         }
     }
 
-    /// Get an object from the database.
-    pub async fn single_select(
+    /// Get multiple objects from the database that satisfy the given constraints.
+    pub async fn find_many(
         &mut self,
         type_id: i64,
         constraints: String,
-    ) -> IndexerResult<Option<Vec<u8>>> {
+    ) -> IndexerResult<Vec<Vec<u8>>> {
         let table = &self
             .tables
             .get(&type_id)
             .ok_or(IndexerDatabaseError::TableMappingDoesNotExist(type_id))?;
 
-        let query = format!("SELECT object from {table} WHERE {constraints} LIMIT 1");
+        let query = format!("SELECT object from {table} WHERE {constraints}");
 
         let conn = self
             .stashed
             .as_mut()
-            .ok_or(IndexerError::NoTransactionError(
-                "single_select".to_string(),
-            ))?;
-        match queries::get_object(conn, query).await {
-            Ok(v) => Ok(Some(v)),
+            .ok_or(IndexerError::NoTransactionError("find_many".to_string()))?;
+        match queries::get_objects(conn, query).await {
+            Ok(v) => Ok(v),
             Err(e) => {
                 if let sqlx::Error::RowNotFound = e {
                     debug!("Row not found");
                 } else {
-                    error!("Failed to get_object: {e:?}");
+                    error!("Failed to get_objects: {e:?}");
                 }
-                Ok(None)
+                Ok(vec![])
             }
         }
     }

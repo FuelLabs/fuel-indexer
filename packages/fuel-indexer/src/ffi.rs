@@ -206,7 +206,7 @@ fn get_object(
     }
 }
 
-fn single_select(
+fn find_many(
     mut env: FunctionEnvMut<IndexEnv>,
     type_id: i64,
     ptr: u32,
@@ -243,12 +243,14 @@ fn single_select(
                 .db
                 .lock()
                 .await
-                .single_select(type_id, constraints)
+                .find_many(type_id, constraints)
                 .await
         })
         .unwrap();
 
-    if let Some(bytes) = bytes {
+    if !bytes.is_empty() {
+        let bytes = fuel_indexer_lib::utils::serialize(&bytes);
+
         let alloc_fn = idx_env
             .alloc
             .as_mut()
@@ -425,7 +427,7 @@ pub fn get_exports(store: &mut Store, env: &wasmer::FunctionEnv<IndexEnv>) -> Ex
     let mut exports = Exports::new();
 
     let f_get_obj = Function::new_typed_with_env(store, env, get_object);
-    let f_single_select = Function::new_typed_with_env(store, env, single_select);
+    let f_find_many = Function::new_typed_with_env(store, env, find_many);
     let f_put_obj = Function::new_typed_with_env(store, env, put_object);
     let f_log_data = Function::new_typed_with_env(store, env, log_data);
     let f_put_many_to_many_record =
@@ -434,7 +436,7 @@ pub fn get_exports(store: &mut Store, env: &wasmer::FunctionEnv<IndexEnv>) -> Ex
 
     exports.insert("ff_early_exit".to_string(), f_early_exit);
     exports.insert("ff_get_object".to_string(), f_get_obj);
-    exports.insert("ff_single_select".to_string(), f_single_select);
+    exports.insert("ff_find_many".to_string(), f_find_many);
     exports.insert("ff_put_object".to_string(), f_put_obj);
     exports.insert(
         "ff_put_many_to_many_record".to_string(),
