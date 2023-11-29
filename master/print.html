@@ -300,6 +300,9 @@ OPTIONS:
         --accept-sql-queries
             Allow the web server to accept raw SQL queries.
 
+        --allow-non-sequential-blocks
+            Allow missing blocks or non-sequential block processing.
+
         --auth-enabled
             Require users to authenticate for some operations.
 
@@ -307,13 +310,20 @@ OPTIONS:
             Authentication scheme used.
 
         --block-page-size &lt;BLOCK_PAGE_SIZE&gt;
-            Amount of blocks to return in a request to a Fuel node. [default: 10]
+            Amount of blocks to return in a request to a Fuel node. [default: 20]
 
     -c, --config &lt;FILE&gt;
             Indexer service config file.
 
+        --client-request-delay &lt;CLIENT_REQUEST_DELAY&gt;
+            Make the service wait for the given duration between block requests to a Fuel client.
+
         --database &lt;DATABASE&gt;
             Database type. [default: postgres] [possible values: postgres]
+
+        --disable-toolchain-version-check
+            By default, Fuel Indexer will only accept WASM indexer modules compiled with the same
+            toolchain version as the version of Fuel Indexer.
 
         --embedded-database
             Automatically create and start database using provided options or defaults.
@@ -359,6 +369,10 @@ OPTIONS:
         --metrics
             Use Prometheus metrics reporting.
 
+        --network &lt;NETWORK&gt;
+            Use a network alias when connecting to a Fuel client. [possible values: beta-3, beta-4,
+            beta-5]
+
         --postgres-database &lt;POSTGRES_DATABASE&gt;
             Postgres database.
 
@@ -383,6 +397,9 @@ OPTIONS:
         --rate-limit-window-size &lt;RATE_LIMIT_WINDOW_SIZE&gt;
             Number of seconds over which to allow --rate-limit-rps.
 
+        --remove-data
+            When replacing an indexer, also remove the indexed data.
+
         --replace-indexer
             Whether to allow replacing an existing indexer. If not specified, an attempt to deploy
             over an existing indexer results in an error.
@@ -404,7 +421,6 @@ OPTIONS:
 
         --web-api-port &lt;WEB_API_PORT&gt;
             Web API port. [default: 29987]
-
 </code></pre>
 <h3 id="using-a-configuration-file-indexer-service"><a class="header" href="#using-a-configuration-file-indexer-service">Using a configuration file (Indexer Service)</a></h3>
 <pre><code class="language-yaml"># The following is an example Fuel indexer configuration file.
@@ -464,6 +480,9 @@ fuel_node:
 
   # Listening port of the running Fuel node.
   port: 4000
+
+  # Use a network alias when connecting to a Fuel client.
+  network: ~
 
 # *************************
 # Web API configuration
@@ -569,6 +588,10 @@ OPTIONS:
         --database &lt;DATABASE&gt;
             Database type. [default: postgres] [possible values: postgres]
 
+        --disable-toolchain-version-check
+            By default, Fuel Indexer will only accept WASM indexer modules compiled with the same
+            toolchain version as the version of Fuel Indexer.
+
         --fuel-node-host &lt;FUEL_NODE_HOST&gt;
             Host of the running Fuel node. [default: localhost]
 
@@ -596,6 +619,10 @@ OPTIONS:
 
         --metrics
             Use Prometheus metrics reporting.
+
+        --network &lt;NETWORK&gt;
+            Use a network alias when connecting to a Fuel client. [possible values: beta-3, beta-4,
+            beta-5]
 
         --postgres-database &lt;POSTGRES_DATABASE&gt;
             Postgres database.
@@ -749,8 +776,9 @@ OPTIONS:
 <blockquote>
 <p>IMPORTANT: Below we're specifying our Postgres hostname as <code>--postgres-host postgresql</code>, but you might need to change this based on your own Postgres instance details (see <code>forc index start --help</code> for more details).</p>
 <p>Additionally, you can try using the <code>--embedded-database</code> flag in order to quickly use an embedded instance of Postgres, but this flag can be flaky, and its ease of use often depends on what platform you're using.</p>
+<p>If you find that <code>--embedded-database</code> isn't working on your machine (for whatever reason), we strongly recommend that you simply used the Dockerized Fuel indexer components included in the project by using the <code>docker compose</code> script <a href="https://github.com/FuelLabs/fuel-indexer/blob/develop/scripts/docker-compose.yaml">included in the project</a>.</p>
 </blockquote>
-<pre><code class="language-bash">forc index start --fuel-node-host beta-4.fuel.network --fuel-node-port 80 --run-migrations --postgres-host postgresql
+<pre><code class="language-bash">forc index start --network beta-4 --run-migrations --postgres-host postgresql
 </code></pre>
 <p>You should see output indicating the successful creation of a database and start of the indexer service; there may be much more content in your session, but it should generally contain output similar to the following lines:</p>
 <pre><code class="language-text">✅ Successfully started the indexer service at PID 39407
@@ -836,6 +864,32 @@ Take a quick tour.
 ▪▪▪▪▪ ✅ Build succeeded.                    Deploying indexer
 ▪▪▪▪▪ ✅ Successfully deployed indexer.
 </code></pre>
+<p>And we can check the status of our newly deployed indexer using:</p>
+<pre><code class="language-bash">forc index status
+</code></pre>
+<p>Which should show:</p>
+<pre><code class="language-text">✅ Successfully fetched service health:
+
+client status: OK
+database status: OK
+uptime: 1m 30s
+
+Indexers:
+
+─ fuellabs
+   └─ hello_world
+      • id: 1
+      • created at: 2023-11-08 15:09:49.205698 UTC (52s ago)
+      • status: running
+      • status message:
+          Indexed 5440 blocks
+</code></pre>
+<blockquote>
+<h4 id="what-is-a-deployment-exactly"><a class="header" href="#what-is-a-deployment-exactly">What is a &quot;deployment&quot; exactly?</a></h4>
+<p>A <em>deployment</em> within the context of Fuel's indexer is a series of steps taken to get your indexer project running in the wild.</p>
+<p>This series of steps involves compiling your indexer project to a wasm32-unknown-unknown target and uploading the indexer to a running Fuel indexer service. The service will then register an executor and build database tables for this indexer. Once this series of steps has completed, your indexer is considered to be <a href="https://en.wikipedia.org/wiki/Software_deployment">&quot;deployed&quot;</a>.</p>
+<p>Users will often find that they're simply deploying their indexers to a Fuel indexer service running on their local machine; this is just one valid use-case described in <a href="getting-started/./indexer-service-infrastructure.html">our infrastructure docs</a>. Keep in mind that the intended use of a Fuel indexer service is as a standalone remote service that may run many different indexers at any given time.</p>
+</blockquote>
 <h2 id="3-querying-for-data"><a class="header" href="#3-querying-for-data">3. Querying for data</a></h2>
 <p>With our indexer deployed, we should be able to query for newly indexed data after a few seconds.</p>
 <p>Below, we write a simple GraphQL query that returns a few fields from all transactions that we've indexed.</p>
@@ -901,8 +955,7 @@ Take a quick tour.
 <h4 id="example-1"><a class="header" href="#example-1">Example</a></h4>
 <p>Create, deploy, and check the status of a new indexer.</p>
 <pre><code class="language-bash">fuel-indexer run \
-    --fuel-node-host beta-4.fuel.network \
-    --fuel-node-port 80 \
+    --network beta-4 \
     --run-migrations \
     --accept-sql-queries \
     --replace-indexer
@@ -1227,17 +1280,19 @@ mod indexer_mod {
 <tr><td>ContractId</td><td><code>u8[32]</code></td><td></td></tr>
 <tr><td>HexString</td><td><code>Vec&lt;u8&gt;</code></td><td>Byte blob of arbitrary size</td></tr>
 <tr><td>I128</td><td><code>i128</code></td><td></td></tr>
+<tr><td>I16</td><td><code>i16</code></td><td></td></tr>
 <tr><td>I32</td><td><code>i32</code></td><td></td></tr>
 <tr><td>I64</td><td><code>i64</code></td><td></td></tr>
 <tr><td>I8</td><td><code>i8</code></td><td></td></tr>
 <tr><td>ID</td><td><code>SizedAsciiString&lt;64&gt;</code></td><td>Alias of <code>UID</code></td></tr>
 <tr><td>Json</td><td><code>String</code></td><td>JSON string of arbitary size</td></tr>
+<tr><td>String</td><td><code>String</code></td><td>String of arbitrary size</td></tr>
 <tr><td>U128</td><td><code>u128</code></td><td></td></tr>
+<tr><td>U16</td><td><code>u16</code></td><td></td></tr>
 <tr><td>U32</td><td><code>u32</code></td><td></td></tr>
 <tr><td>U64</td><td><code>u64</code></td><td></td></tr>
 <tr><td>U8</td><td><code>u8</code></td><td></td></tr>
 <tr><td>UID</td><td><code>SizedAsciiString&lt;64&gt;</code></td><td>32-byte unique ID</td></tr>
-<tr><td>String</td><td><code>String</code></td><td>String of arbitrary size</td></tr>
 </tbody></table>
 </div><div style="break-before: page; page-break-before: always;"></div><h1 id="directives"><a class="header" href="#directives">Directives</a></h1>
 <blockquote>
@@ -2923,6 +2978,9 @@ OPTIONS:
         --accept-sql-queries
             Allow the web server to accept raw SQL queries.
 
+        --allow-non-sequential-blocks
+            Allow missing blocks or non-sequential block processing.
+
         --auth-enabled
             Require users to authenticate for some operations.
 
@@ -2935,8 +2993,15 @@ OPTIONS:
     -c, --config &lt;FILE&gt;
             Indexer service config file.
 
+        --client-request-delay &lt;CLIENT_REQUEST_DELAY&gt;
+            Make the service wait for the given duration between block requests to a Fuel client.
+
         --database &lt;DATABASE&gt;
             Database type. [default: postgres] [possible values: postgres]
+
+        --disable-toolchain-version-check
+            By default, Fuel Indexer will only accept WASM indexer modules compiled with the same
+            toolchain version as the version of Fuel Indexer.
 
         --embedded-database
             Automatically create and start database using provided options or defaults.
@@ -2981,6 +3046,9 @@ OPTIONS:
 
         --metrics
             Use Prometheus metrics reporting.
+
+        --network &lt;NETWORK&gt;
+            Use a network alias when connecting to a Fuel client. [default: beta-3 beta-4 beta-5]
 
         --postgres-database &lt;POSTGRES_DATABASE&gt;
             Postgres database.
@@ -3030,7 +3098,6 @@ OPTIONS:
 
         --web-api-port &lt;WEB_API_PORT&gt;
             Web API port. [default: 29987]
-
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="forc-index-status"><a class="header" href="#forc-index-status"><code>forc index status</code></a></h1>
 <p>Check the status of a registered indexer.</p>

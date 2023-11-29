@@ -228,6 +228,9 @@ OPTIONS:
         --accept-sql-queries
             Allow the web server to accept raw SQL queries.
 
+        --allow-non-sequential-blocks
+            Allow missing blocks or non-sequential block processing.
+
         --auth-enabled
             Require users to authenticate for some operations.
 
@@ -235,13 +238,20 @@ OPTIONS:
             Authentication scheme used.
 
         --block-page-size &lt;BLOCK_PAGE_SIZE&gt;
-            Amount of blocks to return in a request to a Fuel node. [default: 10]
+            Amount of blocks to return in a request to a Fuel node. [default: 20]
 
     -c, --config &lt;FILE&gt;
             Indexer service config file.
 
+        --client-request-delay &lt;CLIENT_REQUEST_DELAY&gt;
+            Make the service wait for the given duration between block requests to a Fuel client.
+
         --database &lt;DATABASE&gt;
             Database type. [default: postgres] [possible values: postgres]
+
+        --disable-toolchain-version-check
+            By default, Fuel Indexer will only accept WASM indexer modules compiled with the same
+            toolchain version as the version of Fuel Indexer.
 
         --embedded-database
             Automatically create and start database using provided options or defaults.
@@ -287,6 +297,10 @@ OPTIONS:
         --metrics
             Use Prometheus metrics reporting.
 
+        --network &lt;NETWORK&gt;
+            Use a network alias when connecting to a Fuel client. [possible values: beta-3, beta-4,
+            beta-5]
+
         --postgres-database &lt;POSTGRES_DATABASE&gt;
             Postgres database.
 
@@ -311,6 +325,9 @@ OPTIONS:
         --rate-limit-window-size &lt;RATE_LIMIT_WINDOW_SIZE&gt;
             Number of seconds over which to allow --rate-limit-rps.
 
+        --remove-data
+            When replacing an indexer, also remove the indexed data.
+
         --replace-indexer
             Whether to allow replacing an existing indexer. If not specified, an attempt to deploy
             over an existing indexer results in an error.
@@ -332,7 +349,6 @@ OPTIONS:
 
         --web-api-port &lt;WEB_API_PORT&gt;
             Web API port. [default: 29987]
-
 </code></pre>
 <h3 id="using-a-configuration-file-indexer-service"><a class="header" href="#using-a-configuration-file-indexer-service">Using a configuration file (Indexer Service)</a></h3>
 <pre><code class="language-yaml"># The following is an example Fuel indexer configuration file.
@@ -392,6 +408,9 @@ fuel_node:
 
   # Listening port of the running Fuel node.
   port: 4000
+
+  # Use a network alias when connecting to a Fuel client.
+  network: ~
 
 # *************************
 # Web API configuration
@@ -497,6 +516,10 @@ OPTIONS:
         --database &lt;DATABASE&gt;
             Database type. [default: postgres] [possible values: postgres]
 
+        --disable-toolchain-version-check
+            By default, Fuel Indexer will only accept WASM indexer modules compiled with the same
+            toolchain version as the version of Fuel Indexer.
+
         --fuel-node-host &lt;FUEL_NODE_HOST&gt;
             Host of the running Fuel node. [default: localhost]
 
@@ -524,6 +547,10 @@ OPTIONS:
 
         --metrics
             Use Prometheus metrics reporting.
+
+        --network &lt;NETWORK&gt;
+            Use a network alias when connecting to a Fuel client. [possible values: beta-3, beta-4,
+            beta-5]
 
         --postgres-database &lt;POSTGRES_DATABASE&gt;
             Postgres database.
