@@ -447,7 +447,8 @@ mod tests {
         let bytes: Filter<MyStruct> = my_bytes8_field().eq(Bytes8::zeroed());
         assert_eq!(&bytes.to_string(), "my_bytes8_field = '0000000000000000'");
 
-        let bytes: Filter<MyStruct> = my_bytes8_field().eq(Bytes8::from([1, 2, 3, 4, 5, 6, 7, 15]));
+        let bytes: Filter<MyStruct> =
+            my_bytes8_field().eq(Bytes8::from([1, 2, 3, 4, 5, 6, 7, 15]));
         assert_eq!(&bytes.to_string(), "my_bytes8_field = '010203040506070f'");
 
         let word: Filter<MyStruct> = my_blockheight_field().eq(BlockHeight::new(123));
