@@ -62,18 +62,20 @@ pub enum FtColumn {
     ContractId(Option<ContractId>),
     Enum(Option<String>),
     I128(Option<I128>),
+    I16(Option<I16>),
     I32(Option<I32>),
     I64(Option<I64>),
     I8(Option<I8>),
     ID(Option<UID>),
     Identity(Option<Identity>),
     Json(Option<Json>),
+    String(Option<String>),
     U128(Option<U128>),
+    U16(Option<U16>),
     U32(Option<U32>),
     U64(Option<U64>),
     U8(Option<U8>),
     UID(Option<UID>),
-    String(Option<String>),
 }
 
 impl FtColumn {
@@ -135,6 +137,14 @@ impl FtColumn {
                 None => String::from(NULL_VALUE),
             },
             FtColumn::I64(value) => match value {
+                Some(val) => format!("{val}"),
+                None => String::from(NULL_VALUE),
+            },
+            FtColumn::I16(value) => match value {
+                Some(val) => format!("{val}"),
+                None => String::from(NULL_VALUE),
+            },
+            FtColumn::U16(value) => match value {
                 Some(val) => format!("{val}"),
                 None => String::from(NULL_VALUE),
             },
@@ -278,6 +288,8 @@ mod tests {
         let uint4 = FtColumn::U32(Some(u32::from_le_bytes([0x78; 4])));
         let uint8 = FtColumn::U64(Some(u64::from_le_bytes([0x78; 8])));
         let xstring = FtColumn::String(Some(String::from("hello world")));
+        let uint2 = FtColumn::U16(Some(u16::from_le_bytes([0x78; 2])));
+        let int2 = FtColumn::I16(Some(i16::from_le_bytes([0x78; 2])));
 
         insta::assert_yaml_snapshot!(addr.query_fragment());
         insta::assert_yaml_snapshot!(array.query_fragment());
@@ -302,6 +314,8 @@ mod tests {
         insta::assert_yaml_snapshot!(uint4.query_fragment());
         insta::assert_yaml_snapshot!(uint8.query_fragment());
         insta::assert_yaml_snapshot!(xstring.query_fragment());
+        insta::assert_yaml_snapshot!(uint2.query_fragment());
+        insta::assert_yaml_snapshot!(int2.query_fragment());
     }
 
     #[test]
@@ -329,6 +343,8 @@ mod tests {
         let uint4_none = FtColumn::U32(None);
         let uint8_none = FtColumn::U64(None);
         let xstring_none = FtColumn::String(None);
+        let uint2_none = FtColumn::U16(None);
+        let int2_none = FtColumn::I16(None);
 
         insta::assert_yaml_snapshot!(addr_none.query_fragment());
         insta::assert_yaml_snapshot!(array.query_fragment());
@@ -351,6 +367,8 @@ mod tests {
         insta::assert_yaml_snapshot!(uint4_none.query_fragment());
         insta::assert_yaml_snapshot!(uint8_none.query_fragment());
         insta::assert_yaml_snapshot!(xstring_none.query_fragment());
+        insta::assert_yaml_snapshot!(uint2_none.query_fragment());
+        insta::assert_yaml_snapshot!(int2_none.query_fragment());
     }
 
     #[test]

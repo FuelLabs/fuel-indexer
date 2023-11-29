@@ -18,6 +18,8 @@ scalar Json
 scalar U128
 scalar U32
 scalar U64
+scalar I16
+scalar U16
 scalar U8
 scalar UID
 scalar String

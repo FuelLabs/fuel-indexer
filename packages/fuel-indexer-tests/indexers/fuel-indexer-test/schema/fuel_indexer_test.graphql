@@ -194,7 +194,7 @@ type Book @entity {
 type Sponsor @entity {
   id: ID!
   name: String! @unique
-  amount: U64!
+  amount: U16!
   representative: Person!
 }
 
