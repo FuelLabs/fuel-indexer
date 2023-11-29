@@ -224,11 +224,7 @@ macro_rules! impl_bytes_to_sql_value {
     ($T:ident) => {
         impl ToSQLValue for fuel_indexer_types::scalar::$T {
             fn to_sql_value(self) -> sql::Value {
-                unsafe {
-                    sql::Value::SingleQuotedByteStringLiteral(
-                        std::str::from_utf8_unchecked(self.as_ref()).to_string(),
-                    )
-                }
+                sql::Value::SingleQuotedString(hex::encode(self))
             }
         }
     };
