@@ -441,8 +441,14 @@ mod tests {
         let addr: Filter<MyStruct> = my_address_field().eq(Address::zeroed());
         assert_eq!(&addr.to_string(), "my_address_field = '0000000000000000000000000000000000000000000000000000000000000000'");
 
-        let addr: Filter<MyStruct> = my_bytes8_field().eq(Bytes8::zeroed());
-        assert_eq!(&addr.to_string(), "my_bytes8_field = '0000000000000000'");
+        let addr: Filter<MyStruct> = my_address_field().eq(Address::from([238; 32]));
+        assert_eq!(&addr.to_string(), "my_address_field = 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee'");
+
+        let bytes: Filter<MyStruct> = my_bytes8_field().eq(Bytes8::zeroed());
+        assert_eq!(&bytes.to_string(), "my_bytes8_field = '0000000000000000'");
+
+        let bytes: Filter<MyStruct> = my_bytes8_field().eq(Bytes8::from([1, 2, 3, 4, 5, 6, 7, 15]));
+        assert_eq!(&bytes.to_string(), "my_bytes8_field = '010203040506070f'");
 
         let word: Filter<MyStruct> = my_blockheight_field().eq(BlockHeight::new(123));
         assert_eq!(&word.to_string(), "my_blockheight_field = 123");
