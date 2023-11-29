@@ -1,4 +1,4 @@
-use fuel_indexer_types::scalar::{Boolean, UID};
+use fuel_indexer_types::scalar::{BlockHeight, Boolean, UID};
 use sqlparser::ast as sql;
 
 /// Represents a filter that returns a single results.
@@ -220,15 +220,17 @@ impl ToSQLValue for UID {
     }
 }
 
+impl ToSQLValue for BlockHeight {
+    fn to_sql_value(self) -> sql::Value {
+        sqlparser::test_utils::number(&self.as_usize().to_string())
+    }
+}
+
 macro_rules! impl_bytes_to_sql_value {
     ($T:ident) => {
         impl ToSQLValue for fuel_indexer_types::scalar::$T {
             fn to_sql_value(self) -> sql::Value {
-                unsafe {
-                    sql::Value::SingleQuotedByteStringLiteral(
-                        std::str::from_utf8_unchecked(self.as_ref()).to_string(),
-                    )
-                }
+                sql::Value::SingleQuotedString(hex::encode(self))
             }
         }
     };
@@ -267,8 +269,6 @@ impl_number_to_sql_value!(U32);
 
 impl_number_to_sql_value!(I8);
 impl_number_to_sql_value!(U8);
-
-impl_number_to_sql_value!(BlockHeight);
 
 /// Captures the information necessary to represent `struct T { field: F }`.
 /// It is then used to build a type-safe `Filter<T>`, e.g., `Filter<OrderId>`.
@@ -392,13 +392,24 @@ mod tests {
 
     #[test]
     fn test_find_query_generation() {
+        use fuel_indexer_types::scalar::{Address, BlockHeight, Bytes8, I32};
+
         struct MyStruct {}
 
-        fn my_field() -> Field<MyStruct, fuel_indexer_types::scalar::I32> {
-            Field {
-                field: "my_field".to_string(),
-                phantom: std::marker::PhantomData,
-            }
+        fn my_field() -> Field<MyStruct, I32> {
+            Field::new("my_field".to_string())
+        }
+
+        fn my_address_field() -> Field<MyStruct, Address> {
+            Field::new("my_address_field".to_string())
+        }
+
+        fn my_bytes8_field() -> Field<MyStruct, Bytes8> {
+            Field::new("my_bytes8_field".to_string())
+        }
+
+        fn my_blockheight_field() -> Field<MyStruct, BlockHeight> {
+            Field::new("my_blockheight_field".to_string())
         }
 
         let f: Filter<MyStruct> = my_field().gt(7);
@@ -426,5 +437,21 @@ mod tests {
         let mf: ManyFilter<MyStruct> =
             my_field().gt(7).order_by(my_field()).desc().into();
         assert_eq!(&mf.to_string(), "my_field > 7 ORDER BY my_field DESC");
+
+        let addr: Filter<MyStruct> = my_address_field().eq(Address::zeroed());
+        assert_eq!(&addr.to_string(), "my_address_field = '0000000000000000000000000000000000000000000000000000000000000000'");
+
+        let addr: Filter<MyStruct> = my_address_field().eq(Address::from([238; 32]));
+        assert_eq!(&addr.to_string(), "my_address_field = 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee'");
+
+        let bytes: Filter<MyStruct> = my_bytes8_field().eq(Bytes8::zeroed());
+        assert_eq!(&bytes.to_string(), "my_bytes8_field = '0000000000000000'");
+
+        let bytes: Filter<MyStruct> =
+            my_bytes8_field().eq(Bytes8::from([1, 2, 3, 4, 5, 6, 7, 15]));
+        assert_eq!(&bytes.to_string(), "my_bytes8_field = '010203040506070f'");
+
+        let word: Filter<MyStruct> = my_blockheight_field().eq(BlockHeight::new(123));
+        assert_eq!(&word.to_string(), "my_blockheight_field = 123");
     }
 }
