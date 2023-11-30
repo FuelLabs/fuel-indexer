@@ -68,7 +68,7 @@ impl<T> std::fmt::Display for OrderedFilter<T> {
                 .iter()
                 .map(|x| x.to_string())
                 .collect::<Vec<String>>()
-                .join(&", ".to_string());
+                .join(", ");
             write!(f, " ORDER BY {}", order)?;
         }
         Ok(())
