@@ -44,20 +44,10 @@ impl<T> std::fmt::Display for ManyFilter<T> {
 /// maps the TYPE_ID to the tale name and assemles the full statemnt.
 pub struct OrderedFilter<T> {
     filter: Filter<T>,
-    order_by: sql::OrderByExpr,
+    order_by: Vec<sql::OrderByExpr>,
 }
 
 impl<T> OrderedFilter<T> {
-    pub fn asc(mut self) -> Self {
-        self.order_by.asc = Some(true);
-        self
-    }
-
-    pub fn desc(mut self) -> Self {
-        self.order_by.asc = Some(false);
-        self
-    }
-
     pub fn limit(self, limit: usize) -> ManyFilter<T> {
         ManyFilter {
             filter: self.to_string(),
@@ -71,13 +61,23 @@ impl<T> OrderedFilter<T> {
 /// added by the Fuel indexer to generate the entire query.
 impl<T> std::fmt::Display for OrderedFilter<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} ORDER BY {}", self.filter, self.order_by)?;
+        write!(f, "{}", self.filter)?;
+        if !self.order_by.is_empty() {
+            let order = self
+                .order_by
+                .iter()
+                .map(|x| x.to_string())
+                .collect::<Vec<String>>()
+                .join(&", ".to_string());
+            write!(f, " ORDER BY {}", order)?;
+        }
         Ok(())
     }
 }
 
 // Conversions between different filter structs.
 
+/// For the use of Filter as an argument to find()
 impl<T> From<Filter<T>> for SingleFilter<T> {
     fn from(filter: Filter<T>) -> SingleFilter<T> {
         SingleFilter {
@@ -87,6 +87,7 @@ impl<T> From<Filter<T>> for SingleFilter<T> {
     }
 }
 
+/// For the use of OrderedFilter as an argument to find()
 impl<T> From<OrderedFilter<T>> for SingleFilter<T> {
     fn from(filter: OrderedFilter<T>) -> SingleFilter<T> {
         SingleFilter {
@@ -96,6 +97,7 @@ impl<T> From<OrderedFilter<T>> for SingleFilter<T> {
     }
 }
 
+/// For the use of Filter as an argument to find_many()
 impl<T> From<Filter<T>> for ManyFilter<T> {
     fn from(filter: Filter<T>) -> ManyFilter<T> {
         ManyFilter {
@@ -106,6 +108,7 @@ impl<T> From<Filter<T>> for ManyFilter<T> {
     }
 }
 
+/// For the use of OrderedFilter as an argument to find_many()
 impl<T> From<OrderedFilter<T>> for ManyFilter<T> {
     fn from(filter: OrderedFilter<T>) -> ManyFilter<T> {
         ManyFilter {
@@ -116,6 +119,7 @@ impl<T> From<OrderedFilter<T>> for ManyFilter<T> {
     }
 }
 
+/// For implementing find() in terms of find_many()
 impl<T> From<SingleFilter<T>> for ManyFilter<T> {
     fn from(filter: SingleFilter<T>) -> ManyFilter<T> {
         ManyFilter {
@@ -172,14 +176,20 @@ impl<T> Filter<T> {
         }
     }
 
-    pub fn order_by<F>(self, f: Field<T, F>) -> OrderedFilter<T> {
+    pub fn order_by(self, f: impl Into<Order<T>>) -> OrderedFilter<T> {
+        let fields: Order<T> = f.into();
+        let mut order_by = vec![];
+        for (f, asc) in fields.fields {
+            let e = sql::OrderByExpr {
+                expr: sql::Expr::Identifier(sql::Ident::new(f)),
+                asc,
+                nulls_first: None,
+            };
+            order_by.push(e);
+        }
         OrderedFilter {
             filter: self,
-            order_by: sql::OrderByExpr {
-                expr: sql::Expr::Identifier(sql::Ident::new(f.field)),
-                asc: None,
-                nulls_first: None,
-            },
+            order_by,
         }
     }
 
@@ -189,6 +199,80 @@ impl<T> Filter<T> {
             limit: Some(limit),
             phantom: std::marker::PhantomData,
         }
+    }
+}
+
+pub struct Order<T> {
+    fields: Vec<(String, Option<bool>)>,
+    phantom: std::marker::PhantomData<T>,
+}
+
+impl<T> Order<T> {
+    /// Combine multiple Order<T> into a single value
+    fn combine(orders: Vec<Order<T>>) -> Order<T> {
+        let mut result = Order {
+            fields: vec![],
+            phantom: std::marker::PhantomData,
+        };
+        for o in orders {
+            result.fields.extend(o.fields)
+        }
+        result
+    }
+}
+
+impl<T, F> From<Field<T, F>> for Order<T> {
+    fn from(f1: Field<T, F>) -> Order<T> {
+        Order {
+            fields: vec![(f1.field, None)],
+            phantom: std::marker::PhantomData,
+        }
+    }
+}
+
+impl<T, F1, F2> From<(F1, F2)> for Order<T>
+where
+    F1: Into<Order<T>>,
+    F2: Into<Order<T>>,
+{
+    fn from((f1, f2): (F1, F2)) -> Order<T> {
+        Order::combine(vec![f1.into(), f2.into()])
+    }
+}
+
+impl<T, F1, F2, F3> From<(F1, F2, F3)> for Order<T>
+where
+    F1: Into<Order<T>>,
+    F2: Into<Order<T>>,
+    F3: Into<Order<T>>,
+{
+    fn from((f1, f2, f3): (F1, F2, F3)) -> Order<T> {
+        Order::combine(vec![f1.into(), f2.into(), f3.into()])
+    }
+}
+
+impl<T, F1, F2, F3, F4> From<(F1, F2, F3, F4)> for Order<T>
+where
+    F1: Into<Order<T>>,
+    F2: Into<Order<T>>,
+    F3: Into<Order<T>>,
+    F4: Into<Order<T>>,
+{
+    fn from((f1, f2, f3, f4): (F1, F2, F3, F4)) -> Order<T> {
+        Order::combine(vec![f1.into(), f2.into(), f3.into(), f4.into()])
+    }
+}
+
+impl<T, F1, F2, F3, F4, F5> From<(F1, F2, F3, F4, F5)> for Order<T>
+where
+    F1: Into<Order<T>>,
+    F2: Into<Order<T>>,
+    F3: Into<Order<T>>,
+    F4: Into<Order<T>>,
+    F5: Into<Order<T>>,
+{
+    fn from((f1, f2, f3, f4, f5): (F1, F2, F3, F4, F5)) -> Order<T> {
+        Order::combine(vec![f1.into(), f2.into(), f3.into(), f4.into(), f5.into()])
     }
 }
 
@@ -281,6 +365,20 @@ impl<T, F> Field<T, F> {
     pub fn new(field: String) -> Self {
         Field {
             field,
+            phantom: std::marker::PhantomData,
+        }
+    }
+
+    pub fn asc(self) -> Order<T> {
+        Order {
+            fields: vec![(self.field, Some(true))],
+            phantom: std::marker::PhantomData,
+        }
+    }
+
+    pub fn desc(self) -> Order<T> {
+        Order {
+            fields: vec![(self.field, Some(false))],
             phantom: std::marker::PhantomData,
         }
     }
@@ -415,12 +513,41 @@ mod tests {
         let f: Filter<MyStruct> = my_field().gt(7);
         assert_eq!(&f.to_string(), "my_field > 7");
 
-        let f: OrderedFilter<MyStruct> = my_field().gt(7).order_by(my_field()).asc();
+        let f: OrderedFilter<MyStruct> = my_field().gt(7).order_by(my_field().asc());
         assert_eq!(&f.to_string(), "my_field > 7 ORDER BY my_field ASC");
+
+        // Ordering by multiple fields
+        let o1: ManyFilter<MyStruct> = my_field()
+            .gt(7)
+            .order_by((my_field().asc(), my_bytes8_field()))
+            .into();
+        assert_eq!(
+            &o1.to_string(),
+            "my_field > 7 ORDER BY my_field ASC, my_bytes8_field"
+        );
+
+        let o2: ManyFilter<MyStruct> = my_field()
+            .gt(7)
+            .order_by((my_field().asc(), my_bytes8_field().desc()))
+            .into();
+        assert_eq!(
+            &o2.to_string(),
+            "my_field > 7 ORDER BY my_field ASC, my_bytes8_field DESC"
+        );
+
+        let o2: ManyFilter<MyStruct> = my_field()
+            .gt(7)
+            .order_by((
+                my_field().asc(),
+                my_bytes8_field().desc(),
+                my_blockheight_field(),
+            ))
+            .into();
+        assert_eq!(&o2.to_string(), "my_field > 7 ORDER BY my_field ASC, my_bytes8_field DESC, my_blockheight_field");
 
         // Converting to SingleFilter imposes a LIMIT 1
         let sf: SingleFilter<MyStruct> =
-            my_field().gt(7).order_by(my_field()).asc().into();
+            my_field().gt(7).order_by(my_field().asc()).into();
         assert_eq!(
             &sf.to_string(),
             "my_field > 7 ORDER BY my_field ASC LIMIT 1"
@@ -435,7 +562,7 @@ mod tests {
 
         // Converting to ManyFilter does not impose a LIMIT
         let mf: ManyFilter<MyStruct> =
-            my_field().gt(7).order_by(my_field()).desc().into();
+            my_field().gt(7).order_by(my_field().desc()).into();
         assert_eq!(&mf.to_string(), "my_field > 7 ORDER BY my_field DESC");
 
         let addr: Filter<MyStruct> = my_address_field().eq(Address::zeroed());
