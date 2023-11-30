@@ -154,7 +154,7 @@ pub fn derive_type_name(typ: &TypeDeclaration) -> String {
     }
 }
 
-/// Whether or not the given token is a Fuel primitive
+/// Whether or not the given `TypeDeclaration` is a Fuel primitive
 ///
 /// These differ from `RESERVED_TYPEDEF_NAMES` in that `FUEL_PRIMITIVES` are type names
 /// that are checked against the contract JSON ABI, while `RESERVED_TYPEDEF_NAMES` are

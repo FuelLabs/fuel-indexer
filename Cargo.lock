@@ -3412,7 +3412,7 @@ dependencies = [
  "fuel-indexer-schema",
  "fuel-indexer-types",
  "fuels",
- "fuels-code-gen 0.46.0",
+ "fuels-code-gen 0.49.0",
  "lazy_static",
  "proc-macro-error",
  "proc-macro2",
@@ -3777,6 +3777,22 @@ name = "fuels-code-gen"
 version = "0.46.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2a32e15704cdc5db8253322735cb665af6ab7d0b189ca79341442c6034128182"
+dependencies = [
+ "Inflector",
+ "fuel-abi-types 0.3.0",
+ "itertools 0.11.0",
+ "proc-macro2",
+ "quote",
+ "regex",
+ "serde_json",
+ "syn 2.0.39",
+]
+
+[[package]]
+name = "fuels-code-gen"
+version = "0.49.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3afd5ba59c905adfae0e8afc09588e2a3acf451520053e5e2cefb58d38ac3253"
 dependencies = [
  "Inflector",
  "fuel-abi-types 0.3.0",
