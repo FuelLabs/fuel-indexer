@@ -15,6 +15,12 @@ use std::{
     token::*,
 };
 
+configurable {
+    OWNER: Address = Address::from(0x09c0b2d1a486c439a87bcba6b46a7a1a23f3897cc83a94521a96da5c23bc58db),
+    PROXY_ADDRESS: Address = Address::from(ZERO_B256),
+    SETTLEMENT_TOKEN: AssetId = AssetId::from(ZERO_B256),
+}
+
 pub enum UserError {
     Unauthorized: (),
 }
