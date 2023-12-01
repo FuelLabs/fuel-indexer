@@ -611,8 +611,7 @@ mod fuel_indexer_test {
             let i = IndexMetadataEntity::find(
                 IndexMetadataEntity::block_height()
                     .ge(2)
-                    .order_by(IndexMetadataEntity::block_height())
-                    .asc(),
+                    .order_by(IndexMetadataEntity::block_height().asc()),
             )
             .unwrap();
             assert_eq!(i.block_height, 2);
@@ -621,8 +620,7 @@ mod fuel_indexer_test {
             let i = IndexMetadataEntity::find(
                 IndexMetadataEntity::block_height()
                     .ge(2)
-                    .order_by(IndexMetadataEntity::block_height())
-                    .desc(),
+                    .order_by(IndexMetadataEntity::block_height().desc()),
             )
             .unwrap();
             assert_eq!(i.block_height, 4);
@@ -631,8 +629,7 @@ mod fuel_indexer_test {
             let f = FindEntity::find(
                 FindEntity::string_value()
                     .gt("f".to_string())
-                    .order_by(FindEntity::value())
-                    .asc(),
+                    .order_by(FindEntity::value().asc()),
             )
             .unwrap();
             assert_eq!(&f.string_value, "find2");
@@ -641,8 +638,7 @@ mod fuel_indexer_test {
             let f = FindEntity::find(
                 FindEntity::string_value()
                     .gt("f".to_string())
-                    .order_by(FindEntity::value())
-                    .desc(),
+                    .order_by(FindEntity::value().desc()),
             )
             .unwrap();
             assert_eq!(&f.string_value, "find5");
@@ -651,8 +647,7 @@ mod fuel_indexer_test {
             let fs: Vec<FindEntity> = FindEntity::find_many(
                 FindEntity::string_value()
                     .gt("f".to_string())
-                    .order_by(FindEntity::value())
-                    .asc(),
+                    .order_by(FindEntity::value().asc()),
             );
             assert_eq!(fs.len(), 4);
             assert_eq!(fs[0].string_value, "find2");
@@ -664,8 +659,7 @@ mod fuel_indexer_test {
             let fs: Vec<FindEntity> = FindEntity::find_many(
                 FindEntity::string_value()
                     .gt("f".to_string())
-                    .order_by(FindEntity::value())
-                    .desc()
+                    .order_by(FindEntity::value().desc())
                     .limit(10),
             );
 
@@ -679,8 +673,7 @@ mod fuel_indexer_test {
             let fs: Vec<FindEntity> = FindEntity::find_many(
                 FindEntity::string_value()
                     .gt("f".to_string())
-                    .order_by(FindEntity::value())
-                    .desc()
+                    .order_by(FindEntity::value().desc())
                     .limit(2),
             );
 
