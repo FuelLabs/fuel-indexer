@@ -1,6 +1,4 @@
-use crate::{
-    assets, defaults, utils::update_test_manifest_asset_paths, TestError, WORKSPACE_ROOT,
-};
+use crate::{assets, defaults, TestError, WORKSPACE_ROOT};
 use actix_service::Service;
 use actix_web::test;
 use axum::routing::Router;
@@ -40,8 +38,8 @@ use tokio::{
 use tracing_subscriber::filter::EnvFilter;
 
 abigen!(Contract(
-    name = "FuelIndexerTest",
-    abi = "packages/fuel-indexer-tests/contracts/fuel-indexer-test/out/debug/fuel-indexer-test-abi.json"
+    name = "FuelIndexer",
+    abi = "packages/fuel-indexer-tests/sway/test-contract1/out/debug/test-contract1-abi.json"
 ));
 
 pub struct TestPostgresDb {
@@ -93,8 +91,7 @@ pub async fn setup_indexing_test_components(
     let db = TestPostgresDb::new().await.unwrap();
     let mut service = indexer_service_postgres(Some(&db.url), config).await;
 
-    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
-    update_test_manifest_asset_paths(&mut manifest);
+    let manifest = assets::test_indexer_updated_manifest();
 
     service
         .register_indexer_from_manifest(
@@ -119,8 +116,7 @@ pub async fn setup_web_test_components(
     let db = TestPostgresDb::new().await.unwrap();
     let mut service = indexer_service_postgres(Some(&db.url), config.clone()).await;
 
-    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
-    update_test_manifest_asset_paths(&mut manifest);
+    let manifest = assets::test_indexer_updated_manifest();
 
     service
         .register_indexer_from_manifest(
@@ -348,22 +344,22 @@ pub async fn setup_example_test_fuel_node() -> Result<(), ()> {
     let wallet_path = Path::new(WORKSPACE_ROOT).join("test-chain-config.json");
 
     let contract_bin_path = Path::new(WORKSPACE_ROOT)
-        .join("contracts")
-        .join("fuel-indexer-test")
+        .join("sway")
+        .join("test-contract1")
         .join("out")
         .join("debug")
-        .join("fuel-indexer-test.bin");
+        .join("test-contract1.bin");
 
     setup_test_fuel_node(wallet_path, Some(contract_bin_path), None).await
 }
 
 pub fn get_test_contract_id() -> Bech32ContractId {
     let contract_bin_path = Path::new(WORKSPACE_ROOT)
-        .join("contracts")
-        .join("fuel-indexer-test")
+        .join("sway")
+        .join("test-contract1")
         .join("out")
         .join("debug")
-        .join("fuel-indexer-test.bin");
+        .join("test-contract1.bin");
 
     let loaded_contract = Contract::load_from(
         contract_bin_path.as_os_str().to_str().unwrap(),
@@ -421,7 +417,7 @@ pub async fn indexer_service_postgres(
 }
 
 pub async fn connect_to_deployed_contract(
-) -> Result<FuelIndexerTest<WalletUnlocked>, Box<dyn std::error::Error>> {
+) -> Result<FuelIndexer<WalletUnlocked>, Box<dyn std::error::Error>> {
     let wallet_path = Path::new(WORKSPACE_ROOT).join("test-chain-config.json");
     let wallet_path_str = wallet_path.as_os_str().to_str().unwrap();
     let mut wallet =
@@ -441,7 +437,7 @@ pub async fn connect_to_deployed_contract(
     let contract_id: Bech32ContractId =
         Bech32ContractId::from(fuels::types::ContractId::from(get_test_contract_id()));
 
-    let contract = FuelIndexerTest::new(contract_id.clone(), wallet);
+    let contract = FuelIndexer::new(contract_id.clone(), wallet);
 
     println!("Using contract at {contract_id}");
 
@@ -462,7 +458,7 @@ pub mod test_web {
     use fuels::types::bech32::Bech32ContractId;
     use std::path::Path;
 
-    use super::{tx_params, FuelIndexerTest};
+    use super::{tx_params, FuelIndexer};
 
     async fn fuel_indexer_test_blocks(state: web::Data<Arc<AppState>>) -> impl Responder {
         let _ = state
@@ -847,12 +843,28 @@ pub mod test_web {
         HttpResponse::Ok()
     }
 
+    async fn trigger_predicate_witness_data(
+        state: web::Data<Arc<AppState>>,
+    ) -> impl Responder {
+        let data = vec![1u8];
+        let _ = state
+            .contract
+            .methods()
+            .trigger_find()
+            .tx_params(tx_params())
+            .call()
+            .await
+            .unwrap();
+
+        HttpResponse::Ok()
+    }
+
     pub struct AppState {
-        pub contract: FuelIndexerTest<WalletUnlocked>,
+        pub contract: FuelIndexer<WalletUnlocked>,
     }
 
     pub fn app(
-        contract: FuelIndexerTest<WalletUnlocked>,
+        contract: FuelIndexer<WalletUnlocked>,
     ) -> App<
         impl ServiceFactory<
             ServiceRequest,
@@ -952,7 +964,7 @@ pub mod test_web {
         println!("Starting server at {}", defaults::WEB_API_ADDR);
 
         let _ = HttpServer::new(move || {
-            app(FuelIndexerTest::new(contract_id.clone(), wallet.clone()))
+            app(FuelIndexer::new(contract_id.clone(), wallet.clone()))
         })
         .bind(defaults::WEB_API_ADDR)
         .unwrap()

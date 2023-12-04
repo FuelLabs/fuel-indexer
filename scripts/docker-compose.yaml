@@ -17,7 +17,7 @@ services:
       start_period: 80s
   fuel-indexer:
     image: ghcr.io/fuellabs/fuel-indexer:latest
-    command: bash -c "sleep 2 && ./fuel-indexer run --network beta-4 --postgres-host postgres --postgres-password postgres --web-api-host 0.0.0.0 --run-migrations --client-request-delay 1 --block-page-size 50"
+    command: bash -c "sleep 2 && ./fuel-indexer run --network beta-5 --postgres-host postgres --postgres-password postgres --web-api-host 0.0.0.0 --run-migrations --client-request-delay 1 --block-page-size 50"
     ports:
       - "29987:29987"
     volumes:

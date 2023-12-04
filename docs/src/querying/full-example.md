@@ -2,7 +2,7 @@
 
 Finally, let's combine nested entities, filtering, and pagination into one complete example.
 
-Sticking with the same block explorer example, let's say that we are looking for a particular transaction and its containing block, but we don't remember either of the hashes. All we know is that the total value of the transaction is greater than zero, it was sometime after the start of the `beta-4` testnet, and it was included as part of the first fifty blocks. Additionally, we don't want to parse through all the results at once, so we only want to look at two records at a time. Finally, we think that it may have been on the more recent side, so we want to check them in reverse chronological order.
+Sticking with the same block explorer example, let's say that we are looking for a particular transaction and its containing block, but we don't remember either of the hashes. All we know is that the total value of the transaction is greater than zero, it was sometime after the start of the `beta-5` testnet, and it was included as part of the first fifty blocks. Additionally, we don't want to parse through all the results at once, so we only want to look at two records at a time. Finally, we think that it may have been on the more recent side, so we want to check them in reverse chronological order.
 
 Putting all of that together, we get the following query:
 

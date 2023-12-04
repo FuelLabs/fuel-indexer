@@ -1,5 +1,5 @@
 app:
-  fuel_node_host: beta-4.fuel.network
+  fuel_node_host: beta-5.fuel.network
   fuel_node_port: 80
   volume:
     storageclass: gp3-generic

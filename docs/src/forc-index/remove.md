@@ -3,7 +3,7 @@
 Stop and remove a running indexer.
 
 ```bash
-forc index remove --url https://beta-4-indexer.fuel.network
+forc index remove --url https://beta-5-indexer.fuel.network
 ```
 
 ```text
