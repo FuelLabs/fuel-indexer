@@ -4,21 +4,21 @@ Every transaction in the Fuel network contains a list of receipts with informati
 
 There are several types of receipts that can be attached to a transaction and indexed. You can learn more about each of these in the sections below.
 
-- [**Burn**](#burn)
-- [**Call**](#call)
-- [**Log**](#log)
-- [**LogData**](#logdata)
-- [**MessageOut**](#messageout)
-- [**Mint**](#mint)
-- [**Panic**](#panic)
-- [**Return**](#return)
-- [**ReturnData**](#returndata)
-- [**Revert**](#revert)
-- [**ScriptResult**](#scriptresult)
-- [**Transfer**](#transfer)
-- [**TransferOut**](#transferout)
+- [**`Burn`**](#burn)
+- [**`Call`**](#call)
+- [**`Log`**](#log)
+- [**`LogData`**](#logdata)
+- [**`MessageOut`**](#messageout)
+- [**`Mint`**](#mint)
+- [**`Panic`**](#panic)
+- [**`Return`**](#return)
+- [**`ReturnData`**](#returndata)
+- [**`Revert`**](#revert)
+- [**`ScriptResult`**](#scriptresult)
+- [**`Transfer`**](#transfer)
+- [**`TransferOut`**](#transferout)
 
-## Burn
+## `Burn`
 
 A `Burn` receipt is generated whenever an asset is burned in a Sway contract. [Read more about `Burn` in the Fuel protocol ABI spec](https://docs.fuel.network/docs/specs/abi/receipts/#burn-receipt).
 
@@ -51,7 +51,7 @@ mod indexer_mod {
 }
 ```
 
-## Call
+## `Call`
 
 A `Call` receipt is generated whenever a function is called in a Sway contract. The `fn_name` field contains the name of the called function from the aforementioned contract. [Read more about `Call` in the Fuel protocol ABI spec](https://docs.fuel.network/docs/specs/abi/receipts/#call-receipt).
 
@@ -89,7 +89,7 @@ mod indexer_mod {
 }
 ```
 
-## Log
+## `Log`
 
 A `Log` receipt is generated when calling `log()` on a non-reference types in a Sway contracts - specifically `bool`, `u8`, `u16`, `u32`, and `u64`. The `ra` field includes the value being logged while `rb` may include a non-zero value representing a unique ID for the `log` instance. [Read more about `Log` in the Fuel protocol ABI spec](https://docs.fuel.network/docs/specs/abi/receipts/#log-receipt).
 
@@ -124,7 +124,7 @@ mod indexer_mod {
 }
 ```
 
-## LogData
+## `LogData`
 
 A `LogData` receipt is generated when calling `log()` in a Sway contract on a reference type; this includes all types _except_ non-reference types. The `data` field will include the logged value as a hexadecimal. The `rb` field will contain a unique ID that can be used to look up the logged data type. [Read more about `LogData` in the Fuel protocol ABI spec](https://docs.fuel.network/docs/specs/abi/receipts/#logdata-receipt).
 >
@@ -154,7 +154,7 @@ mod indexer_mod {
 }
 ```
 
-## MessageOut
+## `MessageOut`
 
 A `MessageOut` receipt is generated as a result of the `send_typed_message()` Sway method in which a message is sent to a recipient address along with a certain amount of coins. The `data` field supports data of an arbitrary type `T` and will be decoded by the indexer upon receipt. [Read more about `MessageOut` in the Fuel protocol ABI spec](https://docs.fuel.network/docs/specs/abi/receipts/#messageout-receipt).
 
@@ -184,7 +184,7 @@ mod indexer_mod {
 }
 ```
 
-## Mint
+## `Mint`
 
 A `Mint` receipt is generated whenever an asset is burned in a Sway contract. [Read more about `Mint` in the Fuel protocol ABI spec](https://docs.fuel.network/docs/specs/abi/receipts/#mint-receipt).
 
@@ -221,7 +221,7 @@ mod indexer_mod {
 }
 ```
 
-## Panic
+## `Panic`
 
 A `Panic` receipt is produced when a Sway smart contract call fails for a reason that doesn't produce a revert. The reason field records the reason for the panic, which is represented by a number between 0 and 255. You can find the mapping between the values and their meanings here in the FuelVM [source code](https://github.com/FuelLabs/fuel-vm/blob/master/fuel-asm/src/panic_reason.rs). [Read more about `Panic` in the Fuel protocol spec](https://docs.fuel.network/docs/specs/abi/receipts/#mint-receipt).
 
@@ -255,7 +255,7 @@ mod indexer_mod {
 }
 ```
 
-## Return
+## `Return`
 
 A `Return` receipt is generated when returning a non-reference type in a Sway contract, specifically `bool`, `u8`, `u16`, `u32`, and `u64`. The `val` field includes the value being returned. [Read more about `Return` in the Fuel protocol spec](https://docs.fuel.network/docs/specs/abi/receipts/#return-receipt).
 
@@ -293,7 +293,7 @@ mod indexer_mod {
 }
 ```
 
-## ReturnData
+## `ReturnData`
 
 A `ReturnData` receipt is generated when returning a reference type in a Sway contract; this includes all types _except_ non-reference types. The `data` field will include the returned value as a hexadecimal. [Read more about `ReturnData` in the Fuel protocol ABI spec](https://docs.fuel.network/docs/specs/abi/receipts/#returndata-receipt).
 
@@ -319,7 +319,7 @@ mod indexer_mod {
 }
 ```
 
-## Revert
+## `Revert`
 
 A `Revert` receipt is produced when a Sway smart contract function call fails. The table below lists possible reasons for the failure and their values. The `error_val` field records these values, enabling your indexer to identify the specific cause of the reversion. [Read more about `Revert` in the Fuel protocol spec](https://docs.fuel.network/docs/specs/abi/receipts/#revert-receipt).
 
@@ -333,11 +333,11 @@ pub struct Revert {
 
 | Reason                | Value |
 |-----------------------|-------|
-| FailedRequire         | 0     |
-| FailedTransferToAddress | 1     |
-| FailedSendMessage     | 2     |
-| FailedAssertEq        | 3     |
-| FailedAssert          | 4     |
+| `FailedRequire`         | 0     |
+| `FailedTransferToAddress` | 1     |
+| `FailedSendMessage`     | 2     |
+| `FailedAssertEq`        | 3     |
+| `FailedAssert`          | 4     |
 
 ```rust, ignore
 extern crate alloc;
@@ -361,7 +361,7 @@ mod indexer_mod {
 }
 ```
 
-## ScriptResult
+## `ScriptResult`
 
 A `ScriptResult` receipt is generated when a contract call resolves; that is, it's generated as a result of the `RET`, `RETD`, and `RVRT` instructions. The `result` field will contain a `0` for success, and a non-zero value otherwise. [Read more about `ScriptResult` in the Fuel protocol spec](https://docs.fuel.network/docs/specs/abi/receipts/#scriptresult-receipt).
 
@@ -394,7 +394,7 @@ mod indexer_mod {
 }
 ```
 
-## Transfer
+## `Transfer`
 
 A `Transfer` receipt is generated when coins are transferred to a contract as part of a Sway contract. The `asset_id` field contains the asset ID of the transferred coins, as the FuelVM has built-in support for working with multiple assets. The `pc` and `is` fields aren't currently used for anything, but are included for completeness. [Read more about `Transfer` in the Fuel protocol spec](https://docs.fuel.network/docs/specs/abi/receipts/#transfer-receipt).
 
@@ -432,7 +432,7 @@ mod indexer_mod {
 }
 ```
 
-## TransferOut
+## `TransferOut`
 
 A `TransferOut` receipt is generated when coins are transferred to an address rather than a contract. Every other field of the receipt works the same way as it does in the `Transfer` receipt. [Read more about `TransferOut` in the Fuel protocol spec](https://docs.fuel.network/docs/specs/abi/receipts/#transferout-receipt).
 

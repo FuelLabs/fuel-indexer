@@ -102,7 +102,7 @@ To quickly setup and bootstrap the PostgreSQL database that we'll need, we'll us
 
 We can quickly create a bootstrapped database and start the Fuel indexer service by running the following command:
 
-> IMPORTANT: Below we're specifying our Postgres hostname as `--postgres-host postgresql`, but you might need to change this based on your own Postgres instance details (see `forc index start --help` for more details).
+> IMPORTANT: Below we're specifying our Postgres `hostname` as `--postgres-host postgresql`, but you might need to change this based on your own Postgres instance details (see `forc index start --help` for more details).
 >
 > Additionally, you can try using the `--embedded-database` flag in order to quickly use an embedded instance of Postgres, but this flag can be flaky, and its ease of use often depends on what platform you're using.
 >
@@ -240,7 +240,7 @@ Indexers:
 >
 > A _deployment_ within the context of Fuel's indexer is a series of steps taken to get your indexer project running in the wild.
 >
-> This series of steps involves compiling your indexer project to a wasm32-unknown-unknown target and uploading the indexer to a running Fuel indexer service. The service will then register an executor and build database tables for this indexer. Once this series of steps has completed, your indexer is considered to be ["deployed"](https://en.wikipedia.org/wiki/Software_deployment).
+> This series of steps involves compiling your indexer project to a `wasm32-unknown-unknown` target and uploading the indexer to a running Fuel indexer service. The service will then register an executor and build database tables for this indexer. Once this series of steps has completed, your indexer is considered to be ["deployed"](https://en.wikipedia.org/wiki/Software_deployment).
 >
 > Users will often find that they're simply deploying their indexers to a Fuel indexer service running on their local machine; this is just one valid use-case described in [our infrastructure docs](./indexer-service-infrastructure.md). Keep in mind that the intended use of a Fuel indexer service is as a standalone remote service that may run many different indexers at any given time.
 

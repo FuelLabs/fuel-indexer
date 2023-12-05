@@ -4,7 +4,7 @@ The Fuel indexer service supports foreign key relationships and constraints. The
 
 > IMPORTANT:
 >
-> Implicit foreign keys do not require a `@join` directive. When using implicit foreign key references, merely add the referenced object as a field type (shown below). A lookup will automagically be done to add a foreign key constraint using this object's' `id` field.
+> Implicit foreign keys do not require a `@join` directive. When using implicit foreign key references, merely add the referenced object as a field type (shown below). A lookup will automatically be done to add a foreign key constraint using this object's' `id` field.
 >
 > Note that implicit foreign key relationships _only_ use the `id` field on the referenced table. If you plan to use implicit foreign keys, the object being referenced _must_ have an `id` field.
 >

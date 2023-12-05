@@ -13,7 +13,7 @@ We'll describe these three different use cases below.
 
 ### As tooling to interact with indexers
 
-The Fuel indexer provides functionality to make it easy to build and compile abitrary indexers by using the [`forc index`](../forc-index/index.md) CLI tool. Using `forc index`, users can create, build, deploy, and remove indexers, as well as authenticate against a running indexer service, and check the status of running indexers.
+The Fuel indexer provides functionality to make it easy to build and compile arbitrary indexers by using the [`forc index`](../forc-index/index.md) CLI tool. Using `forc index`, users can create, build, deploy, and remove indexers, as well as authenticate against a running indexer service, and check the status of running indexers.
 
 #### Example
 

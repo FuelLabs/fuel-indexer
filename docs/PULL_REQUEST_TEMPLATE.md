@@ -6,7 +6,7 @@ Thanks for opening a PR with the Fuel Indexer project. Please review the **Check
 - [ ] Please add proper labels.
 - [ ] If there is an issue associated with this PR, please link the issue (right-hand sidebar)
 - [ ] If there is not an issue associated with this PR, add this PR to the "Fuel Indexer" project (right-hand sidebar)
-- [ ] Please allow Codeowners at least 24 hours to do a first-pass review.
+- [ ] Please allow code owners at least 24 hours to do a first-pass review.
 - [ ] Please add thoroughly detailed testing steps below.
 - [ ] Please keep your Changelog message short and sweet.
 

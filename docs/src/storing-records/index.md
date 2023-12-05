@@ -10,27 +10,27 @@ Below is a mapping of GraphQL schema types to their Sway and database equivalent
 
 | GraphQL Scalar | Sway Type | Postgres Type |
 --- | --- | ---
-| Address | `b256` | varchar(64) |
-| AssetId | `u8[32]` | varchar(64) |
-| Boolean | `bool` | boolean |
-| Bytes | `str[]` | varchar(10485760) |
-| Bytes32 | `str[32]` | varchar(64) |
-| Bytes4 | `str[4]` | varchar(8) |
-| Bytes64 | `str[64]` | varchar(128) |
-| Bytes8 | `str[8]` | varchar(16) |
-| ContractId | `b256` | varchar(64) |
-| I128 | | numeric(39,0) |
-| I32 | `u32` | integer |
-| I64 | `u64` | bigint |
-| I8 | `u8` | integer |
-| ID | | varchar(64) primary key |
-| Json | `str[]` | json |
-| U128 |  | numeric(39, 0) |
-| U32 | `u32` | integer |
-| U64 | `u64` | numeric(20, 0) |
-| U8 | `u8` | integer |
-| UID | | varchar(64) |
-| String | `str[]` | varchar(255) |
+| `Address` | `b256` | `varchar(64)` |
+| `AssetId` | `u8[32]` | `varchar(64)` |
+| `Boolean` | `bool` | `boolean` |
+| `Bytes` | `str[]` | `varchar(10485760)` |
+| `Bytes32` | `str[32]` | `varchar(64)` |
+| `Bytes4` | `str[4]` | `varchar(8)` |
+| `Bytes64` | `str[64]` | `varchar(128)` |
+| `Bytes8` | `str[8]` | `varchar(16)` |
+| `ContractId` | `b256` | `varchar(64)` |
+| `I128` | | `numeric(39,0)` |
+| `I32` | `u32` | `integer` |
+| `I64` | `u64` | `bigint` |
+| `I8` | `u8` | `integer` |
+| `ID` | | `varchar(64) primary key` |
+| `Json` | `str[]` | `json` |
+| `U128` |  | `numeric(39, 0)` |
+| `U32` | `u32` | `integer` |
+| `U64` | `u64` | `numeric(20, 0)` |
+| `U8` | `u8` | `integer` |
+| `UID` | | `varchar(64)` |
+| `String` | `str[]` | `varchar(255)` |
 
 ## Example
 

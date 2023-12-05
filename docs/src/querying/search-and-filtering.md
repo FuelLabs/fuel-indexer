@@ -9,7 +9,7 @@ The Fuel indexer currently supports the following search and filtering operation
 
 Additionally, you can combine these operations using the `and` or `or` keywords, and invert operations by using the `not` keyword.
 
-> You should practice sensible database design when filtering records. Apply database indicies to the underlying columns in order to make search operations more efficient; however, be advised that an overuse of database indicies will lead to degraded performance.
+> You should practice sensible database design when filtering records. Apply database indices to the underlying columns in order to make search operations more efficient; however, be advised that an overuse of database indices will lead to degraded performance.
 
 ## ID Selection
 
@@ -43,7 +43,7 @@ query {
 
 ## Excluding Null Values
 
-You can store null values in your records if the corresponding entity fields are configured to allow for it. You can exclude records that contain null values in a particular column or set of coulmns by using the `has` operator inside of a `filter` object.
+You can store null values in your records if the corresponding entity fields are configured to allow for it. You can exclude records that contain null values in a particular column or set of columns by using the `has` operator inside of a `filter` object.
 
 ```graphql
 query {

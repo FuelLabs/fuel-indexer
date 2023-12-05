@@ -104,7 +104,7 @@ type Transaction @entity {
 
 > IMPORTANT: Note the order of the fields in the derived `Transaction` object type: the fields are ordered according to the unique set of fields from each of the union's members.
 >
-> The `id`, `bytecode_length`, `contract_id`, and `label` fields come first, from the `CreateTransaction` object type. Next comes the `maturity` field from the `ScriptTransaction` object - because the `ScriptTransaction`'s `id` and `label` fiels are already a part of the derived `Transaction` object, courtesy of the `CreateTransaction` object type. Finally, comes the `metadata` field, as part of the `MintTransaction` object type.
+> The `id`, `bytecode_length`, `contract_id`, and `label` fields come first, from the `CreateTransaction` object type. Next comes the `maturity` field from the `ScriptTransaction` object - because the `ScriptTransaction`'s `id` and `label` fields are already a part of the derived `Transaction` object, courtesy of the `CreateTransaction` object type. Finally, comes the `metadata` field, as part of the `MintTransaction` object type.
 This `Transaction` union type from the GraphQL schema, might be used in an indexer module like so:
 
 ```rust, ignore
