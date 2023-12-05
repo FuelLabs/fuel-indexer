@@ -88,7 +88,7 @@ This is a rough outline of what a contributor's workflow looks like:
   - Examples:
     - If you fixed a bug, your message is `fix: database locking issue`
     - If you added new functionality, your message would be `enhancement: i added something super cool`
-    - If you just did a chore your message is: `chore: i did somthing not fun`
+    - If you just did a chore your message is: `chore: i helped do the chores`
   - Keeping commit messages short and consistent helps users parse release notes
 - Push up your branch to Github then (on the right hand side of the Github UI):
   - Assign yourself as the owner of the PR
