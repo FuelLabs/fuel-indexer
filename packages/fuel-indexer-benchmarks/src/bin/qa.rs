@@ -542,7 +542,6 @@ async fn main() {
         .arg("--fuel-node-port")
         .arg("80")
         .arg("--replace-indexer")
-        .arg("--allow-non-sequential-blocks")
         .arg("--postgres-host")
         .arg(&postgres_host)
         .arg("--postgres-port")
@@ -551,6 +550,10 @@ async fn main() {
         .arg(&postgres_user)
         .arg("--postgres-database")
         .arg(&postgres_db)
+        .arg("--client-request-delay")
+        .arg("1")
+        .arg("--block-page-size")
+        .arg("30")
         .spawn()
         .unwrap();
 
