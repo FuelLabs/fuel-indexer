@@ -551,6 +551,10 @@ async fn main() {
         .arg(&postgres_user)
         .arg("--postgres-database")
         .arg(&postgres_db)
+        .arg("--client-request-delay")
+        .arg("1")
+        .arg("--block-page-size")
+        .arg("50")
         .spawn()
         .unwrap();
 
