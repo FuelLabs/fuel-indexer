@@ -71,7 +71,7 @@ spec:
             - "--replace-indexer"
             - "--accept-sql-queries"
             - "--block-page-size"
-            - "30"
+            - "50"
             - "--client-request-delay"
             - "1"
           envFrom:
