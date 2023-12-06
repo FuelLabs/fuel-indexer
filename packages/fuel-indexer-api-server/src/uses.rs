@@ -310,7 +310,7 @@ async fn register_indexer_assets_transaction(
     if let Ok(indexer_id) = indexer_id {
         if !replace_indexer {
             return Err(ApiError::Http(HttpError::Conflict(format!(
-                "Indexer({namespace}.{identifier}) already exists. Use --replace-indexer to replace it."
+                "Indexer({namespace}.{identifier}) already exists. Use --replace-indexer to re-start the indexer service and again during deployment."
             ))));
         }
 
