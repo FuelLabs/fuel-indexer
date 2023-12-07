@@ -66,7 +66,7 @@ jobs:
       - name: Run Cargo.toml sort check
         run: cargo sort -w --check
   docs-test:
-    uses: FuelLabs/github-actions/.github/workflows/mdbook-docs.yml@sarah/spell-check
+    uses: FuelLabs/github-actions/.github/workflows/mdbook-docs.yml@master
     with:
       docs-src-path: docs/src
       spellcheck-config-path: 'docs/.spellcheck.yml'
