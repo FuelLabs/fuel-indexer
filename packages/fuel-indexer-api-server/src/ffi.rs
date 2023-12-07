@@ -4,7 +4,7 @@ use wasmer::{
 
 /// Extract the `TOOLCHAIN_VERSION` string from a WASM module. This function
 /// creates a `wasmer::Instance` in order to do this.
-pub(crate) fn check_wasm_toolchain_version(data: Vec<u8>) -> anyhow::Result<String> {
+pub fn check_wasm_toolchain_version(data: Vec<u8>) -> anyhow::Result<String> {
     let mut store = wasmer::Store::default();
 
     let module = wasmer::Module::new(&store, data.clone())?;
