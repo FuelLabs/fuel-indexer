@@ -4,7 +4,7 @@ use fuel_indexer_lib::config::{
 };
 use fuel_indexer_postgres as postgres;
 use fuel_indexer_tests::{
-    assets,
+    assets::{self, SIMPLE_WASM_WASM},
     fixtures::{setup_web_test_components, WebTestComponents},
 };
 use hyper::header::CONTENT_TYPE;
@@ -407,4 +407,12 @@ async fn test_replacing_an_indexer_and_keeping_or_removing_data() {
     .unwrap();
 
     assert_eq!(last, 5);
+}
+
+#[actix_web::test]
+async fn test_check_toolchain_version() {
+    fuel_indexer_api_server::utils::check_wasm_toolchain_version(
+        SIMPLE_WASM_WASM.to_vec(),
+    )
+    .expect("failed to extract toolchain version from WASM module");
 }

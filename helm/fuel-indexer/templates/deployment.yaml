@@ -71,7 +71,9 @@ spec:
             - "--replace-indexer"
             - "--accept-sql-queries"
             - "--block-page-size"
-            - "10"
+            - "50"
+            - "--client-request-delay"
+            - "1"
           envFrom:
             - configMapRef:
                 name: fuel-indexer
