@@ -115,6 +115,8 @@ impl StatManager {
             / 1000.;
         let avg_cpu =
             runs.iter().map(|run| run.avg_cpu()).sum::<f64>() / runs.len() as f64;
+        let db_connections = runs.iter().map(|run| run.max_conn()).max().unwrap_or(0);
+        let max_db_connections = max_db_connections().unwrap_or(0);
         let avg_blocks_per_sec =
             runs.iter().map(|run| run.blocks_per_sec).sum::<f64>() / runs.len() as f64;
         let index_size = runs.iter().map(|run| run.index_size).sum::<u64>() as f64
@@ -148,6 +150,7 @@ runtime: {runtime:.1} minutes
 missing blocks: {missing_blocks}
 avg memory: {avg_memory:.1}kB
 avg cpu: {avg_cpu:.1}%
+db connections: {db_connections}/{max_db_connections}
 avg blocks/sec: {avg_blocks_per_sec:.1}
 index size: {index_size:.1}kB per block
 
@@ -173,6 +176,7 @@ struct RunStat {
     pub end_block: u32,
     pub mem: Vec<u64>,
     pub cpu: Vec<f64>,
+    pub conn: Vec<usize>,
     pub blocks_per_sec: f64,
     pub index_size: u64,
     pub missing_blocks: u64,
@@ -187,6 +191,7 @@ impl RunStat {
             end_block,
             mem: Vec::new(),
             cpu: Vec::new(),
+            conn: Vec::new(),
             index_size: 0,
             blocks_per_sec: 0.0,
             missing_blocks: 0,
@@ -209,10 +214,15 @@ impl RunStat {
         };
         self.mem.push(mem);
         self.cpu.push(record_cpu_usage());
+        self.conn.push(record_active_connections().unwrap_or(0));
     }
 
     fn avg_mem(&self) -> u64 {
         self.mem.iter().sum::<u64>() / self.mem.len() as u64
+    }
+
+    fn max_conn(&self) -> usize {
+        *self.conn.iter().max().unwrap_or(&0)
     }
 
     fn stdv_mem(&self) -> f64 {
@@ -321,6 +331,8 @@ WHERE schema_name = 'fuellabs_explorer';
         let stdv_cpu = self.stdv_cpu();
         let avg_cpu = self.avg_cpu();
         let stdv_mem = self.stdv_mem() / 1000.;
+        let db_connections = self.conn.iter().max().unwrap_or(&0usize);
+        let max_db_connections = max_db_connections().unwrap_or(0);
         let runtime = *runtime as f64 / 60.;
         let block_size = self.index_size as f64 / 1000.;
 
@@ -334,6 +346,7 @@ run: {id}
     stdv memory:    {stdv_mem:.1}kB
     avg cpu:        {avg_cpu:.1}%
     stdv cpu:       {stdv_cpu:.1}%
+    db connections: {db_connections}/{max_db_connections}
     missing blocks: {missing_blocks}
     blocks/sec:     {blocks_per_sec:.1}
     index size:     {block_size}kB per block"#
@@ -503,6 +516,45 @@ fn record_mem_usage() -> Result<String, std::io::Error> {
         .pipe(cmd!("awk", "{print $1}"))
         .stdout_capture()
         .read()
+}
+
+fn record_active_connections() -> Result<usize, std::io::Error> {
+    let proc = Command::new("psql")
+        .arg("-U")
+        .arg("postgres")
+        .arg("-c")
+        .arg("SELECT count(*) used FROM pg_stat_activity")
+        .arg("--no-align")
+        .arg("--tuples-only")
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    let output = proc.wait_with_output().unwrap();
+    let output = String::from_utf8(output.stdout).unwrap();
+    let output = output.trim();
+    let output = output.parse::<usize>().unwrap_or(0);
+    println!("Active connections: {output}");
+    Ok(output)
+}
+
+fn max_db_connections() -> Result<usize, std::io::Error> {
+    let proc = Command::new("psql")
+    .arg("-U")
+    .arg("postgres")
+    .arg("-c")
+    .arg("SELECT setting::int max_conn FROM pg_settings WHERE name=$$max_connections$$")
+    .arg("--no-align")
+    .arg("--tuples-only")
+    .stdout(Stdio::piped())
+    .stderr(Stdio::piped())
+    .spawn()
+    .unwrap();
+    let output = proc.wait_with_output().unwrap();
+    let output = String::from_utf8(output.stdout).unwrap();
+    let output = output.trim();
+    let output = output.parse::<usize>().unwrap_or(0);
+    Ok(output)
 }
 
 #[tokio::main]

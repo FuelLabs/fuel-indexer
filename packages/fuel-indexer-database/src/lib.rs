@@ -120,6 +120,7 @@ impl IndexerConnectionPool {
     pub async fn acquire(&self) -> sqlx::Result<IndexerConnection> {
         match self {
             IndexerConnectionPool::Postgres(p) => {
+                println!("IDLE CONNECTIONS {}", p.num_idle());
                 Ok(IndexerConnection::Postgres(Box::new(p.acquire().await?)))
             }
         }
