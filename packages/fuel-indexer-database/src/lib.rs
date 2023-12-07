@@ -59,6 +59,7 @@ impl IndexerConnectionPool {
 
     pub async fn connect(
         database_url: &str,
+        max_db_connections: u32,
     ) -> Result<IndexerConnectionPool, IndexerDatabaseError> {
         let url = url::Url::parse(database_url);
         if url.is_err() {
@@ -83,11 +84,18 @@ impl IndexerConnectionPool {
                 opts.disable_statement_logging();
 
                 let pool = attempt_database_connection(|| {
-                    sqlx::postgres::PgPoolOptions::new().connect_with(opts.clone())
+                    sqlx::postgres::PgPoolOptions::new()
+                        .max_connections(max_db_connections)
+                        .connect_with(opts.clone())
                 })
                 .await;
 
-                Ok(IndexerConnectionPool::Postgres(pool))
+                let result = IndexerConnectionPool::Postgres(pool);
+                let backend_max_connections = result.max_connections().await?;
+                if backend_max_connections < max_db_connections {
+                    tracing::warn!("Indexer --max-db-connections `{max_db_connections}` exceeds `{backend_max_connections}` value set by db backend")
+                };
+                Ok(result)
             }
             err => Err(IndexerDatabaseError::BackendNotSupported(err.into())),
         }
@@ -113,6 +121,19 @@ impl IndexerConnectionPool {
         match self {
             IndexerConnectionPool::Postgres(p) => {
                 Ok(IndexerConnection::Postgres(Box::new(p.acquire().await?)))
+            }
+        }
+    }
+
+    pub async fn max_connections(&self) -> sqlx::Result<u32> {
+        match self {
+            IndexerConnectionPool::Postgres(pool) => {
+                let max_connections: i32 = sqlx::query_scalar(
+                    "SELECT setting::int FROM pg_settings WHERE name = 'max_connections'",
+                )
+                .fetch_one(pool)
+                .await?;
+                Ok(max_connections as u32)
             }
         }
     }

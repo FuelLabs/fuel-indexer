@@ -15,4 +15,5 @@ fuel-indexer-lib = { workspace = true }
 fuel-indexer-postgres = { workspace = true }
 sqlx = { version = "0.6" }
 thiserror = { workspace = true }
+tracing = { workspace = true }
 url = "2.2"

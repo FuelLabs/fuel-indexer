@@ -18,7 +18,11 @@ pub async fn exec(args: ApiServerArgs) -> anyhow::Result<()> {
 
     let (tx, _) = channel::<ServiceRequest>(SERVICE_REQUEST_CHANNEL_SIZE);
 
-    let pool = IndexerConnectionPool::connect(&config.database.to_string()).await?;
+    let pool = IndexerConnectionPool::connect(
+        &config.database.to_string(),
+        config.max_db_connections,
+    )
+    .await?;
 
     if config.run_migrations {
         let mut c = pool.acquire().await?;

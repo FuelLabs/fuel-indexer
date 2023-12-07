@@ -117,7 +117,11 @@ If the --embedded-database flag demonstrates flaky behavior on your machine, or 
     #[allow(unused)]
     let (tx, rx) = channel::<ServiceRequest>(defaults::SERVICE_REQUEST_CHANNEL_SIZE);
 
-    let pool = IndexerConnectionPool::connect(&config.database.to_string()).await?;
+    let pool = IndexerConnectionPool::connect(
+        &config.database.to_string(),
+        config.max_db_connections,
+    )
+    .await?;
 
     if config.run_migrations {
         let mut c = pool.acquire().await?;

@@ -9,7 +9,7 @@ use fuel_indexer_api_server::api::WebApi;
 use fuel_indexer_database::IndexerConnectionPool;
 use fuel_indexer_lib::{
     config::{DatabaseConfig, IndexerConfig, WebApiConfig},
-    defaults::SERVICE_REQUEST_CHANNEL_SIZE,
+    defaults::{MAX_DB_CONNECTIONS, SERVICE_REQUEST_CHANNEL_SIZE},
     manifest::Manifest,
     utils::{derive_socket_addr, ServiceRequest},
 };
@@ -193,20 +193,22 @@ impl TestPostgresDb {
             .await?;
 
         // Instantiate a pool so that it can be stored in the struct for use in the tests
-        let pool =
-            match IndexerConnectionPool::connect(&test_db_config.clone().to_string())
-                .await
-            {
-                Ok(pool) => match pool {
-                    IndexerConnectionPool::Postgres(p) => {
-                        let mut conn = p.acquire().await?;
+        let pool = match IndexerConnectionPool::connect(
+            &test_db_config.clone().to_string(),
+            MAX_DB_CONNECTIONS,
+        )
+        .await
+        {
+            Ok(pool) => match pool {
+                IndexerConnectionPool::Postgres(p) => {
+                    let mut conn = p.acquire().await?;
 
-                        fuel_indexer_postgres::run_migration(&mut conn).await?;
-                        p
-                    }
-                },
-                Err(e) => return Err(TestError::PoolCreationError(e)),
-            };
+                    fuel_indexer_postgres::run_migration(&mut conn).await?;
+                    p
+                }
+            },
+            Err(e) => return Err(TestError::PoolCreationError(e)),
+        };
 
         Ok(Self {
             db_name,
@@ -382,9 +384,12 @@ pub async fn api_server_app_postgres(
         config.database = DatabaseConfig::from_str(url).unwrap();
     }
 
-    let pool = IndexerConnectionPool::connect(&config.database.to_string())
-        .await
-        .unwrap();
+    let pool = IndexerConnectionPool::connect(
+        &config.database.to_string(),
+        config.max_db_connections,
+    )
+    .await
+    .unwrap();
 
     let (tx, rx) = channel::<ServiceRequest>(SERVICE_REQUEST_CHANNEL_SIZE);
 
@@ -405,9 +410,12 @@ pub async fn indexer_service_postgres(
 
     let (_tx, rx) = channel::<ServiceRequest>(SERVICE_REQUEST_CHANNEL_SIZE);
 
-    let pool = IndexerConnectionPool::connect(&config.database.to_string())
-        .await
-        .unwrap();
+    let pool = IndexerConnectionPool::connect(
+        &config.database.to_string(),
+        config.max_db_connections,
+    )
+    .await
+    .unwrap();
 
     IndexerService::new(config, pool, rx).await.unwrap()
 }
