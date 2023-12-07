@@ -10,6 +10,8 @@ pub(crate) mod sql;
 mod uses;
 
 pub mod utils {
+    pub use crate::ffi::check_wasm_toolchain_version;
+
     use axum::body::Body;
     use http::Request;
 
