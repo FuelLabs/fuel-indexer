@@ -46,7 +46,7 @@ type Library @entity {
 
 A `UNIQUE` constraint will be created on the `book` table's `name` column, ensuring that no books can share the same name.
 
-> Important: When using explict or implicit foreign keys, it is required that the reference column name in your foreign key relationship be unique. `ID` types are by default unique, but all other types will have to be explicitly specified as being unique via the `@unique` directive.
+> Important: When using explicit or implicit foreign keys, it is required that the reference column name in your foreign key relationship be unique. `ID` types are by default unique, but all other types will have to be explicitly specified as being unique via the `@unique` directive.
 
 ## `@join`
 

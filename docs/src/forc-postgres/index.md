@@ -1,4 +1,4 @@
-# forc index postgres
+# `forc index postgres`
 
 `forc index postgres` is provided as a way to simplify the setup and management of an embedded Postgres database. After you have installed `fuelup`, you can run the `forc index postgres help` command in your terminal to view the available commands.
 

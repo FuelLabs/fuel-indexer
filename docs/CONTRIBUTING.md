@@ -6,7 +6,7 @@ Fuel Indexer has many dependent repositories. If you need any help or mentoring 
 
 ## Code Standards
 
-- [ ] If you've added a new function, method, class or abstraction, please include rustdoc comments for the new code so others can better understand the change.
+- [ ] If you've added a new function, method, class or abstraction, please include `rustdoc` comments for the new code so others can better understand the change.
 - [ ] If your change is non-trivial and testable, please try to include at least one happy path test to ensure that your change works.
   - "Trivial" changes would be changes to docs, comments, or small style/syntactic changes
 
@@ -47,7 +47,7 @@ You can build Fuel Indexer:
 cargo build -p fuel-indexer -p fuel-indexer-api-server --release --locked
 ```
 
-Linting is done using rustfmt and clippy, which are each separate commands:
+Linting is done using `rustfmt` and `clippy`, which are each separate commands:
 
 ```sh
 cargo fmt --all --check
@@ -88,7 +88,7 @@ This is a rough outline of what a contributor's workflow looks like:
   - Examples:
     - If you fixed a bug, your message is `fix: database locking issue`
     - If you added new functionality, your message would be `enhancement: i added something super cool`
-    - If you just did a chore your message is: `chore: i did somthing not fun`
+    - If you just did a chore your message is: `chore: i helped do the chores`
   - Keeping commit messages short and consistent helps users parse release notes
 - Push up your branch to Github then (on the right hand side of the Github UI):
   - Assign yourself as the owner of the PR

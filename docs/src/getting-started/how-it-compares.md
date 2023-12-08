@@ -16,7 +16,7 @@ Unlike other indexing services, users can use the forc index CLI tool to create,
 
 ### What you can index
 
-The Fuel indexer is tailored for compatibility with the FuelVM. This means that instead of being limited to the primitives of the Etherem virtual machine (EVM), users of the Fuel indexer gain access to a much richer set of indexable abstractions provided by the FuelVM (e.g. predicates, transaction receipts, etc).
+The Fuel indexer is tailored for compatibility with the FuelVM. This means that instead of being limited to the primitives of the Ethereum virtual machine (EVM), users of the Fuel indexer gain access to a much richer set of indexable abstractions provided by the FuelVM (e.g. predicates, transaction receipts, etc).
 
 Legend:
 
@@ -29,7 +29,7 @@ Legend:
 |  Hosted Indexers |  🟩  | 🟩   |   |
 |  WASM Execution | 🟩   |  🟩  |   |
 |  Handlers | 🟩 | 🟩 | see [Indexing Fuel Types](../indexing-fuel-types/index.md) and [Indexing Custom Types](../indexing-custom-types/index.md)|
-|  Updateable Schemas | 🟩   |  🟩  |   |
+|  Updatable Schemas | 🟩   |  🟩  |   |
 |  API Authentication | 🟩   |  🟩  |   |
 |  Starting Block Configuration | 🟩   |  🟩  |   |
 |  Native Unit Testing Framework |  🟩  | 🟥 | Users are able to use `cargo test` |

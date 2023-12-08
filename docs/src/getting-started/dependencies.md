@@ -7,13 +7,13 @@
 To run the Fuel indexer, you'll need to install a few dependencies on your system:
 
 1. The [Fuel toolchain](https://docs.fuel.network/guides/installation)
-2. A [PostgresQL](#postgresql) server backend
+2. A [PostgreSQL](#postgresql) server backend
 3. The [`wasm32-unknown-unknown`](#web-assembly-wasm) `rustup` target
-4. [`wasm-snip`](#web-assembly-wasm), a utility for stripping symbols from WebAssemly binaries.
+4. [`wasm-snip`](#web-assembly-wasm), a utility for stripping symbols from WebAssembly binaries.
 
 > If you don't want to install a database directly onto your system, you can use Docker to run a database in an isolated container. You can install Docker by following its [installation instructions](https://docs.docker.com/get-docker/).
 >
-> For reference purposes, we provide a [`docker compose` file](https://github.com/FuelLabs/fuel-indexer/blob/develop/scripts/docker-compose.yaml) that comes with a PostgresSQL server and a Fuel indexer service.
+> For reference purposes, we provide a [`docker compose` file](https://github.com/FuelLabs/fuel-indexer/blob/develop/scripts/docker-compose.yaml) that comes with a PostgreSQL server and a Fuel indexer service.
 
 ## The `Fuel` toolchain
 
@@ -21,11 +21,11 @@ Please visit the Fuel [installation guide](https://docs.fuel.network/guides/inst
 
 ## PostgreSQL
 
-The Fuel indexer requires the use of a database. We currently support [PostgresSQL](https://www.postgresql.org/docs/).
+The Fuel indexer requires the use of a database. We currently support [PostgreSQL](https://www.postgresql.org/docs/).
 
-> IMPORTANT: Fuel Indexer users on most platforms don't need to explicitly install PostgresQL software via a package manager. When starting the indexer service via `forc index start` simply pass the `--embedded-database` flag in order to have the indexer service download and start an embedded PostgresQL instance via [`forc index postgres`](../forc-postgres/index.md).
+> IMPORTANT: Fuel Indexer users on most platforms don't need to explicitly install PostgreSQL software via a package manager. When starting the indexer service via `forc index start` simply pass the `--embedded-database` flag in order to have the indexer service download and start an embedded PostgreSQL instance via [`forc index postgres`](../forc-postgres/index.md).
 >
-> However note that this `--embedded-database` functionality can be a bit brittle or flaky on some platforms, so alternative methods of installing or using PostgresQL are briefly mentioned below.
+> However note that this `--embedded-database` functionality can be a bit brittle or flaky on some platforms, so alternative methods of installing or using PostgreSQL are briefly mentioned below.
 
 ### macOS
 
@@ -62,7 +62,7 @@ rustup target add wasm32-unknown-unknown
 > - `AR=/opt/homebrew/opt/llvm/bin/llvm-ar`
 > - `CC=/opt/homebrew/opt/llvm/bin/clang`
 >
-> Addtionally, on some systems you need to explictly link clang to llvm.
+> Additionally, on some systems you need to explicitly link `clang` to `llvm`.
 >
 > - `LIBCLANG_PATH="/opt/homebrew/opt/llvm/lib"`
 > - `LDFLAGS="-L/opt/homebrew/opt/llvm/lib"`

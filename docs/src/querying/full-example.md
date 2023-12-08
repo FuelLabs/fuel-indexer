@@ -37,7 +37,7 @@ query {
 
 The Fuel indexer's GraphQL API allows you to add filters on multiple entity fields and even nested entities! In the query above, we're asking for the two most recent transactions with a value greater than zero. Also, we're applying two filters to the nested `block` entity by using the `and` operator in order to help us narrow down the set of results.
 
-The response returns the results in the expected format and includes additional information that informs us about how many total results satisy the criteria.
+The response returns the results in the expected format and includes additional information that informs us about how many total results satisfy the criteria.
 
 ```json
 {

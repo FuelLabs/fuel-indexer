@@ -12,7 +12,7 @@ A Fuel indexer service instance requires just three components:
 
 - a **Fuel Node**: Custom indexers monitor incoming blocks via a Fuel GraphQL server and extract information about the state of the Fuel blockchain.
 
-- a **PostgresQL database server**: Extracted information is saved into a database.
+- a **PostgreSQL database server**: Extracted information is saved into a database.
 
 - a **Web Server**: dApps can query indexers for up-to-date information and operators can deploy/remove indexers as needed.
 
