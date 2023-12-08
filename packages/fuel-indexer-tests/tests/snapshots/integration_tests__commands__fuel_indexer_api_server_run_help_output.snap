@@ -52,6 +52,9 @@ OPTIONS:
         --max-body-size <MAX_BODY_SIZE>
             Max body size for web requests. [default: 5242880]
 
+        --max-db-connections <MAX_DB_CONNECTIONS>
+            The maximum number of database connections. [default: 100]
+
         --metrics
             Use Prometheus metrics reporting.
 

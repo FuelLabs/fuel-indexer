@@ -23,6 +23,7 @@ database:
     port: "5432"
     database: postgres
     verbose: "false"
+max_db_connections: 100
 metrics: true
 stop_idle_indexers: false
 run_migrations: true

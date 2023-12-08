@@ -3396,6 +3396,7 @@ dependencies = [
  "fuel-indexer-postgres",
  "sqlx",
  "thiserror",
+ "tracing",
  "url",
 ]
 

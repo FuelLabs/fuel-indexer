@@ -82,6 +82,7 @@ impl Default for IndexerArgs {
             web_api_host: defaults::WEB_API_HOST.to_string(),
             web_api_port: defaults::WEB_API_PORT.to_string(),
             database: defaults::DATABASE.to_string(),
+            max_db_connections: defaults::MAX_DB_CONNECTIONS,
             max_body_size: defaults::MAX_BODY_SIZE,
             postgres_user: Some(defaults::POSTGRES_USER.to_string()),
             postgres_database: Some(defaults::POSTGRES_DATABASE.to_string()),
@@ -132,6 +133,7 @@ pub struct IndexerConfig {
     pub web_api: WebApiConfig,
     #[serde(default)]
     pub database: DatabaseConfig,
+    pub max_db_connections: u32,
     pub metrics: bool,
     pub stop_idle_indexers: bool,
     pub run_migrations: bool,
@@ -157,6 +159,7 @@ impl Default for IndexerConfig {
             fuel_node: FuelClientConfig::default(),
             web_api: WebApiConfig::default(),
             database: DatabaseConfig::default(),
+            max_db_connections: defaults::MAX_DB_CONNECTIONS,
             metrics: defaults::USE_METRICS,
             stop_idle_indexers: defaults::STOP_IDLE_INDEXERS,
             run_migrations: defaults::RUN_MIGRATIONS,
@@ -221,6 +224,7 @@ impl From<IndexerArgs> for IndexerConfig {
             local_fuel_node: args.local_fuel_node,
             indexer_net_config: args.indexer_net_config,
             database,
+            max_db_connections: args.max_db_connections,
             fuel_node: FuelClientConfig {
                 host: args.fuel_node_host,
                 port: args.fuel_node_port,
@@ -320,6 +324,7 @@ impl From<ApiServerArgs> for IndexerConfig {
             local_fuel_node: defaults::LOCAL_FUEL_NODE,
             indexer_net_config: defaults::INDEXER_NET_CONFIG,
             database,
+            max_db_connections: args.max_db_connections,
             fuel_node: FuelClientConfig {
                 host: args.fuel_node_host,
                 port: args.fuel_node_port,
@@ -452,6 +457,7 @@ impl IndexerConfig {
         let fuel_config_key = serde_yaml::Value::String("fuel_node".into());
         let web_config_key = serde_yaml::Value::String("web_api".into());
         let database_config_key = serde_yaml::Value::String("database".into());
+        let max_db_connections = serde_yaml::Value::String("max_db_connections".into());
         let auth_config_key = serde_yaml::Value::String("authentication".into());
         let rate_limit_config_key = serde_yaml::Value::String("rate_limit".into());
 
@@ -547,6 +553,10 @@ impl IndexerConfig {
                     verbose: config.verbose.to_string(),
                 };
             }
+        }
+
+        if let Some(max_db_connections) = content.get(max_db_connections) {
+            config.max_db_connections = max_db_connections.as_u64().unwrap() as u32;
         }
 
         if let Some(section) = content.get(auth_config_key) {

@@ -64,6 +64,10 @@ pub struct IndexerArgs {
     #[clap(long, help = "Database type.", default_value = defaults::DATABASE, value_parser(["postgres"]))]
     pub database: String,
 
+    /// The maximum number of database connections.
+    #[clap(long, help = "The maximum number of database connections.", default_value_t = defaults::MAX_DB_CONNECTIONS)]
+    pub max_db_connections: u32,
+
     /// Max body size for web server requests.
     #[clap(long, help = "Max body size for web server requests.", default_value_t = defaults::MAX_BODY_SIZE )]
     pub max_body_size: usize,
@@ -261,6 +265,10 @@ pub struct ApiServerArgs {
     /// Database type.
     #[clap(long, help = "Database type.", default_value = defaults::DATABASE, value_parser(["postgres"]))]
     pub database: String,
+
+    /// The maximum number of database connections.
+    #[clap(long, help = "The maximum number of database connections.", default_value_t = defaults::MAX_DB_CONNECTIONS)]
+    pub max_db_connections: u32,
 
     /// Max body size for web server requests.
     #[clap(long, help = "Max body size for web requests.", default_value_t = defaults::MAX_BODY_SIZE )]

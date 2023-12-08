@@ -73,6 +73,9 @@ OPTIONS:
         --max-body-size <MAX_BODY_SIZE>
             Max body size for web server requests. [default: 5242880]
 
+        --max-db-connections <MAX_DB_CONNECTIONS>
+            The maximum number of database connections. [default: 100]
+
         --metering-points <METERING_POINTS>
             The number of WASM opcodes after which the indexer's event handler will stop execution.
             [default: 30000000000]

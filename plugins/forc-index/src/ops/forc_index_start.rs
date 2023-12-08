@@ -32,6 +32,7 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
         verbose,
         local_fuel_node,
         max_body_size,
+        max_db_connections,
         stop_idle_indexers,
         indexer_net_config,
         rate_limit,
@@ -83,6 +84,8 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
             .arg(OsStr::new(&metering_points.to_string()));
         cmd.arg("--block-page-size")
             .arg(OsStr::new(&block_page_size.to_string()));
+        cmd.arg("--max-db-connections")
+            .arg(OsStr::new(&max_db_connections.to_string()));
 
         // Bool options
         let options = [

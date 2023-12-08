@@ -143,3 +143,6 @@ pub const DISABLE_TOOLCHAIN_VERSION_CHECK: bool = false;
 
 /// Default Fuel network to use.
 pub const NETWORK: &str = "beta-4";
+
+/// Maximum number of database connections. It the number exceeds the database backend setting, a warning will be issued.
+pub const MAX_DB_CONNECTIONS: u32 = 100;
