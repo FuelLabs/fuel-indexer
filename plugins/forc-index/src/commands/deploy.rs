@@ -56,6 +56,18 @@ pub struct Command {
         help = "Remove all indexed data when replacing an existing indexer."
     )]
     pub remove_data: bool,
+
+    /// Override the start block
+    #[clap(long, help = "Override the start block.")]
+    pub override_start_block: Option<u32>,
+
+    /// Override the end block
+    #[clap(long, help = "Override the end blockt.")]
+    pub override_end_block: Option<u32>,
+
+    /// Override the identifier
+    #[clap(long, help = "Override the identifier.")]
+    pub override_identifier: Option<String>,
 }
 
 pub async fn exec(command: Command) -> Result<()> {

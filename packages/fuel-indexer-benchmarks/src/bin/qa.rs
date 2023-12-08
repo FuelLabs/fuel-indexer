@@ -1,9 +1,7 @@
 use chrono::Utc;
 use clap::Parser;
 use duct::cmd;
-use fuel_indexer_lib::{
-    config::IndexerConfig, defaults, manifest::Manifest, utils::init_logging,
-};
+use fuel_indexer_lib::{config::IndexerConfig, defaults, utils::init_logging};
 use reqwest::{
     header::{HeaderMap, CONTENT_TYPE},
     Client,
@@ -583,8 +581,6 @@ async fn main() {
     let explorer_root =
         canonicalize(examples_root.join("fuel-explorer").join("fuel-explorer")).unwrap();
 
-    let mani_path = explorer_root.join("fuel_explorer.manifest.yaml");
-
     let _proc = Command::new("forc-index")
         .arg("start")
         .arg("--run-migrations")
@@ -615,7 +611,6 @@ async fn main() {
         "Performing {num_runs} runs, indexing {blocks_per_run} blocks per run."
     );
     tracing::info!("Start blocks: {start_blocks:?}");
-    let manifest = Manifest::from_file(&mani_path).unwrap();
     let mut stats = StatManager::new();
 
     // Deploy some number of additional hello-world indexers.
@@ -624,13 +619,9 @@ async fn main() {
     // performance when multiple indexers are running at the same time - if the user so specifies.
     if let Some(num_additional_indexers) = opts.num_additional_indexers {
         let hello_world_root = examples_root.join("hello-world").join("hello-world");
-        let mani_path = hello_world_root.join("hello_world.manifest.yaml");
-        let mut manifest = Manifest::from_file(&mani_path).unwrap();
 
         for i in 0..num_additional_indexers {
             tracing::info!("Deploying additional indexer #{}", i + 1);
-            manifest.set_identifier(format!("hello_world_{}", i));
-            let _ = manifest.write(&mani_path).unwrap();
 
             sleep(Duration::from_secs(1)).await;
 
@@ -638,6 +629,8 @@ async fn main() {
                 .arg("deploy")
                 .arg("--path")
                 .arg(&hello_world_root.to_str().unwrap())
+                .arg("--override-identifier")
+                .arg::<String>(format!("hello_world_{}", i))
                 .spawn()
                 .unwrap();
 
@@ -658,13 +651,7 @@ async fn main() {
         let end_block = start_block + blocks_per_run;
         let mut run_stats = RunStat::new(run, *start_block, end_block);
 
-        let mut manifest = manifest.clone();
-
         tracing::info!("Run {run} will index block #{start_block} - #{end_block}",);
-        manifest.set_start_block(*start_block);
-
-        manifest.set_end_block(end_block);
-        let _ = manifest.write(&mani_path).unwrap();
 
         sleep(Duration::from_secs(1)).await;
 
@@ -673,6 +660,10 @@ async fn main() {
             .arg("--path")
             .arg(&explorer_root.to_str().unwrap())
             .arg("--replace-indexer")
+            .arg("--override-start-block")
+            .arg(start_block.to_string())
+            .arg("--override-end-block")
+            .arg(end_block.to_string())
             .spawn()
             .unwrap();
 

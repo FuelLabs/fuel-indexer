@@ -3,7 +3,7 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::{
     fs::File,
-    io::{Read, Write},
+    io::Read,
     path::{Path, PathBuf},
     str::FromStr,
 };
@@ -145,18 +145,6 @@ impl Manifest {
                 Ok(bytes)
             }
         }
-    }
-
-    /// Write this manifest to a given path.
-    pub fn write(&self, path: &PathBuf) -> ManifestResult<()> {
-        let mut file = File::create(path).map_err(|err| {
-            ManifestError::FileError(path.to_str().unwrap_or_default().to_string(), err)
-        })?;
-        let content: Vec<u8> = Self::into(self.clone());
-        file.write_all(&content).map_err(|err| {
-            ManifestError::FileError(path.to_str().unwrap_or_default().to_string(), err)
-        })?;
-        Ok(())
     }
 
     /// Set the start block for this indexer.

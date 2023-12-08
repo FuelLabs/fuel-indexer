@@ -29,6 +29,9 @@ pub async fn init(command: DeployCommand) -> anyhow::Result<()> {
         replace_indexer,
         remove_data,
         skip_build,
+        override_start_block,
+        override_end_block,
+        override_identifier,
     } = command;
 
     if !skip_build {
@@ -38,6 +41,9 @@ pub async fn init(command: DeployCommand) -> anyhow::Result<()> {
             debug,
             verbose,
             locked,
+            override_start_block,
+            override_end_block,
+            override_identifier,
         })?;
     }
 

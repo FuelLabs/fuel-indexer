@@ -22,6 +22,9 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
         locked,
         manifest,
         verbose,
+        override_start_block,
+        override_end_block,
+        override_identifier,
         ..
     } = command;
 
@@ -56,6 +59,15 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
     let indexer_manifest_path = root_dir.join(manifest);
     let mut manifest = Manifest::from_file(&indexer_manifest_path)?;
 
+    if let Some(start_block) = override_start_block {
+        manifest.set_start_block(start_block)
+    }
+    if let Some(end_block) = override_end_block {
+        manifest.set_end_block(end_block)
+    }
+    if let Some(identifier) = override_identifier {
+        manifest.set_identifier(identifier)
+    }
     let manifest_schema_file = {
         let workspace_root: std::path::PathBuf =
             crate::utils::cargo_workspace_root_dir(path.as_path()).unwrap();
@@ -172,15 +184,7 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
         .join(profile)
         .join(&binary);
 
-    let rel_artifact_path = Path::new("target")
-        .join(defaults::WASM_TARGET)
-        .join(profile)
-        .join(&binary);
-
     let abs_wasm = abs_artifact_path.as_path().display().to_string();
-    let relative_wasm = rel_artifact_path.as_path().display().to_string();
-
-    manifest.set_module(Module::Wasm(relative_wasm));
 
     let status = Command::new("wasm-snip")
         .arg(&abs_wasm)
@@ -197,9 +201,6 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
         let code = status.code();
         anyhow::bail!("❌ Failed to execute wasm-snip: (Code: {code:?})",)
     }
-
-    // FIXME: This should include whatever comments were in the original doc
-    manifest.write(&indexer_manifest_path)?;
 
     Ok(())
 }

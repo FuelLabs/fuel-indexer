@@ -25,6 +25,18 @@ pub struct Command {
     /// Enable verbose output.
     #[clap(short, long, help = "Enable verbose output.")]
     pub verbose: bool,
+
+    /// Override the start block
+    #[clap(long, help = "Override the start block.")]
+    pub override_start_block: Option<u32>,
+
+    /// Override the end block
+    #[clap(long, help = "Override the end blockt.")]
+    pub override_end_block: Option<u32>,
+
+    /// Override the identifier
+    #[clap(long, help = "Override the identifier.")]
+    pub override_identifier: Option<String>,
 }
 
 pub fn exec(command: Command) -> Result<()> {
