@@ -534,7 +534,6 @@ fn record_active_connections() -> Result<usize, std::io::Error> {
     let output = String::from_utf8(output.stdout).unwrap();
     let output = output.trim();
     let output = output.parse::<usize>().unwrap_or(0);
-    println!("Active connections: {output}");
     Ok(output)
 }
 
