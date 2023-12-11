@@ -23,7 +23,7 @@ cynic = "2.2"
 forc-postgres = { workspace = true }
 fuel-core = { version = "0.21", optional = true }
 fuel-core-client = "0.21"
-fuel-crypto = { sorkspace = true }
+fuel-crypto = { workspace = true }
 fuel-indexer-api-server = { workspace = true, optional = true }
 fuel-indexer-database = { workspace = true }
 fuel-indexer-lib = { workspace = true }

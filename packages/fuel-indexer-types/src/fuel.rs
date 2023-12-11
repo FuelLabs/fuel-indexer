@@ -13,8 +13,8 @@ use serde::{Deserialize, Serialize};
 
 pub mod field {
     pub use fuel_tx::field::{
-        BytecodeLength, BytecodeWitnessIndex, GasPrice, Inputs, Maturity,
-        Outputs, ReceiptsRoot, Salt as TxFieldSalt, Script as TxFieldScript, ScriptData,
+        BytecodeLength, BytecodeWitnessIndex, GasPrice, Inputs, Maturity, Outputs,
+        ReceiptsRoot, Salt as TxFieldSalt, Script as TxFieldScript, ScriptData,
         StorageSlots, TxPointer as FieldTxPointer, Witnesses,
     };
 }

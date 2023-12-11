@@ -6,7 +6,6 @@ use crate::{
 use anyhow::Context;
 use async_std::sync::{Arc, Mutex};
 use async_trait::async_trait;
-use fuel_vm::fuel_types::canonical::Deserialize;
 use fuel_core_client::client::{
     pagination::{PageDirection, PaginatedResult, PaginationRequest},
     schema::block::{Consensus as ClientConsensus, Genesis as ClientGenesis},
@@ -24,6 +23,7 @@ use fuel_indexer_types::{
     scalar::{Bytes, Bytes32},
 };
 use fuel_tx::UniqueIdentifier;
+use fuel_vm::fuel_types::canonical::Deserialize;
 use fuel_vm::state::ProgramState as ClientProgramState;
 use futures::Future;
 use itertools::Itertools;
