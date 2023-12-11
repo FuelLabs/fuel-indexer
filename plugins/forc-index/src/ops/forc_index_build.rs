@@ -1,8 +1,5 @@
 use crate::{cli::BuildCommand, defaults, utils::project_dir_info};
-use fuel_indexer_lib::{
-    manifest::{Manifest, Module},
-    utils::Config,
-};
+use fuel_indexer_lib::{manifest::Manifest, utils::Config};
 use indicatif::{ProgressBar, ProgressStyle};
 use std::collections::HashSet;
 use std::{
@@ -182,7 +179,7 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
     let abs_artifact_path = target_dir
         .join(defaults::WASM_TARGET)
         .join(profile)
-        .join(&binary);
+        .join(binary);
 
     let abs_wasm = abs_artifact_path.as_path().display().to_string();
 
