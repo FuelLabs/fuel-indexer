@@ -57,12 +57,10 @@ impl From<fuel::ClientPanicReason> for PanicReason {
             fuel::ClientPanicReason::ReservedRegisterNotWritable => {
                 PanicReason::ReservedRegisterNotWritable
             }
-            fuel::ClientPanicReason::ErrorFlag => PanicReason::ErrorFlag,
             fuel::ClientPanicReason::InvalidImmediateValue => {
                 PanicReason::InvalidImmediateValue
             }
             fuel::ClientPanicReason::ExpectedCoinInput => PanicReason::ExpectedCoinInput,
-            fuel::ClientPanicReason::MaxMemoryAccess => PanicReason::MaxMemoryAccess,
             fuel::ClientPanicReason::MemoryWriteOverlap => {
                 PanicReason::MemoryWriteOverlap
             }
@@ -88,7 +86,6 @@ impl From<fuel::ClientPanicReason> for PanicReason {
             fuel::ClientPanicReason::ExpectedParentInternalContext => {
                 PanicReason::ExpectedParentInternalContext
             }
-            fuel::ClientPanicReason::IllegalJump => PanicReason::IllegalJump,
             fuel::ClientPanicReason::ContractIdAlreadyDeployed => {
                 PanicReason::ContractIdAlreadyDeployed
             }
@@ -728,7 +725,6 @@ impl From<fuel::TransactionData> for Transaction {
         let tx_status = TransactionStatus::from(transaction.status.clone());
         match transaction.transaction {
             fuel::Transaction::Script(fuel::Script {
-                gas_limit,
                 gas_price,
                 maturity,
                 script,
@@ -762,7 +758,6 @@ impl From<fuel::TransactionData> for Transaction {
                     .collect::<Vec<_>>();
 
                 let script_tx = ScriptTransaction::new(
-                    gas_limit,
                     gas_price,
                     *maturity,
                     script.to_owned().into(),
@@ -781,7 +776,6 @@ impl From<fuel::TransactionData> for Transaction {
                 Self::from(script_tx).get_or_create()
             }
             fuel::Transaction::Create(fuel::Create {
-                gas_limit,
                 gas_price,
                 maturity,
                 bytecode_length,
@@ -821,7 +815,6 @@ impl From<fuel::TransactionData> for Transaction {
                     .collect::<Vec<_>>();
 
                 let create_tx = CreateTransaction::new(
-                    gas_limit,
                     gas_price,
                     *maturity,
                     bytecode_length,
@@ -842,15 +835,9 @@ impl From<fuel::TransactionData> for Transaction {
             }
             fuel::Transaction::Mint(fuel::Mint {
                 tx_pointer,
-                outputs,
                 metadata,
             }) => {
                 let tx_pointer = TxPointer::from(tx_pointer.to_owned());
-                let outputs = outputs
-                    .iter()
-                    .map(|o| Output::from(o.to_owned()))
-                    .map(|o| o.id)
-                    .collect::<Vec<UID>>();
                 let receipts = transaction
                     .receipts
                     .iter()
@@ -859,7 +846,6 @@ impl From<fuel::TransactionData> for Transaction {
 
                 let mint_tx = MintTransaction::new(
                     tx_pointer.id,
-                    Some(outputs),
                     metadata.to_owned().map(|m| m.into()),
                     true,
                     Some(receipts),

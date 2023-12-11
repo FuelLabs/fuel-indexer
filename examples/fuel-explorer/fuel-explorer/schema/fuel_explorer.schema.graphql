@@ -45,10 +45,8 @@ enum PanicReason {
   InvalidMetadataIdentifier
   MalformedCallStructure
   ReservedRegisterNotWritable
-  ErrorFlag
   InvalidImmediateValue
   ExpectedCoinInput
-  MaxMemoryAccess
   MemoryWriteOverlap
   ContractNotInInputs
   InternalBalanceOverflow
@@ -58,7 +56,6 @@ enum PanicReason {
   TransferAmountCannotBeZero
   ExpectedOutputVariable
   ExpectedParentInternalContext
-  IllegalJump
   ContractIdAlreadyDeployed
   Unknown
 }
@@ -463,7 +460,6 @@ union Output =
 type CreateTransaction @entity {
   id: ID!
   gas_price: U64!
-  gas_limit: U64!
   maturity: U32!
   bytecode_length: U64!
   bytecode_witness_index: U8!
@@ -482,7 +478,6 @@ type CreateTransaction @entity {
 type ScriptTransaction @entity {
   id: ID!
   gas_price: U64!
-  gas_limit: U64!
   maturity: U32!
   script: Bytes!
   script_data: Bytes!
@@ -500,7 +495,6 @@ type ScriptTransaction @entity {
 type MintTransaction @entity {
   id: ID!
   tx_pointer: TxPointer!
-  outputs: [Output!]
   metadata: Json
   is_mint: Boolean!
   receipts: [Receipt!]

@@ -18,7 +18,7 @@ colorful = "0.2.2"
 filetime = "0.2"
 forc-postgres = { workspace = true }
 forc-tracing = { version = "0.31", default-features = false }
-forc-util = { version = "0.35.0" }
+forc-util = { version = "0.46" }
 fuel-indexer-database-types = { workspace = true }
 fuel-indexer-lib = { workspace = true }
 fuel-tx = { features = ["builder"], workspace = true }

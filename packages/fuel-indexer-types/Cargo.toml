@@ -11,6 +11,7 @@ description = "Fuel Indexer Types"
 
 [dependencies]
 bytes = { version = "1.4", features = ["serde"] }
+fuel-crypto = { workspace = true }
 fuel-tx = { workspace = true, features = ["serde"] }
 fuel-types = { workspace = true }
 fuels = { workspace = true }

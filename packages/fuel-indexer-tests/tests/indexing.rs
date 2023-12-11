@@ -10,7 +10,7 @@ use std::{collections::HashSet, str::FromStr};
 
 const REVERT_VM_CODE: u64 = 0x0004;
 const EXPECTED_CONTRACT_ID: &str =
-    "60ddf75280b60e644e90fca5febaffb024882f0203b04ed8c7e9df8aa961060e";
+    "5805ad6fc1543e317cc86d4da1185b8e122c183861bf9e151a3819ac3e26103d";
 const TRANSFER_BASE_ASSET_ID: &str =
     "0000000000000000000000000000000000000000000000000000000000000000";
 
@@ -772,10 +772,4 @@ async fn test_find_and_delete() {
     assert!(row
         .get::<&str, usize>(2)
         .contains("called `Option::unwrap()` on a `None` value"));
-}
-
-
-#[actix_web::test]
-async fn test_signal_predicate_witness_data() {
-    
 }

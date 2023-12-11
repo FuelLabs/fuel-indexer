@@ -306,7 +306,7 @@ impl ToSQLValue for UID {
 
 impl ToSQLValue for BlockHeight {
     fn to_sql_value(self) -> sql::Value {
-        sqlparser::test_utils::number(&self.as_usize().to_string())
+        sqlparser::test_utils::number(&self.to_string())
     }
 }
 

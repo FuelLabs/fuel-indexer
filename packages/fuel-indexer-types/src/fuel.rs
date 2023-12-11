@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 
 pub mod field {
     pub use fuel_tx::field::{
-        BytecodeLength, BytecodeWitnessIndex, GasLimit, GasPrice, Inputs, Maturity,
+        BytecodeLength, BytecodeWitnessIndex, GasPrice, Inputs, Maturity,
         Outputs, ReceiptsRoot, Salt as TxFieldSalt, Script as TxFieldScript, ScriptData,
         StorageSlots, TxPointer as FieldTxPointer, Witnesses,
     };
@@ -43,7 +43,6 @@ impl Default for Transaction {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Create {
     pub gas_price: Word,
-    pub gas_limit: Word,
     pub maturity: BlockHeight,
     pub bytecode_length: Word,
     pub bytecode_witness_index: u8,
@@ -86,7 +85,6 @@ impl From<Json> for CommonMetadata {
 #[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct Script {
     pub gas_price: Word,
-    pub gas_limit: Word,
     pub maturity: BlockHeight,
     pub script: Vec<u8>,
     pub script_data: Vec<u8>,
@@ -122,7 +120,6 @@ impl From<Json> for ScriptMetadata {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Mint {
     pub tx_pointer: TxPointer,
-    pub outputs: Vec<Output>,
     pub metadata: Option<MintMetadata>,
 }
 
@@ -176,7 +173,7 @@ pub struct BlockData {
     pub height: u32,
     pub id: Bytes32,
     pub header: Header,
-    pub producer: Option<Bytes32>,
+    pub producer: Option<fuel_crypto::fuel_types::Bytes32>,
     pub time: i64,
     pub consensus: Consensus,
     pub transactions: Vec<TransactionData>,
@@ -393,18 +390,14 @@ impl From<ClientOutput> for Output {
                         .expect("Could not convert asset ID to bytes"),
                 ),
             }),
-            ClientOutput::Contract {
-                input_index,
-                balance_root,
-                state_root,
-            } => Output::ContractOutput(ContractOutput {
-                input_index: input_index.into(),
+            ClientOutput::Contract(contract) => Output::ContractOutput(ContractOutput {
+                input_index: contract.input_index.into(),
                 balance_root: Bytes32::from(
-                    <[u8; 32]>::try_from(balance_root)
+                    <[u8; 32]>::try_from(contract.balance_root)
                         .expect("Could not convert balance root to bytes"),
                 ),
                 state_root: Bytes32::from(
-                    <[u8; 32]>::try_from(state_root)
+                    <[u8; 32]>::try_from(contract.state_root)
                         .expect("Could not convert state root to bytes"),
                 ),
             }),
