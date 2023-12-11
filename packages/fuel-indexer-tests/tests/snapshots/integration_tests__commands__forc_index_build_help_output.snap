@@ -8,9 +8,29 @@ USAGE:
     forc-index build [OPTIONS]
 
 OPTIONS:
-    -d, --debug                  Build artifacts with the debug profile.
-    -h, --help                   Print help information
-        --locked                 Ensure that the Cargo.lock file is up-to-date.
-    -m, --manifest <MANIFEST>    Manifest file name of indexer being built.
-    -p, --path <PATH>            Path to the indexer project.
-    -v, --verbose                Enable verbose output.
+    -d, --debug
+            Build artifacts with the debug profile.
+
+    -h, --help
+            Print help information
+
+        --locked
+            Ensure that the Cargo.lock file is up-to-date.
+
+    -m, --manifest <MANIFEST>
+            Manifest file name of indexer being built.
+
+        --override-end-block <OVERRIDE_END_BLOCK>
+            Override the end blockt.
+
+        --override-identifier <OVERRIDE_IDENTIFIER>
+            Override the identifier.
+
+        --override-start-block <OVERRIDE_START_BLOCK>
+            Override the start block.
+
+    -p, --path <PATH>
+            Path to the indexer project.
+
+    -v, --verbose
+            Enable verbose output.

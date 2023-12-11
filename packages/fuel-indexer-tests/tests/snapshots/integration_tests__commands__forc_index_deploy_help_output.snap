@@ -8,15 +8,44 @@ USAGE:
     forc-index deploy [OPTIONS]
 
 OPTIONS:
-        --auth <AUTH>            Authentication header value.
-    -d, --debug                  Build optimized artifacts with the debug profile.
-    -h, --help                   Print help information
-        --locked                 Ensure that the Cargo.lock file is up-to-date.
-    -m, --manifest <MANIFEST>    Path to the manifest of indexer project being deployed.
-    -p, --path <PATH>            Path to the indexer project.
-        --remove-data            Remove all indexed data when replacing an existing indexer.
-        --replace-indexer        If an indexer with the same UID exists, remove it.
-        --skip-build             Do not build before deploying.
-        --url <URL>              URL at which to deploy indexer assets. [default:
-                                 http://127.0.0.1:29987]
-    -v, --verbose                Enable verbose logging.
+        --auth <AUTH>
+            Authentication header value.
+
+    -d, --debug
+            Build optimized artifacts with the debug profile.
+
+    -h, --help
+            Print help information
+
+        --locked
+            Ensure that the Cargo.lock file is up-to-date.
+
+    -m, --manifest <MANIFEST>
+            Path to the manifest of indexer project being deployed.
+
+        --override-end-block <OVERRIDE_END_BLOCK>
+            Override the end blockt.
+
+        --override-identifier <OVERRIDE_IDENTIFIER>
+            Override the identifier.
+
+        --override-start-block <OVERRIDE_START_BLOCK>
+            Override the start block.
+
+    -p, --path <PATH>
+            Path to the indexer project.
+
+        --remove-data
+            Remove all indexed data when replacing an existing indexer.
+
+        --replace-indexer
+            If an indexer with the same UID exists, remove it.
+
+        --skip-build
+            Do not build before deploying.
+
+        --url <URL>
+            URL at which to deploy indexer assets. [default: http://127.0.0.1:29987]
+
+    -v, --verbose
+            Enable verbose logging.
