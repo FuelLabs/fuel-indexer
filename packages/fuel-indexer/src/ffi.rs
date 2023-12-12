@@ -475,7 +475,7 @@ pub fn get_exports(store: &mut Store, env: &wasmer::FunctionEnv<IndexEnv>) -> Ex
 
     let f_get_obj = Function::new_typed_with_env(store, env, get_object);
     let f_find_many = Function::new_typed_with_env(store, env, find_many);
-    let f_delete = Function::new_typed_with_env(store, env, delete_many);
+    let f_delete_many = Function::new_typed_with_env(store, env, delete_many);
     let f_put_obj = Function::new_typed_with_env(store, env, put_object);
     let f_log_data = Function::new_typed_with_env(store, env, log_data);
     let f_put_many_to_many_record =
@@ -485,7 +485,7 @@ pub fn get_exports(store: &mut Store, env: &wasmer::FunctionEnv<IndexEnv>) -> Ex
     exports.insert("ff_early_exit".to_string(), f_early_exit);
     exports.insert("ff_get_object".to_string(), f_get_obj);
     exports.insert("ff_find_many".to_string(), f_find_many);
-    exports.insert("ff_delete".to_string(), f_delete);
+    exports.insert("ff_delete_many".to_string(), f_delete_many);
     exports.insert("ff_put_object".to_string(), f_put_obj);
     exports.insert(
         "ff_put_many_to_many_record".to_string(),
