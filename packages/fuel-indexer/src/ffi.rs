@@ -206,6 +206,7 @@ fn get_object(
     }
 }
 
+/// Get multiple objects from the database that satisfy the given constraints.
 fn find_many(
     mut env: FunctionEnvMut<IndexEnv>,
     type_id: i64,
@@ -280,6 +281,45 @@ fn find_many(
     } else {
         Ok(0)
     }
+}
+
+/// Delete multiple objects from the database that satisfy the given constraints.
+fn delete(
+    mut env: FunctionEnvMut<IndexEnv>,
+    type_id: i64,
+    ptr: u32,
+    len_ptr: u32,
+) -> Result<u64, WasmIndexerError> {
+    let (idx_env, store) = env.data_and_store_mut();
+
+    if idx_env
+        .kill_switch
+        .load(std::sync::atomic::Ordering::SeqCst)
+    {
+        // If the kill switch has been flipped, returning an error will cause an
+        // early termination of WASM execution.
+        return Err(WasmIndexerError::KillSwitch);
+    }
+
+    let mem = idx_env
+        .memory
+        .as_mut()
+        .ok_or(WasmIndexerError::UninitializedMemory)?
+        .view(&store);
+
+    let len = WasmPtr::<u32>::new(len_ptr)
+        .deref(&mem)
+        .read()
+        .expect("Failed to read length from memory.");
+
+    let constraints = get_object_id(&mem, ptr + 1, len - 1).unwrap();
+
+    let rt = tokio::runtime::Handle::current();
+    let count = rt
+        .block_on(async { idx_env.db.lock().await.delete(type_id, constraints).await })
+        .unwrap();
+
+    Ok(count as u64)
 }
 
 /// Put the given type at the given pointer into memory.
@@ -428,6 +468,7 @@ pub fn get_exports(store: &mut Store, env: &wasmer::FunctionEnv<IndexEnv>) -> Ex
 
     let f_get_obj = Function::new_typed_with_env(store, env, get_object);
     let f_find_many = Function::new_typed_with_env(store, env, find_many);
+    let f_delete = Function::new_typed_with_env(store, env, delete);
     let f_put_obj = Function::new_typed_with_env(store, env, put_object);
     let f_log_data = Function::new_typed_with_env(store, env, log_data);
     let f_put_many_to_many_record =
@@ -437,6 +478,7 @@ pub fn get_exports(store: &mut Store, env: &wasmer::FunctionEnv<IndexEnv>) -> Ex
     exports.insert("ff_early_exit".to_string(), f_early_exit);
     exports.insert("ff_get_object".to_string(), f_get_obj);
     exports.insert("ff_find_many".to_string(), f_find_many);
+    exports.insert("ff_delete".to_string(), f_delete);
     exports.insert("ff_put_object".to_string(), f_put_obj);
     exports.insert(
         "ff_put_many_to_many_record".to_string(),

@@ -25,6 +25,7 @@ pub use crate::find::{Field, Filter, ManyFilter, OptionField, SingleFilter};
 extern "C" {
     fn ff_get_object(type_id: i64, ptr: *const u8, len: *mut u8) -> *mut u8;
     fn ff_find_many(type_id: i64, ptr: *const u8, len: *mut u8) -> *mut u8;
+    fn ff_delete(type_id: i64, ptr: *const u8, len: *mut u8) -> u64;
     fn ff_log_data(ptr: *const u8, len: u32, log_level: u32);
     fn ff_put_object(type_id: i64, ptr: *const u8, len: u32);
     fn ff_put_many_to_many_record(ptr: *const u8, len: u32);
@@ -159,6 +160,19 @@ pub trait Entity<'a>: Sized + PartialEq + Eq + std::fmt::Debug {
                 vec![]
             }
         }
+    }
+
+    /// Delete the entities that satisfy the given constraints.
+    fn delete(filter: impl Into<ManyFilter<Self>>) -> usize {
+        let filter: ManyFilter<Self> = filter.into();
+        let buff =
+            bincode::serialize(&filter.to_string()).expect("Failed to serialize query");
+        let mut bufflen = (buff.len() as u32).to_le_bytes();
+
+        let count =
+            unsafe { ff_delete(Self::TYPE_ID, buff.as_ptr(), bufflen.as_mut_ptr()) };
+
+        count as usize
     }
 
     /// Saves a record.
