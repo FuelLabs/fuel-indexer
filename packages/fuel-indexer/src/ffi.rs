@@ -284,7 +284,7 @@ fn find_many(
 }
 
 /// Delete multiple objects from the database that satisfy the given constraints.
-fn delete(
+fn delete_many(
     mut env: FunctionEnvMut<IndexEnv>,
     type_id: i64,
     ptr: u32,
@@ -316,7 +316,14 @@ fn delete(
 
     let rt = tokio::runtime::Handle::current();
     let count = rt
-        .block_on(async { idx_env.db.lock().await.delete(type_id, constraints).await })
+        .block_on(async {
+            idx_env
+                .db
+                .lock()
+                .await
+                .delete_many(type_id, constraints)
+                .await
+        })
         .unwrap();
 
     Ok(count as u64)
@@ -468,7 +475,7 @@ pub fn get_exports(store: &mut Store, env: &wasmer::FunctionEnv<IndexEnv>) -> Ex
 
     let f_get_obj = Function::new_typed_with_env(store, env, get_object);
     let f_find_many = Function::new_typed_with_env(store, env, find_many);
-    let f_delete = Function::new_typed_with_env(store, env, delete);
+    let f_delete = Function::new_typed_with_env(store, env, delete_many);
     let f_put_obj = Function::new_typed_with_env(store, env, put_object);
     let f_log_data = Function::new_typed_with_env(store, env, log_data);
     let f_put_many_to_many_record =

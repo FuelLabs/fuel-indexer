@@ -243,7 +243,7 @@ Do your WASM modules need to be rebuilt?
     }
 
     /// Delete multiple objects from the database that satisfy the given constraints.
-    pub async fn delete(
+    pub async fn delete_many(
         &mut self,
         type_id: i64,
         constraints: String,

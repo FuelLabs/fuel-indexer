@@ -683,12 +683,12 @@ mod fuel_indexer_test {
 
             // Test delete()
             let count: usize =
-                FindEntity::delete(FindEntity::string_value().eq("find3".to_string()));
+                FindEntity::delete_many(FindEntity::string_value().eq("find3".to_string()));
             assert_eq!(count, 1);
 
             // "find3" has already been deleted
             let count: usize =
-                FindEntity::delete(FindEntity::string_value().eq("find3".to_string()));
+                FindEntity::delete_many(FindEntity::string_value().eq("find3".to_string()));
             assert_eq!(count, 0);
 
             // Test searching for multiple entities, with limit
@@ -701,7 +701,7 @@ mod fuel_indexer_test {
             assert_eq!(fs.len(), 3);
 
             // Next, delete "find2" and "find4"
-            let count: usize = FindEntity::delete(
+            let count: usize = FindEntity::delete_many(
                 FindEntity::string_value()
                     .gt("f".to_string())
                     .and(FindEntity::string_value().lt("find5".to_string())),
