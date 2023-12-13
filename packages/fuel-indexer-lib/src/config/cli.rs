@@ -107,13 +107,6 @@ pub struct IndexerArgs {
     )]
     pub stop_idle_indexers: bool,
 
-    /// Automatically create and start database using provided options or defaults.
-    #[clap(
-        long,
-        help = "Automatically create and start database using provided options or defaults."
-    )]
-    pub embedded_database: bool,
-
     /// Require users to authenticate for some operations.
     #[clap(long, help = "Require users to authenticate for some operations.")]
     pub auth_enabled: bool,

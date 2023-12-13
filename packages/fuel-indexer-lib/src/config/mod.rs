@@ -92,7 +92,6 @@ impl Default for IndexerArgs {
             run_migrations: defaults::RUN_MIGRATIONS,
             metrics: defaults::USE_METRICS,
             stop_idle_indexers: defaults::STOP_IDLE_INDEXERS,
-            embedded_database: defaults::EMBEDDED_DATABASE,
             auth_enabled: defaults::AUTH_ENABLED,
             auth_strategy: None,
             jwt_secret: None,

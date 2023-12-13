@@ -7,10 +7,6 @@ pub(crate) use crate::commands::{
     status::Command as StatusCommand,
 };
 use clap::{Parser, Subcommand};
-use forc_postgres::{
-    cli::{ForcPostgres, Opt as ForcPostgresOpt},
-    commands as pg_commands,
-};
 use forc_tracing::{init_tracing_subscriber, TracingSubscriberOptions};
 
 #[derive(Debug, Parser)]
@@ -29,7 +25,6 @@ pub enum ForcIndex {
     Deploy(DeployCommand),
     Kill(KillCommand),
     New(NewCommand),
-    Postgres(ForcPostgresOpt),
     Remove(RemoveCommand),
     Start(Box<StartCommand>),
     Status(StatusCommand),
@@ -50,12 +45,6 @@ pub async fn run_cli() -> Result<(), anyhow::Error> {
         ForcIndex::Remove(command) => crate::commands::remove::exec(command).await,
         ForcIndex::Build(command) => crate::commands::build::exec(command),
         ForcIndex::Auth(command) => crate::commands::auth::exec(command).await,
-        ForcIndex::Postgres(opt) => match opt.command {
-            ForcPostgres::Create(command) => pg_commands::create::exec(command).await,
-            ForcPostgres::Stop(command) => pg_commands::stop::exec(command).await,
-            ForcPostgres::Drop(command) => pg_commands::drop::exec(command).await,
-            ForcPostgres::Start(command) => pg_commands::start::exec(command).await,
-        },
         ForcIndex::Kill(command) => crate::commands::kill::exec(command),
         ForcIndex::Status(command) => crate::commands::status::exec(command).await,
     }

@@ -49,9 +49,6 @@ pub const MAX_DATABASE_CONNECTION_ATTEMPTS: usize = 5;
 /// How long to initially wait before retrying to connect to the database.
 pub const INITIAL_RETRY_DELAY_SECS: u64 = 2;
 
-/// Use an embedded PostgresQL database.
-pub const EMBEDDED_DATABASE: bool = false;
-
 /// If using `--stop-idle-indexers`, this is the number of empty blocks after which the executor should stop.
 pub const MAX_CONSECUTIVE_EMPTY_BLOCK_RESPONSES: usize = 10;
 

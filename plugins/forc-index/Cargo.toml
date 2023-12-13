@@ -16,7 +16,6 @@ anyhow = "1"
 clap = { features = ["derive", "env"], workspace = true }
 colorful = "0.2.2"
 filetime = "0.2"
-forc-postgres = { workspace = true }
 forc-tracing = { version = "0.31", default-features = false }
 forc-util = { version = "0.35.0" }
 fuel-indexer-database-types = { workspace = true }

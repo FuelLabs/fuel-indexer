@@ -52,57 +52,9 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
 
     let IndexerArgs {
         manifest,
-        embedded_database,
-        postgres_database,
-        postgres_password,
-        postgres_port,
-        postgres_user,
         remove_data,
         ..
     } = args.clone();
-
-    let args_config = args.config.clone();
-
-    if embedded_database {
-        let name = postgres_database
-            .clone()
-            .unwrap_or(defaults::POSTGRES_DATABASE.to_string());
-        let password = postgres_password
-            .clone()
-            .unwrap_or(defaults::POSTGRES_PASSWORD.to_string());
-        let user = postgres_user
-            .clone()
-            .unwrap_or(defaults::POSTGRES_USER.to_string());
-        let port = postgres_port
-            .clone()
-            .unwrap_or(defaults::POSTGRES_PORT.to_string());
-
-        let create_db_cmd = forc_postgres::cli::CreateDbCommand {
-            name,
-            password,
-            user,
-            port,
-            persistent: true,
-            config: args_config.clone(),
-            start: true,
-            ..Default::default()
-        };
-
-        println!(
-            r#"
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-
-Warning: Using the --embedded-database flag is experimental and should only be used for local development.
-
-If the --embedded-database flag demonstrates flaky behavior on your machine, or doesn't work altogether, we recommend that you simply use the provided docker compose file here:
-    https://github.com/FuelLabs/fuel-indexer/blob/develop/scripts/docker-compose.yaml.
-
-@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-"#
-        );
-
-        forc_postgres::commands::create::exec(create_db_cmd).await?;
-    }
 
     let config = args
         .config
@@ -188,19 +140,6 @@ If the --embedded-database flag demonstrates flaky behavior on your machine, or 
     if subsystems.join_next().await.is_some() {
         subsystems.shutdown().await;
     }
-
-    if embedded_database {
-        let name = postgres_database.unwrap_or(defaults::POSTGRES_DATABASE.to_string());
-
-        let stop_db_cmd = forc_postgres::cli::StopDbCommand {
-            name,
-            config: args_config.clone(),
-            database_dir: None,
-            verbose: false,
-        };
-
-        forc_postgres::commands::stop::exec(stop_db_cmd).await?;
-    };
 
     Ok(())
 }
