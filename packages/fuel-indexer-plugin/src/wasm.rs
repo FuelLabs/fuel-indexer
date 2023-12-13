@@ -57,6 +57,14 @@ impl Logger {
     }
 }
 
+/// Trait for a type entity which supports the `delete()` operation.
+pub trait EntityDelete<'a>: Sized + PartialEq + Eq + std::fmt::Debug {
+    /// Deletes the entity with the corresponding `ID` from the database.
+    /// Returns `true` when the value has been deleted, and `false` if it has
+    /// not.
+    fn delete(&self) -> bool;
+}
+
 /// Trait for a type entity.
 ///
 /// Any entity type that will be processed through a WASM indexer is required to implement this trait.

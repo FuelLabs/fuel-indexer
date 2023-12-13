@@ -517,6 +517,14 @@ pub struct ObjectDecoder {
     type_id: i64,
 }
 
+impl ObjectDecoder {
+    fn is_virtual(&self) -> bool {
+        self.impl_decoder
+            .parsed
+            .is_virtual_typedef(&self.impl_decoder.typdef.name.to_string())
+    }
+}
+
 impl Default for ObjectDecoder {
     fn default() -> Self {
         Self {
@@ -760,6 +768,8 @@ impl Decoder for EnumDecoder {
 
 impl From<ObjectDecoder> for TokenStream {
     fn from(decoder: ObjectDecoder) -> Self {
+        let is_virtual = decoder.is_virtual();
+
         let ObjectDecoder {
             struct_fields,
             ident,
@@ -826,6 +836,18 @@ impl From<ObjectDecoder> for TokenStream {
             quote! { None }
         };
 
+        let impl_entity_delete = if !is_virtual {
+            quote! {
+                impl<'a> EntityDelete<'a> for #ident {
+                    fn delete(&self) -> bool {
+                        Self::delete_many(Self::id().eq(self.id.clone())) == 1
+                    }
+                }
+            }
+        } else {
+            quote! {}
+        };
+
         let impl_entity = quote! {
             #[derive(Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
             pub struct #ident {
@@ -850,6 +872,8 @@ impl From<ObjectDecoder> for TokenStream {
                 }
 
             }
+
+            #impl_entity_delete
         };
 
         let impl_new = TokenStream::from(impl_decoder);

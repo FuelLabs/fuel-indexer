@@ -699,7 +699,7 @@ mod fuel_indexer_test {
                     .gt("f".to_string())
                     .order_by(FindEntity::value()),
             );
-            // There were four, but one has been deleted.
+            // There were four, but one has been deleted
             assert_eq!(fs.len(), 3);
 
             // Next, delete "find2" and "find4"
@@ -720,6 +720,19 @@ mod fuel_indexer_test {
             // Now there is only one left
             assert_eq!(fs.len(), 1);
             assert_eq!(fs[0].string_value, "find5");
+
+            // Directly delete the last value
+            let deleted = fs[0].delete();
+            assert!(deleted);
+
+            let fs: Vec<FindEntity> = FindEntity::find_many(
+                FindEntity::string_value()
+                    .gt("f".to_string())
+                    .order_by(FindEntity::value()),
+            );
+
+            // Nothing left.
+            assert_eq!(fs.len(), 0);
         } else if block_data.height == 6 {
             // There is no such block. The lookup will fail.
             IndexMetadataEntity::find(IndexMetadataEntity::block_height().eq(777))
