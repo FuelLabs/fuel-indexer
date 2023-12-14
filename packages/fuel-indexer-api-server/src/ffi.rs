@@ -23,6 +23,10 @@ pub fn check_wasm_toolchain_version(data: Vec<u8>) -> anyhow::Result<String> {
         Function::new_typed(&mut store, |_: i64, _: i32, _: i32| 0i32),
     );
     exports.insert(
+        "ff_delete_many".to_string(),
+        Function::new_typed(&mut store, |_: i64, _: i32, _: i32| 0i64),
+    );
+    exports.insert(
         "ff_early_exit".to_string(),
         Function::new_typed(&mut store, |_: i32| {}),
     );

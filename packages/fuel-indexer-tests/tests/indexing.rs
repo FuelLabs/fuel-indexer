@@ -721,7 +721,7 @@ async fn test_no_missing_blocks() {
 }
 
 #[actix_web::test]
-async fn test_find() {
+async fn test_find_and_delete() {
     let IndexingTestComponents {
         ref node, ref db, ..
     } = setup_indexing_test_components(None).await;

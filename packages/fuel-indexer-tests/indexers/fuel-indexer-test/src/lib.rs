@@ -680,6 +680,59 @@ mod fuel_indexer_test {
             assert_eq!(fs.len(), 2);
             assert_eq!(fs[0].string_value, "find5");
             assert_eq!(fs[1].string_value, "find4");
+
+            // Test delete()
+            let count: usize = FindEntity::delete_many(
+                FindEntity::string_value().eq("find3".to_string()),
+            );
+            assert_eq!(count, 1);
+
+            // "find3" has already been deleted
+            let count: usize = FindEntity::delete_many(
+                FindEntity::string_value().eq("find3".to_string()),
+            );
+            assert_eq!(count, 0);
+
+            // Test searching for multiple entities, with limit
+            let fs: Vec<FindEntity> = FindEntity::find_many(
+                FindEntity::string_value()
+                    .gt("f".to_string())
+                    .order_by(FindEntity::value()),
+            );
+            // There were four, but one has been deleted
+            assert_eq!(fs.len(), 3);
+
+            // Next, delete "find2" and "find4"
+            let count: usize = FindEntity::delete_many(
+                FindEntity::string_value()
+                    .gt("f".to_string())
+                    .and(FindEntity::string_value().lt("find5".to_string())),
+            );
+            assert_eq!(count, 2);
+
+            // Test searching for multiple entities, with limit
+            let fs: Vec<FindEntity> = FindEntity::find_many(
+                FindEntity::string_value()
+                    .gt("f".to_string())
+                    .order_by(FindEntity::value()),
+            );
+
+            // Now there is only one left
+            assert_eq!(fs.len(), 1);
+            assert_eq!(fs[0].string_value, "find5");
+
+            // Directly delete the last value
+            let deleted = fs[0].delete();
+            assert!(deleted);
+
+            let fs: Vec<FindEntity> = FindEntity::find_many(
+                FindEntity::string_value()
+                    .gt("f".to_string())
+                    .order_by(FindEntity::value()),
+            );
+
+            // Nothing left.
+            assert_eq!(fs.len(), 0);
         } else if block_data.height == 6 {
             // There is no such block. The lookup will fail.
             IndexMetadataEntity::find(IndexMetadataEntity::block_height().eq(777))

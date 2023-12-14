@@ -242,6 +242,31 @@ Do your WASM modules need to be rebuilt?
         }
     }
 
+    /// Delete multiple objects from the database that satisfy the given constraints.
+    pub async fn delete_many(
+        &mut self,
+        type_id: i64,
+        constraints: String,
+    ) -> IndexerResult<usize> {
+        let table = &self
+            .tables
+            .get(&type_id)
+            .ok_or(IndexerDatabaseError::TableMappingDoesNotExist(type_id))?;
+
+        let query = format!("DELETE from {table} WHERE {constraints}");
+
+        info!("QUERY: {query}");
+
+        let conn = self
+            .stashed
+            .as_mut()
+            .ok_or(IndexerError::NoTransactionError("find_many".to_string()))?;
+
+        let count = queries::execute_query(conn, query).await?;
+
+        Ok(count)
+    }
+
     /// Load the schema for this indexer from the database, and build a mapping of `TypeId`s to tables.
     pub async fn load_schema(&mut self, version: String) -> IndexerResult<()> {
         self.version = version;
