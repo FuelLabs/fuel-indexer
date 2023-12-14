@@ -1,9 +1,6 @@
 use crate::cli::StartCommand;
 use fuel_indexer_lib::defaults;
-use std::{
-    ffi::OsStr,
-    process::Command,
-};
+use std::{ffi::OsStr, process::Command};
 use tracing::info;
 
 pub async fn init(command: StartCommand) -> anyhow::Result<()> {
