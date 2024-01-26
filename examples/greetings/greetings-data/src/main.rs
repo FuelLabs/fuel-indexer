@@ -1,9 +1,9 @@
 use clap::Parser;
-use fuel_indexer_tests::{defaults, fixtures::call_params};
+use fuel_indexer_tests::defaults;
 use fuels::accounts::wallet::WalletUnlocked;
 use fuels::macros::abigen;
 use fuels::{
-    prelude::{Bech32ContractId, Contract, LoadConfiguration, Provider},
+    prelude::{Bech32ContractId, CallParameters, Contract, LoadConfiguration, Provider},
     types::SizedAsciiString,
 };
 use rand::{seq::SliceRandom, Rng};
@@ -115,8 +115,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let _ = contract
         .methods()
         .new_greeting(id, greeting, name)
-        .call_params(tx_params())
-        .unwrap()
+        .call_params(CallParameters::default())
         .unwrap()
         .call()
         .await
