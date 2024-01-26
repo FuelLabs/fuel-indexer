@@ -119,7 +119,7 @@ async fn test_index_receipt_types() {
 
     mock_request("/call").await;
 
-    let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.callentity LIMIT 1")
+    let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.callentity WHERE fn_name = 'trigger_pure_function' LIMIT 1")
         .fetch_one(&mut conn)
         .await
         .unwrap();
@@ -130,10 +130,12 @@ async fn test_index_receipt_types() {
 
     mock_request("/returndata").await;
 
-    let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.pungentity LIMIT 1")
-        .fetch_one(&mut conn)
-        .await
-        .unwrap();
+    let row = sqlx::query(
+        "SELECT * FROM fuel_indexer_test_index1.pungentity WHERE value = 12345 LIMIT 1",
+    )
+    .fetch_one(&mut conn)
+    .await
+    .unwrap();
 
     let from_buff = Address::from_str(&row.get::<String, usize>(3)).unwrap();
     let addr_buff = Address::from_str(
