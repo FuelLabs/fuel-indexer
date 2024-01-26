@@ -18,7 +18,7 @@ use fuels::{
     macros::abigen,
     prelude::{
         setup_single_asset_coins, setup_test_provider, AssetId, Bech32ContractId,
-        Contract, LoadConfiguration, Provider, TxParameters, WalletUnlocked,
+        Contract, LoadConfiguration, Provider, TxPolicies, WalletUnlocked,
         DEFAULT_COIN_AMOUNT,
     },
     test_helpers::Config,
@@ -267,13 +267,6 @@ impl Drop for TestPostgresDb {
     }
 }
 
-pub fn tx_params() -> TxParameters {
-    let gas_price = 0;
-    let gas_limit = 1_000_000;
-    let byte_price = 0;
-    TxParameters::new(Some(gas_price), Some(gas_limit), byte_price)
-}
-
 pub async fn setup_test_fuel_node(
     wallet_path: PathBuf,
     contract_bin_path: Option<PathBuf>,
@@ -315,7 +308,7 @@ pub async fn setup_test_fuel_node(
     let config = Config {
         utxo_validation: false,
         addr,
-        ..Config::local_node()
+        ..Config::default()
     };
 
     let provider = setup_test_provider(coins, vec![], Some(config), None)
@@ -331,8 +324,23 @@ pub async fn setup_test_fuel_node(
         )
         .expect("Failed to load contract");
 
+        let gas_price = 0;
+        let gas_limit = 1_000_000;
+        let witness_limit = 1_000_000;
+        let maturity = 0;
+        let max_fee = 1;
+
         let contract_id = loaded_contract
-            .deploy(&wallet, TxParameters::default())
+            .deploy(
+                &wallet,
+                TxPolicies::new(
+                    Some(gas_price),
+                    Some(witness_limit),
+                    Some(maturity),
+                    Some(max_fee),
+                    Some(gas_limit),
+                ),
+            )
             .await
             .unwrap();
 
@@ -462,14 +470,15 @@ pub mod test_web {
     use fuels::types::bech32::Bech32ContractId;
     use std::path::Path;
 
-    use super::{tx_params, FuelIndexerTest};
+    use super::FuelIndexerTest;
 
     async fn fuel_indexer_test_blocks(state: web::Data<Arc<AppState>>) -> impl Responder {
         let _ = state
             .contract
             .methods()
             .trigger_ping()
-            .tx_params(tx_params())
+            .call_params(CallParameters::default())
+            .unwrap()
             .call()
             .await
             .unwrap();
@@ -482,7 +491,8 @@ pub mod test_web {
             .contract
             .methods()
             .trigger_ping()
-            .tx_params(tx_params())
+            .call_params(CallParameters::default())
+            .unwrap()
             .call()
             .await
             .unwrap();
@@ -500,7 +510,8 @@ pub mod test_web {
             .contract
             .methods()
             .trigger_transfer()
-            .tx_params(tx_params())
+            .call_params(CallParameters::default())
+            .unwrap()
             .call_params(call_params)
             .expect("Could not set call parameters for contract method")
             .call()
@@ -515,7 +526,8 @@ pub mod test_web {
             .contract
             .methods()
             .trigger_log()
-            .tx_params(tx_params())
+            .call_params(CallParameters::default())
+            .unwrap()
             .call()
             .await
             .unwrap();
@@ -530,7 +542,8 @@ pub mod test_web {
             .contract
             .methods()
             .trigger_logdata()
-            .tx_params(tx_params())
+            .call_params(CallParameters::default())
+            .unwrap()
             .call()
             .await
             .unwrap();
@@ -545,7 +558,8 @@ pub mod test_web {
             .contract
             .methods()
             .trigger_scriptresult()
-            .tx_params(tx_params())
+            .call_params(CallParameters::default())
+            .unwrap()
             .call()
             .await
             .unwrap();
@@ -564,7 +578,8 @@ pub mod test_web {
             .methods()
             .trigger_transferout()
             .append_variable_outputs(1)
-            .tx_params(tx_params())
+            .call_params(CallParameters::default())
+            .unwrap()
             .call_params(call_params)
             .expect("Could not set call parameters for contract method")
             .call()
@@ -585,7 +600,8 @@ pub mod test_web {
             .trigger_messageout()
             .call_params(call_params)
             .expect("Could not set call parameters for contract method")
-            .tx_params(tx_params())
+            .call_params(CallParameters::default())
+            .unwrap()
             .call()
             .await
             .unwrap();
@@ -600,7 +616,8 @@ pub mod test_web {
             .contract
             .methods()
             .trigger_callreturn()
-            .tx_params(tx_params())
+            .call_params(CallParameters::default())
+            .unwrap()
             .call()
             .await
             .unwrap();
@@ -615,7 +632,8 @@ pub mod test_web {
             .contract
             .methods()
             .trigger_multiargs()
-            .tx_params(tx_params())
+            .call_params(CallParameters::default())
+            .unwrap()
             .call()
             .await
             .unwrap();
@@ -630,7 +648,8 @@ pub mod test_web {
             .contract
             .methods()
             .trigger_ping_for_optional()
-            .tx_params(tx_params())
+            .call_params(CallParameters::default())
+            .unwrap()
             .call()
             .await
             .unwrap();
@@ -645,7 +664,8 @@ pub mod test_web {
             .contract
             .methods()
             .trigger_deeply_nested()
-            .tx_params(tx_params())
+            .call_params(CallParameters::default())
+            .unwrap()
             .call()
             .await
             .unwrap();
@@ -660,7 +680,8 @@ pub mod test_web {
             .contract
             .methods()
             .trigger_explicit()
-            .tx_params(tx_params())
+            .call_params(CallParameters::default())
+            .unwrap()
             .call()
             .await
             .unwrap();
@@ -679,7 +700,8 @@ pub mod test_web {
             .contract
             .methods()
             .trigger_tuple()
-            .tx_params(tx_params())
+            .call_params(CallParameters::default())
+            .unwrap()
             .call()
             .await
             .unwrap();
@@ -693,7 +715,8 @@ pub mod test_web {
             .contract
             .methods()
             .trigger_vec_pong_calldata(vec![1, 2, 3, 4, 5, 6, 7, 8])
-            .tx_params(tx_params())
+            .call_params(CallParameters::default())
+            .unwrap()
             .call()
             .await
             .unwrap();
@@ -705,7 +728,8 @@ pub mod test_web {
             .contract
             .methods()
             .trigger_vec_pong_logdata()
-            .tx_params(tx_params())
+            .call_params(CallParameters::default())
+            .unwrap()
             .call()
             .await
             .unwrap();
@@ -719,7 +743,8 @@ pub mod test_web {
             .contract
             .methods()
             .trigger_pure_function()
-            .tx_params(tx_params())
+            .call_params(CallParameters::default())
+            .unwrap()
             .call()
             .await
             .unwrap();
@@ -734,7 +759,8 @@ pub mod test_web {
             .contract
             .methods()
             .trigger_panic()
-            .tx_params(tx_params())
+            .call_params(CallParameters::default())
+            .unwrap()
             .call()
             .await;
 
@@ -747,7 +773,8 @@ pub mod test_web {
             .contract
             .methods()
             .trigger_revert()
-            .tx_params(tx_params())
+            .call_params(CallParameters::default())
+            .unwrap()
             .call()
             .await;
 
@@ -761,7 +788,8 @@ pub mod test_web {
             .contract
             .methods()
             .trigger_enum_error(69)
-            .tx_params(tx_params())
+            .call_params(CallParameters::default())
+            .unwrap()
             .call()
             .await;
 
@@ -775,7 +803,8 @@ pub mod test_web {
             .contract
             .methods()
             .trigger_enum()
-            .tx_params(tx_params())
+            .call_params(CallParameters::default())
+            .unwrap()
             .call()
             .await
             .unwrap();
@@ -790,7 +819,8 @@ pub mod test_web {
             .contract
             .methods()
             .trigger_mint()
-            .tx_params(tx_params())
+            .call_params(CallParameters::default())
+            .unwrap()
             .call()
             .await
             .unwrap();
@@ -807,7 +837,8 @@ pub mod test_web {
             .contract
             .methods()
             .trigger_burn()
-            .tx_params(tx_params())
+            .call_params(CallParameters::default())
+            .unwrap()
             .call_params(call_params)
             .unwrap()
             .call()
@@ -824,7 +855,8 @@ pub mod test_web {
             .contract
             .methods()
             .trigger_generics()
-            .tx_params(tx_params())
+            .call_params(CallParameters::default())
+            .unwrap()
             .call()
             .await
             .unwrap();
@@ -839,7 +871,8 @@ pub mod test_web {
             .contract
             .methods()
             .trigger_find()
-            .tx_params(tx_params())
+            .call_params(CallParameters::default())
+            .unwrap()
             .call()
             .await
             .unwrap();

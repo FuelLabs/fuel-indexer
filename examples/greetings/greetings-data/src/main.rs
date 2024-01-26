@@ -1,5 +1,5 @@
 use clap::Parser;
-use fuel_indexer_tests::{defaults, fixtures::tx_params};
+use fuel_indexer_tests::{defaults, fixtures::call_params};
 use fuels::accounts::wallet::WalletUnlocked;
 use fuels::macros::abigen;
 use fuels::{
@@ -115,7 +115,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let _ = contract
         .methods()
         .new_greeting(id, greeting, name)
-        .tx_params(tx_params())
+        .call_params(tx_params())
+        .unwrap()
+        .unwrap()
         .call()
         .await
         .unwrap();
