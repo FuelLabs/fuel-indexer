@@ -114,7 +114,6 @@ help: consider importing one of these items
    |
 2  + use fuel_indexer_utils::plugin::prelude::fuel::TransactionStatus;
    |
-     and 1 other candidate
 help: if you import `TransactionStatus`, refer to it directly
    |
 46 -             status: fuel::TransactionStatus::default(),
