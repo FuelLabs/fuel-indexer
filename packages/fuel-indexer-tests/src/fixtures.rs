@@ -695,18 +695,23 @@ pub mod test_web {
         HttpResponse::Ok().body(block_height.to_string())
     }
 
-    async fn fuel_indexer_test_tuple(state: web::Data<Arc<AppState>>) -> impl Responder {
-        let _ = state
-            .contract
-            .methods()
-            .trigger_tuple()
-            .call_params(CallParameters::default())
-            .unwrap()
-            .call()
-            .await
-            .unwrap();
-        HttpResponse::Ok()
-    }
+    // TODO: Sway does not currently support auto-implementation
+    // of the AutoEncode trait for general tuple structures; once
+    // it's been implemented for more tuple types, these types and
+    // functions should be re-enabled.
+
+    // async fn fuel_indexer_test_tuple(state: web::Data<Arc<AppState>>) -> impl Responder {
+    //     let _ = state
+    //         .contract
+    //         .methods()
+    //         .trigger_tuple()
+    //         .call_params(CallParameters::default())
+    //         .unwrap()
+    //         .call()
+    //         .await
+    //         .unwrap();
+    //     HttpResponse::Ok()
+    // }
 
     async fn fuel_indexer_vec_calldata(
         state: web::Data<Arc<AppState>>,
@@ -796,21 +801,27 @@ pub mod test_web {
         HttpResponse::Ok()
     }
 
-    async fn fuel_indexer_test_trigger_enum(
-        state: web::Data<Arc<AppState>>,
-    ) -> impl Responder {
-        let _ = state
-            .contract
-            .methods()
-            .trigger_enum()
-            .call_params(CallParameters::default())
-            .unwrap()
-            .call()
-            .await
-            .unwrap();
+    // TODO: Sway does not currently support auto-implementation
+    // of the AutoEncode trait for string arrays (and string slices
+    // cannot be returned from a function); once it's been
+    // implemented for more tuple types, these types and
+    // functions should be re-enabled.
 
-        HttpResponse::Ok()
-    }
+    // async fn fuel_indexer_test_trigger_enum(
+    //     state: web::Data<Arc<AppState>>,
+    // ) -> impl Responder {
+    //     let _ = state
+    //         .contract
+    //         .methods()
+    //         .trigger_enum()
+    //         .call_params(CallParameters::default())
+    //         .unwrap()
+    //         .call()
+    //         .await
+    //         .unwrap();
+
+    //     HttpResponse::Ok()
+    // }
 
     async fn fuel_indexer_test_trigger_mint(
         state: web::Data<Arc<AppState>>,
@@ -922,7 +933,7 @@ pub mod test_web {
                 "/block_height",
                 web::get().to(fuel_indexer_test_get_block_height),
             )
-            .route("/tuples", web::post().to(fuel_indexer_test_tuple))
+            // .route("/tuples", web::post().to(fuel_indexer_test_tuple))
             .route(
                 "/deeply_nested",
                 web::post().to(fuel_indexer_test_deeply_nested_schema_fields),
@@ -942,7 +953,7 @@ pub mod test_web {
                 "/enum_error",
                 web::post().to(fuel_indexer_test_trigger_enum_error),
             )
-            .route("/enum", web::post().to(fuel_indexer_test_trigger_enum))
+            // .route("/enum", web::post().to(fuel_indexer_test_trigger_enum))
             .route("/mint", web::post().to(fuel_indexer_test_trigger_mint))
             .route("/burn", web::post().to(fuel_indexer_test_trigger_burn))
             .route(

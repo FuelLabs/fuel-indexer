@@ -12,7 +12,7 @@ use std::{
     logging::log,
     message::send_typed_message,
     revert::revert,
-    token::*,
+    asset::*,
 };
 
 configurable {
@@ -43,18 +43,23 @@ pub struct Pung {
     pung_from: Identity,
 }
 
-pub struct TupleStructItem {
-    id: u64,
-    arr: [u8; 3],
-}
+// TODO: Sway does not currently support auto-implementation
+// of the AutoEncode trait for general tuple structures; once
+// it's been implemented for more tuple types, these types and
+// functions should be re-enabled.
 
-pub struct ComplexTupleStruct {
-    data: (u32, (u64, bool, (str[5], TupleStructItem))),
-}
+// pub struct TupleStructItem {
+//     id: u64,
+//     arr: [u8; 3],
+// }
 
-pub struct SimpleTupleStruct {
-    data: (u32, u64, str[12]),
-}
+// pub struct ComplexTupleStruct {
+//     data: (u32, (u64, bool, (str[5], TupleStructItem))),
+// }
+
+// pub struct SimpleTupleStruct {
+//     data: (u32, u64, str),
+// }
 
 pub struct ExplicitQueryStruct {
     id: u64,
@@ -69,21 +74,24 @@ pub struct ExampleMessageStruct {
     message: str[32],
 }
 
-pub enum SimpleEnum {
-    One: (),
-    Two: (),
-    Three: (),
-}
+// TODO: Sway does not currently support auto-implementation
+// of the AutoEncode trait for string arrays; once
+// it's been implemented, these types and functions should be re-enabled.
 
-pub enum AnotherSimpleEnum {
-    Ping: Ping,
-    Pung: Pung,
-    Call: SimpleEnum,
-}
+// pub enum SimpleEnum {
+//     One: (),
+//     Two: (),
+//     Three: (),
+// }
 
-pub enum NestedEnum {
-    Inner: AnotherSimpleEnum,
-}
+// pub enum AnotherSimpleEnum {
+//     Pung: Pung,
+//     Call: SimpleEnum,
+// }
+
+// pub enum NestedEnum {
+//     Inner: AnotherSimpleEnum,
+// }
 
 pub struct Find {}
 
@@ -102,7 +110,7 @@ abi FuelIndexer {
     fn trigger_transferout();
     #[payable]
     fn trigger_messageout();
-    fn trigger_tuple() -> ComplexTupleStruct;
+    // fn trigger_tuple() -> ComplexTupleStruct;
     fn trigger_explicit() -> ExplicitQueryStruct;
     fn trigger_deeply_nested() -> SimpleQueryStruct;
     fn trigger_vec_pong_calldata(v: Vec<u8>);
@@ -111,7 +119,7 @@ abi FuelIndexer {
     fn trigger_panic() -> u64;
     fn trigger_revert();
     fn trigger_enum_error(num: u64);
-    fn trigger_enum() -> AnotherSimpleEnum;
+    // fn trigger_enum() -> AnotherSimpleEnum;
     fn trigger_mint();
     #[payable]
     fn trigger_burn();
@@ -217,27 +225,27 @@ impl FuelIndexer for Contract {
         send_typed_message(RECEIVER, example, 100);
     }
 
-    fn trigger_tuple() -> ComplexTupleStruct {
-        log(SimpleTupleStruct {
-            data: (4u32, 5u64, __to_str_array("hello world!")),
-        });
-        ComplexTupleStruct {
-            data: (
-                1u32,
-                (
-                    5u64,
-                    true,
-                    (
-                        __to_str_array("abcde"),
-                        TupleStructItem {
-                            id: 54321,
-                            arr: [1u8, 2, 3],
-                        },
-                    ),
-                ),
-            ),
-        }
-    }
+    // fn trigger_tuple() -> ComplexTupleStruct {
+    //     log(SimpleTupleStruct {
+    //         data: (4u32, 5u64, "hello world!"),
+    //     });
+    //     ComplexTupleStruct {
+    //         data: (
+    //             1u32,
+    //             (
+    //                 5u64,
+    //                 true,
+    //                 (
+    //                     __to_str_array("abcde"),
+    //                     TupleStructItem {
+    //                         id: 54321,
+    //                         arr: [1u8, 2, 3],
+    //                     },
+    //                 ),
+    //             ),
+    //         ),
+    //     }
+    // }
 
     fn trigger_explicit() -> ExplicitQueryStruct {
         ExplicitQueryStruct { id: 456 }
@@ -299,22 +307,22 @@ impl FuelIndexer for Contract {
         require(num != 69, UserError::Unauthorized);
     }
 
-    fn trigger_enum() -> AnotherSimpleEnum {
-        log(AnotherSimpleEnum::Pung(Pung {
-            id: 91231,
-            value: 888777,
-            is_pung: true,
-            pung_from: Identity::ContractId(ContractId::from(0x322ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96)),
-        }));
+    // fn trigger_enum() -> AnotherSimpleEnum {
+    //     log(AnotherSimpleEnum::Pung(Pung {
+    //         id: 91231,
+    //         value: 888777,
+    //         is_pung: true,
+    //         pung_from: Identity::ContractId(ContractId::from(0x322ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96)),
+    //     }));
 
-        log(NestedEnum::Inner(AnotherSimpleEnum::Call(SimpleEnum::Three)));
+    //     log(NestedEnum::Inner(AnotherSimpleEnum::Call(SimpleEnum::Three)));
 
-        AnotherSimpleEnum::Ping(Ping {
-            id: 7777,
-            value: 7775,
-            message: __to_str_array("hello world! I am, a log event!!"),
-        })
-    }
+    //     AnotherSimpleEnum::Ping(Ping {
+    //         id: 7777,
+    //         value: 7775,
+    //         message: __to_str_array("hello world! I am, a log event!!"),
+    //     })
+    // }
 
     fn trigger_mint() {
         mint(ZERO_B256, 100);
