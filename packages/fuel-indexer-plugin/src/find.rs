@@ -306,7 +306,11 @@ impl ToSQLValue for UID {
 
 impl ToSQLValue for BlockHeight {
     fn to_sql_value(self) -> sql::Value {
-        sqlparser::test_utils::number(&self.to_string())
+        sqlparser::test_utils::number(
+            &usize::try_from(u32::from(self))
+                .expect("Could not convert BlockHeight into SQL value")
+                .to_string(),
+        )
     }
 }
 
@@ -336,7 +340,11 @@ macro_rules! impl_number_to_sql_value {
     ($T:ident) => {
         impl ToSQLValue for fuel_indexer_types::scalar::$T {
             fn to_sql_value(self) -> sql::Value {
-                sqlparser::test_utils::number(&self.to_string())
+                sqlparser::test_utils::number(
+                    &usize::try_from(self)
+                        .expect("Could not convert scalar into usize")
+                        .to_string(),
+                )
             }
         }
     };
