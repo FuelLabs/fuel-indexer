@@ -26,7 +26,7 @@ chrono = { version = "0.4", features = ["serde"] }
 clap = { workspace = true }
 criterion = { version = "0.5.1", features = ["html_reports", "async_tokio"] }
 duct = "0.13"
-fuel-core-client = "0.20"
+fuel-core-client = "0.21"
 fuel-indexer = { workspace = true }
 fuel-indexer-database = { workspace = true }
 fuel-indexer-graphql = { workspace = true }

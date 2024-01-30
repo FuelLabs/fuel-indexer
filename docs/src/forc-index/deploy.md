@@ -3,7 +3,7 @@
 Deploy an indexer to an indexer service.
 
 ```bash
-forc index deploy --url https://beta-4-indexer.fuel.network
+forc index deploy --url https://beta-5-indexer.fuel.network
 ```
 
 ```text

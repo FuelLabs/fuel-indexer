@@ -86,7 +86,7 @@ OPTIONS:
             Use Prometheus metrics reporting.
 
         --network <NETWORK>
-            Use a network alias when connecting to a Fuel client. [default: beta-3 beta-4 beta-5]
+            Use a network alias when connecting to a Fuel client. [default: beta-3 beta-5 beta-5]
 
         --postgres-database <POSTGRES_DATABASE>
             Postgres database.

@@ -23,7 +23,7 @@ runs in `target/criterion`. Additionally, an HTML file with plots and statistics
 ### QA suite
 
 ```bash
-cargo run -p fuel-indexer-benchmarks --bin qa -- --network beta-4.fuel.network
+cargo run -p fuel-indexer-benchmarks --bin qa -- --network beta-5.fuel.network
 ```
 
 ### Comparing Branches

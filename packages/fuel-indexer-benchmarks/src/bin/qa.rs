@@ -378,6 +378,7 @@ struct BlockHeightRequest {
 #[derive(Debug)]
 enum Network {
     Beta4,
+    Beta5,
     Mainnet,
 }
 
@@ -385,6 +386,7 @@ impl From<String> for Network {
     fn from(s: String) -> Self {
         match s.as_str() {
             "beta-4.fuel.network" => Network::Beta4,
+            "beta-5.fuel.network" => Network::Beta5,
             "mainnet" => Network::Mainnet,
             _ => panic!("Invalid network"),
         }
@@ -395,6 +397,7 @@ impl Display for Network {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Network::Beta4 => write!(f, "beta-4.fuel.network"),
+            Network::Beta5 => write!(f, "beta-5.fuel.network"),
             Network::Mainnet => write!(f, "mainnet"),
         }
     }
@@ -589,7 +592,7 @@ async fn main() {
         .arg("start")
         .arg("--run-migrations")
         .arg("--fuel-node-host")
-        .arg("beta-4.fuel.network")
+        .arg("beta-5.fuel.network")
         .arg("--fuel-node-port")
         .arg("80")
         .arg("--replace-indexer")

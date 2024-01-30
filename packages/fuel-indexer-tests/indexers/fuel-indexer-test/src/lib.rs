@@ -171,20 +171,23 @@ mod fuel_indexer_test {
         entity.save();
     }
 
-    fn fuel_indexer_test_tuple(
-        event: ComplexTupleStruct,
-        logdata_entity: SimpleTupleStruct,
-    ) {
-        info!("fuel_indexer_test_tuple handling ComplexTupleStruct and SimpleTupleStruct events.");
-        let data: (u32, (u64, bool, (SizedAsciiString<5>, TupleStructItem))) = event.data;
+    // TODO: Due to incomplete support for tuples and the AutoEncode trait
+    // in the Sway compiler, this test has been ignored for now.
 
-        TupleEntity::new(
-            data.1 .2 .0.to_string(),
-            data.1 .2 .1.id,
-            logdata_entity.data.2.to_string(),
-        )
-        .get_or_create();
-    }
+    // fn fuel_indexer_test_tuple(
+    //     event: ComplexTupleStruct,
+    //     logdata_entity: SimpleTupleStruct,
+    // ) {
+    //     info!("fuel_indexer_test_tuple handling ComplexTupleStruct and SimpleTupleStruct events.");
+    //     let data: (u32, (u64, bool, (SizedAsciiString<5>, TupleStructItem))) = event.data;
+
+    //     TupleEntity::new(
+    //         data.1 .2 .0.to_string(),
+    //         data.1 .2 .1.id,
+    //         logdata_entity.data.2.to_string(),
+    //     )
+    //     .get_or_create();
+    // }
 
     fn fuel_indexer_test_pure_function(call: Call) {
         info!("fuel_indexer_test_tuple handling Call event.");
@@ -442,19 +445,19 @@ mod fuel_indexer_test {
         e.save();
     }
 
-    fn fuel_indexer_trigger_enum(
-        _first: AnotherSimpleEnum,
-        _second: NestedEnum,
-        _third: AnotherSimpleEnum,
-    ) {
-        info!("fuel_indexer_trigger_enum handling trigger_enum event..");
+    // fn fuel_indexer_trigger_enum(
+    //     _first: AnotherSimpleEnum,
+    //     _second: NestedEnum,
+    //     _third: AnotherSimpleEnum,
+    // ) {
+    //     info!("fuel_indexer_trigger_enum handling trigger_enum event..");
 
-        let e = ComplexEnumEntity {
-            id: uid([1]),
-            one: Some(EnumEntity::One.into()),
-        };
-        e.save();
-    }
+    //     let e = ComplexEnumEntity {
+    //         id: uid([1]),
+    //         one: Some(EnumEntity::One.into()),
+    //     };
+    //     e.save();
+    // }
 
     fn fuel_indexer_trigger_non_indexable_type(_b: BlockData) {
         info!("fuel_indexer_trigger_non_indexable_type handling trigger_non_indexable_type event.");

@@ -3,7 +3,7 @@
 In this tutorial you will:
 
 1. Bootstrap your development environment.
-2. Create, build, and deploy an indexer to an indexer service hooked up to Fuel's `beta-4` testnet.
+2. Create, build, and deploy an indexer to an indexer service hooked up to Fuel's `beta-5` testnet.
 3. Query your indexer's newly created index for data using GraphQL.
 
 ---
@@ -109,7 +109,7 @@ We can quickly create a bootstrapped database and start the Fuel indexer service
 > If you find that `--embedded-database` isn't working on your machine (for whatever reason), we strongly recommend that you simply used the Dockerized Fuel indexer components included in the project by using the `docker compose` script [included in the project](https://github.com/FuelLabs/fuel-indexer/blob/develop/scripts/docker-compose.yaml).
 
 ```bash
-forc index start --network beta-4 --run-migrations --postgres-host postgresql
+forc index start --network beta-5 --run-migrations --postgres-host postgresql
 ```
 
 You should see output indicating the successful creation of a database and start of the indexer service; there may be much more content in your session, but it should generally contain output similar to the following lines:
@@ -117,12 +117,12 @@ You should see output indicating the successful creation of a database and start
 ```text
 ✅ Successfully started the indexer service at PID 39407
 
-2023-07-31T15:57:28.942954Z  INFO fuel_indexer::commands::run: 109: Configuration: IndexerConfig { metering_points: Some(30000000000), log_level: "info", verbose: false, local_fuel_node: false, indexer_net_config: false, fuel_node: FuelClientConfig { host: "beta-4.fuel.network", port: "80" }, web_api: WebApiConfig { host: "localhost", port: "29987", max_body_size: 5242880 }, database: PostgresConfig { user: "postgres", password: "XXXX", host: "localhost", port: "5432", database: "postgres", verbose: "false" }, metrics: false, stop_idle_indexers: false, run_migrations: true, authentication: AuthenticationConfig { enabled: false, strategy: None, jwt_secret: "XXXX", jwt_issuer: None, jwt_expiry: None }, rate_limit: RateLimitConfig { enabled: false, request_count: None, window_size: None }, replace_indexer: false, accept_sql_queries: false }
+2023-07-31T15:57:28.942954Z  INFO fuel_indexer::commands::run: 109: Configuration: IndexerConfig { metering_points: Some(30000000000), log_level: "info", verbose: false, local_fuel_node: false, indexer_net_config: false, fuel_node: FuelClientConfig { host: "beta-5.fuel.network", port: "80" }, web_api: WebApiConfig { host: "localhost", port: "29987", max_body_size: 5242880 }, database: PostgresConfig { user: "postgres", password: "XXXX", host: "localhost", port: "5432", database: "postgres", verbose: "false" }, metrics: false, stop_idle_indexers: false, run_migrations: true, authentication: AuthenticationConfig { enabled: false, strategy: None, jwt_secret: "XXXX", jwt_issuer: None, jwt_expiry: None }, rate_limit: RateLimitConfig { enabled: false, request_count: None, window_size: None }, replace_indexer: false, accept_sql_queries: false }
 2023-07-31T15:57:28.948657Z  INFO sqlx::postgres::notice: 157: relation "_sqlx_migrations" already exists, skipping
 2023-07-31T15:57:28.976258Z  INFO fuel_indexer::service: 378: Resuming Indexer(fuel.indexer_test) from block 81188
 2023-07-31T15:57:29.077928Z  INFO fuel_indexer::database: 187: Loading schema for Indexer(fuel.indexer_test) with Version(2738d221cf1e926d28e62bc93604a96ec6f7c5093e766f45a4555ed06e437b7f).
 2023-07-31T15:57:29.081302Z  WARN fuel_indexer::executor: 87: No end_block specified in manifest. Indexer will run forever.
-2023-07-31T15:57:29.081311Z  INFO fuel_indexer::executor: 109: Indexer(fuel.indexer_test) subscribing to Fuel node at beta-4.fuel.network:80
+2023-07-31T15:57:29.081311Z  INFO fuel_indexer::executor: 109: Indexer(fuel.indexer_test) subscribing to Fuel node at beta-5.fuel.network:80
 2023-07-31T15:57:29.081424Z  INFO fuel_indexer::service: 194: Registered Indexer(fuel.indexer_test)
 2023-07-31T15:57:29.082150Z  INFO fuel_indexer_lib::utils: 132: Parsed SocketAddr '127.0.0.1:29987' from 'localhost:29987
 ```

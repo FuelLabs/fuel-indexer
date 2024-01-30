@@ -23,7 +23,7 @@ use fuel_indexer_types::{
     scalar::{Bytes, Bytes32},
 };
 use fuel_tx::UniqueIdentifier;
-use fuel_vm::prelude::Deserializable;
+use fuel_vm::fuel_types::canonical::Deserialize;
 use fuel_vm::state::ProgramState as ClientProgramState;
 use futures::Future;
 use itertools::Itertools;
@@ -367,7 +367,7 @@ pub async fn retrieve_blocks_from_node(
     } = client
         .full_blocks(PaginationRequest {
             cursor: cursor.clone(),
-            results: page_size,
+            results: page_size as i32,
             direction: PageDirection::Forward,
         })
         .await
@@ -386,7 +386,7 @@ pub async fn retrieve_blocks_from_node(
 
     let mut block_info = Vec::new();
     for block in results.into_iter() {
-        let producer: Option<Bytes32> = block.block_producer().map(|pk| pk.hash());
+        let producer = block.block_producer().map(|pk| pk.hash());
 
         let mut transactions = Vec::new();
 
@@ -482,9 +482,8 @@ pub async fn retrieve_blocks_from_node(
 
             let transaction = match transaction {
                 ClientTransaction::Create(tx) => Transaction::Create(Create {
-                    gas_price: *tx.gas_price(),
-                    gas_limit: *tx.gas_limit(),
-                    maturity: *tx.maturity(),
+                    gas_price: tx.gas_price(),
+                    maturity: tx.maturity(),
                     bytecode_length: *tx.bytecode_length(),
                     bytecode_witness_index: *tx.bytecode_witness_index(),
                     storage_slots: tx
@@ -502,9 +501,8 @@ pub async fn retrieve_blocks_from_node(
                     metadata: None,
                 }),
                 ClientTransaction::Script(tx) => Transaction::Script(Script {
-                    gas_price: *tx.gas_price(),
-                    gas_limit: *tx.gas_limit(),
-                    maturity: *tx.maturity(),
+                    gas_price: tx.gas_price(),
+                    maturity: (*tx.maturity()).into(),
                     script: (*tx.script().clone()).to_vec(),
                     script_data: (*tx.script_data().clone()).to_vec(),
                     inputs: tx.inputs().iter().map(|i| i.to_owned().into()).collect(),
@@ -515,7 +513,6 @@ pub async fn retrieve_blocks_from_node(
                 }),
                 ClientTransaction::Mint(tx) => Transaction::Mint(Mint {
                     tx_pointer: tx.tx_pointer().to_owned().into(),
-                    outputs: tx.outputs().iter().map(|o| o.to_owned().into()).collect(),
                     metadata: None,
                 }),
             };

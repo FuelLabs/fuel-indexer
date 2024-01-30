@@ -7,7 +7,7 @@ Below is a sample indexer manifest file
 ```yaml
 namespace: fuellabs
 identifier: order_book_v1
-fuel_client: beta-4.fuel.network:80
+fuel_client: beta-5.fuel.network:80
 abi: path/to/my/contract-abi.json
 contract_id: "fuels0x39150017c9e38e5e280432d546fae345d6ce6d8fe4710162c2e3a95a6faff051"
 graphql_schema: path/to/my/schema.graphql
