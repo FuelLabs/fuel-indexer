@@ -60,7 +60,7 @@ edition = "2021"
 homepage = "https://fuel.network/"
 license = "Apache-2.0"
 repository = "https://github.com/FuelLabs/fuel-indexer"
-rust-version = "1.73.0"
+rust-version = "1.75.0"
 version = "0.24.3"
 
 [workspace.dependencies]
@@ -88,8 +88,8 @@ fuel-crypto = { version = "0.43", default-features = false }
 fuel-tx = { version = "0.43", default-features = false }
 fuel-types = { version = "0.43", default-features = false, features = ["serde"] }
 fuel-vm = { version = "0.43", default-features = false }
-fuels = { version = "0.53", default-features = false }
-fuels-code-gen = { version = "0.53", default-features = false }
+fuels = { version = "0.55", default-features = false }
+fuels-code-gen = { version = "0.55", default-features = false }
 serde = { version = "1.0", default-features = false, features = ["derive"] }
 serde_json = { version = "1.0", default-features = false }
 thiserror = "1.0"
