@@ -406,6 +406,7 @@ pub async fn retrieve_blocks_from_node(
                     block_id,
                     time,
                     program_state,
+                    ..
                 } => {
                     let program_state = program_state.map(|p| match p {
                         ClientProgramState::Return(w) => ProgramState {
@@ -437,6 +438,7 @@ pub async fn retrieve_blocks_from_node(
                     time,
                     reason,
                     program_state,
+                    ..
                 } => {
                     let program_state = program_state.map(|p| match p {
                         ClientProgramState::Return(w) => ProgramState {

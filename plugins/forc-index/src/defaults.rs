@@ -22,14 +22,14 @@ name = "{indexer_name}"
 version = "0.0.0"
 edition = "2021"
 publish = false
-rust-version = "1.73.0"
+rust-version = "1.75.0"
 
 [lib]
 crate-type = ['cdylib']
 
 [dependencies]
 fuel-indexer-utils = {{ version = "0.24" }}
-fuels = {{ version = "0.53", default-features = false }}
+fuels = {{ version = "0.55", default-features = false }}
 getrandom = {{ version = "0.2", features = ["js"] }}
 serde = {{ version = "1.0", default-features = false, features = ["derive"] }}
 "#

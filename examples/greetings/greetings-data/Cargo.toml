@@ -10,7 +10,7 @@ fuel-indexer-lib = { workspace = true }
 fuel-indexer-tests = { version = "0.0.0", path = "./../../../packages/fuel-indexer-tests" }
 fuel-tx = { workspace = true }
 fuel-types = { workspace = true }
-fuels = { version = "0.53" }
+fuels = { version = "0.55" }
 rand = "0.8"
 thiserror = { workspace = true }
 tokio = { features = ["macros", "rt-multi-thread"], workspace = true }

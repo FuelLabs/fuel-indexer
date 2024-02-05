@@ -41,7 +41,7 @@ fuel-indexer-types = { workspace = true }
 fuel-indexer-utils = { workspace = true }
 fuel-tx = { workspace = true }
 fuel-types = { workspace = true }
-fuels = { features = ["fuel-core-lib", "std"], version = "0.53" }
+fuels = { features = ["fuel-core-lib", "std"], version = "0.55" }
 fuels-macros = { version = "0.46", default-features = false }
 futures = "0.3"
 hex = "0.4"
