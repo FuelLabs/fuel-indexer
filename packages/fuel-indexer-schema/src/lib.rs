@@ -258,21 +258,13 @@ mod tests {
             )
             .unwrap(),
         ));
-        let addr =
-            FtColumn::Address(Some(Address::try_from([0x12; 32]).expect("Bad bytes")));
-        let asset_id =
-            FtColumn::AssetId(Some(AssetId::try_from([0xA5; 32]).expect("Bad bytes")));
-        let bytes4 =
-            FtColumn::Bytes4(Some(Bytes4::try_from([0xF0; 4]).expect("Bad bytes")));
-        let bytes8 =
-            FtColumn::Bytes8(Some(Bytes8::try_from([0x9D; 8]).expect("Bad bytes")));
-        let bytes32 =
-            FtColumn::Bytes32(Some(Bytes32::try_from([0xEE; 32]).expect("Bad bytes")));
-        let bytes64 =
-            FtColumn::Bytes64(Some(Bytes64::try_from([0x12; 64]).expect("Bad bytes")));
-        let contractid = FtColumn::ContractId(Some(
-            ContractId::try_from([0x78; 32]).expect("Bad bytes"),
-        ));
+        let addr = FtColumn::Address(Some(Address::from([0x12; 32])));
+        let asset_id = FtColumn::AssetId(Some(AssetId::from([0xA5; 32])));
+        let bytes4 = FtColumn::Bytes4(Some(Bytes4::from([0xF0; 4])));
+        let bytes8 = FtColumn::Bytes8(Some(Bytes8::from([0x9D; 8])));
+        let bytes32 = FtColumn::Bytes32(Some(Bytes32::from([0xEE; 32])));
+        let bytes64 = FtColumn::Bytes64(Some(Bytes64::from([0x12; 64])));
+        let contractid = FtColumn::ContractId(Some(ContractId::from([0x78; 32])));
         let array = FtColumn::Array(Some(vec![FtColumn::I32(Some(1))]));
         let bytes = FtColumn::Bytes(Some(Bytes::from(vec![0u8, 1, 2, 3, 4, 5])));
         let identity = FtColumn::Identity(Some(Identity::Address([0x12; 32].into())));
